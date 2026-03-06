@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 
 const KEYS = {
   company: 'iai_company',
@@ -6,7 +6,8 @@ const KEYS = {
   clients: 'iai_clients',
   products: 'iai_products',
   settings: 'iai_settings',
-  template: 'iai_template',
+  templates: 'iai_templates',
+  selectedTemplate: 'iai_selected_template',
 }
 
 const load = (key, def) => {
@@ -22,69 +23,60 @@ export const useStore = () => {
   const [clients, setClientsRaw] = useState(() => load(KEYS.clients, []))
   const [products, setProductsRaw] = useState(() => load(KEYS.products, []))
   const [settings, setSettingsRaw] = useState(() => load(KEYS.settings, { emailjs_service: '', emailjs_template: '', emailjs_public: '', anthropic_key: '' }))
-  const [templateImg, setTemplateImgRaw] = useState(() => load(KEYS.template, null))
+  const [templates, setTemplatesRaw] = useState(() => load(KEYS.templates, []))
+  const [selectedTemplateId, setSelectedTemplateIdRaw] = useState(() => load(KEYS.selectedTemplate, 'default'))
 
   const setCompany = useCallback(v => { save(KEYS.company, v); setCompanyRaw(v) }, [])
-  const setInvoices = useCallback(v => { const next = typeof v === 'function' ? v([]) : v; save(KEYS.invoices, next); setInvoicesRaw(next) }, [])
-  const setClients = useCallback(v => { const next = typeof v === 'function' ? v([]) : v; save(KEYS.clients, next); setClientsRaw(next) }, [])
-  const setProducts = useCallback(v => { const next = typeof v === 'function' ? v([]) : v; save(KEYS.products, next); setProductsRaw(next) }, [])
-  const setSettings = useCallback(v => { const next = typeof v === 'function' ? v({}) : v; save(KEYS.settings, next); setSettingsRaw(next) }, [])
-  const setTemplateImg = useCallback(v => { save(KEYS.template, v); setTemplateImgRaw(v) }, [])
 
-  // Fix setInvoices/clients/products to handle functional updates properly
-  const setInvoicesFn = useCallback(fn => {
-    setInvoicesRaw(prev => {
-      const next = typeof fn === 'function' ? fn(prev) : fn
-      save(KEYS.invoices, next)
-      return next
-    })
+  const setInvoices = useCallback(fn => {
+    setInvoicesRaw(prev => { const next = typeof fn === 'function' ? fn(prev) : fn; save(KEYS.invoices, next); return next })
   }, [])
-  const setClientsFn = useCallback(fn => {
-    setClientsRaw(prev => {
-      const next = typeof fn === 'function' ? fn(prev) : fn
-      save(KEYS.clients, next)
-      return next
-    })
+  const setClients = useCallback(fn => {
+    setClientsRaw(prev => { const next = typeof fn === 'function' ? fn(prev) : fn; save(KEYS.clients, next); return next })
   }, [])
-  const setProductsFn = useCallback(fn => {
-    setProductsRaw(prev => {
-      const next = typeof fn === 'function' ? fn(prev) : fn
-      save(KEYS.products, next)
-      return next
-    })
+  const setProducts = useCallback(fn => {
+    setProductsRaw(prev => { const next = typeof fn === 'function' ? fn(prev) : fn; save(KEYS.products, next); return next })
   }, [])
-  const setSettingsFn = useCallback(fn => {
-    setSettingsRaw(prev => {
-      const next = typeof fn === 'function' ? fn(prev) : fn
-      save(KEYS.settings, next)
-      return next
-    })
+  const setSettings = useCallback(fn => {
+    setSettingsRaw(prev => { const next = typeof fn === 'function' ? fn(prev) : fn; save(KEYS.settings, next); return next })
   }, [])
+  const setTemplates = useCallback(fn => {
+    setTemplatesRaw(prev => { const next = typeof fn === 'function' ? fn(prev) : fn; save(KEYS.templates, next); return next })
+  }, [])
+  const setSelectedTemplateId = useCallback(v => { save(KEYS.selectedTemplate, v); setSelectedTemplateIdRaw(v) }, [])
 
   const genId = () => Math.random().toString(36).slice(2, 9).toUpperCase()
   const today = () => new Date().toISOString().split('T')[0]
-  const due = (days = 30) => { const d = new Date(); d.setDate(d.getDate() + days); return d.toISOString().split('T')[0] }
-  const nextInvoiceNum = () => {
+  const due = (days = 30) => { const d = new Date(); d.setDate(d.getDate() + Number(days || 30)); return d.toISOString().split('T')[0] }
+  const nextInvoiceNum = (type = 'invoice') => {
     const year = new Date().getFullYear()
-    const num = invoices.filter(i => i.number.includes(String(year))).length + 1
-    return `INV-${year}-${String(num).padStart(4, '0')}`
+    const prefix = type === 'quote' ? 'QUO' : 'INV'
+    const relevant = invoices.filter(i => i.number?.startsWith(prefix) && i.number?.includes(String(year)))
+    return `${prefix}-${year}-${String(relevant.length + 1).padStart(4, '0')}`
   }
+
+  // Resolve current template object
+  const selectedTemplate = selectedTemplateId === 'default'
+    ? { id: 'default' }
+    : (templates.find(t => t.id === selectedTemplateId) || { id: 'default' })
 
   return {
     company, setCompany,
-    invoices, setInvoices: setInvoicesFn,
-    clients, setClients: setClientsFn,
-    products, setProducts: setProductsFn,
-    settings, setSettings: setSettingsFn,
-    templateImg, setTemplateImg,
+    invoices, setInvoices,
+    clients, setClients,
+    products, setProducts,
+    settings, setSettings,
+    templates, setTemplates,
+    selectedTemplateId, setSelectedTemplateId,
+    selectedTemplate,
     genId, today, due, nextInvoiceNum,
   }
 }
 
 export const fmt = (amount, currency = 'GBP') => {
   const symbols = { GBP: '£', USD: '$', EUR: '€', RON: 'RON ' }
-  const sym = symbols[currency] || currency + ' '
-  return sym + Number(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const sym = symbols[currency] || (currency + ' ')
+  return sym + Number(amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
 export const STATUS = {
