@@ -10,6 +10,19 @@ const KEYS = {
   selectedTemplate: 'iai_selected_template',
 }
 
+const DEFAULT_ITEM_TYPES = ['Labour', 'Materials', 'Equipment', 'Subcontractor', 'Consultancy', 'Travel', 'Other']
+
+const DEFAULT_EMAIL_COLUMNS = [
+  { key: 'number',       label: 'Invoice Number', enabled: true },
+  { key: 'date',         label: 'Issue Date',      enabled: true },
+  { key: 'due_date',     label: 'Due Date',        enabled: true },
+  { key: 'client_name',  label: 'Client Name',     enabled: true },
+  { key: 'total',        label: 'Total Amount',    enabled: true },
+  { key: 'status',       label: 'Status',          enabled: true },
+  { key: 'po_number',    label: 'PO Number',       enabled: false },
+  { key: 'notes',        label: 'Notes',           enabled: false },
+]
+
 const load = (key, def) => {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def } catch { return def }
 }
@@ -22,12 +35,28 @@ export const useStore = () => {
   const [invoices, setInvoicesRaw] = useState(() => load(KEYS.invoices, []))
   const [clients, setClientsRaw] = useState(() => load(KEYS.clients, []))
   const [products, setProductsRaw] = useState(() => load(KEYS.products, []))
-  const [settings, setSettingsRaw] = useState(() => load(KEYS.settings, { emailjs_service: '', emailjs_template: '', emailjs_public: '', anthropic_key: '' }))
+  const [settings, setSettingsRaw] = useState(() => load(KEYS.settings, {
+    emailjs_service: '', emailjs_template: '', emailjs_public: '', anthropic_key: '',
+    itemTypes: DEFAULT_ITEM_TYPES,
+    emailColumns: DEFAULT_EMAIL_COLUMNS,
+    defaultTemplate: {
+      primaryColor: '#1a1a2e',
+      accentColor: '#e2b96a',
+      textColor: '#1e293b',
+      mutedColor: '#64748b',
+      fontFamily: 'DM Sans',
+      headerStyle: 'dark',
+      showBorder: true,
+      borderColor: '#e2e8f0',
+      logoPosition: 'left',
+      invoiceTitle: 'INVOICE',
+      quoteTitle: 'QUOTE',
+    }
+  }))
   const [templates, setTemplatesRaw] = useState(() => load(KEYS.templates, []))
   const [selectedTemplateId, setSelectedTemplateIdRaw] = useState(() => load(KEYS.selectedTemplate, 'default'))
 
   const setCompany = useCallback(v => { save(KEYS.company, v); setCompanyRaw(v) }, [])
-
   const setInvoices = useCallback(fn => {
     setInvoicesRaw(prev => { const next = typeof fn === 'function' ? fn(prev) : fn; save(KEYS.invoices, next); return next })
   }, [])
@@ -47,7 +76,11 @@ export const useStore = () => {
 
   const genId = () => Math.random().toString(36).slice(2, 9).toUpperCase()
   const today = () => new Date().toISOString().split('T')[0]
-  const due = (days = 30) => { const d = new Date(); d.setDate(d.getDate() + Number(days || 30)); return d.toISOString().split('T')[0] }
+  const dueFromDate = (fromDate, days) => {
+    const d = new Date(fromDate || new Date())
+    d.setDate(d.getDate() + Number(days || 30))
+    return d.toISOString().split('T')[0]
+  }
   const nextInvoiceNum = (type = 'invoice') => {
     const year = new Date().getFullYear()
     const prefix = type === 'quote' ? 'QUO' : 'INV'
@@ -55,10 +88,13 @@ export const useStore = () => {
     return `${prefix}-${year}-${String(relevant.length + 1).padStart(4, '0')}`
   }
 
-  // Resolve current template object
   const selectedTemplate = selectedTemplateId === 'default'
     ? { id: 'default' }
     : (templates.find(t => t.id === selectedTemplateId) || { id: 'default' })
+
+  // Helper: get item types from settings
+  const getItemTypes = () => settings.itemTypes || DEFAULT_ITEM_TYPES
+  const getEmailColumns = () => settings.emailColumns || DEFAULT_EMAIL_COLUMNS
 
   return {
     company, setCompany,
@@ -69,7 +105,8 @@ export const useStore = () => {
     templates, setTemplates,
     selectedTemplateId, setSelectedTemplateId,
     selectedTemplate,
-    genId, today, due, nextInvoiceNum,
+    genId, today, dueFromDate, nextInvoiceNum,
+    getItemTypes, getEmailColumns,
   }
 }
 
@@ -86,3 +123,5 @@ export const STATUS = {
   overdue: { label: 'Overdue',  color: '#dc2626', bg: '#fee2e2' },
   partial: { label: 'Partial',  color: '#d97706', bg: '#fef3c7' },
 }
+
+export { DEFAULT_ITEM_TYPES, DEFAULT_EMAIL_COLUMNS }
