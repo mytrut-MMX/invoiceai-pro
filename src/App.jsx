@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 
 // ─── SUPABASE CLIENT ──────────────────────────────────────────────────────────
 // Înlocuiește cu credențialele tale din https://app.supabase.com → Project Settings → API
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+const SUPABASE_URL = "https://oecvlkllkpyfpgczqwii.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lY3Zsa2xsa3B5ZnBnY3pxd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTU3NDYsImV4cCI6MjA4ODQ5MTc0Nn0.U1xmtE1D5Izd8exA33cldR-9-5YpHwKX6wZVV0HFqIg";
 
 async function supabase(method, path, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
