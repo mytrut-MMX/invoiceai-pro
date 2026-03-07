@@ -1,0 +1,897 @@
+import { useState, useEffect, useCallback } from "react";
+
+// ─── SUPABASE CLIENT ──────────────────────────────────────────────────────────
+// Replace these with your actual Supabase project URL and anon key
+// from https://app.supabase.com → Project Settings → API
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+
+async function supabase(method, path, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "Prefer": method === "POST" ? "return=representation" : "",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+/*
+──────────────────────────────────────────────────────────────────────
+  SUPABASE SCHEMA — run this in your Supabase SQL editor to set up:
+──────────────────────────────────────────────────────────────────────
+
+create table customers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text,
+  phone text,
+  address text,
+  currency text default 'GBP',
+  created_at timestamptz default now()
+);
+
+create table invoices (
+  id uuid primary key default gen_random_uuid(),
+  invoice_number text unique not null,
+  customer_id uuid references customers(id),
+  customer_name text,
+  customer_email text,
+  customer_address text,
+  issue_date date not null,
+  due_date date not null,
+  status text default 'Draft',  -- Draft | Sent | Paid | Overdue | Void
+  currency text default 'GBP',
+  subtotal numeric(12,2) default 0,
+  discount_type text default 'percent',  -- percent | fixed
+  discount_value numeric(12,2) default 0,
+  discount_amount numeric(12,2) default 0,
+  shipping numeric(12,2) default 0,
+  tax_total numeric(12,2) default 0,
+  total numeric(12,2) default 0,
+  notes text,
+  terms text,
+  is_recurring boolean default false,
+  recurring_frequency text,  -- weekly | monthly | quarterly | yearly
+  recurring_next_date date,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table invoice_line_items (
+  id uuid primary key default gen_random_uuid(),
+  invoice_id uuid references invoices(id) on delete cascade,
+  description text not null,
+  quantity numeric(10,2) default 1,
+  rate numeric(12,2) default 0,
+  tax_rate numeric(5,2) default 0,
+  amount numeric(12,2) default 0,
+  sort_order int default 0
+);
+
+──────────────────────────────────────────────────────────────────────
+*/
+
+// ─── ICONS (monochrome) ───────────────────────────────────────────────────────
+const I = ({ d, size = 16, sw = 1.5, viewBox = "0 0 24 24", children }) => (
+  <svg width={size} height={size} viewBox={viewBox} fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    {d ? <path d={d} /> : children}
+  </svg>
+);
+
+const Ic = {
+  Plus:     () => <I sw={2}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></I>,
+  Trash:    () => <I><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></I>,
+  ChevD:    () => <I sw={2}><polyline points="6 9 12 15 18 9"/></I>,
+  Eye:      () => <I><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></I>,
+  Edit:     () => <I><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></I>,
+  Send:     () => <I><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></I>,
+  Save:     () => <I><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></I>,
+  X:        () => <I sw={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></I>,
+  Repeat:   () => <I><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></I>,
+  Info:     () => <I><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8" strokeWidth={2.5}/><line x1="12" y1="12" x2="12" y2="16"/></I>,
+  Percent:  () => <I><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></I>,
+  Currency: () => <I><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></I>,
+  Check:    () => <I sw={2.5}><polyline points="20 6 9 17 4 12"/></I>,
+  Download: () => <I><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></I>,
+  Invoice:  () => <I><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></I>,
+};
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const TAX_RATES = [0, 5, 12.5, 20];
+const CURRENCIES = { GBP: "£", USD: "$", EUR: "€", AUD: "A$", CAD: "C$", CHF: "Fr", JPY: "¥", INR: "₹" };
+const PAYMENT_TERMS = ["Due on Receipt","Net 7","Net 14","Net 30","Net 60","Net 90","Custom"];
+const RECURRING_OPTS = ["Weekly","Monthly","Quarterly","Yearly"];
+const DEFAULT_TERMS = "Payment is due within the agreed payment terms. Late payments may incur interest charges. Please make payment to the bank details provided above.";
+
+const MOCK_CUSTOMERS = [
+  { id: "c1", name: "Acme Corporation", email: "billing@acme.com", address: "123 High Street, London, EC1A 1BB", currency: "GBP" },
+  { id: "c2", name: "Blue Sky Ltd", email: "accounts@bluesky.co.uk", address: "45 Oxford Road, Manchester, M1 2JA", currency: "GBP" },
+  { id: "c3", name: "Green Media Group", email: "finance@greenmedia.io", address: "78 Silicon Way, Bristol, BS1 3NT", currency: "GBP" },
+  { id: "c4", name: "Nova Tech Solutions", email: "ap@novatech.com", address: "200 Canary Wharf, London, E14 5AB", currency: "GBP" },
+];
+
+const newLine = (order = 0) => ({
+  id: crypto.randomUUID(),
+  description: "",
+  quantity: 1,
+  rate: 0,
+  tax_rate: 20,
+  amount: 0,
+  sort_order: order,
+});
+
+function fmt(sym, val) {
+  return `${sym}${Number(val).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function today() { return new Date().toISOString().split("T")[0]; }
+function addDays(d, n) {
+  const dt = new Date(d); dt.setDate(dt.getDate() + n);
+  return dt.toISOString().split("T")[0];
+}
+function fmtDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+function nextInvNumber(existing) {
+  const nums = existing.map(n => parseInt(n.replace(/\D/g, ""), 10)).filter(Boolean);
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  return `INV-${String(next).padStart(4, "0")}`;
+}
+
+// ─── UI ATOMS ─────────────────────────────────────────────────────────────────
+const ff = "'Instrument Sans', 'DM Sans', 'Helvetica Neue', sans-serif";
+
+const Label = ({ children, required }) => (
+  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+    {children}{required && <span style={{ color: "#E86C4A", marginLeft: 2 }}>*</span>}
+  </label>
+);
+
+const Input = ({ value, onChange, placeholder, type = "text", style = {}, align = "left", readOnly }) => (
+  <input type={type} value={value} onChange={e => onChange?.(e.target.value)} placeholder={placeholder}
+    readOnly={readOnly}
+    style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, color: "#1A1A1A", background: readOnly ? "#F7F7F7" : "#FAFAFA", outline: "none", boxSizing: "border-box", textAlign: align, transition: "border 0.15s", ...style }}
+    onFocus={e => { if (!readOnly) e.target.style.borderColor = "#1A1A1A"; }}
+    onBlur={e => e.target.style.borderColor = "#E4E4E4"} />
+);
+
+const Textarea = ({ value, onChange, placeholder, rows = 3 }) => (
+  <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+    style={{ width: "100%", padding: "9px 11px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, color: "#1A1A1A", background: "#FAFAFA", outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.6, transition: "border 0.15s" }}
+    onFocus={e => e.target.style.borderColor = "#1A1A1A"}
+    onBlur={e => e.target.style.borderColor = "#E4E4E4"} />
+);
+
+const Select = ({ value, onChange, options, placeholder, style = {} }) => (
+  <div style={{ position: "relative" }}>
+    <select value={value} onChange={e => onChange(e.target.value)}
+      style={{ width: "100%", padding: "8px 32px 8px 10px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, color: value ? "#1A1A1A" : "#AAA", background: "#FAFAFA", outline: "none", appearance: "none", cursor: "pointer", boxSizing: "border-box", transition: "border 0.15s", ...style }}>
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map(o => typeof o === "string" ? <option key={o} value={o}>{o}</option> : <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+    <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#AAA" }}><Ic.ChevD /></div>
+  </div>
+);
+
+const Btn = ({ onClick, children, variant = "primary", size = "md", disabled, icon, style: sx = {} }) => {
+  const base = { display: "inline-flex", alignItems: "center", gap: 7, border: "none", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontFamily: ff, fontWeight: 700, transition: "all 0.15s", opacity: disabled ? 0.5 : 1, whiteSpace: "nowrap" };
+  const sizes = { sm: { padding: "7px 13px", fontSize: 12 }, md: { padding: "9px 18px", fontSize: 13 }, lg: { padding: "11px 24px", fontSize: 14 } };
+  const variants = {
+    primary:   { background: "#1A1A1A", color: "#fff" },
+    accent:    { background: "#E86C4A", color: "#fff" },
+    outline:   { background: "#fff", color: "#1A1A1A", border: "1.5px solid #E0E0E0" },
+    ghost:     { background: "transparent", color: "#666" },
+    danger:    { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" },
+    success:   { background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0" },
+  };
+  return (
+    <button onClick={onClick} disabled={disabled} style={{ ...base, ...sizes[size], ...variants[variant], ...sx }}>
+      {icon && icon}{children}
+    </button>
+  );
+};
+
+const Tag = ({ children, color = "#1A1A1A" }) => (
+  <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: color + "18", color }}>{children}</span>
+);
+
+const statusColor = { Draft: "#6B7280", Sent: "#2563EB", Paid: "#16A34A", Overdue: "#DC2626", Void: "#9CA3AF" };
+
+// ─── SECTION HEADER ───────────────────────────────────────────────────────────
+const SectionHead = ({ title, subtitle, action }) => (
+  <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14 }}>
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.01em" }}>{title}</div>
+      {subtitle && <div style={{ fontSize: 11, color: "#AAA", marginTop: 2 }}>{subtitle}</div>}
+    </div>
+    {action}
+  </div>
+);
+
+// ─── LINE ITEMS TABLE ─────────────────────────────────────────────────────────
+function LineItemsTable({ items, onChange, currSymbol }) {
+  const update = (id, field, val) => {
+    onChange(items.map(item => {
+      if (item.id !== id) return item;
+      const updated = { ...item, [field]: val };
+      updated.amount = Number(updated.quantity) * Number(updated.rate);
+      return updated;
+    }));
+  };
+
+  const addRow = () => onChange([...items, newLine(items.length)]);
+  const remove = (id) => onChange(items.filter(i => i.id !== id));
+
+  const colStyle = (w, align = "left") => ({
+    padding: "0 8px", width: w, textAlign: align,
+    fontSize: 11, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.05em"
+  });
+
+  return (
+    <div>
+      {/* Header row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 90px 90px 80px 36px", gap: 6, padding: "0 0 8px", borderBottom: "1.5px solid #EBEBEB", marginBottom: 8 }}>
+        <div style={colStyle("auto")}>Description</div>
+        <div style={colStyle(80, "center")}>Qty</div>
+        <div style={colStyle(90, "right")}>Rate ({currSymbol})</div>
+        <div style={colStyle(90, "center")}>VAT %</div>
+        <div style={colStyle(80, "right")}>Amount</div>
+        <div style={{ width: 36 }} />
+      </div>
+
+      {/* Item rows */}
+      {items.map((item, idx) => (
+        <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 80px 90px 90px 80px 36px", gap: 6, marginBottom: 7, alignItems: "center" }}>
+          <Input value={item.description} onChange={v => update(item.id, "description", v)} placeholder={`Item ${idx + 1} description…`} />
+          <Input value={item.quantity} onChange={v => update(item.id, "quantity", v)} type="number" align="center" />
+          <Input value={item.rate} onChange={v => update(item.id, "rate", v)} type="number" align="right" />
+          <div style={{ position: "relative" }}>
+            <select value={item.tax_rate} onChange={e => update(item.id, "tax_rate", Number(e.target.value))}
+              style={{ width: "100%", padding: "8px 6px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, background: "#FAFAFA", outline: "none", appearance: "none", textAlign: "center", cursor: "pointer" }}>
+              {TAX_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+            </select>
+          </div>
+          <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: "#1A1A1A", padding: "0 2px" }}>
+            {fmt(currSymbol, item.amount)}
+          </div>
+          <button onClick={() => remove(item.id)} disabled={items.length === 1}
+            style={{ width: 32, height: 32, border: "none", background: "none", cursor: items.length === 1 ? "not-allowed" : "pointer", color: "#CCC", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
+            onMouseEnter={e => { if (items.length > 1) e.currentTarget.style.color = "#DC2626"; }}
+            onMouseLeave={e => e.currentTarget.style.color = "#CCC"}>
+            <Ic.Trash />
+          </button>
+        </div>
+      ))}
+
+      <Btn onClick={addRow} variant="ghost" size="sm" icon={<Ic.Plus />} sx={{ marginTop: 4, color: "#E86C4A", fontWeight: 700 }}>
+        Add Line Item
+      </Btn>
+    </div>
+  );
+}
+
+// ─── TOTALS BLOCK ─────────────────────────────────────────────────────────────
+function TotalsBlock({ subtotal, discountType, discountValue, setDiscountType, setDiscountValue, shipping, setShipping, taxBreakdown, total, currSymbol }) {
+  const discountAmount = discountType === "percent"
+    ? subtotal * (Number(discountValue) / 100)
+    : Math.min(Number(discountValue), subtotal);
+
+  const row = (label, value, bold, color, border) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderTop: border ? "1.5px solid #EBEBEB" : "none" }}>
+      <span style={{ fontSize: 13, color: color || "#666", fontWeight: bold ? 700 : 400 }}>{label}</span>
+      <span style={{ fontSize: 13, color: color || (bold ? "#1A1A1A" : "#444"), fontWeight: bold ? 800 : 500 }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ background: "#FAFAFA", borderRadius: 10, border: "1px solid #EBEBEB", padding: "16px 18px", minWidth: 280 }}>
+      {row("Subtotal", fmt(currSymbol, subtotal))}
+
+      {/* Discount */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0" }}>
+        <span style={{ fontSize: 13, color: "#666" }}>Discount</span>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div style={{ display: "flex", border: "1.5px solid #E4E4E4", borderRadius: 7, overflow: "hidden" }}>
+            {[["percent", "%"], ["fixed", currSymbol]].map(([t, l]) => (
+              <button key={t} onClick={() => setDiscountType(t)}
+                style={{ padding: "4px 10px", border: "none", background: discountType === t ? "#1A1A1A" : "transparent", color: discountType === t ? "#fff" : "#888", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: ff, transition: "all 0.15s" }}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <input value={discountValue} onChange={e => setDiscountValue(e.target.value)} type="number" min="0"
+            style={{ width: 72, padding: "5px 8px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }} />
+        </div>
+      </div>
+      {discountAmount > 0 && row("", `− ${fmt(currSymbol, discountAmount)}`, false, "#E86C4A")}
+
+      {/* Shipping */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0" }}>
+        <span style={{ fontSize: 13, color: "#666" }}>Shipping</span>
+        <input value={shipping} onChange={e => setShipping(e.target.value)} type="number" min="0"
+          style={{ width: 90, padding: "5px 8px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }}
+          placeholder="0.00" />
+      </div>
+
+      {/* Tax breakdown */}
+      {taxBreakdown.map(tb => row(`VAT ${tb.rate}%`, fmt(currSymbol, tb.amount)))}
+
+      {/* Total */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0 4px", borderTop: "2px solid #1A1A1A", marginTop: 6 }}>
+        <span style={{ fontSize: 15, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.01em" }}>Total</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.02em" }}>{fmt(currSymbol, total)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── INVOICE PREVIEW (right panel) ───────────────────────────────────────────
+function InvoicePreview({ data, currSymbol }) {
+  const { invoiceNumber, customer, issueDate, dueDate, items, subtotal, discountAmount, shipping, taxBreakdown, total, notes, terms, currency } = data;
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #EBEBEB", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", fontFamily: ff }}>
+      {/* Invoice header bar */}
+      <div style={{ background: "#1A1A1A", padding: "24px 28px", color: "#fff" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>AI Invoice</div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>INVOICE</div>
+            <div style={{ fontSize: 13, color: "#E86C4A", fontWeight: 700, marginTop: 2 }}>{invoiceNumber || "INV-0001"}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <Tag color={statusColor[data.status] || "#6B7280"}>{data.status || "Draft"}</Tag>
+            <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Issued: <span style={{ color: "#fff" }}>{fmtDate(issueDate)}</span></div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Due: <span style={{ color: dueDate && new Date(dueDate) < new Date() ? "#E86C4A" : "#fff" }}>{fmtDate(dueDate)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: "22px 28px" }}>
+        {/* Bill to */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #F0F0F0" }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Bill To</div>
+            {customer ? (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{customer.name}</div>
+                <div style={{ fontSize: 12, color: "#888", marginTop: 3, lineHeight: 1.7 }}>{customer.email}<br />{customer.address}</div>
+              </>
+            ) : (
+              <div style={{ fontSize: 13, color: "#CCC", fontStyle: "italic" }}>Select a customer…</div>
+            )}
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Currency</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{currency || "GBP"} ({currSymbol})</div>
+          </div>
+        </div>
+
+        {/* Line items */}
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 18 }}>
+          <thead>
+            <tr style={{ borderBottom: "1.5px solid #EBEBEB" }}>
+              {["Description", "Qty", "Rate", "VAT", "Amount"].map((h, i) => (
+                <th key={h} style={{ padding: "6px 0", textAlign: i > 0 ? "right" : "left", fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", paddingBottom: 8 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.filter(i => i.description || i.amount > 0).map((item, idx) => (
+              <tr key={item.id} style={{ borderBottom: "1px solid #F7F7F7" }}>
+                <td style={{ padding: "9px 0", fontSize: 12, color: "#1A1A1A" }}>{item.description || <span style={{ color: "#CCC" }}>Item {idx + 1}</span>}</td>
+                <td style={{ padding: "9px 0", fontSize: 12, color: "#555", textAlign: "right" }}>{item.quantity}</td>
+                <td style={{ padding: "9px 0", fontSize: 12, color: "#555", textAlign: "right" }}>{fmt(currSymbol, item.rate)}</td>
+                <td style={{ padding: "9px 0", fontSize: 12, color: "#555", textAlign: "right" }}>{item.tax_rate}%</td>
+                <td style={{ padding: "9px 0", fontSize: 12, fontWeight: 700, color: "#1A1A1A", textAlign: "right" }}>{fmt(currSymbol, item.amount)}</td>
+              </tr>
+            ))}
+            {items.length === 0 && (
+              <tr><td colSpan={5} style={{ padding: "16px 0", color: "#CCC", fontSize: 12, fontStyle: "italic" }}>Add line items to see them here…</td></tr>
+            )}
+          </tbody>
+        </table>
+
+        {/* Totals */}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ minWidth: 220 }}>
+            {[
+              ["Subtotal", fmt(currSymbol, subtotal), false],
+              ...(discountAmount > 0 ? [["Discount", `− ${fmt(currSymbol, discountAmount)}`, false, "#E86C4A"]] : []),
+              ...(Number(shipping) > 0 ? [["Shipping", fmt(currSymbol, shipping), false]] : []),
+              ...taxBreakdown.map(tb => [`VAT ${tb.rate}%`, fmt(currSymbol, tb.amount), false]),
+            ].map(([l, v, b, c]) => (
+              <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 32, padding: "4px 0" }}>
+                <span style={{ fontSize: 12, color: "#888" }}>{l}</span>
+                <span style={{ fontSize: 12, color: c || "#555", fontWeight: b ? 700 : 500 }}>{v}</span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 32, padding: "10px 0 2px", borderTop: "2px solid #1A1A1A", marginTop: 6 }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: "#1A1A1A" }}>Total Due</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "#1A1A1A" }}>{fmt(currSymbol, total)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes & Terms */}
+        {(notes || terms) && (
+          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid #F0F0F0" }}>
+            {notes && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Customer Notes</div>
+                <p style={{ fontSize: 12, color: "#666", margin: 0, lineHeight: 1.7 }}>{notes}</p>
+              </div>
+            )}
+            {terms && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Terms & Conditions</div>
+                <p style={{ fontSize: 12, color: "#666", margin: 0, lineHeight: 1.7 }}>{terms}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #F0F0F0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 10, color: "#CCC", fontStyle: "italic" }}>Generated by AI Invoice</span>
+          <span style={{ fontSize: 10, color: "#CCC" }}>Page 1 of 1</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── INVOICE LIST VIEW ────────────────────────────────────────────────────────
+function InvoiceList({ invoices, onNew, onEdit }) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const FILTERS = ["All", "Draft", "Sent", "Paid", "Overdue"];
+
+  const filtered = invoices.filter(inv => {
+    const matchSearch = inv.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
+      inv.customer_name?.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === "All" || inv.status === filter;
+    return matchSearch && matchFilter;
+  });
+
+  const totals = {
+    outstanding: invoices.filter(i => i.status === "Sent").reduce((a, b) => a + b.total, 0),
+    overdue: invoices.filter(i => i.status === "Overdue").reduce((a, b) => a + b.total, 0),
+    paid: invoices.filter(i => i.status === "Paid").reduce((a, b) => a + b.total, 0),
+  };
+
+  return (
+    <div style={{ fontFamily: ff }}>
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 24 }}>
+        {[
+          { l: "Outstanding", v: totals.outstanding, c: "#2563EB" },
+          { l: "Overdue", v: totals.overdue, c: "#DC2626" },
+          { l: "Paid (all time)", v: totals.paid, c: "#16A34A" },
+        ].map(s => (
+          <div key={s.l} style={{ background: "#fff", borderRadius: 12, padding: "18px 20px", border: "1px solid #EBEBEB" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{s.l}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: s.c }}>£{s.v.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#AAA" }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search invoices…"
+            style={{ width: "100%", padding: "9px 12px 9px 36px", border: "1.5px solid #E4E4E4", borderRadius: 8, fontSize: 13, fontFamily: ff, outline: "none", background: "#fff", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ display: "flex", gap: 4, background: "#F0F0F0", padding: 4, borderRadius: 8 }}>
+          {FILTERS.map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: filter === f ? "#1A1A1A" : "transparent", color: filter === f ? "#fff" : "#888", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: ff, transition: "all 0.15s" }}>
+              {f}
+            </button>
+          ))}
+        </div>
+        <Btn onClick={onNew} variant="accent" icon={<Ic.Plus />}>New Invoice</Btn>
+      </div>
+
+      {/* Table */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#FAFAFA", borderBottom: "1px solid #F0F0F0" }}>
+              {["Invoice #", "Customer", "Issue Date", "Due Date", "Amount", "Status", ""].map(h => (
+                <th key={h} style={{ padding: "10px 18px", textAlign: h === "Amount" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(inv => (
+              <tr key={inv.id} style={{ borderBottom: "1px solid #F7F7F7", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                onMouseLeave={e => e.currentTarget.style.background = ""}>
+                <td style={{ padding: "13px 18px", fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{inv.invoice_number}</td>
+                <td style={{ padding: "13px 18px", fontSize: 13, color: "#444" }}>{inv.customer_name}</td>
+                <td style={{ padding: "13px 18px", fontSize: 13, color: "#888" }}>{fmtDate(inv.issue_date)}</td>
+                <td style={{ padding: "13px 18px", fontSize: 13, color: new Date(inv.due_date) < new Date() && inv.status !== "Paid" ? "#DC2626" : "#888" }}>{fmtDate(inv.due_date)}</td>
+                <td style={{ padding: "13px 18px", fontSize: 13, fontWeight: 700, color: "#1A1A1A", textAlign: "right" }}>{fmt("£", inv.total)}</td>
+                <td style={{ padding: "13px 18px" }}><Tag color={statusColor[inv.status]}>{inv.status}</Tag></td>
+                <td style={{ padding: "13px 18px" }}>
+                  <Btn onClick={() => onEdit(inv)} variant="ghost" size="sm" icon={<Ic.Edit />}>Edit</Btn>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr><td colSpan={7} style={{ padding: "48px 18px", textAlign: "center", color: "#CCC", fontSize: 13 }}>
+                {invoices.length === 0 ? "No invoices yet. Click 'New Invoice' to get started." : "No invoices match your search."}
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── INVOICE FORM ─────────────────────────────────────────────────────────────
+function InvoiceFormPage({ existing, invoices, onSave, onCancel }) {
+  const isEdit = !!existing;
+
+  // Core fields
+  const [invoiceNumber, setInvoiceNumber] = useState(existing?.invoice_number || nextInvNumber(invoices.map(i => i.invoice_number)));
+  const [customer, setCustomer] = useState(existing ? MOCK_CUSTOMERS.find(c => c.id === existing.customer_id) || null : null);
+  const [issueDate, setIssueDate] = useState(existing?.issue_date || today());
+  const [paymentTerms, setPaymentTerms] = useState("Net 30");
+  const [dueDate, setDueDate] = useState(existing?.due_date || addDays(today(), 30));
+  const [currency, setCurrency] = useState(existing?.currency || "GBP");
+  const [status, setStatus] = useState(existing?.status || "Draft");
+
+  // Line items
+  const [items, setItems] = useState(existing?.line_items?.length ? existing.line_items : [newLine(0)]);
+
+  // Discount & extras
+  const [discountType, setDiscountType] = useState(existing?.discount_type || "percent");
+  const [discountValue, setDiscountValue] = useState(existing?.discount_value || 0);
+  const [shipping, setShipping] = useState(existing?.shipping || 0);
+
+  // Notes
+  const [notes, setNotes] = useState(existing?.notes || "");
+  const [terms, setTerms] = useState(existing?.terms || DEFAULT_TERMS);
+
+  // Recurring
+  const [isRecurring, setIsRecurring] = useState(existing?.is_recurring || false);
+  const [recurringFreq, setRecurringFreq] = useState(existing?.recurring_frequency || "Monthly");
+
+  // UI state
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+  const [activeTab, setActiveTab] = useState("form"); // "form" | "preview"
+
+  // Sync due date with payment terms
+  useEffect(() => {
+    const termDays = { "Due on Receipt": 0, "Net 7": 7, "Net 14": 14, "Net 30": 30, "Net 60": 60, "Net 90": 90 };
+    if (paymentTerms in termDays) setDueDate(addDays(issueDate, termDays[paymentTerms]));
+  }, [paymentTerms, issueDate]);
+
+  const currSymbol = CURRENCIES[currency] || "£";
+
+  // ── Calculations ──
+  const subtotal = items.reduce((s, i) => s + Number(i.amount), 0);
+  const discountAmount = discountType === "percent"
+    ? subtotal * (Number(discountValue) / 100)
+    : Math.min(Number(discountValue), subtotal);
+  const afterDiscount = subtotal - discountAmount;
+  const taxBreakdown = TAX_RATES.filter(r => r > 0).map(rate => ({
+    rate,
+    amount: items.filter(i => Number(i.tax_rate) === rate).reduce((s, i) => s + i.amount * (rate / 100), 0)
+  })).filter(tb => tb.amount > 0);
+  const taxTotal = taxBreakdown.reduce((s, tb) => s + tb.amount, 0);
+  const total = afterDiscount + Number(shipping) + taxTotal;
+
+  const previewData = {
+    invoiceNumber, customer, issueDate, dueDate, currency, status,
+    items, subtotal, discountAmount, shipping, taxBreakdown, total, notes, terms
+  };
+
+  // ── Save to Supabase ──
+  const handleSave = useCallback(async (newStatus = status) => {
+    setSaving(true);
+    setSaveMsg("");
+    const payload = {
+      invoice_number: invoiceNumber,
+      customer_id: customer?.id || null,
+      customer_name: customer?.name || "",
+      customer_email: customer?.email || "",
+      customer_address: customer?.address || "",
+      issue_date: issueDate,
+      due_date: dueDate,
+      status: newStatus,
+      currency,
+      subtotal,
+      discount_type: discountType,
+      discount_value: Number(discountValue),
+      discount_amount: discountAmount,
+      shipping: Number(shipping),
+      tax_total: taxTotal,
+      total,
+      notes,
+      terms,
+      is_recurring: isRecurring,
+      recurring_frequency: isRecurring ? recurringFreq : null,
+      updated_at: new Date().toISOString(),
+    };
+    try {
+      let savedInvoice;
+      if (isEdit && existing.id) {
+        await supabase("PATCH", `invoices?id=eq.${existing.id}`, payload);
+        // Delete old line items and re-insert
+        await supabase("DELETE", `invoice_line_items?invoice_id=eq.${existing.id}`);
+        savedInvoice = { ...existing, ...payload };
+      } else {
+        const [inv] = await supabase("POST", "invoices", payload);
+        savedInvoice = inv;
+      }
+      // Insert line items
+      if (savedInvoice?.id) {
+        const linePayloads = items.map((item, idx) => ({
+          invoice_id: savedInvoice.id,
+          description: item.description,
+          quantity: Number(item.quantity),
+          rate: Number(item.rate),
+          tax_rate: Number(item.tax_rate),
+          amount: Number(item.amount),
+          sort_order: idx,
+        }));
+        await supabase("POST", "invoice_line_items", linePayloads);
+      }
+      setStatus(newStatus);
+      setSaveMsg(newStatus === "Sent" ? "Invoice sent!" : "Saved!");
+      onSave({ ...payload, id: savedInvoice?.id, line_items: items, status: newStatus });
+    } catch (err) {
+      // Graceful fallback — save locally if Supabase not configured
+      console.warn("Supabase save failed (not configured?):", err.message);
+      const mockId = existing?.id || crypto.randomUUID();
+      setSaveMsg(newStatus === "Sent" ? "Saved locally (connect Supabase to persist)" : "Saved locally!");
+      onSave({ ...payload, id: mockId, line_items: items, status: newStatus });
+    }
+    setSaving(false);
+    setTimeout(() => setSaveMsg(""), 3000);
+  }, [invoiceNumber, customer, issueDate, dueDate, currency, status, items, discountType, discountValue, discountAmount, shipping, taxTotal, total, notes, terms, isRecurring, recurringFreq, isEdit, existing, onSave]);
+
+  const formContent = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+      {/* ── Section 1: Header ── */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", padding: "22px 24px" }}>
+        <SectionHead title="Invoice Details" subtitle="Basic information about this invoice" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+          <div>
+            <Label required>Invoice Number</Label>
+            <Input value={invoiceNumber} onChange={setInvoiceNumber} placeholder="INV-0001" />
+          </div>
+          <div>
+            <Label required>Issue Date</Label>
+            <Input value={issueDate} onChange={setIssueDate} type="date" />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={status} onChange={setStatus} options={["Draft", "Sent", "Paid", "Void"]} />
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginTop: 14 }}>
+          <div>
+            <Label>Payment Terms</Label>
+            <Select value={paymentTerms} onChange={setPaymentTerms} options={PAYMENT_TERMS} />
+          </div>
+          <div>
+            <Label required>Due Date</Label>
+            <Input value={dueDate} onChange={setDueDate} type="date" />
+          </div>
+          <div>
+            <Label>Currency</Label>
+            <Select value={currency} onChange={setCurrency} options={Object.keys(CURRENCIES).map(k => ({ value: k, label: `${k} (${CURRENCIES[k]})` }))} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section 2: Customer ── */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", padding: "22px 24px" }}>
+        <SectionHead title="Bill To" subtitle="Select or search an existing customer" />
+        <Select
+          value={customer?.id || ""}
+          onChange={id => setCustomer(MOCK_CUSTOMERS.find(c => c.id === id) || null)}
+          options={MOCK_CUSTOMERS.map(c => ({ value: c.id, label: c.name }))}
+          placeholder="Select a customer…"
+        />
+        {customer && (
+          <div style={{ marginTop: 12, padding: "12px 14px", background: "#F9F9F9", borderRadius: 8, border: "1px solid #EBEBEB" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{customer.name}</div>
+            <div style={{ fontSize: 12, color: "#888", marginTop: 3 }}>{customer.email} · {customer.address}</div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Section 3: Line Items ── */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", padding: "22px 24px" }}>
+        <SectionHead title="Line Items" subtitle="Products or services being invoiced" />
+        <LineItemsTable items={items} onChange={setItems} currSymbol={currSymbol} />
+
+        {/* Totals */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+          <TotalsBlock
+            subtotal={subtotal}
+            discountType={discountType} discountValue={discountValue}
+            setDiscountType={setDiscountType} setDiscountValue={setDiscountValue}
+            shipping={shipping} setShipping={setShipping}
+            taxBreakdown={taxBreakdown} total={total}
+            currSymbol={currSymbol}
+          />
+        </div>
+      </div>
+
+      {/* ── Section 4: Notes & Terms ── */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", padding: "22px 24px" }}>
+        <SectionHead title="Notes & Terms" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div>
+            <Label>Customer Notes</Label>
+            <Textarea value={notes} onChange={setNotes} placeholder="Thank you for your business! Any special instructions…" rows={4} />
+            <div style={{ fontSize: 11, color: "#BBB", marginTop: 4 }}>Visible to your customer on the invoice</div>
+          </div>
+          <div>
+            <Label>Terms & Conditions</Label>
+            <Textarea value={terms} onChange={setTerms} placeholder="Payment terms, late fees, etc." rows={4} />
+            <div style={{ fontSize: 11, color: "#BBB", marginTop: 4 }}>Printed at the bottom of the invoice</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section 5: Recurring ── */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", padding: "22px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <SectionHead title="Recurring Invoice" subtitle="Schedule this invoice to repeat automatically" />
+          <button onClick={() => setIsRecurring(!isRecurring)}
+            style={{ width: 44, height: 24, borderRadius: 12, border: "none", background: isRecurring ? "#1A1A1A" : "#E0E0E0", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: isRecurring ? 23 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+          </button>
+        </div>
+        {isRecurring && (
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div>
+              <Label>Frequency</Label>
+              <Select value={recurringFreq} onChange={setRecurringFreq} options={RECURRING_OPTS} />
+            </div>
+            <div>
+              <Label>Next Invoice Date</Label>
+              <Input value={dueDate} readOnly />
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "10px 12px", background: "#FFFBEB", borderRadius: 8, border: "1px solid #FDE68A" }}>
+                <div style={{ color: "#D97706", marginTop: 1 }}><Ic.Info /></div>
+                <p style={{ margin: 0, fontSize: 12, color: "#92400E", lineHeight: 1.6 }}>
+                  A reminder will be created on the next invoice date. You review and send it manually. No invoice is sent automatically.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ fontFamily: ff }}>
+      {/* Page header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1A1A1A", margin: "0 0 3px", letterSpacing: "-0.02em" }}>
+            {isEdit ? `Edit ${invoiceNumber}` : "New Invoice"}
+          </h1>
+          <p style={{ color: "#AAA", fontSize: 13, margin: 0 }}>
+            {isEdit ? `Last updated ${fmtDate(existing?.updated_at)}` : "Fill in the details below"}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {saveMsg && (
+            <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+              <Ic.Check />{saveMsg}
+            </span>
+          )}
+          <Btn onClick={onCancel} variant="outline">Cancel</Btn>
+          <Btn onClick={() => handleSave("Draft")} variant="outline" disabled={saving} icon={<Ic.Save />}>Save Draft</Btn>
+          <Btn onClick={() => handleSave("Sent")} variant="accent" disabled={saving} icon={<Ic.Send />}>
+            {saving ? "Saving…" : "Save & Send"}
+          </Btn>
+        </div>
+      </div>
+
+      {/* Mobile tab switcher */}
+      <div style={{ display: "flex", gap: 4, background: "#F0F0F0", padding: 4, borderRadius: 9, marginBottom: 18, width: "fit-content" }}>
+        {[["form", <Ic.Edit />, "Edit"], ["preview", <Ic.Eye />, "Preview"]].map(([t, icon, label]) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 16px", borderRadius: 7, border: "none", background: activeTab === t ? "#1A1A1A" : "transparent", color: activeTab === t ? "#fff" : "#888", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: ff, transition: "all 0.15s" }}>
+            {icon}{label}
+          </button>
+        ))}
+      </div>
+
+      {/* Two-column layout on wide screens */}
+      <div style={{ display: "grid", gridTemplateColumns: activeTab === "form" ? "1fr" : "1fr", gap: 20 }}>
+        {(activeTab === "form") && (
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 20, alignItems: "start" }}>
+            <div>{formContent}</div>
+            <div style={{ position: "sticky", top: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Live Preview</div>
+              <InvoicePreview data={previewData} currSymbol={currSymbol} />
+            </div>
+          </div>
+        )}
+        {activeTab === "preview" && (
+          <div style={{ maxWidth: 700, margin: "0 auto", width: "100%" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginBottom: 14 }}>
+              <Btn variant="outline" size="sm" icon={<Ic.Download />}>Download PDF</Btn>
+              <Btn variant="primary" size="sm" icon={<Ic.Send />} onClick={() => handleSave("Sent")}>Send Invoice</Btn>
+            </div>
+            <InvoicePreview data={previewData} currSymbol={currSymbol} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── ROOT EXPORT ──────────────────────────────────────────────────────────────
+export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState([
+    { id: "i1", invoice_number: "INV-0001", customer_id: "c1", customer_name: "Acme Corporation", issue_date: "2026-02-01", due_date: "2026-03-03", status: "Overdue", currency: "GBP", total: 3200, line_items: [] },
+    { id: "i2", invoice_number: "INV-0002", customer_id: "c2", customer_name: "Blue Sky Ltd", issue_date: "2026-03-01", due_date: "2026-03-31", status: "Sent", currency: "GBP", total: 1120, line_items: [] },
+    { id: "i3", invoice_number: "INV-0003", customer_id: "c3", customer_name: "Green Media Group", issue_date: "2026-01-15", due_date: "2026-02-14", status: "Paid", currency: "GBP", total: 8400, line_items: [] },
+    { id: "i4", invoice_number: "INV-0004", customer_id: "c4", customer_name: "Nova Tech Solutions", issue_date: "2026-03-05", due_date: "2026-04-04", status: "Draft", currency: "GBP", total: 560, line_items: [] },
+  ]);
+
+  const [view, setView] = useState("list"); // "list" | "new" | "edit"
+  const [editing, setEditing] = useState(null);
+
+  const handleSave = (inv) => {
+    setInvoices(prev => {
+      const idx = prev.findIndex(i => i.id === inv.id);
+      if (idx >= 0) { const updated = [...prev]; updated[idx] = inv; return updated; }
+      return [inv, ...prev];
+    });
+    setView("list");
+    setEditing(null);
+  };
+
+  return (
+    <div style={{ padding: "28px 32px", maxWidth: 1200, fontFamily: ff }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap'); *{box-sizing:border-box;} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#E0E0E0;border-radius:4px}`}</style>
+
+      {view === "list" && (
+        <>
+          <div style={{ marginBottom: 24 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1A1A1A", margin: "0 0 4px", letterSpacing: "-0.02em" }}>Invoices</h1>
+            <p style={{ color: "#AAA", fontSize: 13, margin: 0 }}>Create, manage, and track your invoices</p>
+          </div>
+          <InvoiceList invoices={invoices} onNew={() => setView("new")} onEdit={(inv) => { setEditing(inv); setView("edit"); }} />
+        </>
+      )}
+
+      {(view === "new" || view === "edit") && (
+        <InvoiceFormPage
+          existing={view === "edit" ? editing : null}
+          invoices={invoices}
+          onSave={handleSave}
+          onCancel={() => { setView("list"); setEditing(null); }}
+        />
+      )}
+    </div>
+  );
+}
