@@ -1,0 +1,991 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+
+/*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SUPABASE SETUP — GHID PAS CU PAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Mergi la https://app.supabase.com și creează un cont gratuit
+  2. Click "New Project" → alege un nume (ex: "ai-invoice") → setează o parolă → Create
+  3. Așteaptă ~2 minute să se creeze proiectul
+  4. În meniul din stânga → "Project Settings" → "API"
+  5. Copiază:
+       - "Project URL"     → pune-l în SUPABASE_URL de mai jos
+       - "anon public key" → pune-l în SUPABASE_ANON_KEY de mai jos
+  6. În meniul din stânga → "SQL Editor" → click "New query"
+  7. Copiază schema SQL de mai jos și rulează cu butonul "Run" (Ctrl+Enter)
+
+  ── SCHEMA SQL (rulează în Supabase SQL Editor) ──────────
+
+  create table if not exists quotes (
+    id uuid primary key default gen_random_uuid(),
+    quote_number text unique not null,
+    customer_id text,
+    customer_name text,
+    customer_email text,
+    customer_address text,
+    issue_date date not null,
+    expiry_date date,
+    status text default 'Draft',
+    currency text default 'GBP',
+    subtotal numeric(12,2) default 0,
+    discount_type text default 'percent',
+    discount_value numeric(12,2) default 0,
+    discount_amount numeric(12,2) default 0,
+    shipping numeric(12,2) default 0,
+    tax_total numeric(12,2) default 0,
+    total numeric(12,2) default 0,
+    notes text,
+    terms text,
+    hide_zero_lines boolean default false,
+    allow_editing boolean default false,
+    auto_convert text default 'off',
+    converted_invoice_id uuid,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+  );
+
+  create table if not exists quote_line_items (
+    id uuid primary key default gen_random_uuid(),
+    quote_id uuid references quotes(id) on delete cascade,
+    description text,
+    quantity numeric(10,2) default 1,
+    rate numeric(12,2) default 0,
+    tax_rate numeric(5,2) default 0,
+    amount numeric(12,2) default 0,
+    sort_order int default 0
+  );
+
+  ── DUPĂ CE AI RULAT SCHEMA ──────────────────────────────
+  8. Înlocuiește valorile SUPABASE_URL și SUPABASE_ANON_KEY de mai jos
+  9. Salvează fișierul și restart dev server (npm run dev)
+  10. Quotes vor fi salvate în Supabase automat!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*/
+
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+
+async function sbFetch(method, path, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "Prefer": method === "POST" ? "return=representation" : "",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const ff = "'Instrument Sans', 'DM Sans', 'Helvetica Neue', sans-serif";
+const TAX_RATES = [0, 5, 12.5, 20];
+const CUR_SYM = { GBP: "£", USD: "$", EUR: "€", AUD: "A$", CAD: "C$", CHF: "Fr", JPY: "¥", INR: "₹" };
+const CURRENCIES_OPT = Object.keys(CUR_SYM).map(k => ({ value: k, label: `${k} (${CUR_SYM[k]})` }));
+const QUOTE_STATUSES = ["Draft", "Sent", "Accepted", "Declined", "Expired"];
+const STATUS_COLOR = { Draft: "#6B7280", Sent: "#2563EB", Accepted: "#16A34A", Declined: "#DC2626", Expired: "#9CA3AF" };
+const DEFAULT_TERMS = "This quote is valid until the expiry date shown above. Prices are exclusive of VAT unless stated. Work will commence upon written acceptance of this quote.";
+
+const MOCK_CUSTOMERS = [
+  { id: "c1", name: "Acme Corporation", email: "billing@acme.com", address: "123 High Street, London, EC1A 1BB", currency: "GBP" },
+  { id: "c2", name: "Blue Sky Ltd", email: "accounts@bluesky.co.uk", address: "45 Oxford Road, Manchester, M1 2JA", currency: "GBP" },
+  { id: "c3", name: "Green Media Group", email: "finance@greenmedia.io", address: "78 Silicon Way, Bristol, BS1 3NT", currency: "GBP" },
+  { id: "c4", name: "Nova Tech Solutions", email: "ap@novatech.com", address: "200 Canary Wharf, London, E14 5AB", currency: "GBP" },
+];
+
+const MOCK_QUOTES_INITIAL = [
+  { id: "q1", quote_number: "QUO-0001", customer_name: "Acme Corporation", customer_email: "billing@acme.com", issue_date: "2026-02-15", expiry_date: "2026-03-15", status: "Accepted", currency: "GBP", total: 4800, line_items: [], notes: "", terms: DEFAULT_TERMS, hide_zero_lines: false, allow_editing: false, auto_convert: "draft" },
+  { id: "q2", quote_number: "QUO-0002", customer_name: "Blue Sky Ltd", customer_email: "accounts@bluesky.co.uk", issue_date: "2026-03-01", expiry_date: "2026-04-01", status: "Sent", currency: "GBP", total: 2200, line_items: [], notes: "", terms: DEFAULT_TERMS, hide_zero_lines: false, allow_editing: true, auto_convert: "off" },
+  { id: "q3", quote_number: "QUO-0003", customer_name: "Green Media Group", customer_email: "finance@greenmedia.io", issue_date: "2026-01-10", expiry_date: "2026-02-10", status: "Expired", currency: "GBP", total: 950, line_items: [], notes: "", terms: DEFAULT_TERMS, hide_zero_lines: false, allow_editing: false, auto_convert: "off" },
+  { id: "q4", quote_number: "QUO-0004", customer_name: "Nova Tech Solutions", customer_email: "ap@novatech.com", issue_date: "2026-03-05", expiry_date: "2026-04-05", status: "Draft", currency: "GBP", total: 1350, line_items: [], notes: "", terms: DEFAULT_TERMS, hide_zero_lines: false, allow_editing: false, auto_convert: "off" },
+];
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const fmt = (sym, val) => `${sym}${Number(val).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const todayStr = () => new Date().toISOString().split("T")[0];
+const addDaysStr = (d, n) => { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt.toISOString().split("T")[0]; };
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const isExpired = (d) => d && new Date(d) < new Date();
+const nextQUO = (existing) => {
+  const nums = existing.map(n => parseInt((n || "").replace(/\D/g, ""), 10)).filter(Boolean);
+  return `QUO-${String(nums.length ? Math.max(...nums) + 1 : 1).padStart(4, "0")}`;
+};
+const newLine = (order = 0) => ({ id: crypto.randomUUID(), description: "", quantity: 1, rate: 0, tax_rate: 20, amount: 0, sort_order: order });
+const calcLine = (item) => ({ ...item, amount: Number(item.quantity) * Number(item.rate) });
+
+// ─── MONOCHROME ICONS ─────────────────────────────────────────────────────────
+const Svg = ({ children, size = 16, sw = 1.5 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+);
+const Ic = {
+  Plus:       () => <Svg sw={2}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Svg>,
+  Trash:      () => <Svg><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></Svg>,
+  Edit:       () => <Svg><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></Svg>,
+  Eye:        () => <Svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></Svg>,
+  Send:       () => <Svg><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Svg>,
+  Save:       () => <Svg><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Svg>,
+  Clone:      () => <Svg><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></Svg>,
+  Print:      () => <Svg><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></Svg>,
+  Invoice:    () => <Svg><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></Svg>,
+  ChevDown:   () => <Svg sw={2}><polyline points="6 9 12 15 18 9"/></Svg>,
+  ChevRight:  () => <Svg sw={2}><polyline points="9 18 15 12 9 6"/></Svg>,
+  Check:      () => <Svg sw={2.5}><polyline points="20 6 9 17 4 12"/></Svg>,
+  X:          () => <Svg sw={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Svg>,
+  Settings:   () => <Svg><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></Svg>,
+  Info:       () => <Svg><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8" strokeWidth={2.5}/><line x1="12" y1="12" x2="12" y2="16"/></Svg>,
+  Download:   () => <Svg><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Svg>,
+  Search:     () => <Svg><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></Svg>,
+  More:       () => <Svg><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/><circle cx="5" cy="12" r="1" fill="currentColor"/></Svg>,
+  EyeOff:     () => <Svg><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></Svg>,
+};
+
+// ─── UI ATOMS ─────────────────────────────────────────────────────────────────
+const Label = ({ children, required }) => (
+  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#555", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+    {children}{required && <span style={{ color: "#E86C4A", marginLeft: 2 }}>*</span>}
+  </label>
+);
+
+const Input = ({ value, onChange, placeholder, type = "text", align = "left", readOnly, style: sx = {} }) => (
+  <input type={type} value={value ?? ""} onChange={e => onChange?.(e.target.value)} placeholder={placeholder} readOnly={readOnly}
+    style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, color: "#1A1A1A", background: readOnly ? "#F5F5F5" : "#FAFAFA", outline: "none", boxSizing: "border-box", textAlign: align, transition: "border 0.15s", ...sx }}
+    onFocus={e => { if (!readOnly) e.target.style.borderColor = "#1A1A1A"; }}
+    onBlur={e => e.target.style.borderColor = "#E4E4E4"} />
+);
+
+const Textarea = ({ value, onChange, placeholder, rows = 3 }) => (
+  <textarea value={value ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+    style={{ width: "100%", padding: "9px 11px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, color: "#1A1A1A", background: "#FAFAFA", outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.6, transition: "border 0.15s" }}
+    onFocus={e => e.target.style.borderColor = "#1A1A1A"}
+    onBlur={e => e.target.style.borderColor = "#E4E4E4"} />
+);
+
+const Select = ({ value, onChange, options, placeholder, style: sx = {} }) => (
+  <div style={{ position: "relative" }}>
+    <select value={value ?? ""} onChange={e => onChange(e.target.value)}
+      style={{ width: "100%", padding: "8px 30px 8px 10px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, color: value ? "#1A1A1A" : "#AAA", background: "#FAFAFA", outline: "none", appearance: "none", cursor: "pointer", boxSizing: "border-box", ...sx }}>
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map(o => typeof o === "string" ? <option key={o} value={o}>{o}</option> : <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+    <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#AAA" }}><Ic.ChevDown /></div>
+  </div>
+);
+
+const Btn = ({ onClick, children, variant = "primary", size = "md", disabled, icon, style: sx = {} }) => {
+  const sizes = { sm: { padding: "6px 12px", fontSize: 12 }, md: { padding: "9px 16px", fontSize: 13 }, lg: { padding: "11px 22px", fontSize: 14 } };
+  const variants = {
+    primary: { background: "#1A1A1A", color: "#fff", border: "none" },
+    accent:  { background: "#E86C4A", color: "#fff", border: "none" },
+    outline: { background: "#fff", color: "#1A1A1A", border: "1.5px solid #E0E0E0" },
+    ghost:   { background: "transparent", color: "#555", border: "none" },
+    success: { background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0" },
+    danger:  { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" },
+    teal:    { background: "#F0FDFA", color: "#0F766E", border: "1px solid #99F6E4" },
+  };
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontFamily: ff, fontWeight: 700, transition: "all 0.15s", opacity: disabled ? 0.5 : 1, whiteSpace: "nowrap", ...sizes[size], ...variants[variant], ...sx }}>
+      {icon}{children}
+    </button>
+  );
+};
+
+const Tag = ({ children, color = "#1A1A1A" }) => (
+  <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: color + "18", color, display: "inline-flex", alignItems: "center", gap: 4 }}>{children}</span>
+);
+
+const Toggle = ({ checked, onChange }) => (
+  <button onClick={() => onChange(!checked)}
+    style={{ width: 40, height: 22, borderRadius: 11, border: "none", background: checked ? "#1A1A1A" : "#D1D5DB", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+    <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: checked ? 21 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+  </button>
+);
+
+const Radio = ({ checked, onChange, label, sublabel }) => (
+  <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${checked ? "#1A1A1A" : "#E4E4E4"}`, background: checked ? "#F9F9F9" : "#fff", transition: "all 0.15s", marginBottom: 8 }}>
+    <div onClick={onChange} style={{ width: 16, height: 16, minWidth: 16, borderRadius: "50%", border: `2px solid ${checked ? "#1A1A1A" : "#CCC"}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", marginTop: 1, transition: "all 0.15s" }}>
+      {checked && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1A1A1A" }} />}
+    </div>
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>{label}</div>
+      {sublabel && <div style={{ fontSize: 11, color: "#888", marginTop: 2, lineHeight: 1.5 }}>{sublabel}</div>}
+    </div>
+  </label>
+);
+
+const SectionCard = ({ title, subtitle, children, action }) => (
+  <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", padding: "22px 24px", marginBottom: 16 }}>
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 16 }}>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.01em" }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 11, color: "#AAA", marginTop: 2 }}>{subtitle}</div>}
+      </div>
+      {action}
+    </div>
+    {children}
+  </div>
+);
+
+// ─── LINE ITEMS TABLE ─────────────────────────────────────────────────────────
+function LineItemsTable({ items, onChange, currSymbol, hideZero }) {
+  const update = (id, field, val) => {
+    onChange(items.map(item => {
+      if (item.id !== id) return item;
+      const u = { ...item, [field]: val };
+      return calcLine(u);
+    }));
+  };
+  const addRow = () => onChange([...items, newLine(items.length)]);
+  const remove = (id) => items.length > 1 && onChange(items.filter(i => i.id !== id));
+
+  const visible = hideZero ? items.filter(i => Number(i.amount) !== 0 || i.description) : items;
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 88px 82px 78px 32px", gap: 6, paddingBottom: 8, borderBottom: "1.5px solid #EBEBEB", marginBottom: 8 }}>
+        {[["Description", "left"], ["Qty", "center"], [`Rate (${currSymbol})`, "right"], ["VAT %", "center"], ["Amount", "right"], ["", ""]].map(([h, a]) => (
+          <div key={h} style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: a }}>{h}</div>
+        ))}
+      </div>
+      {visible.map((item, idx) => (
+        <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 72px 88px 82px 78px 32px", gap: 6, marginBottom: 6, alignItems: "center" }}>
+          <Input value={item.description} onChange={v => update(item.id, "description", v)} placeholder={`Item ${idx + 1}…`} />
+          <Input value={item.quantity} onChange={v => update(item.id, "quantity", v)} type="number" align="center" />
+          <Input value={item.rate} onChange={v => update(item.id, "rate", v)} type="number" align="right" />
+          <select value={item.tax_rate} onChange={e => update(item.id, "tax_rate", Number(e.target.value))}
+            style={{ padding: "8px 4px", border: "1.5px solid #E4E4E4", borderRadius: 7, fontSize: 13, fontFamily: ff, background: "#FAFAFA", outline: "none", appearance: "none", textAlign: "center", cursor: "pointer", width: "100%" }}>
+            {TAX_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+          </select>
+          <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: Number(item.amount) === 0 ? "#CCC" : "#1A1A1A" }}>
+            {fmt(currSymbol, item.amount)}
+          </div>
+          <button onClick={() => remove(item.id)} disabled={items.length === 1}
+            style={{ width: 28, height: 28, border: "none", background: "none", cursor: items.length === 1 ? "not-allowed" : "pointer", color: "#DDD", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s" }}
+            onMouseEnter={e => { if (items.length > 1) e.currentTarget.style.color = "#DC2626"; }}
+            onMouseLeave={e => e.currentTarget.style.color = "#DDD"}>
+            <Ic.Trash />
+          </button>
+        </div>
+      ))}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+        <Btn onClick={addRow} variant="ghost" size="sm" icon={<Ic.Plus />} style={{ color: "#E86C4A", fontWeight: 700 }}>Add Line Item</Btn>
+        {hideZero && items.length !== visible.length && (
+          <span style={{ fontSize: 11, color: "#AAA", display: "flex", alignItems: "center", gap: 4 }}>
+            <Ic.EyeOff /> {items.length - visible.length} zero-value line{items.length - visible.length > 1 ? "s" : ""} hidden
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── TOTALS BLOCK ─────────────────────────────────────────────────────────────
+function TotalsBlock({ subtotal, discountType, discountValue, setDiscountType, setDiscountValue, shipping, setShipping, taxBreakdown, total, currSymbol }) {
+  const discAmt = discountType === "percent" ? subtotal * (Number(discountValue) / 100) : Math.min(Number(discountValue), subtotal);
+  return (
+    <div style={{ background: "#FAFAFA", borderRadius: 10, border: "1px solid #EBEBEB", padding: "14px 16px", minWidth: 270 }}>
+      <Row label="Subtotal" value={fmt(currSymbol, subtotal)} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}>
+        <span style={{ fontSize: 13, color: "#666" }}>Discount</span>
+        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+          <div style={{ display: "flex", border: "1.5px solid #E4E4E4", borderRadius: 6, overflow: "hidden" }}>
+            {[["percent", "%"], ["fixed", currSymbol]].map(([t, l]) => (
+              <button key={t} onClick={() => setDiscountType(t)}
+                style={{ padding: "3px 9px", border: "none", background: discountType === t ? "#1A1A1A" : "transparent", color: discountType === t ? "#fff" : "#999", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: ff }}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <input value={discountValue} onChange={e => setDiscountValue(e.target.value)} type="number" min="0"
+            style={{ width: 66, padding: "4px 7px", border: "1.5px solid #E4E4E4", borderRadius: 6, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }} />
+        </div>
+      </div>
+      {discAmt > 0 && <Row label="" value={`− ${fmt(currSymbol, discAmt)}`} color="#E86C4A" />}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}>
+        <span style={{ fontSize: 13, color: "#666" }}>Shipping</span>
+        <input value={shipping} onChange={e => setShipping(e.target.value)} type="number" min="0" placeholder="0.00"
+          style={{ width: 88, padding: "4px 7px", border: "1.5px solid #E4E4E4", borderRadius: 6, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }} />
+      </div>
+      {taxBreakdown.map(tb => <Row key={tb.rate} label={`VAT ${tb.rate}%`} value={fmt(currSymbol, tb.amount)} />)}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0 2px", borderTop: "2px solid #1A1A1A", marginTop: 6 }}>
+        <span style={{ fontSize: 14, fontWeight: 800, color: "#1A1A1A" }}>Total</span>
+        <span style={{ fontSize: 17, fontWeight: 800, color: "#1A1A1A" }}>{fmt(currSymbol, total)}</span>
+      </div>
+    </div>
+  );
+}
+
+const Row = ({ label, value, color }) => (
+  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+    <span style={{ fontSize: 13, color: color || "#666" }}>{label}</span>
+    <span style={{ fontSize: 13, color: color || "#444", fontWeight: 500 }}>{value}</span>
+  </div>
+);
+
+// ─── QUOTE PREVIEW (print-ready) ──────────────────────────────────────────────
+function QuotePreview({ data, currSymbol, printRef }) {
+  const { quoteNumber, customer, issueDate, expiryDate, items, subtotal, discAmt, shipping, taxBreakdown, total, notes, terms, currency, status, hideZero } = data;
+  const visibleItems = hideZero ? items.filter(i => Number(i.amount) !== 0 || i.description) : items;
+
+  return (
+    <div ref={printRef} style={{ background: "#fff", borderRadius: 14, border: "1px solid #EBEBEB", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", fontFamily: ff }}>
+      {/* Header */}
+      <div style={{ background: "#1A1A1A", padding: "22px 26px", color: "#fff" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 3 }}>AI Invoice</div>
+            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>QUOTE</div>
+            <div style={{ fontSize: 13, color: "#E86C4A", fontWeight: 700, marginTop: 1 }}>{quoteNumber || "QUO-0001"}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <Tag color={STATUS_COLOR[status] || "#6B7280"}>{status || "Draft"}</Tag>
+            <div style={{ marginTop: 7, fontSize: 10, color: "rgba(255,255,255,0.45)" }}>Issued: <span style={{ color: "#fff" }}>{fmtDate(issueDate)}</span></div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>
+              Expires: <span style={{ color: isExpired(expiryDate) ? "#E86C4A" : "#fff" }}>{fmtDate(expiryDate)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: "20px 26px" }}>
+        {/* Bill To */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, paddingBottom: 18, borderBottom: "1px solid #F0F0F0" }}>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 5 }}>Quote For</div>
+            {customer ? (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{customer.name}</div>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 2, lineHeight: 1.7 }}>{customer.email}<br />{customer.address}</div>
+              </>
+            ) : <div style={{ fontSize: 12, color: "#CCC", fontStyle: "italic" }}>Select a customer…</div>}
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 5 }}>Currency</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{currency || "GBP"} ({currSymbol})</div>
+          </div>
+        </div>
+
+        {/* Line items */}
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
+          <thead>
+            <tr style={{ borderBottom: "1.5px solid #EBEBEB" }}>
+              {["Description", "Qty", "Rate", "VAT", "Amount"].map((h, i) => (
+                <th key={h} style={{ padding: "5px 0 7px", textAlign: i > 0 ? "right" : "left", fontSize: 9, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visibleItems.filter(i => i.description || i.amount > 0).map((item, idx) => (
+              <tr key={item.id} style={{ borderBottom: "1px solid #F7F7F7" }}>
+                <td style={{ padding: "8px 0", fontSize: 12, color: "#1A1A1A" }}>{item.description || <span style={{ color: "#CCC" }}>Item {idx + 1}</span>}</td>
+                <td style={{ padding: "8px 0", fontSize: 12, color: "#666", textAlign: "right" }}>{item.quantity}</td>
+                <td style={{ padding: "8px 0", fontSize: 12, color: "#666", textAlign: "right" }}>{fmt(currSymbol, item.rate)}</td>
+                <td style={{ padding: "8px 0", fontSize: 12, color: "#666", textAlign: "right" }}>{item.tax_rate}%</td>
+                <td style={{ padding: "8px 0", fontSize: 12, fontWeight: 700, color: "#1A1A1A", textAlign: "right" }}>{fmt(currSymbol, item.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Totals */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 18 }}>
+          <div style={{ minWidth: 210 }}>
+            {[
+              ["Subtotal", fmt(currSymbol, subtotal)],
+              ...(discAmt > 0 ? [["Discount", `− ${fmt(currSymbol, discAmt)}`, "#E86C4A"]] : []),
+              ...(Number(shipping) > 0 ? [["Shipping", fmt(currSymbol, shipping)]] : []),
+              ...taxBreakdown.map(tb => [`VAT ${tb.rate}%`, fmt(currSymbol, tb.amount)]),
+            ].map(([l, v, c]) => (
+              <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 28, padding: "3px 0" }}>
+                <span style={{ fontSize: 11, color: "#888" }}>{l}</span>
+                <span style={{ fontSize: 11, color: c || "#555", fontWeight: 500 }}>{v}</span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 28, padding: "9px 0 2px", borderTop: "2px solid #1A1A1A", marginTop: 5 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#1A1A1A" }}>Total</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#1A1A1A" }}>{fmt(currSymbol, total)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes & Terms */}
+        {(notes || terms) && (
+          <div style={{ paddingTop: 16, borderTop: "1px solid #F0F0F0", display: "grid", gridTemplateColumns: notes && terms ? "1fr 1fr" : "1fr", gap: 20 }}>
+            {notes && <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 4 }}>Customer Notes</div>
+              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.7 }}>{notes}</p>
+            </div>}
+            {terms && <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 4 }}>Terms & Conditions</div>
+              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.7 }}>{terms}</p>
+            </div>}
+          </div>
+        )}
+
+        <div style={{ marginTop: 20, paddingTop: 14, borderTop: "1px solid #F0F0F0", display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 9, color: "#CCC", fontStyle: "italic" }}>Generated by AI Invoice</span>
+          <span style={{ fontSize: 9, color: "#CCC" }}>Page 1 of 1</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ACTION DROPDOWN ──────────────────────────────────────────────────────────
+function ActionMenu({ quote, onEdit, onClone, onConvert, onPrint }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const items = [
+    { label: "Edit", icon: <Ic.Edit />, action: () => { onEdit(quote); setOpen(false); } },
+    { label: "Clone", icon: <Ic.Clone />, action: () => { onClone(quote); setOpen(false); } },
+    { label: "Print / Download", icon: <Ic.Print />, action: () => { onPrint(quote); setOpen(false); } },
+    ...(quote.status === "Accepted" ? [{ label: "Convert to Invoice", icon: <Ic.Invoice />, action: () => { onConvert(quote); setOpen(false); }, accent: true }] : []),
+  ];
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button onClick={() => setOpen(!open)}
+        style={{ padding: "6px 9px", border: "1.5px solid #E4E4E4", borderRadius: 7, background: "#fff", cursor: "pointer", color: "#555", display: "flex", alignItems: "center", fontFamily: ff, transition: "all 0.15s" }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "#1A1A1A"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "#E4E4E4"}>
+        <Ic.More />
+      </button>
+      {open && (
+        <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "#fff", border: "1.5px solid #EBEBEB", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 200, minWidth: 190, overflow: "hidden" }}>
+          {items.map(item => (
+            <button key={item.label} onClick={item.action}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: ff, fontSize: 13, fontWeight: item.accent ? 700 : 400, color: item.accent ? "#E86C4A" : "#333", textAlign: "left", transition: "background 0.1s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <span style={{ color: item.accent ? "#E86C4A" : "#888" }}>{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CONVERT TO INVOICE MODAL ─────────────────────────────────────────────────
+function ConvertModal({ quote, onConfirm, onClose }) {
+  const [mode, setMode] = useState("draft");
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 24 }}>
+      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 460, boxShadow: "0 20px 60px rgba(0,0,0,0.15)", fontFamily: ff, overflow: "hidden" }}>
+        <div style={{ background: "#1A1A1A", padding: "22px 26px", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>Convert to Invoice</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>{quote.quote_number} → New Invoice</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)" }}><Ic.X /></button>
+        </div>
+        <div style={{ padding: "22px 26px" }}>
+          <p style={{ fontSize: 13, color: "#555", margin: "0 0 16px", lineHeight: 1.6 }}>
+            This will create a new invoice from <strong>{quote.quote_number}</strong> for <strong>{quote.customer_name}</strong>. Choose how to create it:
+          </p>
+          <Radio checked={mode === "draft"} onChange={() => setMode("draft")} label="Save as Draft" sublabel="Invoice is created but not sent. You can review and edit before sending." />
+          <Radio checked={mode === "send"} onChange={() => setMode("send")} label="Save & Send immediately" sublabel="Invoice is marked as Sent and an email notification is triggered." />
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
+            <Btn onClick={onClose} variant="outline">Cancel</Btn>
+            <Btn onClick={() => onConfirm(mode)} variant="accent" icon={<Ic.Invoice />}>Convert</Btn>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PRINT MODAL ──────────────────────────────────────────────────────────────
+function PrintModal({ quote, onClose }) {
+  const printRef = useRef(null);
+  const currSymbol = CUR_SYM[quote.currency] || "£";
+  const items = quote.line_items?.length ? quote.line_items : [newLine(0)];
+  const subtotal = items.reduce((s, i) => s + Number(i.amount), 0);
+  const discAmt = 0;
+  const taxBreakdown = TAX_RATES.filter(r => r > 0).map(rate => ({
+    rate, amount: items.filter(i => Number(i.tax_rate) === rate).reduce((s, i) => s + i.amount * (rate / 100), 0)
+  })).filter(tb => tb.amount > 0);
+  const total = quote.total || subtotal;
+  const customer = MOCK_CUSTOMERS.find(c => c.id === quote.customer_id) || { name: quote.customer_name, email: quote.customer_email, address: quote.customer_address };
+
+  const handlePrint = () => window.print();
+
+  const previewData = { quoteNumber: quote.quote_number, customer, issueDate: quote.issue_date, expiryDate: quote.expiry_date, items, subtotal, discAmt, shipping: quote.shipping || 0, taxBreakdown, total, notes: quote.notes, terms: quote.terms, currency: quote.currency, status: quote.status, hideZero: quote.hide_zero_lines };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 24 }}>
+      <div style={{ background: "#F7F7F5", borderRadius: 16, width: "100%", maxWidth: 720, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.15)", fontFamily: ff }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #EBEBEB", background: "#fff", borderRadius: "16px 16px 0 0" }}>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "#1A1A1A" }}>Preview & Print — {quote.quote_number}</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn onClick={handlePrint} variant="outline" size="sm" icon={<Ic.Print />}>Print</Btn>
+            <Btn onClick={handlePrint} variant="primary" size="sm" icon={<Ic.Download />}>Download PDF</Btn>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#999", marginLeft: 4 }}><Ic.X /></button>
+          </div>
+        </div>
+        <div style={{ overflowY: "auto", padding: 20 }}>
+          <QuotePreview data={previewData} currSymbol={currSymbol} printRef={printRef} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── QUOTES LIST VIEW ─────────────────────────────────────────────────────────
+function QuotesList({ quotes, onNew, onEdit, onClone, onConvert, onPrint }) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const FILTERS = ["All", ...QUOTE_STATUSES];
+  const filtered = quotes.filter(q =>
+    (q.quote_number?.toLowerCase().includes(search.toLowerCase()) || q.customer_name?.toLowerCase().includes(search.toLowerCase())) &&
+    (filter === "All" || q.status === filter)
+  );
+  const totals = {
+    accepted: quotes.filter(q => q.status === "Accepted").reduce((a, b) => a + (b.total || 0), 0),
+    sent: quotes.filter(q => q.status === "Sent").reduce((a, b) => a + (b.total || 0), 0),
+    draft: quotes.filter(q => q.status === "Draft").length,
+  };
+  return (
+    <div>
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 24 }}>
+        {[
+          { l: "Accepted Value", v: `£${totals.accepted.toLocaleString("en-GB", { minimumFractionDigits: 2 })}`, c: "#16A34A" },
+          { l: "Awaiting Response", v: `£${totals.sent.toLocaleString("en-GB", { minimumFractionDigits: 2 })}`, c: "#2563EB" },
+          { l: "Drafts", v: `${totals.draft} quote${totals.draft !== 1 ? "s" : ""}`, c: "#6B7280" },
+        ].map(s => (
+          <div key={s.l} style={{ background: "#fff", borderRadius: 12, padding: "16px 20px", border: "1px solid #EBEBEB" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>{s.l}</div>
+            <div style={{ fontSize: 19, fontWeight: 800, color: s.c }}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <div style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#AAA" }}><Ic.Search /></div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search quotes…"
+            style={{ width: "100%", padding: "9px 12px 9px 34px", border: "1.5px solid #E4E4E4", borderRadius: 8, fontSize: 13, fontFamily: ff, outline: "none", background: "#fff", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ display: "flex", gap: 3, background: "#F0F0F0", padding: 3, borderRadius: 8 }}>
+          {FILTERS.map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              style={{ padding: "5px 11px", borderRadius: 6, border: "none", background: filter === f ? "#1A1A1A" : "transparent", color: filter === f ? "#fff" : "#888", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: ff, transition: "all 0.15s" }}>
+              {f}
+            </button>
+          ))}
+        </div>
+        <Btn onClick={onNew} variant="accent" icon={<Ic.Plus />}>New Quote</Btn>
+      </div>
+
+      {/* Table */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#FAFAFA", borderBottom: "1px solid #F0F0F0" }}>
+              {["Quote #", "Customer", "Issue Date", "Expiry Date", "Amount", "Status", ""].map(h => (
+                <th key={h} style={{ padding: "9px 16px", textAlign: h === "Amount" ? "right" : "left", fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(q => {
+              const expired = isExpired(q.expiry_date) && q.status !== "Accepted";
+              return (
+                <tr key={q.id} style={{ borderBottom: "1px solid #F7F7F7" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                  onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{q.quote_number}</td>
+                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#444" }}>{q.customer_name}</td>
+                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#888" }}>{fmtDate(q.issue_date)}</td>
+                  <td style={{ padding: "12px 16px", fontSize: 13, color: expired ? "#DC2626" : "#888" }}>
+                    {fmtDate(q.expiry_date)}{expired && <span style={{ fontSize: 10, marginLeft: 6, background: "#FEF2F2", color: "#DC2626", padding: "1px 6px", borderRadius: 10, fontWeight: 700 }}>EXPIRED</span>}
+                  </td>
+                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "#1A1A1A", textAlign: "right" }}>{fmt("£", q.total || 0)}</td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <Tag color={STATUS_COLOR[q.status]}>{q.status}</Tag>
+                    {q.converted_invoice_id && <span style={{ marginLeft: 6, fontSize: 10, color: "#16A34A", fontWeight: 700 }}>→ INV</span>}
+                  </td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <ActionMenu quote={q} onEdit={onEdit} onClone={onClone} onConvert={onConvert} onPrint={onPrint} />
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && (
+              <tr><td colSpan={7} style={{ padding: "44px 16px", textAlign: "center", color: "#CCC", fontSize: 13 }}>
+                {quotes.length === 0 ? "No quotes yet. Click 'New Quote' to get started." : "No quotes match your search."}
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── PREFERENCES PANEL ────────────────────────────────────────────────────────
+function PreferencesPanel({ prefs, onChange }) {
+  return (
+    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", padding: "22px 24px", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+        <div style={{ color: "#888" }}><Ic.Settings /></div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#1A1A1A" }}>More / Preferences</div>
+      </div>
+
+      {/* Allow editing */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #F5F5F5" }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>Allow editing of accepted quotes</div>
+          <div style={{ fontSize: 11, color: "#AAA", marginTop: 2 }}>Let you modify quotes even after they have been accepted by the client</div>
+        </div>
+        <Toggle checked={prefs.allowEditing} onChange={v => onChange({ ...prefs, allowEditing: v })} />
+      </div>
+
+      {/* Hide zero lines */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #F5F5F5" }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>Hide zero-value line items</div>
+          <div style={{ fontSize: 11, color: "#AAA", marginTop: 2 }}>Line items with £0.00 amount won't appear on the printed quote</div>
+        </div>
+        <Toggle checked={prefs.hideZeroLines} onChange={v => onChange({ ...prefs, hideZeroLines: v })} />
+      </div>
+
+      {/* Auto-convert */}
+      <div style={{ padding: "14px 0 2px" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", marginBottom: 4 }}>Auto-convert accepted quotes to invoices</div>
+        <div style={{ fontSize: 11, color: "#AAA", marginBottom: 12 }}>When a quote status is set to Accepted, automatically create an invoice</div>
+        <Radio checked={prefs.autoConvert === "off"} onChange={() => onChange({ ...prefs, autoConvert: "off" })}
+          label="Off — don't auto-convert" sublabel="Accepted quotes stay as quotes until you manually convert them." />
+        <Radio checked={prefs.autoConvert === "draft"} onChange={() => onChange({ ...prefs, autoConvert: "draft" })}
+          label="Create as Draft Invoice" sublabel="A draft invoice is automatically created. You review and send it manually." />
+        <Radio checked={prefs.autoConvert === "send"} onChange={() => onChange({ ...prefs, autoConvert: "send" })}
+          label="Create & Send Invoice immediately" sublabel="An invoice is created and marked Sent automatically when the quote is accepted." />
+      </div>
+    </div>
+  );
+}
+
+// ─── QUOTE FORM ───────────────────────────────────────────────────────────────
+function QuoteFormPage({ existing, quotes, onSave, onCancel, onConvert }) {
+  const isEdit = !!existing;
+
+  const [quoteNumber, setQuoteNumber] = useState(existing?.quote_number || nextQUO(quotes.map(q => q.quote_number)));
+  const [customer, setCustomer] = useState(existing ? MOCK_CUSTOMERS.find(c => c.id === existing.customer_id) || null : null);
+  const [issueDate, setIssueDate] = useState(existing?.issue_date || todayStr());
+  const [expiryDate, setExpiryDate] = useState(existing?.expiry_date || addDaysStr(todayStr(), 30));
+  const [status, setStatus] = useState(existing?.status || "Draft");
+  const [currency, setCurrency] = useState(existing?.currency || "GBP");
+  const [items, setItems] = useState(existing?.line_items?.length ? existing.line_items : [newLine(0)]);
+  const [discountType, setDiscountType] = useState(existing?.discount_type || "percent");
+  const [discountValue, setDiscountValue] = useState(existing?.discount_value || 0);
+  const [shipping, setShipping] = useState(existing?.shipping || 0);
+  const [notes, setNotes] = useState(existing?.notes || "");
+  const [terms, setTerms] = useState(existing?.terms || DEFAULT_TERMS);
+  const [prefs, setPrefs] = useState({
+    allowEditing: existing?.allow_editing || false,
+    hideZeroLines: existing?.hide_zero_lines || false,
+    autoConvert: existing?.auto_convert || "off",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+  const [activeTab, setActiveTab] = useState("form");
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const printRef = useRef(null);
+
+  const currSymbol = CUR_SYM[currency] || "£";
+  const subtotal = items.reduce((s, i) => s + Number(i.amount), 0);
+  const discAmt = discountType === "percent" ? subtotal * (Number(discountValue) / 100) : Math.min(Number(discountValue), subtotal);
+  const afterDiscount = subtotal - discAmt;
+  const taxBreakdown = TAX_RATES.filter(r => r > 0).map(rate => ({
+    rate, amount: items.filter(i => Number(i.tax_rate) === rate).reduce((s, i) => s + i.amount * (rate / 100), 0)
+  })).filter(tb => tb.amount > 0);
+  const taxTotal = taxBreakdown.reduce((s, tb) => s + tb.amount, 0);
+  const total = afterDiscount + Number(shipping) + taxTotal;
+
+  const previewData = { quoteNumber, customer, issueDate, expiryDate, items, subtotal, discAmt, shipping, taxBreakdown, total, notes, terms, currency, status, hideZero: prefs.hideZeroLines };
+
+  const handleSave = useCallback(async (newStatus = status) => {
+    setSaving(true);
+    const payload = {
+      quote_number: quoteNumber, customer_id: customer?.id || null,
+      customer_name: customer?.name || "", customer_email: customer?.email || "",
+      customer_address: customer?.address || "",
+      issue_date: issueDate, expiry_date: expiryDate, status: newStatus, currency,
+      subtotal, discount_type: discountType, discount_value: Number(discountValue),
+      discount_amount: discAmt, shipping: Number(shipping), tax_total: taxTotal, total,
+      notes, terms, hide_zero_lines: prefs.hideZeroLines,
+      allow_editing: prefs.allowEditing, auto_convert: prefs.autoConvert,
+      updated_at: new Date().toISOString(),
+    };
+    try {
+      let saved;
+      if (isEdit && existing.id) {
+        await sbFetch("PATCH", `quotes?id=eq.${existing.id}`, payload);
+        await sbFetch("DELETE", `quote_line_items?quote_id=eq.${existing.id}`);
+        saved = { ...existing, ...payload };
+      } else {
+        const [q] = await sbFetch("POST", "quotes", payload);
+        saved = q;
+      }
+      if (saved?.id) {
+        await sbFetch("POST", "quote_line_items", items.map((item, idx) => ({
+          quote_id: saved.id, description: item.description, quantity: Number(item.quantity),
+          rate: Number(item.rate), tax_rate: Number(item.tax_rate), amount: Number(item.amount), sort_order: idx,
+        })));
+      }
+      setStatus(newStatus);
+      setSaveMsg("Saved!");
+      onSave({ ...payload, id: saved?.id || existing?.id || crypto.randomUUID(), line_items: items, status: newStatus });
+    } catch (err) {
+      console.warn("Supabase not configured, saving locally:", err.message);
+      setSaveMsg("Saved locally!");
+      onSave({ ...payload, id: existing?.id || crypto.randomUUID(), line_items: items, status: newStatus });
+    }
+    setSaving(false);
+    setTimeout(() => setSaveMsg(""), 3000);
+  }, [quoteNumber, customer, issueDate, expiryDate, status, currency, items, discountType, discountValue, discAmt, shipping, taxTotal, total, notes, terms, prefs, isEdit, existing, onSave]);
+
+  const expired = isExpired(expiryDate);
+
+  return (
+    <div style={{ fontFamily: ff }}>
+      {/* Page header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1A1A1A", margin: "0 0 3px", letterSpacing: "-0.02em" }}>
+            {isEdit ? `Edit ${quoteNumber}` : "New Quote"}
+          </h1>
+          <p style={{ color: "#AAA", fontSize: 13, margin: 0 }}>
+            {expired && status !== "Accepted" ? <span style={{ color: "#DC2626", fontWeight: 600 }}>⚠ Expired {fmtDate(expiryDate)}</span> : isEdit ? `Last updated ${fmtDate(existing?.updated_at)}` : "Fill in the details below"}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 9, alignItems: "center" }}>
+          {saveMsg && <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Ic.Check />{saveMsg}</span>}
+          {isEdit && status === "Accepted" && (
+            <Btn onClick={() => setShowConvertModal(true)} variant="teal" icon={<Ic.Invoice />}>Convert to Invoice</Btn>
+          )}
+          <Btn onClick={onCancel} variant="outline">Cancel</Btn>
+          <Btn onClick={() => handleSave("Draft")} variant="outline" disabled={saving} icon={<Ic.Save />}>Save Draft</Btn>
+          <Btn onClick={() => handleSave("Sent")} variant="accent" disabled={saving} icon={<Ic.Send />}>{saving ? "Saving…" : "Save & Send"}</Btn>
+        </div>
+      </div>
+
+      {/* Tab switcher */}
+      <div style={{ display: "flex", gap: 3, background: "#F0F0F0", padding: 3, borderRadius: 9, marginBottom: 16, width: "fit-content" }}>
+        {[["form", <Ic.Edit />, "Edit"], ["preview", <Ic.Eye />, "Preview"]].map(([t, icon, label]) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 15px", borderRadius: 7, border: "none", background: activeTab === t ? "#1A1A1A" : "transparent", color: activeTab === t ? "#fff" : "#888", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: ff, transition: "all 0.15s" }}>
+            {icon}{label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "form" && (
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 330px", gap: 18, alignItems: "start" }}>
+          <div>
+            {/* Quote Details */}
+            <SectionCard title="Quote Details" subtitle="Reference number, dates and status">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div><Label required>Quote Number</Label><Input value={quoteNumber} onChange={setQuoteNumber} placeholder="QUO-0001" /></div>
+                <div><Label required>Issue Date</Label><Input value={issueDate} onChange={setIssueDate} type="date" /></div>
+                <div><Label required>Expiry Date</Label><Input value={expiryDate} onChange={setExpiryDate} type="date" style={{ borderColor: expired ? "#FCA5A5" : undefined }} /></div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+                <div><Label>Status</Label><Select value={status} onChange={setStatus} options={QUOTE_STATUSES} /></div>
+                <div><Label>Currency</Label><Select value={currency} onChange={setCurrency} options={CURRENCIES_OPT} /></div>
+              </div>
+              {expired && status !== "Accepted" && (
+                <div style={{ display: "flex", gap: 8, marginTop: 12, padding: "9px 12px", background: "#FEF2F2", borderRadius: 8, border: "1px solid #FECACA" }}>
+                  <div style={{ color: "#DC2626" }}><Ic.Info /></div>
+                  <p style={{ margin: 0, fontSize: 12, color: "#7F1D1D", lineHeight: 1.6 }}>This quote has expired. Consider updating the expiry date or cloning a fresh quote.</p>
+                </div>
+              )}
+            </SectionCard>
+
+            {/* Bill To */}
+            <SectionCard title="Quote For" subtitle="Select the customer this quote is addressed to">
+              <Select value={customer?.id || ""} onChange={id => setCustomer(MOCK_CUSTOMERS.find(c => c.id === id) || null)} options={MOCK_CUSTOMERS.map(c => ({ value: c.id, label: c.name }))} placeholder="Select a customer…" />
+              {customer && (
+                <div style={{ marginTop: 10, padding: "10px 13px", background: "#F9F9F9", borderRadius: 8, border: "1px solid #EBEBEB" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{customer.name}</div>
+                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{customer.email} · {customer.address}</div>
+                </div>
+              )}
+            </SectionCard>
+
+            {/* Line Items */}
+            <SectionCard title="Line Items" subtitle="Products or services included in this quote">
+              <LineItemsTable items={items} onChange={setItems} currSymbol={currSymbol} hideZero={prefs.hideZeroLines} />
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
+                <TotalsBlock subtotal={subtotal} discountType={discountType} discountValue={discountValue} setDiscountType={setDiscountType} setDiscountValue={setDiscountValue} shipping={shipping} setShipping={setShipping} taxBreakdown={taxBreakdown} total={total} currSymbol={currSymbol} />
+              </div>
+            </SectionCard>
+
+            {/* Notes & Terms */}
+            <SectionCard title="Notes & Terms">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div>
+                  <Label>Customer Notes</Label>
+                  <Textarea value={notes} onChange={setNotes} placeholder="Additional notes visible to the customer…" rows={4} />
+                  <div style={{ fontSize: 10, color: "#CCC", marginTop: 3 }}>Visible on the printed quote</div>
+                </div>
+                <div>
+                  <Label>Terms & Conditions</Label>
+                  <Textarea value={terms} onChange={setTerms} placeholder="Validity, payment terms, etc." rows={4} />
+                  <div style={{ fontSize: 10, color: "#CCC", marginTop: 3 }}>Printed at the bottom of the quote</div>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* More / Preferences */}
+            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #EBEBEB", overflow: "hidden", marginBottom: 16 }}>
+              <button onClick={() => setShowPrefs(!showPrefs)}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 22px", background: "none", border: "none", cursor: "pointer", fontFamily: ff }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <div style={{ color: "#888" }}><Ic.Settings /></div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1A1A1A", textAlign: "left" }}>More / Preferences</div>
+                    <div style={{ fontSize: 11, color: "#AAA", textAlign: "left", marginTop: 1 }}>
+                      Auto-convert: <strong>{prefs.autoConvert}</strong> · Editing: <strong>{prefs.allowEditing ? "on" : "off"}</strong> · Zero lines: <strong>{prefs.hideZeroLines ? "hidden" : "shown"}</strong>
+                    </div>
+                  </div>
+                </div>
+                <span style={{ color: "#AAA", transform: showPrefs ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><Ic.ChevDown /></span>
+              </button>
+              {showPrefs && (
+                <div style={{ padding: "0 22px 18px", borderTop: "1px solid #F5F5F5" }}>
+                  <div style={{ height: 14 }} />
+                  <PreferencesPanel prefs={prefs} onChange={setPrefs} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Live Preview */}
+          <div style={{ position: "sticky", top: 20 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 10 }}>Live Preview</div>
+            <QuotePreview data={previewData} currSymbol={currSymbol} printRef={printRef} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === "preview" && (
+        <div style={{ maxWidth: 680, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 9, marginBottom: 12 }}>
+            <Btn variant="outline" size="sm" icon={<Ic.Print />} onClick={() => window.print()}>Print</Btn>
+            <Btn variant="outline" size="sm" icon={<Ic.Download />}>Download PDF</Btn>
+            <Btn variant="primary" size="sm" icon={<Ic.Send />} onClick={() => handleSave("Sent")}>Send Quote</Btn>
+          </div>
+          <QuotePreview data={previewData} currSymbol={currSymbol} printRef={printRef} />
+        </div>
+      )}
+
+      {showConvertModal && (
+        <ConvertModal
+          quote={{ ...existing, quote_number: quoteNumber, customer_name: customer?.name }}
+          onClose={() => setShowConvertModal(false)}
+          onConfirm={(mode) => { setShowConvertModal(false); onConvert({ ...existing, quote_number: quoteNumber, customer_name: customer?.name, customer_id: customer?.id, customer_email: customer?.email, customer_address: customer?.address, total }, mode); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── ROOT: QUOTES PAGE ────────────────────────────────────────────────────────
+export default function QuotesPage({ onConvertToInvoice }) {
+  const [quotes, setQuotes] = useState(MOCK_QUOTES_INITIAL);
+  const [view, setView] = useState("list"); // list | new | edit
+  const [editing, setEditing] = useState(null);
+  const [convertTarget, setConvertTarget] = useState(null);
+  const [printTarget, setPrintTarget] = useState(null);
+
+  const handleSave = (q) => {
+    setQuotes(prev => {
+      const idx = prev.findIndex(x => x.id === q.id);
+      if (idx >= 0) { const u = [...prev]; u[idx] = q; return u; }
+      return [q, ...prev];
+    });
+    setView("list"); setEditing(null);
+  };
+
+  const handleClone = (q) => {
+    const cloned = {
+      ...q,
+      id: crypto.randomUUID(),
+      quote_number: nextQUO([...quotes.map(x => x.quote_number), q.quote_number]),
+      status: "Draft",
+      issue_date: todayStr(),
+      expiry_date: addDaysStr(todayStr(), 30),
+      converted_invoice_id: null,
+    };
+    setQuotes(prev => [cloned, ...prev]);
+  };
+
+  const handleConvert = (q, mode) => {
+    // Mark quote as converted
+    setQuotes(prev => prev.map(x => x.id === q.id ? { ...x, converted_invoice_id: "converted" } : x));
+    // Notify parent (App.jsx) to create invoice
+    onConvertToInvoice?.({ quote: q, mode });
+    setView("list"); setEditing(null);
+  };
+
+  const handleConvertFromList = (q) => setConvertTarget(q);
+
+  return (
+    <div style={{ padding: "28px 32px", maxWidth: 1200, fontFamily: ff }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700;800&display=swap');`}</style>
+
+      {view === "list" && (
+        <>
+          <div style={{ marginBottom: 22 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1A1A1A", margin: "0 0 4px", letterSpacing: "-0.02em" }}>Quotes</h1>
+            <p style={{ color: "#AAA", fontSize: 13, margin: 0 }}>Create, manage and send quotes to your customers</p>
+          </div>
+          <QuotesList
+            quotes={quotes}
+            onNew={() => { setEditing(null); setView("new"); }}
+            onEdit={(q) => { setEditing(q); setView("edit"); }}
+            onClone={handleClone}
+            onConvert={handleConvertFromList}
+            onPrint={(q) => setPrintTarget(q)}
+          />
+        </>
+      )}
+
+      {(view === "new" || view === "edit") && (
+        <QuoteFormPage
+          existing={view === "edit" ? editing : null}
+          quotes={quotes}
+          onSave={handleSave}
+          onCancel={() => { setView("list"); setEditing(null); }}
+          onConvert={(q, mode) => handleConvert(q, mode)}
+        />
+      )}
+
+      {convertTarget && (
+        <ConvertModal
+          quote={convertTarget}
+          onClose={() => setConvertTarget(null)}
+          onConfirm={(mode) => { handleConvert(convertTarget, mode); setConvertTarget(null); }}
+        />
+      )}
+
+      {printTarget && <PrintModal quote={printTarget} onClose={() => setPrintTarget(null)} />}
+    </div>
+  );
+}
