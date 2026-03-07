@@ -11,7 +11,7 @@ const STEPS = [
 export default function SetupWizard({ onComplete }) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState({
-    currency: 'GBP', tax_rate: '20', payment_terms: '30', country: 'United Kingdom',
+    currency: 'GBP', Corporation_tax_rate: '20', payment_terms: '30', country: 'United Kingdom',
     vat_registered: 'yes', cis_registered: 'no', cis_rate: '20',
   })
   const [errors, setErrors] = useState({})
