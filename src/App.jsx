@@ -39,10 +39,10 @@ const CIS_RATES = ["20%","30%","0% (gross payment)"];
 const STATUS_COLORS = { Sent:"#2563EB", Overdue:"#C0392B", Paid:"#16A34A", Draft:"#6B7280", Void:"#9CA3AF", Accepted:"#16A34A", Declined:"#DC2626", Expired:"#9CA3AF" };
 const QUOTE_STATUSES = ["Draft","Sent","Accepted","Declined","Expired"];
 const PDF_TEMPLATES = [
-  { id:"classic", name:"Classic", desc:"Clean header, logo top-left, table layout" },
-  { id:"modern",  name:"Modern",  desc:"Coloured header band, bold typography" },
-  { id:"minimal", name:"Minimal", desc:"No frills, plain text, minimal borders" },
-  { id:"branded", name:"Branded", desc:"Full-bleed colour, accent lines, premium feel" },
+  { id:"classic",  name:"Classic",  desc:"Clean header, ruled lines",          defaultAccent:"#1A1A1A", defaultBg:"#fff" },
+  { id:"modern",   name:"Modern",   desc:"Bold colour band, split layout",      defaultAccent:"#2563EB", defaultBg:"#EFF6FF" },
+  { id:"minimal",  name:"Minimal",  desc:"Sage green, clean typography",        defaultAccent:"#16A34A", defaultBg:"#fff" },
+  { id:"branded",  name:"Branded",  desc:"Rich terracotta, premium feel",       defaultAccent:"#E86C4A", defaultBg:"#FFF7F4" },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -82,6 +82,11 @@ const MOCK_QUOTES_LIST = [
   { id:"q1", quote_number:"QUO-0001", customer_id:"c1", customer_name:"Acme Corporation", issue_date:"2026-02-15", expiry_date:"2026-03-15", status:"Accepted", currency:"GBP", total:4800, line_items:[], notes:"", terms:DEFAULT_QUOTE_TERMS },
   { id:"q2", quote_number:"QUO-0002", customer_id:"c2", customer_name:"Blue Sky Ltd", issue_date:"2026-03-01", expiry_date:"2026-04-01", status:"Sent", currency:"GBP", total:2200, line_items:[], notes:"", terms:DEFAULT_QUOTE_TERMS },
 ];
+const PAYMENT_METHODS = ["Bank Transfer","Card","Cash","Cheque","PayPal","Stripe","Direct Debit","Crypto","Other"];
+const MOCK_PAYMENTS = [
+  { id:"pay1", payment_number:"PAY-0001", invoice_id:"inv3", invoice_number:"INV-0003", customer_id:"c1", customer_name:"Acme Corporation", amount:8400, currency:"GBP", date:"2026-02-14", method:"Bank Transfer", reference:"BACS-20260214", notes:"Full payment received", status:"Reconciled" },
+  { id:"pay2", payment_number:"PAY-0002", invoice_id:"inv2", invoice_number:"INV-0002", customer_id:"c2", customer_name:"Blue Sky Ltd", amount:500, currency:"GBP", date:"2026-03-05", method:"Card", reference:"", notes:"Partial payment", status:"Partial" },
+];
 
 // ─── ICONS ───────────────────────────────────────────────────────────────────
 const Ic = ({ d, size=18, sw=1.6 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:d}} />;
@@ -112,6 +117,11 @@ const Icons = {
   Drive:    () => <Ic d='<path d="M12 2L2 19h7.5L12 14l2.5 5H22L12 2z"/><path d="M7.5 19L12 11l4.5 8H7.5z"/>' size={16}/>,
   Pen:      () => <Ic d='<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>' size={14}/>,
   Alert:    () => <Ic d='<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' size={16}/>,
+  Link:     () => <Ic d='<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>' size={15}/>,
+  Unlink:   () => <Ic d='<path d="M18.84 12.25l1.72-1.71a4.9 4.9 0 000-6.93 4.9 4.9 0 00-6.93 0l-1.72 1.71"/><path d="M5.17 11.75l-1.72 1.71a4.9 4.9 0 000 6.93 4.9 4.9 0 006.93 0l1.72-1.72M8 16l8-8"/>' size={15}/>,
+  Bank:     () => <Ic d='<path d="M3 10l9-7 9 7v11H3V10z"/><path d="M12 3v7"/><path d="M7 21V14h10v7"/>' size={16}/>,
+  Filter:   () => <Ic d='<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>' size={15}/>,
+  Receipt:  () => <Ic d='<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M8 10h8M8 14h5"/>' size={16}/>,
 };
 
 // ─── ATOMS ───────────────────────────────────────────────────────────────────
@@ -161,6 +171,17 @@ const Switch = ({ checked, onChange }) => (
     style={{ width:40, height:22, borderRadius:11, border:"none", background:checked?"#1A1A1A":"#D1D5DB", cursor:"pointer", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
     <div style={{ width:16, height:16, borderRadius:"50%", background:"#fff", position:"absolute", top:3, left:checked?21:3, transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
   </button>
+);
+// Slide toggle with Yes/No labels
+const SlideToggle = ({ value, onChange }) => (
+  <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+    <span style={{ fontSize:12, fontWeight:700, color:value?"#AAA":"#DC2626", minWidth:24, textAlign:"right" }}>No</span>
+    <button onClick={()=>onChange(!value)}
+      style={{ width:48, height:26, borderRadius:13, border:"none", background:value?"#16A34A":"#D1D5DB", cursor:"pointer", position:"relative", transition:"background 0.25s", flexShrink:0 }}>
+      <div style={{ width:20, height:20, borderRadius:"50%", background:"#fff", position:"absolute", top:3, left:value?25:3, transition:"left 0.25s", boxShadow:"0 1px 4px rgba(0,0,0,0.25)" }} />
+    </button>
+    <span style={{ fontSize:12, fontWeight:700, color:value?"#16A34A":"#AAA", minWidth:24 }}>Yes</span>
+  </div>
 );
 const Checkbox = ({ checked, onChange, label }) => (
   <label style={{ display:"flex", alignItems:"flex-start", gap:10, cursor:"pointer", marginBottom:8 }}>
@@ -241,10 +262,162 @@ const PaymentTermsField = ({ value, onChange, customDays, onCustomDaysChange }) 
   </div>
 );
 
+// ─── AUTH PAGE (Login / Register) ────────────────────────────────────────────
+function AuthPage({ onAuth }) {
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Simple in-memory "user store" (persists while app is open)
+  const STORAGE_KEY = "ai_invoice_users";
+  const getUsers = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); } catch { return []; } };
+  const saveUsers = users => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); } catch {} };
+
+  const handleSubmit = () => {
+    setError("");
+    if(!email || !password) { setError("Email and password are required."); return; }
+    if(!/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email address."); return; }
+    if(password.length < 8) { setError("Password must be at least 8 characters."); return; }
+
+    setLoading(true);
+    setTimeout(() => {
+      const users = getUsers();
+      if(mode==="register") {
+        if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
+        if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
+        if(users.find(u=>u.email===email)) { setError("An account with this email already exists."); setLoading(false); return; }
+        const newUser = { name: name.trim(), email, password, role:"Admin", createdAt: new Date().toISOString() };
+        saveUsers([...users, newUser]);
+        onAuth({ name: newUser.name, email: newUser.email, role:"Admin" });
+      } else {
+        const found = users.find(u=>u.email===email && u.password===password);
+        if(!found) { setError("Incorrect email or password."); setLoading(false); return; }
+        onAuth({ name: found.name, email: found.email, role: found.role||"Admin" });
+      }
+      setLoading(false);
+    }, 600);
+  };
+
+  const eyeIcon = showPw
+    ? <Ic d='<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22"/><circle cx="12" cy="12" r="3"/>' size={16} sw={2}/>
+    : <Ic d='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' size={16} sw={2}/>;
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#F7F7F5", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+      <div style={{ width:"100%", maxWidth:420 }}>
+        {/* Brand header */}
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <div style={{ width:48, height:48, background:"#1A1A1A", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+            <div style={{ width:28, height:28, background:"#E86C4A", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
+          </div>
+          <div style={{ fontSize:20, fontWeight:800, color:"#1A1A1A", letterSpacing:"0.02em" }}>AI INVOICE</div>
+          <div style={{ fontSize:13, color:"#AAA", marginTop:3 }}>Smart invoicing for modern businesses</div>
+        </div>
+
+        <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 4px 40px rgba(0,0,0,0.08)", overflow:"hidden" }}>
+          {/* Tab switcher */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:"1px solid #F0F0F0" }}>
+            {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
+              <button key={m} onClick={()=>{ setMode(m); setError(""); }}
+                style={{ padding:"16px 0", border:"none", borderBottom:`2.5px solid ${mode===m?"#1A1A1A":"transparent"}`, background:"none", fontSize:13, fontWeight:mode===m?800:500, color:mode===m?"#1A1A1A":"#AAA", cursor:"pointer", fontFamily:ff, transition:"all 0.15s" }}>
+                {l}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ padding:"24px 28px 28px" }}>
+            {mode==="register" && (
+              <Field label="Full Name" required>
+                <Input value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
+              </Field>
+            )}
+            <Field label="Email Address" required>
+              <Input value={email} onChange={setEmail} type="email" placeholder="you@example.com" />
+            </Field>
+            <Field label="Password" required>
+              <div style={{ position:"relative" }}>
+                <input
+                  type={showPw?"text":"password"}
+                  value={password}
+                  onChange={e=>setPassword(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+                  placeholder={mode==="register"?"Min. 8 characters":"Enter your password"}
+                  style={{ width:"100%", padding:"9px 38px 9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }}
+                />
+                <button onClick={()=>setShowPw(p=>!p)} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#AAA", padding:2, display:"flex" }}>
+                  {eyeIcon}
+                </button>
+              </div>
+            </Field>
+            {mode==="register" && (
+              <Field label="Confirm Password" required>
+                <div style={{ position:"relative" }}>
+                  <input
+                    type={showPw?"text":"password"}
+                    value={confirmPw}
+                    onChange={e=>setConfirmPw(e.target.value)}
+                    onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+                    placeholder="Repeat password"
+                    style={{ width:"100%", padding:"9px 10px", border:`1.5px solid ${confirmPw&&confirmPw!==password?"#DC2626":"#E0E0E0"}`, borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }}
+                  />
+                </div>
+              </Field>
+            )}
+
+            {error && (
+              <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:8, padding:"9px 12px", marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ color:"#DC2626", fontSize:12 }}><Icons.Info /></span>
+                <span style={{ color:"#DC2626", fontSize:12, fontWeight:500 }}>{error}</span>
+              </div>
+            )}
+
+            {mode==="register" && (
+              <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:8, padding:"9px 12px", marginBottom:12 }}>
+                <div style={{ fontSize:11, color:"#16A34A", fontWeight:600, marginBottom:4 }}>Password requirements:</div>
+                {[["At least 8 characters", password.length>=8],["Passwords match", password===confirmPw&&confirmPw.length>0]].map(([t,ok])=>(
+                  <div key={t} style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:ok?"#16A34A":"#AAA" }}>
+                    <span>{ok?"✓":"○"}</span>{t}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button onClick={handleSubmit} disabled={loading}
+              style={{ width:"100%", padding:"12px 0", background:loading?"#CCC":"#1A1A1A", color:"#fff", border:"none", borderRadius:9, fontSize:14, fontWeight:700, cursor:loading?"not-allowed":"pointer", fontFamily:ff, marginTop:4, transition:"background 0.18s" }}
+              onMouseEnter={e=>{ if(!loading) e.currentTarget.style.background="#E86C4A"; }}
+              onMouseLeave={e=>{ if(!loading) e.currentTarget.style.background="#1A1A1A"; }}>
+              {loading ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
+            </button>
+
+            {mode==="login" && (
+              <div style={{ textAlign:"center", marginTop:14 }}>
+                <span style={{ fontSize:12, color:"#AAA" }}>Don't have an account? </span>
+                <button onClick={()=>{ setMode("register"); setError(""); }} style={{ fontSize:12, fontWeight:700, color:"#E86C4A", background:"none", border:"none", cursor:"pointer", fontFamily:ff, padding:0 }}>
+                  Create one free
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ textAlign:"center", marginTop:18, fontSize:11, color:"#CCC" }}>
+          Your data stays private and secure · AI Invoice
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ORG SETUP ───────────────────────────────────────────────────────────────
 function OrgSetupPage({ onComplete, initialData }) {
   const [bType, setBType] = useState(initialData?.bType||"");
   const [orgName, setOrgName] = useState(initialData?.orgName||"");
+  const [crn, setCrn] = useState(initialData?.crn||"");
   const [industry, setIndustry] = useState(initialData?.industry||"");
   const [country, setCountry] = useState(initialData?.country||"United Kingdom");
   const [state, setState] = useState(initialData?.state||"");
@@ -254,28 +427,31 @@ function OrgSetupPage({ onComplete, initialData }) {
   const [postcode, setPostcode] = useState(initialData?.postcode||"");
   const [currency, setCurrency] = useState(initialData?.currency||"GBP - British Pound Sterling");
   const [timezone, setTimezone] = useState(initialData?.timezone||"(UTC+00:00) London");
-  const [vatReg, setVatReg] = useState(initialData?.vatReg||"");
+  const [vatReg, setVatReg] = useState(initialData?.vatReg||false);
   const [vatNum, setVatNum] = useState(initialData?.vatNum||"");
   const [vatNumTouched, setVatNumTouched] = useState(false);
   const [importExport, setImportExport] = useState(initialData?.importExport||false);
   const [flatRate, setFlatRate] = useState(initialData?.flatRate||false);
   const [flatRatePct, setFlatRatePct] = useState(initialData?.flatRatePct||"");
-  const [cisReg, setCisReg] = useState(initialData?.cisReg||"");
+  const [cisReg, setCisReg] = useState(initialData?.cisReg||false);
   const [cisContractor, setCisContractor] = useState(initialData?.cisContractor||false);
   const [cisSub, setCisSub] = useState(initialData?.cisSub||false);
   const [cisRate, setCisRate] = useState(initialData?.cisRate||"20%");
+  const [cisUtr, setCisUtr] = useState(initialData?.cisUtr||"");
 
   const stateOpts = country==="United Kingdom" ? UK_COUNTIES : [];
   const isCIS = industry==="Construction";
-  const vatOk = !vatNum || validateVatNumber(vatNum);
-  const vatNumError = vatReg==="Yes" && vatNumTouched && !validateVatNumber(vatNum)
+  const vatNumError = vatReg && vatNumTouched && !validateVatNumber(vatNum)
     ? "Please enter a valid VAT number (e.g. GB123456789)" : null;
+  // Fix: canSubmit never requires vatReg to be truthy — toggling it is optional
   const canSubmit = bType && orgName && industry && country &&
-    (vatReg==="No" || (vatReg==="Yes" && validateVatNumber(vatNum)));
+    (!vatReg || (vatReg && validateVatNumber(vatNum)));
 
   const handleComplete = () => {
     if(!canSubmit){ setVatNumTouched(true); return; }
-    onComplete({ bType, orgName, industry, country, state, street, city, postcode, currency, timezone, vatReg, vatNum, importExport, flatRate, flatRatePct, cisReg, cisContractor, cisSub, cisRate });
+    onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode, currency, timezone,
+      vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
+      cisReg: cisReg ? "Yes" : "No", cisContractor, cisSub, cisRate, cisUtr });
   };
 
   return (
@@ -292,26 +468,33 @@ function OrgSetupPage({ onComplete, initialData }) {
         <div style={{ padding:"24px 40px 36px", overflowY:"auto", maxHeight:"75vh" }}>
           <Field label="Type of Business" required><Toggle value={bType} onChange={setBType} options={["Sole Trader / Freelancer","Limited Company"]} /></Field>
           <Field label="Organization Name" required><Input value={orgName} onChange={setOrgName} placeholder="e.g. Bright Studio Ltd" /></Field>
-          <Field label="Industry" required><Select value={industry} onChange={setIndustry} options={INDUSTRIES} placeholder="Select an industry…" /></Field>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <Field label="Country" required><Select value={country} onChange={v=>{setCountry(v);setState("");}} options={COUNTRIES} /></Field>
-            <Field label="State / County">
-              {stateOpts.length>0?<Select value={state} onChange={setState} options={stateOpts} placeholder="Select…" />:<Input value={state} onChange={setState} placeholder="Enter…" />}
+          {bType==="Limited Company" && (
+            <Field label="Company Registration Number (CRN)" hint="Found on your Companies House certificate">
+              <Input value={crn} onChange={setCrn} placeholder="e.g. 12345678" />
             </Field>
-          </div>
+          )}
+          <Field label="Industry" required><Select value={industry} onChange={setIndustry} options={INDUSTRIES} placeholder="Select an industry…" /></Field>
+          {/* Organisation Address — country/county included */}
           <Field label="">
             <button onClick={()=>setShowAddr(!showAddr)}
               style={{ display:"flex", alignItems:"center", gap:8, background:"none", border:"1.5px dashed #CCC", borderRadius:7, padding:"9px 14px", cursor:"pointer", color:"#555", fontSize:13, fontFamily:ff, width:"100%" }}>
               <span style={{ color:"#888" }}>{showAddr?<Icons.ChevDown />:<Icons.ChevRight />}</span>
-              <span style={{ fontWeight:500 }}>Add Organization Address</span>
+              <span style={{ fontWeight:500 }}>Organisation Address</span>
+              {(country||street||city) && <span style={{ fontSize:11, color:"#888", marginLeft:"auto" }}>{[street,city,country].filter(Boolean).join(", ").slice(0,40)}</span>}
             </button>
           </Field>
           {showAddr && (
             <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 2px", marginBottom:14, border:"1px solid #EBEBEB" }}>
-              <Field label="Street"><Input value={street} onChange={setStreet} placeholder="123 High Street" /></Field>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                <Field label="City"><Input value={city} onChange={setCity} /></Field>
-                <Field label="Postcode"><Input value={postcode} onChange={setPostcode} /></Field>
+                <Field label="Country" required><Select value={country} onChange={v=>{setCountry(v);setState("");}} options={COUNTRIES} /></Field>
+                <Field label="State / County">
+                  {stateOpts.length>0?<Select value={state} onChange={setState} options={stateOpts} placeholder="Select…" />:<Input value={state} onChange={setState} placeholder="Enter…" />}
+                </Field>
+              </div>
+              <Field label="Street Address"><Input value={street} onChange={setStreet} placeholder="123 High Street" /></Field>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <Field label="City / Town"><Input value={city} onChange={setCity} /></Field>
+                <Field label="Postcode / ZIP"><Input value={postcode} onChange={setPostcode} /></Field>
               </div>
             </div>
           )}
@@ -319,10 +502,15 @@ function OrgSetupPage({ onComplete, initialData }) {
             <Field label="Currency" required><Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST} /></Field>
             <Field label="Time Zone"><Select value={timezone} onChange={setTimezone} options={TIMEZONES} /></Field>
           </div>
-          <Field label="VAT Registered?" required>
-            <Toggle value={vatReg} onChange={v=>{setVatReg(v);setVatNumTouched(false);}} options={["Yes","No"]} />
-          </Field>
-          {vatReg==="Yes" && (
+          {/* VAT as slide toggle */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #EBEBEB", marginBottom:4 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>VAT Registered</div>
+              <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>Are you registered to charge VAT?</div>
+            </div>
+            <SlideToggle value={vatReg} onChange={v=>{setVatReg(v);setVatNumTouched(false);}} />
+          </div>
+          {vatReg && (
             <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 8px", marginBottom:14, border:"1px solid #EBEBEB" }}>
               <Field label="VAT Registration Number" required error={vatNumError}>
                 <Input value={vatNum} onChange={v=>{setVatNum(v);setVatNumTouched(true);}} placeholder="GB123456789" error={!!vatNumError} />
@@ -337,17 +525,22 @@ function OrgSetupPage({ onComplete, initialData }) {
               {flatRate && <Field label="Flat Rate %"><Input value={flatRatePct} onChange={setFlatRatePct} type="number" placeholder="e.g. 12.5" /></Field>}
             </div>
           )}
-          {vatReg==="No" && <InfoBox color="#D97706">Items and invoices will not include VAT. You cannot legally charge VAT to customers until VAT registered.</InfoBox>}
+          {!vatReg && <InfoBox color="#D97706">Items and invoices will not include VAT. You cannot legally charge VAT to customers until VAT registered.</InfoBox>}
           {isCIS && (
             <>
-              <div style={{ marginTop:14 }}>
-                <Field label="CIS (Construction Industry Scheme) Registered?" required>
-                  <Toggle value={cisReg} onChange={setCisReg} options={["Yes","No"]} />
-                </Field>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #EBEBEB", marginTop:8, marginBottom:4 }}>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>CIS Registered</div>
+                  <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>Construction Industry Scheme</div>
+                </div>
+                <SlideToggle value={cisReg} onChange={v=>setCisReg(v)} />
               </div>
-              {cisReg==="Yes" && (
+              {cisReg && (
                 <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 8px", marginBottom:14, border:"1px solid #EBEBEB" }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>CIS Role</div>
+                  <Field label="UTR Number" hint="Unique Taxpayer Reference — 10 digits">
+                    <Input value={cisUtr} onChange={setCisUtr} placeholder="e.g. 1234567890" maxLength={10} />
+                  </Field>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:"0.06em", margin:"8px 0 10px" }}>CIS Role</div>
                   <Checkbox checked={cisContractor} onChange={setCisContractor} label="Contractor (I engage subcontractors)" />
                   <Checkbox checked={cisSub} onChange={setCisSub} label="Subcontractor (I work for contractors)" />
                   {cisSub && <Field label="CIS Deduction Rate"><Select value={cisRate} onChange={setCisRate} options={CIS_RATES} /></Field>}
@@ -426,7 +619,7 @@ function CustomerModal({ existing, onClose, onSave }) {
               <Field label="Last Name" required><Input value={lastName} onChange={setLastName} placeholder="Smith" /></Field>
             </div>
           </div>
-          {custType==="Business" && <Field label="Company Name"><Input value={companyName} onChange={setCompanyName} placeholder="Acme Corporation Ltd" /></Field>}
+          {custType==="Business" && <Field label="Company Name"><Input value={companyName} onChange={v=>{ setCompanyName(v); if(!displayName || displayName===companyName) setDisplayName(v); }} placeholder="Acme Corporation Ltd" /></Field>}
           <Field label="Display Name (on invoices)" required><Input value={displayName} onChange={setDisplayName} /></Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Field label="Email" required><Input value={email} onChange={setEmail} type="email" placeholder="jane@example.com" /></Field>
@@ -643,69 +836,86 @@ const NAV = [
   { id:"payments", label:"Payments Received", Icon:Icons.Payments },
   { id:"settings", label:"Settings", Icon:Icons.Settings },
 ];
-function Sidebar({ active, setActive, user, onEditUser, mobileOpen, setMobileOpen }) {
-  const inner = (
-    <div style={{ width:220, height:"100%", background:"#1A1A1A", display:"flex", flexDirection:"column", fontFamily:ff }}>
-      <div style={{ padding:"20px 16px 16px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-          <div style={{ width:30, height:30, background:"#E86C4A", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
-          <span style={{ color:"#fff", fontSize:14, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
-        </div>
-        <button onClick={()=>setMobileOpen(false)} style={{ display:"none", background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.4)", padding:2, className:"mob-close" }}><Icons.X /></button>
+
+const SIDEBAR_FULL = 220;
+const SIDEBAR_ICON = 54;
+
+function Sidebar({ active, setActive, user, onEditUser, setMobileOpen, sidebarBg="#1A1A1A", accent="#E86C4A", pinned=true, onTogglePin, userAvatar, collapsed=false }) {
+  return (
+    <div style={{ width: collapsed ? SIDEBAR_ICON : SIDEBAR_FULL, height:"100%", background:sidebarBg, display:"flex", flexDirection:"column", fontFamily:ff, overflow:"hidden", transition:"width 0.22s cubic-bezier(.4,0,.2,1)" }}>
+      {/* Logo / header */}
+      <div style={{ padding: collapsed ? "16px 0" : "18px 14px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent: collapsed ? "center" : "space-between", flexShrink:0 }}>
+        {collapsed ? (
+          <div style={{ width:28, height:28, background:accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
+        ) : (<>
+          <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+            <div style={{ width:28, height:28, background:accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
+            <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
+          </div>
+          {onTogglePin && (
+            <button onClick={onTogglePin} title={pinned ? "Unpin sidebar" : "Pin sidebar"}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.4)", padding:3, display:"flex", borderRadius:5, transition:"color 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.color=accent} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.4)"}>
+              <Ic d={pinned
+                ? '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>'
+                : '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'
+              } size={14} sw={2}/>
+            </button>
+          )}
+        </>)}
       </div>
-      <nav style={{ flex:1, padding:"10px 8px", overflowY:"auto" }}>
+
+      {/* Nav items */}
+      <nav style={{ flex:1, padding: collapsed ? "8px 0" : "10px 8px", overflowY:"auto" }}>
         {NAV.map(({ id, label, Icon })=>{
-          const on=active===id;
-          return (
-            <button key={id} onClick={()=>{ setActive(id); setMobileOpen(false); }}
-              style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?"rgba(232,108,74,0.15)":"none", color:on?"#E86C4A":"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
+          const on = active===id;
+          return collapsed ? (
+            <button key={id} onClick={()=>{ setActive(id); setMobileOpen?.(false); }}
+              title={label}
+              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?`${accent}22`:"none", color:on?accent:"rgba(255,255,255,0.45)", cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
+              onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="rgba(255,255,255,0.07)"; }}
+              onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
+              <Icon />
+              {on && <div style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:3, height:20, borderRadius:"3px 0 0 3px", background:accent }} />}
+            </button>
+          ) : (
+            <button key={id} onClick={()=>{ setActive(id); setMobileOpen?.(false); }}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?`${accent}22`:"none", color:on?accent:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
               onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
-              <Icon />{label}{on && <div style={{ marginLeft:"auto", width:4, height:4, borderRadius:"50%", background:"#E86C4A" }} />}
+              <Icon />{label}{on && <div style={{ marginLeft:"auto", width:4, height:4, borderRadius:"50%", background:accent }} />}
             </button>
           );
         })}
       </nav>
-      <div style={{ padding:"10px 14px 16px", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", gap:10 }}>
-        <div style={{ width:30, height:30, borderRadius:"50%", background:"#E86C4A", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:12, fontWeight:700, flexShrink:0 }}>
-          {(user.name||"?")[0].toUpperCase()}
-        </div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ color:"#fff", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name}</div>
-          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11 }}>{user.role}</div>
-        </div>
+
+      {/* User footer */}
+      <div style={{ padding: collapsed ? "10px 0 14px" : "10px 12px 14px", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent: collapsed ? "center" : "unset", gap:9, flexShrink:0 }}>
         <button onClick={onEditUser} title="Edit profile"
-          style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.3)", padding:2, display:"flex" }}
-          onMouseEnter={e=>e.currentTarget.style.color="#E86C4A"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>
-          <Icons.Pen />
+          style={{ width:32, height:32, borderRadius:"50%", background:accent, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:13, fontWeight:700, flexShrink:0, overflow:"hidden", border:"none", cursor:"pointer", padding:0 }}>
+          {userAvatar ? <img src={userAvatar} alt="avatar" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?")[0].toUpperCase()}
         </button>
+        {!collapsed && (<>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:"#fff", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name}</div>
+            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11 }}>{user.role}</div>
+          </div>
+          <button onClick={onEditUser} title="Edit profile"
+            style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.3)", padding:2, display:"flex" }}
+            onMouseEnter={e=>e.currentTarget.style.color=accent} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>
+            <Icons.Pen />
+          </button>
+        </>)}
       </div>
     </div>
-  );
-  return (
-    <>
-      {/* Desktop sidebar */}
-      <div className="sidebar-desktop" style={{ width:220, minHeight:"100vh", position:"fixed", top:0, left:0, bottom:0, zIndex:100 }}>
-        {inner}
-      </div>
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div style={{ position:"fixed", inset:0, zIndex:500 }}>
-          <div onClick={()=>setMobileOpen(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} />
-          <div style={{ position:"absolute", top:0, left:0, bottom:0, width:240, zIndex:501 }}>
-            {inner}
-          </div>
-        </div>
-      )}
-    </>
   );
 }
 
 // ─── MOBILE TOP BAR ───────────────────────────────────────────────────────────
-function MobileTopBar({ activePage, onMenuOpen, onNavigate }) {
+function MobileTopBar({ activePage, onMenuOpen, onNavigate, sidebarBg="#1A1A1A" }) {
   const page = NAV.find(n=>n.id===activePage);
   return (
-    <div className="mobile-topbar" style={{ display:"none", position:"fixed", top:0, left:0, right:0, height:52, background:"#1A1A1A", zIndex:200, alignItems:"center", padding:"0 16px", gap:12 }}>
+    <div className="mobile-topbar" style={{ display:"none", position:"fixed", top:0, left:0, right:0, height:52, background:sidebarBg, zIndex:200, alignItems:"center", padding:"0 16px", gap:12 }}>
       <button onClick={onMenuOpen} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.7)", display:"flex", alignItems:"center", padding:4 }}>
         <Ic d='<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>' size={20} sw={2} />
       </button>
@@ -744,30 +954,173 @@ function MobileBottomNav({ active, setActive }) {
 }
 
 // ─── USER EDIT MODAL ──────────────────────────────────────────────────────────
-function UserEditModal({ user, onClose, onSave }) {
+function UserEditModal({ user, onClose, onSave, userAvatar, setUserAvatar, appTheme, setAppTheme, sidebarPinned, setSidebarPinned }) {
   const [name, setName] = useState(user.name||"");
   const [role, setRole] = useState(user.role||"Admin");
   const [email, setEmail] = useState(user.email||"");
+  const [tab, setTab] = useState("profile"); // "profile" | "appearance"
+  const [localAvatar, setLocalAvatar] = useState(userAvatar);
+  const [themeType, setThemeType] = useState(appTheme?.type||"solid");
+  const [themeColor, setThemeColor] = useState(appTheme?.color||"#1A1A1A");
+  const [themeColor2, setThemeColor2] = useState(appTheme?.color2||"#E86C4A");
+  const [themeAccent, setThemeAccent] = useState(appTheme?.accent||"#E86C4A");
+  const [pinned, setPinned] = useState(sidebarPinned);
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setLocalAvatar(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const PRESET_THEMES = [
+    { label:"Dark",       type:"solid",    color:"#1A1A1A", color2:"#333", accent:"#E86C4A" },
+    { label:"Ocean",      type:"gradient", color:"#1E3A8A", color2:"#0891B2", accent:"#38BDF8" },
+    { label:"Forest",     type:"gradient", color:"#14532D", color2:"#166534", accent:"#4ADE80" },
+    { label:"Sunset",     type:"gradient", color:"#7C2D12", color2:"#E86C4A", accent:"#FDBA74" },
+    { label:"Violet",     type:"gradient", color:"#4C1D95", color2:"#7C3AED", accent:"#C4B5FD" },
+    { label:"Slate",      type:"solid",    color:"#334155", color2:"#475569", accent:"#94A3B8" },
+    { label:"Rose",       type:"gradient", color:"#881337", color2:"#E11D48", accent:"#FDA4AF" },
+    { label:"Charcoal",   type:"solid",    color:"#292524", color2:"#44403C", accent:"#FCD34D" },
+  ];
+
+  const previewBg = themeType==="gradient"
+    ? `linear-gradient(160deg,${themeColor},${themeColor2})`
+    : themeColor;
+
+  const handleSave = () => {
+    onSave({ name, role, email });
+    setUserAvatar(localAvatar);
+    setAppTheme({ type:themeType, color:themeColor, color2:themeColor2, accent:themeAccent });
+    setSidebarPinned(pinned);
+    onClose();
+  };
+
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2000, padding:20 }}>
-      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:400, boxShadow:"0 20px 60px rgba(0,0,0,0.18)", fontFamily:ff, overflow:"hidden" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 24px 14px", borderBottom:"1px solid #F0F0F0" }}>
-          <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1A1A1A" }}>Edit Profile</h2>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2000, padding:16 }}>
+      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:480, maxHeight:"92vh", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:ff, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 22px 12px", borderBottom:"1px solid #F0F0F0" }}>
+          <h2 style={{ margin:0, fontSize:16, fontWeight:800, color:"#1A1A1A" }}>Profile & Appearance</h2>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA", display:"flex" }}><Icons.X /></button>
         </div>
-        <div style={{ padding:"18px 24px" }}>
-          <div style={{ display:"flex", justifyContent:"center", marginBottom:18 }}>
-            <div style={{ width:64, height:64, borderRadius:"50%", background:"#E86C4A", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:26, fontWeight:800 }}>
-              {(name||"?")[0].toUpperCase()}
+        {/* Tabs */}
+        <div style={{ display:"flex", gap:0, padding:"0 22px", borderBottom:"1px solid #F0F0F0" }}>
+          {[["profile","👤 Profile"],["appearance","🎨 Appearance"]].map(([t,l])=>(
+            <button key={t} onClick={()=>setTab(t)}
+              style={{ padding:"10px 16px", border:"none", borderBottom:`2px solid ${tab===t?"#1A1A1A":"transparent"}`, background:"none", fontSize:13, fontWeight:tab===t?700:400, color:tab===t?"#1A1A1A":"#888", cursor:"pointer", fontFamily:ff }}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ overflowY:"auto", flex:1, padding:"18px 22px" }}>
+          {tab==="profile" && (<>
+            {/* Avatar */}
+            <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
+              <label style={{ cursor:"pointer", position:"relative", display:"block" }}>
+                <div style={{ width:80, height:80, borderRadius:"50%", background:themeColor, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:30, fontWeight:800, overflow:"hidden", border:"3px solid #F0F0F0" }}>
+                  {localAvatar
+                    ? <img src={localAvatar} alt="avatar" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    : (name||"?")[0].toUpperCase()
+                  }
+                </div>
+                <div style={{ position:"absolute", bottom:0, right:0, width:26, height:26, borderRadius:"50%", background:"#1A1A1A", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", border:"2px solid #fff" }}>
+                  <Icons.Plus />
+                </div>
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display:"none" }} />
+              </label>
             </div>
-          </div>
-          <Field label="Full Name" required><Input value={name} onChange={setName} placeholder="Your name" /></Field>
-          <Field label="Email"><Input value={email} onChange={setEmail} type="email" placeholder="email@example.com" /></Field>
-          <Field label="Role"><Select value={role} onChange={setRole} options={["Admin","Manager","Accountant","Viewer"]} /></Field>
+            {localAvatar && (
+              <div style={{ textAlign:"center", marginBottom:14 }}>
+                <button onClick={()=>setLocalAvatar(null)} style={{ fontSize:11, color:"#DC2626", background:"none", border:"none", cursor:"pointer", fontFamily:ff }}>Remove photo</button>
+              </div>
+            )}
+            <Field label="Full Name" required><Input value={name} onChange={setName} placeholder="Your name" /></Field>
+            <Field label="Email"><Input value={email} onChange={setEmail} type="email" placeholder="email@example.com" /></Field>
+            <Field label="Role"><Select value={role} onChange={setRole} options={["Admin","Manager","Accountant","Viewer"]} /></Field>
+          </>)}
+
+          {tab==="appearance" && (<>
+            {/* Sidebar preview */}
+            <div style={{ borderRadius:10, overflow:"hidden", marginBottom:16, border:"1px solid #EBEBEB" }}>
+              <div style={{ background:previewBg, padding:"12px 14px", display:"flex", alignItems:"center", gap:9 }}>
+                <div style={{ width:24, height:24, borderRadius:6, background:themeAccent, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
+                <span style={{ color:"#fff", fontSize:12, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
+              </div>
+              <div style={{ background:previewBg, padding:"4px 8px 10px" }}>
+                {["Home","Invoices","Payments"].map(l=>(
+                  <div key={l} style={{ padding:"7px 10px", borderRadius:6, margin:"2px 0", color:l==="Invoices"?themeAccent:"rgba(255,255,255,0.5)", background:l==="Invoices"?`${themeAccent}22`:"none", fontSize:12, display:"flex", alignItems:"center", gap:8 }}>
+                    <div style={{ width:5, height:5, borderRadius:"50%", background:l==="Invoices"?themeAccent:"rgba(255,255,255,0.2)" }} />{l}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Preset themes */}
+            <div style={{ fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Preset Themes</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom:14 }}>
+              {PRESET_THEMES.map(p=>{
+                const bg = p.type==="gradient"?`linear-gradient(135deg,${p.color},${p.color2})`:p.color;
+                const active = themeColor===p.color && themeType===p.type;
+                return (
+                  <button key={p.label} onClick={()=>{ setThemeType(p.type); setThemeColor(p.color); setThemeColor2(p.color2); setThemeAccent(p.accent); }}
+                    style={{ padding:"8px 6px", borderRadius:8, border:`2px solid ${active?"#1A1A1A":"#EBEBEB"}`, background:"#fff", cursor:"pointer", fontFamily:ff }}>
+                    <div style={{ height:22, borderRadius:5, background:bg, marginBottom:4 }} />
+                    <span style={{ fontSize:10, fontWeight:600, color:"#555" }}>{p.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom controls */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              <Field label="Style">
+                <Toggle value={themeType==="gradient"?"Gradient":"Solid"} onChange={v=>setThemeType(v==="Gradient"?"gradient":"solid")} options={["Solid","Gradient"]} />
+              </Field>
+              <Field label="Accent Colour">
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                  <input type="color" value={themeAccent} onChange={e=>setThemeAccent(e.target.value)}
+                    style={{ width:36, height:34, borderRadius:7, border:"1.5px solid #E0E0E0", padding:2, cursor:"pointer" }} />
+                  <span style={{ fontSize:11, color:"#AAA", fontFamily:"monospace" }}>{themeAccent}</span>
+                </div>
+              </Field>
+              <Field label={themeType==="gradient"?"Gradient Start":"Sidebar Colour"}>
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                  <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)}
+                    style={{ width:36, height:34, borderRadius:7, border:"1.5px solid #E0E0E0", padding:2, cursor:"pointer" }} />
+                  <span style={{ fontSize:11, color:"#AAA", fontFamily:"monospace" }}>{themeColor}</span>
+                </div>
+              </Field>
+              {themeType==="gradient" && (
+                <Field label="Gradient End">
+                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    <input type="color" value={themeColor2} onChange={e=>setThemeColor2(e.target.value)}
+                      style={{ width:36, height:34, borderRadius:7, border:"1.5px solid #E0E0E0", padding:2, cursor:"pointer" }} />
+                    <span style={{ fontSize:11, color:"#AAA", fontFamily:"monospace" }}>{themeColor2}</span>
+                  </div>
+                </Field>
+              )}
+            </div>
+
+            {/* Sidebar behaviour */}
+            <div style={{ marginTop:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Sidebar Behaviour</div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 12px", background:"#F9F9F9", borderRadius:9, border:"1px solid #EBEBEB" }}>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>Pinned Sidebar</div>
+                  <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>Always visible · hover to show when unpinned</div>
+                </div>
+                <SlideToggle value={pinned} onChange={setPinned} />
+              </div>
+            </div>
+          </>)}
         </div>
-        <div style={{ padding:"12px 24px 16px", borderTop:"1px solid #F0F0F0", display:"flex", gap:10, justifyContent:"flex-end" }}>
+
+        <div style={{ padding:"12px 22px 16px", borderTop:"1px solid #F0F0F0", display:"flex", gap:10, justifyContent:"flex-end" }}>
           <Btn onClick={onClose} variant="outline">Cancel</Btn>
-          <Btn onClick={()=>{ onSave({ name, role, email }); onClose(); }} variant="primary" disabled={!name}>Save Changes</Btn>
+          <Btn onClick={handleSave} variant="primary" disabled={!name}>Save Changes</Btn>
         </div>
       </div>
     </div>
@@ -1158,9 +1511,389 @@ function DocPreview({ data, currSymbol, docType="Invoice", isVat }) {
   );
 }
 
+// ─── SAVE SPLIT BUTTON ────────────────────────────────────────────────────────
+function SaveSplitBtn({ onSave, onSaveAndSend, onSaveAndPrint, saving }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(()=>{
+    const h = e=>{ if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown",h); return ()=>document.removeEventListener("mousedown",h);
+  },[]);
+  return (
+    <div ref={ref} style={{ position:"relative", display:"flex" }}>
+      <button onClick={()=>{ onSave(); setOpen(false); }} disabled={saving}
+        style={{ padding:"8px 14px", background:"#1A1A1A", color:"#fff", border:"none", borderRight:"1px solid rgba(255,255,255,0.15)", borderRadius:"8px 0 0 8px", fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:ff, display:"flex", alignItems:"center", gap:6, opacity:saving?0.6:1 }}>
+        <Icons.Save />{saving?"Saving…":"Save"}
+      </button>
+      <button onClick={()=>setOpen(o=>!o)} disabled={saving}
+        style={{ padding:"8px 9px", background:"#1A1A1A", color:"#fff", border:"none", borderRadius:"0 8px 8px 0", fontSize:13, cursor:saving?"not-allowed":"pointer", display:"flex", alignItems:"center", opacity:saving?0.6:1 }}>
+        <Icons.ChevDown />
+      </button>
+      {open && (
+        <div style={{ position:"absolute", top:"calc(100% + 4px)", right:0, background:"#fff", border:"1.5px solid #E0E0E0", borderRadius:9, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:160, zIndex:500, overflow:"hidden" }}>
+          {[
+            { label:"Save", icon:<Icons.Save />, action:onSave },
+            { label:"Save & Send", icon:<Icons.Send />, action:onSaveAndSend },
+            { label:"Save & Print", icon:<Icons.Receipt />, action:onSaveAndPrint },
+          ].map(item=>(
+            <button key={item.label} onClick={()=>{ item.action(); setOpen(false); }}
+              style={{ width:"100%", padding:"10px 14px", background:"none", border:"none", display:"flex", alignItems:"center", gap:9, fontSize:13, fontWeight:600, color:"#1A1A1A", cursor:"pointer", fontFamily:ff, textAlign:"left" }}
+              onMouseEnter={e=>e.currentTarget.style.background="#F7F7F5"}
+              onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <span style={{ color:"#888" }}>{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PAID CONFIRM MODAL ───────────────────────────────────────────────────────
+function PaidConfirmModal({ invoice, onConfirm, onCancel }) {
+  const { customPayMethods } = useContext(AppCtx);
+  const allMethods = [...PAYMENT_METHODS, ...customPayMethods];
+  const [payDate, setPayDate] = useState(todayStr());
+  const [payMethod, setPayMethod] = useState("Bank Transfer");
+  const [payRef, setPayRef] = useState("");
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:3000, padding:16 }}>
+      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:420, boxShadow:"0 20px 60px rgba(0,0,0,0.18)", fontFamily:ff, overflow:"hidden" }}>
+        <div style={{ background:"#F0FDF4", padding:"18px 22px 14px", borderBottom:"1px solid #BBF7D0" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:38, height:38, borderRadius:"50%", background:"#16A34A", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}><Icons.Check /></div>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:"#15803D" }}>Mark as Paid</div>
+              <div style={{ fontSize:12, color:"#16A34A", marginTop:1 }}>{invoice.invoice_number} · {fmt(CUR_SYM[invoice.currency]||"£", invoice.total)}</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ padding:"18px 22px", display:"flex", flexDirection:"column", gap:13 }}>
+          <p style={{ margin:0, fontSize:13, color:"#555", lineHeight:1.6 }}>Confirm payment details. A record will be automatically added to <strong>Payments Received</strong>.</p>
+          <Field label="Payment Date" required>
+            <input value={payDate} onChange={e=>setPayDate(e.target.value)} type="date"
+              style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+          </Field>
+          <Field label="Payment Method" required>
+            <Select value={payMethod} onChange={setPayMethod} options={allMethods} />
+          </Field>
+          <Field label="Reference (optional)">
+            <Input value={payRef} onChange={setPayRef} placeholder="Bank ref, transaction ID…" />
+          </Field>
+        </div>
+        <div style={{ padding:"12px 22px 18px", display:"flex", gap:8, justifyContent:"flex-end" }}>
+          <Btn onClick={onCancel} variant="outline">Cancel</Btn>
+          <Btn onClick={()=>onConfirm({ date:payDate, method:payMethod, reference:payRef })} variant="primary" icon={<Icons.Check />}>Confirm Payment</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── A4 INVOICE DOCUMENT (multi-template, for print/email) ───────────────────
+function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template="classic", footerText="" }) {
+  const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms } = data;
+  const sym = currSymbol||"£";
+  const org = orgSettings||{};
+  // Default accent per template if not overridden
+  const tplDef = PDF_TEMPLATES.find(t=>t.id===template)||PDF_TEMPLATES[0];
+  const accent = accentColor || tplDef.defaultAccent;
+  const addrParts = [org.street, org.city, [org.postcode, org.state].filter(Boolean).join(" "), org.country].filter(Boolean);
+
+  const OrgBlock = () => (
+    <div>
+      {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight:52, maxWidth:160, objectFit:"contain", display:"block", marginBottom:5 }} />}
+      <div style={{ fontSize:"15pt", fontWeight:900, color: template==="modern" ? "#fff" : accent, letterSpacing:"-0.01em" }}>{org.orgName||"Your Company"}</div>
+      {addrParts.length>0 && (
+        <div style={{ fontSize:"7.5pt", color: template==="modern" ? "rgba(255,255,255,0.75)" : "#666", marginTop:3, lineHeight:1.8 }}>
+          {addrParts.map((line,i)=><div key={i}>{line}</div>)}
+        </div>
+      )}
+      {org.vatNum && <div style={{ fontSize:"7.5pt", color: template==="modern" ? "rgba(255,255,255,0.6)" : "#AAA", marginTop:2 }}>VAT No: {org.vatNum}</div>}
+    </div>
+  );
+
+  const InvoiceMetaBlock = ({ dark=false }) => (
+    <div>
+      <div style={{ fontSize:"7pt", fontWeight:700, color:dark?"rgba(255,255,255,0.5)":"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"3mm" }}>Invoice Details</div>
+      {[["Invoice No", docNumber||"INV-0001"],["Issue Date", fmtDate(issueDate)],["Due Date", fmtDate(dueDate)],["Payment Terms", paymentTerms||"Net 30"]].map(([l,v])=>(
+        <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"1.5mm 0", borderBottom:`1px solid ${dark?"rgba(255,255,255,0.12)":"#F0F0F0"}` }}>
+          <span style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#888" }}>{l}</span>
+          <span style={{ fontSize:"8.5pt", fontWeight:700, color:dark?"#fff":"#1A1A1A" }}>{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  const BillToBlock = ({ dark=false }) => (
+    <div>
+      <div style={{ fontSize:"7pt", fontWeight:700, color:dark?"rgba(255,255,255,0.5)":"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"3mm" }}>Bill To</div>
+      {customer ? (<>
+        <div style={{ fontWeight:700, fontSize:"11pt", color:dark?"#fff":"#1A1A1A" }}>{customer.name}</div>
+        {customer.companyName && customer.companyName!==customer.name && <div style={{ fontSize:"9pt", color:dark?"rgba(255,255,255,0.7)":"#555", marginTop:1 }}>{customer.companyName}</div>}
+        {customer.email && <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666", marginTop:2 }}>{customer.email}</div>}
+        {customer.phone && <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666" }}>{customer.phone}</div>}
+        {customer.billingAddress && (
+          <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666", marginTop:3, lineHeight:1.7 }}>
+            {[customer.billingAddress.street, customer.billingAddress.city, [customer.billingAddress.postcode, customer.billingAddress.county].filter(Boolean).join(" "), customer.billingAddress.country].filter(Boolean).map((l,i)=><div key={i}>{l}</div>)}
+          </div>
+        )}
+      </>) : <div style={{ fontSize:"9pt", color:"#CCC", fontStyle:"italic" }}>No customer selected</div>}
+    </div>
+  );
+
+  const ItemsTable = ({ headerBg=accent, headerColor="#fff", stripeBg="#FAFAFA" }) => (
+    <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:"5mm" }}>
+      <thead>
+        <tr style={{ background:headerBg }}>
+          {["Description","Qty","Unit Price",...(isVat?["VAT"]:[]),"Amount"].map((h,i)=>(
+            <th key={h} style={{ padding:"2.5mm 3mm", textAlign:i>0?"right":"left", fontSize:"7.5pt", fontWeight:700, color:headerColor, letterSpacing:"0.04em" }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {items.filter(it=>it.description||it.amount>0).map((it,idx)=>(
+          <tr key={it.id} style={{ background:idx%2===0?stripeBg:"#fff" }}>
+            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt" }}>{it.description||`Item ${idx+1}`}</td>
+            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{it.quantity}</td>
+            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{fmt(sym,it.rate)}</td>
+            {isVat && <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#888" }}>{it.tax_rate}%</td>}
+            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", fontWeight:700, textAlign:"right" }}>{fmt(sym,it.amount)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  const TotalsBlock = () => (
+    <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"5mm" }}>
+      <div style={{ minWidth:"62mm" }}>
+        {[["Subtotal",fmt(sym,subtotal)],
+          ...(discountAmount>0?[["Discount",`− ${fmt(sym,discountAmount)}`,"#E86C4A"]]:[]),
+          ...(Number(shipping)>0?[["Shipping",fmt(sym,shipping)]]:[]),
+          ...(isVat?taxBreakdown.map(tb=>[`VAT ${tb.rate}%`,fmt(sym,tb.amount)]):[]),
+          ...((cisDeduction||0)>0?[["CIS Deduction",`− ${fmt(sym,cisDeduction)}`,"#D97706"]]:[]),
+        ].map(([l,v,c])=>(
+          <div key={l} style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0", borderBottom:"1px solid #F4F4F4" }}>
+            <span style={{ fontSize:"8.5pt", color:"#888" }}>{l}</span>
+            <span style={{ fontSize:"8.5pt", color:c||"#555" }}>{v}</span>
+          </div>
+        ))}
+        <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"3mm 4mm 2mm", background:accent, borderRadius:4, marginTop:2 }}>
+          <span style={{ fontSize:"10pt", fontWeight:800, color:"#fff" }}>Total Due</span>
+          <span style={{ fontSize:"11pt", fontWeight:900, color:"#fff" }}>{fmt(sym,total)}</span>
+        </div>
+        {(cisDeduction||0)>0 && (
+          <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0" }}>
+            <span style={{ fontSize:"7.5pt", color:"#D97706", fontWeight:700 }}>After CIS</span>
+            <span style={{ fontSize:"8.5pt", fontWeight:800, color:"#D97706" }}>{fmt(sym,total-cisDeduction)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const NotesBlock = () => (notes||terms) ? (
+    <div style={{ borderTop:"1px solid #EBEBEB", paddingTop:"4mm", display:"grid", gridTemplateColumns:notes&&terms?"1fr 1fr":"1fr", gap:"6mm" }}>
+      {notes && <div><div style={{ fontSize:"7pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"2mm" }}>Notes</div><p style={{ fontSize:"8pt", color:"#555", margin:0, lineHeight:1.7 }}>{notes}</p></div>}
+      {terms && <div><div style={{ fontSize:"7pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"2mm" }}>Payment Terms</div><p style={{ fontSize:"8pt", color:"#555", margin:0, lineHeight:1.7 }}>{terms}</p></div>}
+    </div>
+  ) : null;
+
+  const FooterBar = () => (
+    <div style={{ position:"absolute", bottom:"10mm", left:"18mm", right:"18mm", borderTop:"1px solid #EBEBEB", paddingTop:"2.5mm" }}>
+      {footerText
+        ? <div style={{ fontSize:"7pt", color:"#888", textAlign:"center", lineHeight:1.6 }}>{footerText}</div>
+        : <div style={{ display:"flex", justifyContent:"space-between" }}>
+            <span style={{ fontSize:"7pt", color:"#CCC" }}>{org.orgName||""}{org.vatNum?` · VAT ${org.vatNum}`:""}{org.crn?` · CRN ${org.crn}`:""}</span>
+            <span style={{ fontSize:"7pt", color:"#CCC" }}>{org.email||""}</span>
+          </div>
+      }
+    </div>
+  );
+
+  const base = { width:"210mm", minHeight:"297mm", background:"#fff", fontFamily:ff, boxSizing:"border-box", fontSize:"10pt", color:"#1A1A1A", position:"relative" };
+
+  // ── CLASSIC: ruled lines, black header bar ────────────────────────────────
+  if(template==="classic") return (
+    <div id="a4-invoice-doc" style={{ ...base, padding:"0" }}>
+      <div style={{ background:accent, padding:"14mm 18mm 10mm", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+        <OrgBlock />
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontSize:"22pt", fontWeight:900, color:"#fff", letterSpacing:"0.04em" }}>INVOICE</div>
+          <div style={{ fontSize:"12pt", color:"rgba(255,255,255,0.8)", fontWeight:700, marginTop:2 }}>{docNumber||"INV-0001"}</div>
+        </div>
+      </div>
+      <div style={{ padding:"8mm 18mm 14mm" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8mm", marginBottom:"8mm", paddingBottom:"6mm", borderBottom:`2px solid ${accent}` }}>
+          <BillToBlock />
+          <InvoiceMetaBlock />
+        </div>
+        <ItemsTable headerBg={accent} headerColor="#fff" stripeBg="#F8F8F8" />
+        <TotalsBlock />
+        <NotesBlock />
+      </div>
+      <FooterBar />
+    </div>
+  );
+
+  // ── MODERN: blue split panel, white right ─────────────────────────────────
+  if(template==="modern") return (
+    <div id="a4-invoice-doc" style={{ ...base, display:"flex", flexDirection:"column", padding:0 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"42% 58%" }}>
+        {/* Left dark panel */}
+        <div style={{ background:accent, padding:"14mm 12mm 10mm 14mm", minHeight:"62mm" }}>
+          <OrgBlock />
+          <div style={{ marginTop:"8mm" }}><BillToBlock dark={true} /></div>
+        </div>
+        {/* Right panel */}
+        <div style={{ padding:"14mm 14mm 10mm 12mm", background:"#fff", display:"flex", flexDirection:"column", justifyContent:"space-between" }}>
+          <div>
+            <div style={{ fontSize:"28pt", fontWeight:900, color:accent, letterSpacing:"-0.02em", lineHeight:1 }}>INVOICE</div>
+            <div style={{ fontSize:"12pt", fontWeight:700, color:"#555", marginTop:3, marginBottom:"6mm" }}>{docNumber||"INV-0001"}</div>
+            <InvoiceMetaBlock />
+          </div>
+        </div>
+      </div>
+      <div style={{ padding:"8mm 14mm 14mm" }}>
+        <ItemsTable headerBg={`${accent}18`} headerColor={accent} stripeBg="#F0F7FF" />
+        <TotalsBlock />
+        <NotesBlock />
+      </div>
+      <FooterBar />
+    </div>
+  );
+
+  // ── MINIMAL: sage green accents, clean white ──────────────────────────────
+  if(template==="minimal") return (
+    <div id="a4-invoice-doc" style={{ ...base, padding:"14mm 18mm 16mm" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8mm" }}>
+        <OrgBlock />
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontSize:"10pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.14em" }}>Invoice</div>
+          <div style={{ fontSize:"18pt", fontWeight:900, color:accent, marginTop:1 }}>{docNumber||"INV-0001"}</div>
+        </div>
+      </div>
+      <div style={{ height:2, background:`linear-gradient(90deg,${accent},${accent}44)`, marginBottom:"7mm", borderRadius:1 }} />
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8mm", marginBottom:"7mm" }}>
+        <BillToBlock />
+        <InvoiceMetaBlock />
+      </div>
+      <ItemsTable headerBg={`${accent}15`} headerColor={accent} stripeBg="#FAFAFA" />
+      <TotalsBlock />
+      <NotesBlock />
+      <FooterBar />
+    </div>
+  );
+
+  // ── BRANDED: terracotta, full-bleed colour strip ──────────────────────────
+  if(template==="branded") return (
+    <div id="a4-invoice-doc" style={{ ...base, padding:0 }}>
+      {/* Full-bleed top band */}
+      <div style={{ background:`linear-gradient(135deg,${accent} 0%,${accent}BB 100%)`, padding:"12mm 18mm 8mm", position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:-20, right:-20, width:140, height:140, borderRadius:"50%", background:"rgba(255,255,255,0.06)" }} />
+        <div style={{ position:"absolute", bottom:-40, right:40, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.05)" }} />
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", position:"relative" }}>
+          <OrgBlock />
+          <div style={{ textAlign:"right" }}>
+            <div style={{ fontSize:"24pt", fontWeight:900, color:"#fff", letterSpacing:"0.02em" }}>INVOICE</div>
+            <div style={{ fontSize:"12pt", fontWeight:700, color:"rgba(255,255,255,0.75)", marginTop:2 }}>{docNumber||"INV-0001"}</div>
+          </div>
+        </div>
+      </div>
+      {/* Info strip */}
+      <div style={{ background:tplDef.defaultBg||"#FFF7F4", padding:"6mm 18mm 5mm", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10mm", borderBottom:`3px solid ${accent}` }}>
+        <BillToBlock />
+        <InvoiceMetaBlock />
+      </div>
+      {/* Body */}
+      <div style={{ padding:"7mm 18mm 14mm" }}>
+        <ItemsTable headerBg={`${accent}22`} headerColor={accent} stripeBg="#FFFAF8" />
+        <TotalsBlock />
+        <NotesBlock />
+      </div>
+      <FooterBar />
+    </div>
+  );
+
+  // Fallback
+  return <div>Template not found</div>;
+}
+
+// ─── A4 PRINT MODAL ───────────────────────────────────────────────────────────
+function A4PrintModal({ data, currSymbol, isVat, onClose }) {
+  const { orgSettings } = useContext(AppCtx);
+  // Read pdfTemplate from context (via App root) — fallback to classic
+  const ctxFull = useContext(AppCtx);
+  const pdfTemplate = ctxFull.pdfTemplate||"classic";
+  const tplDef = PDF_TEMPLATES.find(t=>t.id===pdfTemplate)||PDF_TEMPLATES[0];
+  const [accentColor, setAccentColor] = useState(tplDef.defaultAccent);
+  const [activeTemplate, setActiveTemplate] = useState(pdfTemplate);
+
+  // When template tab changes, update accent to that template's default
+  const switchTemplate = (id) => {
+    setActiveTemplate(id);
+    setAccentColor(PDF_TEMPLATES.find(t=>t.id===id)?.defaultAccent||"#1A1A1A");
+  };
+
+  const handlePrint = () => {
+    const el = document.getElementById("a4-invoice-doc");
+    if(!el) return;
+    const w = window.open("","_blank","width=900,height=700");
+    w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${data.docNumber||""}</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{background:#fff;font-family:'Instrument Sans','DM Sans','Helvetica Neue',sans-serif}
+        @page{size:A4;margin:0}
+        @media print{body{margin:0}}
+      </style>
+    </head><body>${el.outerHTML}</body></html>`);
+    w.document.close();
+    setTimeout(()=>{ w.focus(); w.print(); },400);
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.72)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-start", zIndex:4000, overflowY:"auto", padding:"16px 16px 40px" }}>
+      {/* Toolbar */}
+      <div style={{ width:"100%", maxWidth:820, background:"#1A1A1A", borderRadius:"12px 12px 0 0", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+          <span style={{ fontSize:13, fontWeight:700, color:"#fff" }}>Print Preview — A4</span>
+          {/* Template switcher */}
+          <div style={{ display:"flex", gap:2, background:"rgba(255,255,255,0.08)", borderRadius:6, padding:"2px" }}>
+            {PDF_TEMPLATES.map(t=>(
+              <button key={t.id} onClick={()=>switchTemplate(t.id)}
+                style={{ padding:"4px 9px", borderRadius:5, border:"none", background:activeTemplate===t.id?"#fff":"transparent", color:activeTemplate===t.id?"#1A1A1A":"rgba(255,255,255,0.6)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
+                {t.name}
+              </button>
+            ))}
+          </div>
+          {/* Accent colour */}
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>Colour:</span>
+            {["#1A1A1A","#2563EB","#16A34A","#E86C4A","#9333EA","#DC2626","#0891B2","#D97706"].map(c=>(
+              <button key={c} onClick={()=>setAccentColor(c)}
+                style={{ width:18, height:18, borderRadius:"50%", background:c, border:`2px solid ${accentColor===c?"#fff":"transparent"}`, cursor:"pointer" }} />
+            ))}
+            <input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)}
+              style={{ width:24, height:20, borderRadius:4, border:"1px solid rgba(255,255,255,0.2)", padding:1, cursor:"pointer", background:"transparent" }} />
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <Btn onClick={onClose} variant="outline" style={{ color:"#fff", borderColor:"rgba(255,255,255,0.2)" }}>Close</Btn>
+          <Btn onClick={handlePrint} variant="accent" icon={<Icons.Receipt />}>Print</Btn>
+        </div>
+      </div>
+      {/* A4 sheet */}
+      <div style={{ width:"100%", maxWidth:820, background:"#fff", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", overflow:"hidden" }}>
+        <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat} orgSettings={orgSettings} accentColor={accentColor} template={activeTemplate} />
+      </div>
+    </div>
+  );
+}
+
 // ─── INVOICE FORM ─────────────────────────────────────────────────────────────
 function InvoiceForm({ existing, invoices, onSave, onCancel }) {
-  const { orgSettings, catalogItems, customers, quotes } = useContext(AppCtx);
+  const { orgSettings, catalogItems, customers, quotes, payments, setPayments } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
   const [invoiceNumber, setInvoiceNumber] = useState(existing?.invoice_number||nextNum("INV",invoices.map(i=>i.invoice_number)));
   const [customer, setCustomer] = useState(existing ? (customers||[]).find(c=>c.id===existing.customer_id)||null : null);
@@ -1213,48 +1946,59 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const discountAmount=discountType==="percent"?subtotal*(Number(discountValue)/100):Math.min(Number(discountValue),subtotal);
   const taxBreakdown=isVat?TAX_RATES.filter(r=>r>0).map(rate=>({ rate, amount:items.filter(i=>Number(i.tax_rate)===rate).reduce((s,i)=>s+i.amount*(rate/100),0) })).filter(tb=>tb.amount>0):[];
   const taxTotal=taxBreakdown.reduce((s,tb)=>s+tb.amount,0);
-  // CIS: sum deductions for all CIS-applicable lines
-  const cisApplicableItems = items.filter(it=>{
-    const ci = catalogItems?.find(c=>c.name===it.description);
-    return ci?.cisApplicable;
-  });
-  const cisDeduction = cisApplicableItems.reduce((s,it)=>{
-    const ci = catalogItems?.find(c=>c.name===it.description);
-    const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2;
-    return s + it.amount * rate;
-  }, 0);
+  const cisApplicableItems = items.filter(it=>{ const ci = catalogItems?.find(c=>c.name===it.description); return ci?.cisApplicable; });
+  const cisDeduction = cisApplicableItems.reduce((s,it)=>{ const ci = catalogItems?.find(c=>c.name===it.description); const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2; return s + it.amount * rate; }, 0);
   const total=(subtotal-discountAmount)+Number(shipping)+taxTotal;
 
-  // Save keeps current status, Save&Send forces Sent
-  const doSave = async (forceStatus) => {
+  const [showPaidConfirm, setShowPaidConfirm] = useState(false);
+  const [showA4Print, setShowA4Print] = useState(false);
+
+  // Intercept status → Paid to collect payment info
+  const handleStatusChange = (newStatus) => {
+    if(newStatus==="Paid" && status!=="Paid") { setShowPaidConfirm(true); }
+    else setStatus(newStatus);
+  };
+
+  const doSave = async (forceStatus, afterSave) => {
     setSaving(true);
     const finalStatus = forceStatus !== undefined ? forceStatus : status;
     const payload={ invoice_number:invoiceNumber, customer_id:customer?.id||null, customer_name:customer?.name||"", issue_date:issueDate, due_date:dueDate, payment_terms:paymentTerms, custom_payment_days:customDays, status:finalStatus, currency, subtotal, discount_type:discountType, discount_value:Number(discountValue), discount_amount:discountAmount, shipping:Number(shipping), tax_total:taxTotal, cis_deduction:cisDeduction, total, notes, terms, from_quote:fromQuote };
     try { if(existing?.id) await sbFetch("PATCH",`invoices?id=eq.${existing.id}`,payload); else await sbFetch("POST","invoices",payload); } catch {}
     setSaveMsg("Saved!");
-    onSave({ ...payload, id:existing?.id||crypto.randomUUID(), line_items:items });
+    const saved = { ...payload, id:existing?.id||crypto.randomUUID(), line_items:items };
+    onSave(saved);
     setSaving(false); setTimeout(()=>setSaveMsg(""),2000);
+    if(afterSave) afterSave(saved);
   };
 
-  const previewData={ docNumber:invoiceNumber, customer, issueDate, dueDate, currency, status, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms };
+  const previewData={ docNumber:invoiceNumber, customer, issueDate, dueDate, paymentTerms, currency, status, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms };
 
   return (
     <div style={{ padding:"clamp(12px,3vw,24px) clamp(12px,4vw,30px)", maxWidth:860, fontFamily:ff }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10 }}>
         <div><h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:"0 0 2px" }}>{existing?"Edit "+invoiceNumber:"New Invoice"}</h1><p style={{ color:"#AAA", fontSize:12, margin:0 }}>Fill in the details below</p></div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+        <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
           {saveMsg && <span style={{ fontSize:12, color:"#16A34A", fontWeight:700, display:"flex", alignItems:"center", gap:4 }}><Icons.Check />{saveMsg}</span>}
           <Btn onClick={onCancel} variant="outline">Cancel</Btn>
           <Btn onClick={()=>setShowPreview(true)} variant="outline" icon={<Icons.Eye />}>Preview</Btn>
-          <Btn onClick={()=>doSave()} variant="outline" disabled={saving} icon={<Icons.Save />}>Save</Btn>
-          <Btn onClick={()=>doSave("Sent")} variant="accent" disabled={saving} icon={<Icons.Send />}>{saving?"Saving…":"Save & Send"}</Btn>
+          {/* Print standalone */}
+          <Btn onClick={()=>setShowA4Print(true)} variant="outline" icon={<Icons.Receipt />}>Print</Btn>
+          {/* Save dropdown group */}
+          <SaveSplitBtn
+            onSave={()=>doSave()}
+            onSaveAndSend={()=>doSave("Sent")}
+            onSaveAndPrint={()=>{ doSave(undefined, ()=>setShowA4Print(true)); }}
+            saving={saving}
+          />
         </div>
       </div>
       <SectionCard title="Invoice Details">
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
           <Field label="Invoice Number" required><Input value={invoiceNumber} onChange={setInvoiceNumber} /></Field>
           <Field label="Issue Date" required><Input value={issueDate} onChange={setIssueDate} type="date" /></Field>
-          <Field label="Status"><Select value={status} onChange={setStatus} options={["Draft","Sent","Paid","Overdue","Void"]} /></Field>
+          <Field label="Status">
+            <Select value={status} onChange={handleStatusChange} options={["Draft","Sent","Paid","Overdue","Void"]} />
+          </Field>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginTop:10 }}>
           <Field label="Payment Terms">
@@ -1351,7 +2095,7 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 22px", borderBottom:"1px solid #F0F0F0" }}>
               <span style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Invoice Preview</span>
               <div style={{ display:"flex", gap:8 }}>
-                <Btn variant="outline" size="sm" icon={<Icons.Download />}>Download PDF</Btn>
+                <Btn onClick={()=>{ setShowPreview(false); setShowA4Print(true); }} variant="outline" size="sm" icon={<Icons.Receipt />}>Print Preview</Btn>
                 <button onClick={()=>setShowPreview(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
               </div>
             </div>
@@ -1361,13 +2105,42 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
           </div>
         </div>
       )}
+      {showPaidConfirm && (
+        <PaidConfirmModal
+          invoice={{ invoice_number:invoiceNumber, total, currency }}
+          onConfirm={(payInfo)=>{
+            setStatus("Paid");
+            setShowPaidConfirm(false);
+            doSave("Paid", (saved)=>{
+              // Register payment automatically in Payments Received
+              const nums = (payments||[]).map(p=>parseInt((p.payment_number||"").replace(/\D/g,""),10)).filter(Boolean);
+              const payNum = `PAY-${String(nums.length?Math.max(...nums)+1:1).padStart(4,"0")}`;
+              const newPay = {
+                id: crypto.randomUUID(), payment_number: payNum,
+                invoice_id: saved.id, invoice_number: saved.invoice_number,
+                customer_id: saved.customer_id, customer_name: saved.customer_name,
+                amount: saved.total, currency: saved.currency,
+                date: payInfo.date, method: payInfo.method, reference: payInfo.reference||"",
+                notes: `Auto-recorded when marked Paid in Invoice ${saved.invoice_number}`,
+                status: "Reconciled",
+              };
+              setPayments(p=>upsert(p||[], newPay));
+            });
+          }}
+          onCancel={()=>setShowPaidConfirm(false)}
+        />
+      )}
+      {showA4Print && (
+        <A4PrintModal data={previewData} currSymbol={currSymbol} isVat={isVat} onClose={()=>setShowA4Print(false)} />
+      )}
     </div>
   );
 }
 
 // ─── INVOICES PAGE ────────────────────────────────────────────────────────────
 function InvoicesPage() {
-  const { invoices, setInvoices } = useContext(AppCtx);
+  const { invoices, setInvoices, payments, setPayments, customPayMethods } = useContext(AppCtx);
+  const allMethods = [...PAYMENT_METHODS, ...customPayMethods];
   const [view, setView] = useState("list");
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
@@ -1648,14 +2421,34 @@ function QuotesPage({ onNavigate }) {
 
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
 function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
+  const { orgSettings } = useContext(AppCtx);
   const [previewTpl, setPreviewTpl] = useState(null);
+  const [tplAccent, setTplAccent] = useState(PDF_TEMPLATES.find(t=>t.id===pdfTemplate)?.defaultAccent||"#1A1A1A");
+  const [tplLogo, setTplLogo] = useState(null); // base64 or null
+  const [tplShowBankDetails, setTplShowBankDetails] = useState(true);
+  const [tplShowPayTerms, setTplShowPayTerms] = useState(true);
+  const [tplShowQR, setTplShowQR] = useState(false);
+  const [tplNotes, setTplNotes] = useState("Thank you for your business!");
+  const [tplFooterText, setTplFooterText] = useState("");
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setTplLogo(ev.target.result);
+    reader.readAsDataURL(file);
+  };
 
   const SAMPLE_INV = {
-    docNumber:"INV-0042", customer:{ name:"Acme Corporation", email:"billing@acme.com", address:"123 High Street, London EC1A 1BB" },
-    dueDate:"2026-04-15", status:"Sent",
+    docNumber:"INV-0042",
+    customer:{ name:"Acme Corporation", email:"billing@acme.com", companyName:"Acme Corporation",
+      billingAddress:{ street:"123 High Street", city:"London", postcode:"EC1A 1BB", country:"United Kingdom" } },
+    issueDate:"2026-03-08", dueDate:"2026-04-15", paymentTerms:"Net 30", status:"Sent",
     items:[{ id:"1", description:"Web Design Package", quantity:1, rate:1200, tax_rate:20, amount:1200 },{ id:"2", description:"Consulting — 8hrs", quantity:8, rate:95, tax_rate:20, amount:760 }],
     subtotal:1960, discountAmount:0, shipping:0,
-    taxBreakdown:[{ rate:20, amount:392 }], cisDeduction:0, total:2352, notes:"Thank you for your business!", terms:"Payment due within 30 days of invoice date."
+    taxBreakdown:[{ rate:20, amount:392 }], cisDeduction:0, total:2352,
+    notes: tplNotes,
+    terms:tplShowPayTerms?"Payment is due within the agreed payment terms. Late payments may incur interest charges.":""
   };
 
   const TplPreview = ({ tpl }) => {
@@ -1813,38 +2606,108 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
 
       {/* Template Preview Modal */}
       {previewTpl && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:3000, padding:24 }}>
-          <div style={{ background:"#F7F7F5", borderRadius:16, width:"100%", maxWidth:760, maxHeight:"92vh", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 24px 60px rgba(0,0,0,0.22)" }}>
-            <div style={{ background:"#fff", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 22px", borderBottom:"1px solid #F0F0F0" }}>
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:3000, padding:16, overflowY:"auto" }}>
+          <div style={{ background:"#F7F7F5", borderRadius:16, width:"100%", maxWidth:920, display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 24px 60px rgba(0,0,0,0.22)", maxHeight:"96vh" }}>
+            {/* Modal header */}
+            <div style={{ background:"#fff", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #F0F0F0", flexShrink:0 }}>
               <div>
-                <span style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Template Preview — {PDF_TEMPLATES.find(t=>t.id===previewTpl)?.name}</span>
-                <p style={{ margin:"3px 0 0", fontSize:12, color:"#AAA" }}>Sample invoice with your current template style</p>
+                <span style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>PDF Template — {PDF_TEMPLATES.find(t=>t.id===previewTpl)?.name}</span>
+                <p style={{ margin:"2px 0 0", fontSize:12, color:"#AAA" }}>Live preview with your settings</p>
               </div>
-              <div style={{ display:"flex", gap:8 }}>
+              <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                 {PDF_TEMPLATES.map(t=>(
-                  <button key={t.id} onClick={()=>{ setPdfTemplate(t.id); setPreviewTpl(t.id); }}
+                  <button key={t.id} onClick={()=>{ setPdfTemplate(t.id); setPreviewTpl(t.id); setTplAccent(t.defaultAccent); }}
                     style={{ padding:"5px 11px", borderRadius:6, border:`1.5px solid ${previewTpl===t.id?"#1A1A1A":"#E0E0E0"}`, background:previewTpl===t.id?"#1A1A1A":"#fff", color:previewTpl===t.id?"#fff":"#666", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:ff }}>
                     {t.name}
                   </button>
                 ))}
-                <button onClick={()=>setPreviewTpl(null)} style={{ marginLeft:4, background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
+                <button onClick={()=>setPreviewTpl(null)} style={{ marginLeft:4, background:"none", border:"none", cursor:"pointer", color:"#AAA", display:"flex" }}><Icons.X /></button>
               </div>
             </div>
-            <div style={{ overflowY:"auto", padding:28 }}>
-              <TplPreview tpl={previewTpl} />
-              <div style={{ marginTop:18, background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"16px 18px" }}>
-                <div style={{ fontSize:13, fontWeight:800, color:"#1A1A1A", marginBottom:10 }}>Template Customisation</div>
-                <InfoBox color="#2563EB">Full template customisation (colours, fonts, logo, header/footer) coming soon. For now you can select which template layout to use for PDF export.</InfoBox>
-                <div style={{ marginTop:12, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <Field label="Company Logo"><div style={{ border:"1.5px dashed #CCC", borderRadius:7, padding:"14px", textAlign:"center", cursor:"pointer", color:"#AAA", fontSize:12 }}>Click to upload logo</div></Field>
-                  <Field label="Accent Colour"><div style={{ display:"flex", gap:8 }}>{["#1A1A1A","#E86C4A","#2563EB","#16A34A","#9333EA","#DC2626"].map(c=><div key={c} onClick={()=>{}} style={{ width:28, height:28, borderRadius:"50%", background:c, cursor:"pointer", border:"2px solid #fff", boxShadow:"0 0 0 1.5px #DDD" }} />)}</div></Field>
-                  <Field label="Show Bank Details on Invoice"><Switch checked={true} onChange={()=>{}} /></Field>
-                  <Field label="Show Payment QR Code"><Switch checked={false} onChange={()=>{}} /></Field>
+            {/* Two-column: settings + preview */}
+            <div style={{ display:"grid", gridTemplateColumns:"260px 1fr", flex:1, overflow:"hidden" }}>
+              {/* Left: customisation */}
+              <div style={{ background:"#fff", borderRight:"1px solid #F0F0F0", padding:"18px 16px", overflowY:"auto", display:"flex", flexDirection:"column", gap:16 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.08em" }}>Customisation</div>
+                {/* Logo */}
+                <Field label="Company Logo">
+                  <div style={{ border:"1.5px dashed #DDD", borderRadius:8, padding:"10px", textAlign:"center", background:"#FAFAFA" }}>
+                    {tplLogo ? (
+                      <div style={{ position:"relative", display:"inline-block" }}>
+                        <img src={tplLogo} alt="logo" style={{ maxHeight:52, maxWidth:180, objectFit:"contain", display:"block" }} />
+                        <button onClick={()=>setTplLogo(null)}
+                          style={{ position:"absolute", top:-6, right:-6, width:18, height:18, borderRadius:"50%", background:"#DC2626", border:"none", color:"#fff", cursor:"pointer", fontSize:10, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                      </div>
+                    ) : (
+                      <label style={{ cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                        <div style={{ color:"#CCC" }}><Icons.Plus /></div>
+                        <span style={{ fontSize:11, color:"#AAA" }}>Click to upload</span>
+                        <span style={{ fontSize:10, color:"#CCC" }}>PNG, JPG, SVG</span>
+                        <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display:"none" }} />
+                      </label>
+                    )}
+                  </div>
+                </Field>
+                {/* Accent colour */}
+                <Field label="Accent Colour">
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                    {["#1A1A1A","#E86C4A","#2563EB","#16A34A","#9333EA","#DC2626","#0891B2","#D97706"].map(c=>(
+                      <button key={c} onClick={()=>setTplAccent(c)}
+                        style={{ width:30, height:30, borderRadius:"50%", background:c, cursor:"pointer", border:`3px solid ${tplAccent===c?"#1A1A1A":"transparent"}`, boxShadow:tplAccent===c?"0 0 0 1px #fff inset":"none", outline:"none" }} />
+                    ))}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}>
+                    <span style={{ fontSize:11, color:"#888" }}>Custom:</span>
+                    <input type="color" value={tplAccent} onChange={e=>setTplAccent(e.target.value)}
+                      style={{ width:32, height:28, borderRadius:6, border:"1.5px solid #E0E0E0", padding:2, cursor:"pointer" }} />
+                    <span style={{ fontSize:11, color:"#AAA", fontFamily:"monospace" }}>{tplAccent}</span>
+                  </div>
+                </Field>
+                {/* Toggle fields */}
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {[
+                    ["Show Payment Terms", tplShowPayTerms, setTplShowPayTerms],
+                    ["Show Bank Details", tplShowBankDetails, setTplShowBankDetails],
+                    ["Show Payment QR Code", tplShowQR, setTplShowQR],
+                  ].map(([label, val, setter])=>(
+                    <div key={label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid #F4F4F4" }}>
+                      <span style={{ fontSize:12, color:"#555" }}>{label}</span>
+                      <Switch checked={val} onChange={setter} />
+                    </div>
+                  ))}
+                </div>
+                {/* Editable Notes */}
+                <Field label="Default Notes (on invoices)">
+                  <textarea value={tplNotes} onChange={e=>setTplNotes(e.target.value)} rows={3} placeholder="e.g. Thank you for your business!"
+                    style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:12, fontFamily:ff, color:"#1A1A1A", background:"#FAFAFA", outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.5 }}
+                    onFocus={e=>e.target.style.borderColor="#1A1A1A"} onBlur={e=>e.target.style.borderColor="#E0E0E0"} />
+                </Field>
+                {/* Editable Footer */}
+                <Field label="Footer Text (bottom of page)">
+                  <textarea value={tplFooterText} onChange={e=>setTplFooterText(e.target.value)} rows={2} placeholder="e.g. Bank: Barclays · Sort: 20-00-00 · Acc: 12345678"
+                    style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:12, fontFamily:ff, color:"#1A1A1A", background:"#FAFAFA", outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.5 }}
+                    onFocus={e=>e.target.style.borderColor="#1A1A1A"} onBlur={e=>e.target.style.borderColor="#E0E0E0"} />
+                  <div style={{ fontSize:10, color:"#AAA", marginTop:3 }}>Appears in the footer of every invoice (bank details, registration numbers, etc.)</div>
+                </Field>
+              </div>
+              {/* Right: A4 preview */}
+              <div style={{ overflowY:"auto", padding:"20px 16px", background:"#E8E8E8", display:"flex", justifyContent:"center" }}>
+                <div style={{ width:"100%", maxWidth:595, background:"#fff", boxShadow:"0 4px 20px rgba(0,0,0,0.15)" }}>
+                  <A4InvoiceDoc
+                    data={{...SAMPLE_INV, notes:tplNotes, terms: tplShowPayTerms?"Payment is due within 30 days of invoice date.":""}}
+                    currSymbol="£"
+                    isVat={true}
+                    orgSettings={{ ...orgSettings, logo:tplLogo }}
+                    accentColor={tplAccent}
+                    template={previewTpl}
+                    footerText={tplFooterText}
+                  />
                 </div>
               </div>
             </div>
-            <div style={{ padding:"12px 22px", borderTop:"1px solid #F0F0F0", background:"#fff", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:12, color:"#AAA" }}>Active template: <strong style={{ color:"#1A1A1A" }}>{PDF_TEMPLATES.find(t=>t.id===previewTpl)?.name}</strong></span>
+            {/* Footer */}
+            <div style={{ padding:"12px 20px", borderTop:"1px solid #F0F0F0", background:"#fff", display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
+              <span style={{ fontSize:12, color:"#AAA" }}>Active: <strong style={{ color:"#1A1A1A" }}>{PDF_TEMPLATES.find(t=>t.id===previewTpl)?.name}</strong></span>
               <div style={{ display:"flex", gap:8 }}>
                 <Btn onClick={()=>setPreviewTpl(null)} variant="outline">Close</Btn>
                 <Btn onClick={()=>{ setPdfTemplate(previewTpl); setPreviewTpl(null); }} variant="primary">Apply Template</Btn>
@@ -1857,9 +2720,568 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
   );
 }
 
+// ─── PAYMENTS PAGE ────────────────────────────────────────────────────────────
+function PaymentModal({ existing, onClose, onSave }) {
+  const { invoices, customers, customPayMethods, setCustomPayMethods } = useContext(AppCtx);
+  const allMethods = [...PAYMENT_METHODS, ...customPayMethods];
+  const unpaidInvoices = invoices.filter(i=>i.status!=="Paid"&&i.status!=="Void");
+  const [linkedInvoice, setLinkedInvoice] = useState(existing?.invoice_id||"");
+  const [independent, setIndependent] = useState(existing ? !existing.invoice_id : false);
+  const [customer, setCustomer] = useState(existing?.customer_id||"");
+  const [amount, setAmount] = useState(existing?.amount||"");
+  const [currency, setCurrency] = useState(existing?.currency||"GBP");
+  const [date, setDate] = useState(existing?.date||todayStr());
+  const [method, setMethod] = useState(existing?.method||"Bank Transfer");
+  const [reference, setReference] = useState(existing?.reference||"");
+  const [notes, setNotes] = useState(existing?.notes||"");
+  const [addingMethod, setAddingMethod] = useState(false);
+  const [newMethodName, setNewMethodName] = useState("");
+
+  // Auto-fill from invoice
+  useEffect(()=>{
+    if(linkedInvoice && !independent) {
+      const inv = invoices.find(i=>i.id===linkedInvoice);
+      if(inv) {
+        setCustomer(inv.customer_id||"");
+        setCurrency(inv.currency||"GBP");
+        const alreadyPaid = Number(inv.amount_paid||0);
+        setAmount(String(Math.max(0,(inv.total||0)-alreadyPaid)));
+      }
+    }
+  },[linkedInvoice]);
+
+  const selInv = invoices.find(i=>i.id===linkedInvoice);
+  const selCust = customers.find(c=>c.id===customer);
+  const amountNum = Number(amount)||0;
+  const invTotal = selInv?.total||0;
+  const invPaid = selInv?.amount_paid||0;
+  const invOutstanding = invTotal - invPaid;
+  const isOverpay = !independent && selInv && amountNum > invOutstanding;
+  const isPartial = !independent && selInv && amountNum < invOutstanding && amountNum > 0;
+  const isFull = !independent && selInv && amountNum >= invOutstanding && amountNum > 0;
+
+  const handleSave = () => {
+    if(!amountNum || amountNum <= 0) return;
+    const inv = !independent && invoices.find(i=>i.id===linkedInvoice);
+    const custName = inv?.customer_name || customers.find(c=>c.id===customer)?.name || "";
+    onSave({
+      id: existing?.id||crypto.randomUUID(),
+      payment_number: existing?.payment_number||"",
+      invoice_id: independent ? null : (linkedInvoice||null),
+      invoice_number: independent ? null : (inv?.invoice_number||null),
+      customer_id: independent ? customer : (inv?.customer_id||customer),
+      customer_name: independent ? (customers.find(c=>c.id===customer)?.name||"") : custName,
+      amount: amountNum, currency, date, method, reference, notes,
+      status: independent ? "Unlinked" : (isFull ? "Reconciled" : isPartial ? "Partial" : "Reconciled"),
+    }, inv, isFull||isOverpay);
+    onClose();
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:16 }}>
+      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:520, maxHeight:"94vh", display:"flex", flexDirection:"column", boxShadow:"0 20px 60px rgba(0,0,0,0.18)", fontFamily:ff, overflow:"hidden" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 22px 14px", borderBottom:"1px solid #F0F0F0", flexShrink:0 }}>
+          <div>
+            <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1A1A1A" }}>{existing?"Edit Payment":"Record Payment"}</h2>
+            <p style={{ margin:"2px 0 0", fontSize:12, color:"#AAA" }}>Fill in the payment details below</p>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA", display:"flex" }}><Icons.X /></button>
+        </div>
+
+        <div style={{ overflowY:"auto", padding:"18px 22px", display:"flex", flexDirection:"column", gap:14 }}>
+          {/* Toggle: linked vs independent — locked if editing a linked payment */}
+          {existing?.invoice_id ? (
+            <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px", background:"#F0FDF4", borderRadius:8, border:"1px solid #BBF7D0" }}>
+              <Icons.Link />
+              <span style={{ fontSize:12, fontWeight:700, color:"#16A34A" }}>Linked to {existing.invoice_number}</span>
+              <span style={{ fontSize:11, color:"#888", marginLeft:4 }}>— invoice link cannot be changed when editing</span>
+            </div>
+          ) : (
+            <div style={{ display:"flex", gap:3, background:"#F0F0F0", padding:3, borderRadius:8 }}>
+              {[["linked","Link to Invoice"],["independent","Standalone Payment"]].map(([v,l])=>(
+                <button key={v} onClick={()=>{ setIndependent(v==="independent"); setLinkedInvoice(""); }}
+                  style={{ flex:1, padding:"7px 10px", borderRadius:6, border:"none", background:((independent&&v==="independent")||(!independent&&v==="linked"))?"#1A1A1A":"transparent", color:((independent&&v==="independent")||(!independent&&v==="linked"))?"#fff":"#888", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!independent && (
+            <Field label="Invoice" required>
+              {existing?.invoice_id ? (
+                /* Read-only when editing a linked payment */
+                <div style={{ padding:"9px 11px", background:"#F5F5F5", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, color:"#555", display:"flex", alignItems:"center", gap:8 }}>
+                  <Icons.Receipt />
+                  <span style={{ fontWeight:700, color:"#1A1A1A" }}>{selInv?.invoice_number||existing.invoice_number}</span>
+                  {selInv && <span style={{ color:"#888" }}>— {selInv.customer_name} · {fmt(CUR_SYM[selInv.currency]||"£", selInv.total)}</span>}
+                </div>
+              ) : (
+                <Select value={linkedInvoice} onChange={setLinkedInvoice}
+                  options={[...unpaidInvoices.map(i=>({ value:i.id, label:`${i.invoice_number} — ${i.customer_name} (${fmt(CUR_SYM[i.currency]||"£", i.total)})` }))]}
+                  placeholder="Select invoice to link…" />
+              )}
+              {selInv && (
+                <div style={{ marginTop:8, padding:"10px 12px", background:"#F9F9F9", borderRadius:8, border:"1px solid #EBEBEB" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#1A1A1A" }}>{selInv.invoice_number}</span>
+                    <Tag color={STATUS_COLORS[selInv.status]}>{selInv.status}</Tag>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                    {[["Invoice Total", fmt(CUR_SYM[selInv.currency]||"£", selInv.total)],
+                      ["Already Paid", fmt(CUR_SYM[selInv.currency]||"£", invPaid)],
+                      ["Outstanding", fmt(CUR_SYM[selInv.currency]||"£", invOutstanding)]
+                    ].map(([l,v])=>(
+                      <div key={l} style={{ textAlign:"center" }}>
+                        <div style={{ fontSize:10, color:"#AAA", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em" }}>{l}</div>
+                        <div style={{ fontSize:13, fontWeight:800, color:"#1A1A1A", marginTop:2 }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Field>
+          )}
+
+          {independent && (
+            <Field label="Customer">
+              <Select value={customer} onChange={setCustomer}
+                options={[...(customers||[]).map(c=>({ value:c.id, label:c.name }))]}
+                placeholder="Select customer (optional)…" />
+            </Field>
+          )}
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <Field label="Amount" required>
+              <div style={{ position:"relative" }}>
+                <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:13, color:"#888", fontWeight:600 }}>{CUR_SYM[currency]||"£"}</span>
+                <input value={amount} onChange={e=>setAmount(e.target.value)} type="number" min="0" step="0.01" placeholder="0.00"
+                  style={{ width:"100%", padding:"9px 10px 9px 24px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+              </div>
+              {!independent && selInv && amountNum>0 && (
+                <div style={{ marginTop:5, fontSize:11, color: isOverpay?"#DC2626":isPartial?"#D97706":"#16A34A", fontWeight:700, display:"flex", alignItems:"center", gap:4 }}>
+                  {isOverpay && <><Icons.Alert /> Overpayment of {fmt(CUR_SYM[selInv.currency]||"£", amountNum-invOutstanding)}</>}
+                  {isPartial && <><Icons.Info /> Partial — {fmt(CUR_SYM[selInv.currency]||"£", invOutstanding-amountNum)} still outstanding</>}
+                  {isFull && <><Icons.Check /> Full payment — invoice will be marked Paid</>}
+                </div>
+              )}
+            </Field>
+            <Field label="Currency">
+              <Select value={currency} onChange={setCurrency} options={Object.keys(CUR_SYM).map(k=>({ value:k, label:`${k} (${CUR_SYM[k]})` }))} />
+            </Field>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <Field label="Payment Date" required><input value={date} onChange={e=>setDate(e.target.value)} type="date" style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} /></Field>
+            <Field label="Payment Method">
+              {addingMethod ? (
+                <div style={{ display:"flex", gap:6 }}>
+                  <input autoFocus value={newMethodName} onChange={e=>setNewMethodName(e.target.value)}
+                    onKeyDown={e=>{ if(e.key==="Enter"&&newMethodName.trim()){ const m=newMethodName.trim(); setCustomPayMethods(p=>[...p.filter(x=>x!==m),m]); setMethod(m); setAddingMethod(false); setNewMethodName(""); } if(e.key==="Escape"){ setAddingMethod(false); setNewMethodName(""); } }}
+                    placeholder="Method name…"
+                    style={{ flex:1, padding:"9px 10px", border:"1.5px solid #E86C4A", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none" }} />
+                  <button onClick={()=>{ if(newMethodName.trim()){ const m=newMethodName.trim(); setCustomPayMethods(p=>[...p.filter(x=>x!==m),m]); setMethod(m); } setAddingMethod(false); setNewMethodName(""); }}
+                    style={{ padding:"9px 12px", background:"#1A1A1A", color:"#fff", border:"none", borderRadius:8, cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:ff }}>Add</button>
+                </div>
+              ) : (
+                <div style={{ display:"flex", gap:6 }}>
+                  <div style={{ flex:1 }}><Select value={method} onChange={setMethod} options={allMethods} /></div>
+                  <button onClick={()=>setAddingMethod(true)} title="Add custom method"
+                    style={{ padding:"9px 10px", background:"#F4F4F4", border:"1.5px solid #E0E0E0", borderRadius:8, cursor:"pointer", color:"#666", display:"flex", alignItems:"center" }}><Icons.Plus /></button>
+                </div>
+              )}
+              {customPayMethods.length>0 && !addingMethod && (
+                <div style={{ marginTop:6, display:"flex", flexWrap:"wrap", gap:4 }}>
+                  {customPayMethods.map(m=>(
+                    <div key={m} style={{ display:"flex", alignItems:"center", gap:3, background:"#F4F4F4", borderRadius:20, padding:"2px 8px 2px 10px", fontSize:11, color:"#555" }}>
+                      {m}
+                      <button onClick={()=>{ setCustomPayMethods(p=>p.filter(x=>x!==m)); if(method===m) setMethod("Bank Transfer"); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#CCC", padding:"0 2px", display:"flex", lineHeight:1 }}><Icons.X /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Field>
+          </div>
+
+          <Field label="Reference / Transaction ID">
+            <Input value={reference} onChange={setReference} placeholder="e.g. BACS ref, Stripe charge ID…" />
+          </Field>
+          <Field label="Notes">
+            <Textarea value={notes} onChange={setNotes} rows={2} placeholder="Internal notes about this payment…" />
+          </Field>
+        </div>
+
+        <div style={{ padding:"14px 22px", borderTop:"1px solid #F0F0F0", display:"flex", justifyContent:"flex-end", gap:8, flexShrink:0 }}>
+          <Btn onClick={onClose} variant="outline">Cancel</Btn>
+          <Btn onClick={handleSave} variant="primary" disabled={!amountNum||amountNum<=0} icon={<Icons.Check />}>
+            {existing?"Update Payment":"Record Payment"}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentsPage({ onNavigate }) {
+  const { payments, setPayments, invoices, setInvoices, customers, customPayMethods } = useContext(AppCtx);
+  const allMethods = [...PAYMENT_METHODS, ...customPayMethods];
+  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useState("");
+  const [methodFilter, setMethodFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [activeTab, setActiveTab] = useState("list"); // "list" | "reports"
+
+  const onSave = (payment, invoice, shouldMarkPaid) => {
+    if(!payment.payment_number) {
+      const nums = payments.map(p=>parseInt((p.payment_number||"").replace(/\D/g,""),10)).filter(Boolean);
+      payment.payment_number = `PAY-${String(nums.length?Math.max(...nums)+1:1).padStart(4,"0")}`;
+    }
+    setPayments(p=>upsert(p,payment));
+    if(invoice && shouldMarkPaid) {
+      setInvoices(p=>upsert(p,{...invoice, status:"Paid", amount_paid:invoice.total}));
+    } else if(invoice && payment.amount>0) {
+      const prev = Number(invoice.amount_paid||0);
+      const newPaid = prev + Number(payment.amount);
+      setInvoices(p=>upsert(p,{...invoice, amount_paid:newPaid, status: newPaid>=invoice.total?"Paid":"Sent"}));
+    }
+  };
+
+  const onDelete = (pay) => {
+    setPayments(p=>p.filter(x=>x.id!==pay.id));
+    if(pay.invoice_id) {
+      const inv = invoices.find(i=>i.id===pay.invoice_id);
+      if(inv) {
+        const newPaid = Math.max(0, Number(inv.amount_paid||0)-Number(pay.amount));
+        setInvoices(p=>upsert(p,{...inv, amount_paid:newPaid, status:newPaid>=inv.total?"Paid":inv.status==="Paid"?"Sent":inv.status}));
+      }
+    }
+    setDeleteConfirm(null);
+  };
+
+  // CSV export
+  const exportCSV = (rows) => {
+    const headers = ["Payment #","Date","Customer","Invoice","Method","Amount","Currency","Reference","Status","Notes"];
+    const lines = [headers.join(","), ...rows.map(p=>[
+      p.payment_number, p.date, `"${p.customer_name||""}"`, p.invoice_number||"",
+      p.method, p.amount, p.currency, `"${p.reference||""}"`, p.status, `"${p.notes||""}"`
+    ].join(","))];
+    const blob = new Blob([lines.join("\n")], {type:"text/csv"});
+    const a = document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download=`payments-${todayStr()}.csv`; a.click();
+  };
+
+  // Filtering
+  const now = new Date();
+  const filtered = payments.filter(pay=>{
+    const matchSearch = !search || pay.payment_number?.toLowerCase().includes(search.toLowerCase()) || pay.customer_name?.toLowerCase().includes(search.toLowerCase()) || pay.invoice_number?.toLowerCase().includes(search.toLowerCase()) || pay.reference?.toLowerCase().includes(search.toLowerCase());
+    const matchMethod = methodFilter==="All" || pay.method===methodFilter;
+    let matchDate = true;
+    if(dateFilter==="today") matchDate = pay.date===todayStr();
+    else if(dateFilter==="week") { const w=new Date(now); w.setDate(now.getDate()-7); matchDate=new Date(pay.date)>=w; }
+    else if(dateFilter==="month") matchDate = pay.date?.startsWith(now.toISOString().slice(0,7));
+    else if(dateFilter==="year") matchDate = pay.date?.startsWith(String(now.getFullYear()));
+    return matchSearch && matchMethod && matchDate;
+  });
+
+  // Stats
+  const totalReceived = payments.reduce((s,p)=>s+Number(p.amount),0);
+  const thisMonth = payments.filter(p=>p.date?.startsWith(now.toISOString().slice(0,7))).reduce((s,p)=>s+Number(p.amount),0);
+  const reconciled = payments.filter(p=>p.status==="Reconciled").length;
+  const partial = payments.filter(p=>p.status==="Partial").length;
+  const methodTotals = allMethods.map(m=>({ method:m, total:payments.filter(p=>p.method===m).reduce((s,p)=>s+Number(p.amount),0) })).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);
+
+  // Reports data
+  const last6Months = Array.from({length:6},(_,i)=>{ const d=new Date(now); d.setMonth(d.getMonth()-i); return d.toISOString().slice(0,7); }).reverse();
+  const monthlyData = last6Months.map(ym=>({
+    label: new Date(ym+"-01").toLocaleDateString("en-GB",{month:"short",year:"2-digit"}),
+    total: payments.filter(p=>p.date?.startsWith(ym)).reduce((s,p)=>s+Number(p.amount),0),
+    count: payments.filter(p=>p.date?.startsWith(ym)).length,
+  }));
+  const maxMonthly = Math.max(...monthlyData.map(m=>m.total),1);
+
+  const customerTotals = customers.map(c=>({ name:c.name, total:payments.filter(p=>p.customer_id===c.id).reduce((s,p)=>s+Number(p.amount),0), count:payments.filter(p=>p.customer_id===c.id).length })).filter(x=>x.total>0).sort((a,b)=>b.total-a.total).slice(0,6);
+
+  const PAYSTATUS_COLOR = { Reconciled:"#16A34A", Partial:"#D97706", Unlinked:"#6B7280" };
+
+  return (
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1200, fontFamily:ff }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:12 }}>
+        <div>
+          <h1 style={{ fontSize:"clamp(18px,4vw,24px)", fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Payments Received</h1>
+          <p style={{ color:"#AAA", fontSize:13, margin:0 }}>Record and reconcile incoming payments</p>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          {payments.length>0 && <Btn onClick={()=>exportCSV(filtered)} variant="outline" icon={<Icons.Download />}>Export CSV</Btn>}
+          <Btn onClick={()=>setModal({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>Record Payment</Btn>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:20 }}>
+        {[
+          { label:"Total Received", value:fmt("£",totalReceived), color:"#16A34A", icon:<Icons.Payments /> },
+          { label:"This Month", value:fmt("£",thisMonth), color:"#2563EB", icon:<Icons.Receipt /> },
+          { label:"Reconciled", value:reconciled, color:"#16A34A", isCount:true, icon:<Icons.Check /> },
+          { label:"Partial Payments", value:partial, color:"#D97706", isCount:true, icon:<Icons.Info /> },
+        ].map(s=>(
+          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"14px 16px", border:"1px solid #EBEBEB" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:7 }}>
+              <div style={{ color:s.color, opacity:0.7 }}>{s.icon}</div>
+              <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em" }}>{s.label}</div>
+            </div>
+            <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tab bar */}
+      <div style={{ display:"flex", gap:3, background:"#F0F0F0", padding:3, borderRadius:8, marginBottom:16, width:"fit-content" }}>
+        {[["list","Payments List"],["reports","Reports & Analytics"]].map(([t,l])=>(
+          <button key={t} onClick={()=>setActiveTab(t)}
+            style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:6, border:"none", background:activeTab===t?"#1A1A1A":"transparent", color:activeTab===t?"#fff":"#888", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
+            {t==="list"?<Icons.Receipt />:<Icons.Filter />}{l}
+          </button>
+        ))}
+      </div>
+
+      {activeTab==="reports" ? (
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          {/* Monthly bar chart */}
+          <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"18px 22px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div style={{ fontSize:14, fontWeight:800, color:"#1A1A1A" }}>Monthly Revenue</div>
+              <Btn onClick={()=>exportCSV(payments)} variant="outline" size="sm" icon={<Icons.Download />}>Export All CSV</Btn>
+            </div>
+            <div style={{ display:"flex", alignItems:"flex-end", gap:10, height:140 }}>
+              {monthlyData.map(m=>(
+                <div key={m.label} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#888" }}>{m.total>0?fmt("£",m.total):""}</div>
+                  <div style={{ width:"100%", background:m.total>0?"#1A1A1A":"#F0F0F0", borderRadius:"4px 4px 0 0", height:`${Math.max(4,(m.total/maxMonthly)*100)}px`, transition:"height 0.3s", position:"relative", minHeight:4 }}>
+                    {m.count>0 && <div style={{ position:"absolute", top:-20, left:"50%", transform:"translateX(-50%)", fontSize:10, color:"#AAA", whiteSpace:"nowrap" }}>{m.count} pay</div>}
+                  </div>
+                  <div style={{ fontSize:11, color:"#AAA", fontWeight:600 }}>{m.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16 }}>
+            {/* Method breakdown */}
+            <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"18px 22px" }}>
+              <div style={{ fontSize:14, fontWeight:800, color:"#1A1A1A", marginBottom:14 }}>By Payment Method</div>
+              {methodTotals.length===0 ? <div style={{ color:"#CCC", fontSize:13 }}>No data yet</div> : methodTotals.map(({ method:m, total:t })=>{
+                const pct = totalReceived>0?Math.round((t/totalReceived)*100):0;
+                return (
+                  <div key={m} style={{ marginBottom:10 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                      <span style={{ fontSize:12, fontWeight:600, color:"#555" }}>{m}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:"#1A1A1A" }}>{fmt("£",t)} <span style={{ color:"#AAA", fontWeight:400 }}>({pct}%)</span></span>
+                    </div>
+                    <div style={{ height:6, background:"#F0F0F0", borderRadius:3, overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${pct}%`, background:"#1A1A1A", borderRadius:3, transition:"width 0.4s" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Top customers */}
+            <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"18px 22px" }}>
+              <div style={{ fontSize:14, fontWeight:800, color:"#1A1A1A", marginBottom:14 }}>Top Customers</div>
+              {customerTotals.length===0 ? <div style={{ color:"#CCC", fontSize:13 }}>No data yet</div> : customerTotals.map((c,i)=>(
+                <div key={c.name} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<customerTotals.length-1?"1px solid #F7F7F7":"none" }}>
+                  <div style={{ width:28, height:28, borderRadius:"50%", background:"#F0F0F0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:"#555", flexShrink:0 }}>{c.name[0]}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#1A1A1A", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
+                    <div style={{ fontSize:11, color:"#AAA" }}>{c.count} payment{c.count!==1?"s":""}</div>
+                  </div>
+                  <div style={{ fontSize:13, fontWeight:800, color:"#E86C4A" }}>{fmt("£",c.total)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Reconciliation status */}
+          <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"18px 22px" }}>
+            <div style={{ fontSize:14, fontWeight:800, color:"#1A1A1A", marginBottom:14 }}>Invoice Reconciliation Status</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
+              {[
+                { label:"Fully Paid Invoices", value:invoices.filter(i=>i.status==="Paid").length, color:"#16A34A", sub:`${fmt("£",invoices.filter(i=>i.status==="Paid").reduce((s,i)=>s+i.total,0))} collected` },
+                { label:"Outstanding Invoices", value:invoices.filter(i=>i.status==="Sent"||i.status==="Overdue").length, color:"#D97706", sub:`${fmt("£",invoices.filter(i=>i.status==="Sent"||i.status==="Overdue").reduce((s,i)=>s+(i.total-(i.amount_paid||0)),0))} outstanding` },
+                { label:"Partial Payments", value:payments.filter(p=>p.status==="Partial").length, color:"#2563EB", sub:"awaiting balance" },
+                { label:"Unlinked Payments", value:payments.filter(p=>p.status==="Unlinked").length, color:"#6B7280", sub:"not tied to invoice" },
+              ].map(s=>(
+                <div key={s.label} style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 16px", border:"1px solid #EBEBEB" }}>
+                  <div style={{ fontSize:22, fontWeight:900, color:s.color, marginBottom:4 }}>{s.value}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#1A1A1A" }}>{s.label}</div>
+                  <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{s.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Method breakdown strip */}
+          {methodTotals.length>0 && (
+            <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"14px 18px", marginBottom:16 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>By Payment Method</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+                {methodTotals.map(({ method:m, total:t })=>{
+                  const pct = totalReceived>0 ? Math.round((t/totalReceived)*100) : 0;
+                  return (
+                    <div key={m} style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 14px", background:"#F7F7F5", borderRadius:9, border:"1px solid #EBEBEB", flex:"1 1 140px", cursor:"pointer" }}
+                      onClick={()=>setMethodFilter(methodFilter===m?"All":m)}>
+                      <div style={{ width:32, height:32, borderRadius:8, background:methodFilter===m?"#E86C4A":"#1A1A1A", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", flexShrink:0 }}><Icons.Bank /></div>
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:700, color:"#1A1A1A" }}>{m}</div>
+                        <div style={{ fontSize:13, fontWeight:800, color:"#E86C4A" }}>{fmt("£",t)}</div>
+                      </div>
+                      <div style={{ marginLeft:"auto", fontSize:11, color:"#AAA", fontWeight:700 }}>{pct}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Filters */}
+          <div style={{ display:"flex", gap:10, marginBottom:12, flexWrap:"wrap" }}>
+            <div style={{ flex:1, minWidth:160, position:"relative" }}>
+              <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:"#AAA" }}><Icons.Search /></div>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by invoice, customer, reference…"
+                style={{ width:"100%", padding:"9px 12px 9px 32px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", background:"#fff", boxSizing:"border-box" }} />
+            </div>
+            <div style={{ display:"flex", gap:2, background:"#F0F0F0", padding:3, borderRadius:8 }}>
+              {[["all","All Time"],["month","This Month"],["week","This Week"],["today","Today"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setDateFilter(v)} style={{ padding:"5px 10px", borderRadius:6, border:"none", background:dateFilter===v?"#1A1A1A":"transparent", color:dateFilter===v?"#fff":"#888", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:ff }}>{l}</button>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:2, background:"#F0F0F0", padding:3, borderRadius:8, flexWrap:"wrap" }}>
+              {["All",...allMethods.slice(0,6)].map(m=>(
+                <button key={m} onClick={()=>setMethodFilter(m)} style={{ padding:"5px 10px", borderRadius:6, border:"none", background:methodFilter===m?"#1A1A1A":"transparent", color:methodFilter===m?"#fff":"#888", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:ff }}>{m}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", minWidth:620 }}>
+              <thead>
+                <tr style={{ background:"#FAFAFA", borderBottom:"1px solid #F0F0F0" }}>
+                  {["Payment #","Date","Customer","Invoice","Method","Amount","Status",""].map(h=>(
+                    <th key={h} style={{ padding:"9px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(pay=>{
+                  const inv = invoices.find(i=>i.id===pay.invoice_id);
+                  return (
+                    <tr key={pay.id} style={{ borderBottom:"1px solid #F7F7F7" }}
+                      onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
+                      onMouseLeave={e=>e.currentTarget.style.background=""}>
+                      <td style={{ padding:"12px 16px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <div style={{ width:32, height:32, borderRadius:8, background:"#F0FDF4", display:"flex", alignItems:"center", justifyContent:"center", color:"#16A34A", flexShrink:0 }}><Icons.Receipt /></div>
+                          <div>
+                            <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{pay.payment_number}</div>
+                            {pay.reference && <div style={{ fontSize:11, color:"#AAA" }}>Ref: {pay.reference}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding:"12px 16px", fontSize:13, color:"#555", whiteSpace:"nowrap" }}>{fmtDate(pay.date)}</td>
+                      <td style={{ padding:"12px 16px" }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:"#1A1A1A" }}>{pay.customer_name||"—"}</div>
+                      </td>
+                      <td style={{ padding:"12px 16px" }}>
+                        {pay.invoice_number ? (
+                          <div>
+                            <button onClick={()=>onNavigate?.("invoices")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#2563EB", fontFamily:ff, padding:0, display:"flex", alignItems:"center", gap:4 }}>
+                              <Icons.Link />{pay.invoice_number}
+                            </button>
+                            {inv && <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>Due: {fmt(CUR_SYM[inv.currency]||"£", inv.total)}</div>}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize:12, color:"#CCC", display:"flex", alignItems:"center", gap:4 }}><Icons.Unlink />Standalone</span>
+                        )}
+                      </td>
+                      <td style={{ padding:"12px 16px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <div style={{ width:24, height:24, borderRadius:6, background:"#F4F4F4", display:"flex", alignItems:"center", justifyContent:"center", color:"#555" }}><Icons.Bank /></div>
+                          <span style={{ fontSize:13, color:"#555" }}>{pay.method}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding:"12px 16px", textAlign:"right" }}>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#1A1A1A" }}>{fmt(CUR_SYM[pay.currency]||"£", pay.amount)}</div>
+                        {pay.status==="Partial" && inv && (
+                          <div style={{ fontSize:11, color:"#D97706" }}>+{fmt(CUR_SYM[inv.currency]||"£", Math.max(0,inv.total-(inv.amount_paid||0)))} due</div>
+                        )}
+                      </td>
+                      <td style={{ padding:"12px 16px" }}>
+                        <Tag color={PAYSTATUS_COLOR[pay.status]||"#6B7280"}>{pay.status}</Tag>
+                      </td>
+                      <td style={{ padding:"12px 16px" }}>
+                        <div style={{ display:"flex", gap:4 }}>
+                          <Btn onClick={()=>setModal({ mode:"edit", payment:pay })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                          <Btn onClick={()=>setDeleteConfirm(pay)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#DC2626" }} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length===0 && (
+                  <tr><td colSpan={8} style={{ padding:"52px 20px", textAlign:"center" }}>
+                    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, color:"#CCC" }}>
+                      <Icons.Payments />
+                      <p style={{ fontSize:14, color:"#BBB", margin:0 }}>{payments.length===0?"No payments recorded yet.":"No payments match your filters."}</p>
+                      {payments.length===0 && <Btn onClick={()=>setModal({ mode:"new" })} variant="outline" icon={<Icons.Plus />}>Record your first payment</Btn>}
+                    </div>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {filtered.length>0 && (
+            <div style={{ display:"flex", justifyContent:"space-between", padding:"12px 4px 0", flexWrap:"wrap", gap:8 }}>
+              <span style={{ fontSize:12, color:"#AAA" }}>{filtered.length} payment{filtered.length!==1?"s":""} shown</span>
+              <div style={{ display:"flex", gap:16 }}>
+                <span style={{ fontSize:12, color:"#AAA" }}>Reconciled: <strong style={{ color:"#16A34A" }}>{filtered.filter(p=>p.status==="Reconciled").length}</strong></span>
+                <span style={{ fontSize:12, color:"#AAA" }}>Partial: <strong style={{ color:"#D97706" }}>{filtered.filter(p=>p.status==="Partial").length}</strong></span>
+                <span style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>Total: {fmt("£", filtered.reduce((s,p)=>s+Number(p.amount),0))}</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {modal && <PaymentModal existing={modal.mode==="edit"?modal.payment:null} onClose={()=>setModal(null)} onSave={onSave} />}
+
+      {deleteConfirm && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:16 }}>
+          <div style={{ background:"#fff", borderRadius:14, padding:"28px 24px", maxWidth:380, width:"100%", textAlign:"center", boxShadow:"0 20px 60px rgba(0,0,0,0.18)", fontFamily:ff }}>
+            <div style={{ width:48, height:48, borderRadius:"50%", background:"#FEF2F2", display:"flex", alignItems:"center", justifyContent:"center", color:"#DC2626", margin:"0 auto 14px" }}><Icons.Trash /></div>
+            <h3 style={{ margin:"0 0 8px", fontSize:16, fontWeight:800, color:"#1A1A1A" }}>Delete {deleteConfirm.payment_number}?</h3>
+            <p style={{ margin:"0 0 20px", fontSize:13, color:"#888", lineHeight:1.6 }}>
+              This will remove the payment record{deleteConfirm.invoice_id ? " and reverse the reconciliation on the linked invoice." : "."}
+            </p>
+            <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+              <Btn onClick={()=>setDeleteConfirm(null)} variant="outline">Cancel</Btn>
+              <Btn onClick={()=>onDelete(deleteConfirm)} variant="accent" icon={<Icons.Trash />}>Delete Payment</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [screen, setScreen] = useState("setup");
+  const [screen, setScreen] = useState("auth"); // auth | setup | app
   const [activePage, setActivePage] = useState("home");
   const [orgSettings, setOrgSettings] = useState(null);
   const [user, setUser] = useState({ name:"Alex Morgan", role:"Admin", email:"alex@example.com" });
@@ -1869,11 +3291,19 @@ export default function App() {
   const [customers, setCustomers] = useState(MOCK_CUSTOMERS);
   const [invoices, setInvoices] = useState(MOCK_INV_LIST);
   const [quotes, setQuotes] = useState(MOCK_QUOTES_LIST);
+  const [payments, setPayments] = useState(MOCK_PAYMENTS);
+  const [customPayMethods, setCustomPayMethods] = useState([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(true);
+  const [appTheme, setAppTheme] = useState({ type:"solid", color:"#1A1A1A", color2:"#E86C4A", accent:"#E86C4A" });
+  const [userAvatar, setUserAvatar] = useState(null); // base64 photo
 
+  if(screen==="auth") return <AuthPage onAuth={(u)=>{ setUser(u); setScreen("setup"); }} />;
   if(screen==="setup") return <OrgSetupPage onComplete={data=>{ setOrgSettings(data); setScreen("app"); }} initialData={orgSettings} />;
 
-  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers, invoices, setInvoices, quotes, setQuotes };
+  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers, invoices, setInvoices, quotes, setQuotes, payments, setPayments, customPayMethods, setCustomPayMethods, appTheme, setAppTheme, userAvatar, setUserAvatar, sidebarPinned, setSidebarPinned, pdfTemplate, setPdfTemplate };
+
+  const sidebarW = sidebarVisible ? 220 : 0;
 
   const renderPage = () => {
     switch(activePage) {
@@ -1882,19 +3312,16 @@ export default function App() {
       case "items":     return <ItemsPage />;
       case "quotes":    return <QuotesPage onNavigate={setActivePage} />;
       case "invoices":  return <InvoicesPage />;
-      case "payments":  return (
-        <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", fontFamily:ff }}>
-          <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 4px" }}>Payments Received</h1>
-          <p style={{ color:"#AAA", fontSize:13, margin:"0 0 24px" }}>Record and track incoming payments</p>
-          <div style={{ background:"#fff", borderRadius:14, border:"1.5px dashed #E8E8E8", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:60, color:"#CCC", gap:10 }}>
-            <Icons.Payments /><p style={{ fontSize:14, color:"#BBB", margin:0 }}>No payments recorded yet.</p>
-          </div>
-        </div>
-      );
+      case "payments":  return <PaymentsPage onNavigate={setActivePage} />;
       case "settings":  return <SettingsPage onOrgSetup={()=>setScreen("setup")} pdfTemplate={pdfTemplate} setPdfTemplate={setPdfTemplate} />;
       default:          return <HomePage user={user} />;
     }
   };
+
+  const sidebarBg = appTheme.type==="gradient"
+    ? `linear-gradient(160deg, ${appTheme.color} 0%, ${appTheme.color2} 100%)`
+    : appTheme.color;
+  const sidebarW = sidebarPinned ? SIDEBAR_FULL : SIDEBAR_ICON;
 
   return (
     <AppCtx.Provider value={ctx}>
@@ -1915,11 +3342,41 @@ export default function App() {
             .mobile-bottom-nav{display:none!important}
           }
         `}</style>
-        <Sidebar active={activePage} setActive={setActivePage} user={user} onEditUser={()=>setShowUserEdit(true)} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
-        <MobileTopBar activePage={activePage} onMenuOpen={()=>setMobileOpen(true)} onNavigate={setActivePage} />
-        <main className="main-content" style={{ marginLeft:220, flex:1, overflowY:"auto" }}>{renderPage()}</main>
+
+        {/* Desktop sidebar — always visible, icon-only when unpinned */}
+        <div className="sidebar-desktop" style={{ width:sidebarW, minHeight:"100vh", position:"fixed", top:0, left:0, bottom:0, zIndex:100, transition:"width 0.22s cubic-bezier(.4,0,.2,1)" }}>
+          <Sidebar active={activePage} setActive={setActivePage}
+            user={user} onEditUser={()=>setShowUserEdit(true)}
+            setMobileOpen={setMobileOpen}
+            sidebarBg={sidebarBg} accent={appTheme.accent}
+            pinned={sidebarPinned} onTogglePin={()=>setSidebarPinned(p=>!p)}
+            userAvatar={userAvatar}
+            collapsed={!sidebarPinned} />
+        </div>
+
+        {/* Mobile overlay sidebar */}
+        {mobileOpen && (
+          <div style={{ position:"fixed", inset:0, zIndex:500 }}>
+            <div onClick={()=>setMobileOpen(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} />
+            <div style={{ position:"absolute", top:0, left:0, bottom:0, width:SIDEBAR_FULL, zIndex:501 }}>
+              <Sidebar active={activePage} setActive={v=>{ setActivePage(v); setMobileOpen(false); }}
+                user={user} onEditUser={()=>{ setShowUserEdit(true); setMobileOpen(false); }}
+                setMobileOpen={setMobileOpen}
+                sidebarBg={sidebarBg} accent={appTheme.accent}
+                pinned={true} onTogglePin={()=>{}} userAvatar={userAvatar} collapsed={false} />
+            </div>
+          </div>
+        )}
+
+        <MobileTopBar activePage={activePage} onMenuOpen={()=>setMobileOpen(true)} onNavigate={setActivePage} sidebarBg={sidebarBg} />
+        <main className="main-content" style={{ marginLeft:sidebarW, flex:1, overflowY:"auto", transition:"margin-left 0.22s cubic-bezier(.4,0,.2,1)" }}>{renderPage()}</main>
         <MobileBottomNav active={activePage} setActive={setActivePage} />
-        {showUserEdit && <UserEditModal user={user} onClose={()=>setShowUserEdit(false)} onSave={u=>setUser(u)} />}
+        {showUserEdit && (
+          <UserEditModal user={user} onClose={()=>setShowUserEdit(false)} onSave={u=>setUser(u)}
+            userAvatar={userAvatar} setUserAvatar={setUserAvatar}
+            appTheme={appTheme} setAppTheme={setAppTheme}
+            sidebarPinned={sidebarPinned} setSidebarPinned={setSidebarPinned} />
+        )}
       </div>
     </AppCtx.Provider>
   );
