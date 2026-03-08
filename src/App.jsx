@@ -643,20 +643,21 @@ const NAV = [
   { id:"payments", label:"Payments Received", Icon:Icons.Payments },
   { id:"settings", label:"Settings", Icon:Icons.Settings },
 ];
-function Sidebar({ active, setActive, user, onEditUser }) {
-  return (
-    <div style={{ width:220, minHeight:"100vh", background:"#1A1A1A", display:"flex", flexDirection:"column", position:"fixed", top:0, left:0, bottom:0, zIndex:100, fontFamily:ff }}>
-      <div style={{ padding:"20px 16px 16px", borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+function Sidebar({ active, setActive, user, onEditUser, mobileOpen, setMobileOpen }) {
+  const inner = (
+    <div style={{ width:220, height:"100%", background:"#1A1A1A", display:"flex", flexDirection:"column", fontFamily:ff }}>
+      <div style={{ padding:"20px 16px 16px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:9 }}>
           <div style={{ width:30, height:30, background:"#E86C4A", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
           <span style={{ color:"#fff", fontSize:14, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
         </div>
+        <button onClick={()=>setMobileOpen(false)} style={{ display:"none", background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.4)", padding:2, className:"mob-close" }}><Icons.X /></button>
       </div>
-      <nav style={{ flex:1, padding:"10px 8px" }}>
+      <nav style={{ flex:1, padding:"10px 8px", overflowY:"auto" }}>
         {NAV.map(({ id, label, Icon })=>{
           const on=active===id;
           return (
-            <button key={id} onClick={()=>setActive(id)}
+            <button key={id} onClick={()=>{ setActive(id); setMobileOpen(false); }}
               style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?"rgba(232,108,74,0.15)":"none", color:on?"#E86C4A":"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
               onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
@@ -679,6 +680,65 @@ function Sidebar({ active, setActive, user, onEditUser }) {
           <Icons.Pen />
         </button>
       </div>
+    </div>
+  );
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="sidebar-desktop" style={{ width:220, minHeight:"100vh", position:"fixed", top:0, left:0, bottom:0, zIndex:100 }}>
+        {inner}
+      </div>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div style={{ position:"fixed", inset:0, zIndex:500 }}>
+          <div onClick={()=>setMobileOpen(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} />
+          <div style={{ position:"absolute", top:0, left:0, bottom:0, width:240, zIndex:501 }}>
+            {inner}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── MOBILE TOP BAR ───────────────────────────────────────────────────────────
+function MobileTopBar({ activePage, onMenuOpen, onNavigate }) {
+  const page = NAV.find(n=>n.id===activePage);
+  return (
+    <div className="mobile-topbar" style={{ display:"none", position:"fixed", top:0, left:0, right:0, height:52, background:"#1A1A1A", zIndex:200, alignItems:"center", padding:"0 16px", gap:12 }}>
+      <button onClick={onMenuOpen} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.7)", display:"flex", alignItems:"center", padding:4 }}>
+        <Ic d='<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>' size={20} sw={2} />
+      </button>
+      <div style={{ display:"flex", alignItems:"center", gap:7, flex:1 }}>
+        <div style={{ width:24, height:24, background:"#E86C4A", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
+        <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
+      </div>
+      <span style={{ color:"rgba(255,255,255,0.5)", fontSize:12 }}>{page?.label||""}</span>
+    </div>
+  );
+}
+
+// ─── MOBILE BOTTOM NAV ────────────────────────────────────────────────────────
+const MOB_NAV = [
+  { id:"home", label:"Home", Icon:Icons.Home },
+  { id:"invoices", label:"Invoices", Icon:Icons.Invoices },
+  { id:"quotes", label:"Quotes", Icon:Icons.Quotes },
+  { id:"customers", label:"Clients", Icon:Icons.Customers },
+  { id:"settings", label:"Settings", Icon:Icons.Settings },
+];
+function MobileBottomNav({ active, setActive }) {
+  return (
+    <div className="mobile-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, height:60, background:"#1A1A1A", zIndex:200, borderTop:"1px solid rgba(255,255,255,0.08)", alignItems:"center", justifyContent:"space-around" }}>
+      {MOB_NAV.map(({ id, label, Icon })=>{
+        const on=active===id;
+        return (
+          <button key={id} onClick={()=>setActive(id)}
+            style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"none", border:"none", cursor:"pointer", color:on?"#E86C4A":"rgba(255,255,255,0.4)", fontFamily:ff, padding:"6px 12px", minWidth:52, transition:"color 0.15s" }}>
+            <Icon />
+            <span style={{ fontSize:10, fontWeight:on?700:400 }}>{label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -736,12 +796,12 @@ function HomePage({ user, onNavigate }) {
   const STATS = [{ label:"Outstanding", value:"£4,320.00", sub:"3 invoices", color:"#E86C4A" },{ label:"Overdue", value:"£1,200.00", sub:"1 invoice", color:"#C0392B" },{ label:"Paid (30 days)", value:"£12,800.00", sub:"8 invoices", color:"#1A1A1A" },{ label:"Draft", value:"£2,500.00", sub:"2 invoices", color:"#888" }];
   const RECENT = [{ id:"INV-0001", customer:"Acme Corp", date:"01 Mar 2026", due:"31 Mar 2026", amount:"£1,200.00", status:"Sent" },{ id:"INV-0002", customer:"Blue Sky Ltd", date:"20 Feb 2026", due:"20 Mar 2026", amount:"£3,120.00", status:"Overdue" },{ id:"INV-0003", customer:"Green Media", date:"15 Feb 2026", due:"15 Mar 2026", amount:"£840.00", status:"Paid" }];
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
       <div style={{ marginBottom:24 }}>
         <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Good morning, {user?.name?.split(" ")[0]||"there"} 👋</h1>
         <p style={{ color:"#888", fontSize:13, margin:0 }}>Sunday, 8 March 2026 · Financial overview</p>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:24 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:24 }}>
         {STATS.map(s=>(
           <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #EBEBEB" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
@@ -772,12 +832,12 @@ function HomePage({ user, onNavigate }) {
           <button onClick={send} disabled={loading} style={{ width:36, height:36, background:loading?"#CCC":"#1A1A1A", border:"none", borderRadius:8, cursor:loading?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}><Icons.Send /></button>
         </div>
       </div>
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflow:"hidden" }}>
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflowX:"auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 18px", borderBottom:"1px solid #F0F0F0" }}>
           <span style={{ fontWeight:700, fontSize:13, color:"#1A1A1A" }}>Recent Invoices</span>
           <button onClick={()=>onNavigate?.("invoices")} style={{ fontSize:12, color:"#E86C4A", background:"none", border:"none", cursor:"pointer", fontWeight:600, fontFamily:ff }}>View all →</button>
         </div>
-        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead><tr style={{ background:"#FAFAFA" }}>{["Invoice #","Customer","Date","Due","Amount","Status"].map(h=><th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>)}</tr></thead>
           <tbody>{RECENT.map(inv=>(
             <tr key={inv.id} style={{ borderBottom:"1px solid #F7F7F7" }}
@@ -804,18 +864,18 @@ function CustomersPage() {
   const filtered = customers.filter(c=>c.name.toLowerCase().includes(search.toLowerCase())||c.email.toLowerCase().includes(search.toLowerCase()));
   const onSave = c => setCustomers(p => upsert(p, c));
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
         <div><h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Customers</h1><p style={{ color:"#AAA", fontSize:13, margin:0 }}>{customers.length} total</p></div>
         <Btn onClick={()=>setModal({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>
       </div>
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflow:"hidden" }}>
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflowX:"auto" }}>
         <div style={{ padding:"11px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…"
             style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1A1A1A", background:"transparent", fontFamily:ff }} />
         </div>
-        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead><tr style={{ background:"#FAFAFA" }}>{["Name","Type","Email","Phone","Currency",""].map(h=><th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>)}</tr></thead>
           <tbody>{filtered.map(c=>(
             <tr key={c.id} style={{ borderBottom:"1px solid #F7F7F7" }}
@@ -853,19 +913,19 @@ function ItemsPage() {
   const toggleActive = id => setCatalogItems(p=>p.map(i=>i.id===id?{...i,active:!i.active}:i));
   const typeColors = { Service:"#4F46E5", Labour:"#D97706", Material:"#059669", Equipment:"#2563EB", Other:"#6B7280" };
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
         <div><h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Items</h1><p style={{ color:"#AAA", fontSize:13, margin:0 }}>Products and services you sell</p></div>
         <Btn onClick={()=>setModal({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Item</Btn>
       </div>
       {!isVat && <div style={{ marginBottom:14 }}><InfoBox color="#D97706">Your organisation is not VAT registered. VAT rates are hidden on all items.</InfoBox></div>}
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflow:"hidden" }}>
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflowX:"auto" }}>
         <div style={{ padding:"11px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items…"
             style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1A1A1A", background:"transparent", fontFamily:ff }} />
         </div>
-        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead><tr style={{ background:"#FAFAFA" }}>
             {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status",""].map(h=><th key={h} style={{ padding:"8px 18px", textAlign:h==="Rate"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>)}
           </tr></thead>
@@ -1100,7 +1160,7 @@ function DocPreview({ data, currSymbol, docType="Invoice", isVat }) {
 
 // ─── INVOICE FORM ─────────────────────────────────────────────────────────────
 function InvoiceForm({ existing, invoices, onSave, onCancel }) {
-  const { orgSettings, catalogItems, customers } = useContext(AppCtx);
+  const { orgSettings, catalogItems, customers, quotes } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
   const [invoiceNumber, setInvoiceNumber] = useState(existing?.invoice_number||nextNum("INV",invoices.map(i=>i.invoice_number)));
   const [customer, setCustomer] = useState(existing ? (customers||[]).find(c=>c.id===existing.customer_id)||null : null);
@@ -1111,9 +1171,9 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const [currency, setCurrency] = useState(existing?.currency||"GBP");
   const [status, setStatus] = useState(existing?.status||"Draft");
   const [items, setItems] = useState(existing?.line_items?.length?existing.line_items:[newLine(0)]);
-  const [discountType, setDiscountType] = useState("percent");
-  const [discountValue, setDiscountValue] = useState(0);
-  const [shipping, setShipping] = useState(0);
+  const [discountType, setDiscountType] = useState(existing?.discount_type||"percent");
+  const [discountValue, setDiscountValue] = useState(existing?.discount_value||0);
+  const [shipping, setShipping] = useState(existing?.shipping||0);
   const [notes, setNotes] = useState(existing?.notes||"");
   const [terms, setTerms] = useState(existing?.terms||DEFAULT_INV_TERMS);
   const [isRecurring, setIsRecurring] = useState(false);
@@ -1121,6 +1181,22 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [showQuotePicker, setShowQuotePicker] = useState(false);
+  const [fromQuote, setFromQuote] = useState(existing?.from_quote||null);
+
+  const importFromQuote = (q) => {
+    const c=(customers||[]).find(x=>x.id===q.customer_id)||null;
+    setCustomer(c);
+    if(c?.paymentTerms){ setPaymentTerms(c.paymentTerms); if(c.paymentTerms==="Custom") setCustomDays(c.customPaymentDays||"30"); }
+    setCurrency(q.currency||"GBP");
+    setItems(q.line_items?.length ? q.line_items.map(i=>({...i,id:crypto.randomUUID()})) : [newLine(0)]);
+    setDiscountType(q.discount_type||"percent");
+    setDiscountValue(q.discount_value||0);
+    setShipping(q.shipping||0);
+    setNotes(q.notes||"");
+    setFromQuote(q.quote_number);
+    setShowQuotePicker(false);
+  };
 
   useEffect(()=>{
     const map={"Due on Receipt":0,"Net 7":7,"Net 14":14,"Net 30":30,"Net 60":60,"Net 90":90};
@@ -1153,7 +1229,7 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const doSave = async (forceStatus) => {
     setSaving(true);
     const finalStatus = forceStatus !== undefined ? forceStatus : status;
-    const payload={ invoice_number:invoiceNumber, customer_id:customer?.id||null, customer_name:customer?.name||"", issue_date:issueDate, due_date:dueDate, payment_terms:paymentTerms, custom_payment_days:customDays, status:finalStatus, currency, subtotal, discount_type:discountType, discount_value:Number(discountValue), discount_amount:discountAmount, shipping:Number(shipping), tax_total:taxTotal, cis_deduction:cisDeduction, total, notes, terms };
+    const payload={ invoice_number:invoiceNumber, customer_id:customer?.id||null, customer_name:customer?.name||"", issue_date:issueDate, due_date:dueDate, payment_terms:paymentTerms, custom_payment_days:customDays, status:finalStatus, currency, subtotal, discount_type:discountType, discount_value:Number(discountValue), discount_amount:discountAmount, shipping:Number(shipping), tax_total:taxTotal, cis_deduction:cisDeduction, total, notes, terms, from_quote:fromQuote };
     try { if(existing?.id) await sbFetch("PATCH",`invoices?id=eq.${existing.id}`,payload); else await sbFetch("POST","invoices",payload); } catch {}
     setSaveMsg("Saved!");
     onSave({ ...payload, id:existing?.id||crypto.randomUUID(), line_items:items });
@@ -1163,7 +1239,7 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const previewData={ docNumber:invoiceNumber, customer, issueDate, dueDate, currency, status, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms };
 
   return (
-    <div style={{ padding:"24px 30px", maxWidth:860, fontFamily:ff }}>
+    <div style={{ padding:"clamp(12px,3vw,24px) clamp(12px,4vw,30px)", maxWidth:860, fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
         <div><h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:"0 0 2px" }}>{existing?"Edit "+invoiceNumber:"New Invoice"}</h1><p style={{ color:"#AAA", fontSize:12, margin:0 }}>Fill in the details below</p></div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -1189,11 +1265,62 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
         </div>
       </SectionCard>
       <SectionCard title="Bill To">
-        <Select value={customer?.id||""} onChange={id=>setCustomer(((customers)||[]).find(c=>c.id===id)||null)} options={((customers)||[]).map(c=>({ value:c.id, label:c.name }))} placeholder="Select a customer…" />
-        {customer && <div style={{ marginTop:9, padding:"9px 12px", background:"#F9F9F9", borderRadius:8, border:"1px solid #EBEBEB" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{customer.name}</div>
-          <div style={{ fontSize:12, color:"#888", marginTop:1 }}>{customer.email}</div>
+        {fromQuote && (
+          <div style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 11px", background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:8, marginBottom:10, fontSize:12 }}>
+            <Icons.Check /><span style={{ color:"#16A34A", fontWeight:700 }}>Imported from {fromQuote}</span>
+            <button onClick={()=>setFromQuote(null)} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"#9CA3AF", fontSize:11 }}>Clear</button>
+          </div>
+        )}
+        <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+          <div style={{ flex:1 }}>
+            <Select value={customer?.id||""} onChange={id=>{
+              const c=(customers||[]).find(x=>x.id===id)||null;
+              setCustomer(c);
+              if(c?.paymentTerms) {
+                setPaymentTerms(c.paymentTerms);
+                if(c.paymentTerms==="Custom") setCustomDays(c.customPaymentDays||"30");
+              }
+            }} options={(customers||[]).map(c=>({ value:c.id, label:c.name }))} placeholder="Select a customer…" />
+          </div>
+          {(quotes||[]).filter(q=>q.status!=="Void").length>0 && (
+            <Btn onClick={()=>setShowQuotePicker(true)} variant="outline" size="sm" icon={<Icons.Quotes />} style={{ whiteSpace:"nowrap" }}>Import Quote</Btn>
+          )}
+        </div>
+        {customer && <div style={{ padding:"9px 12px", background:"#F9F9F9", borderRadius:8, border:"1px solid #EBEBEB", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{customer.name}</div>
+            <div style={{ fontSize:12, color:"#888", marginTop:1 }}>{customer.email}</div>
+          </div>
+          {customer.paymentTerms && <div style={{ fontSize:11, color:"#888", background:"#F0F0F0", padding:"3px 9px", borderRadius:20 }}>{customer.paymentTerms}</div>}
         </div>}
+        {/* Quote picker modal */}
+        {showQuotePicker && (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:3000, padding:20 }}>
+            <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:560, maxHeight:"80vh", display:"flex", flexDirection:"column", boxShadow:"0 20px 60px rgba(0,0,0,0.18)", fontFamily:ff, overflow:"hidden" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 22px", borderBottom:"1px solid #F0F0F0" }}>
+                <div><div style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Import from Quote</div><div style={{ fontSize:12, color:"#AAA", marginTop:2 }}>Select a quote to pre-fill this invoice</div></div>
+                <button onClick={()=>setShowQuotePicker(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
+              </div>
+              <div style={{ overflowY:"auto", padding:"8px 0" }}>
+                {(quotes||[]).filter(q=>q.status!=="Void").map(q=>(
+                  <button key={q.id} onClick={()=>importFromQuote(q)}
+                    style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 22px", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontFamily:ff, borderBottom:"1px solid #F7F7F7" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#F9F9F9"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                    <div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <span style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{q.quote_number}</span>
+                        <Tag color={STATUS_COLORS[q.status]||"#888"}>{q.status}</Tag>
+                        {q.converted_to_invoice && <span style={{ fontSize:10, color:"#16A34A", fontWeight:600 }}>→ {q.converted_to_invoice}</span>}
+                      </div>
+                      <div style={{ fontSize:12, color:"#888", marginTop:3 }}>{q.customer_name} · {fmtDate(q.issue_date)}</div>
+                    </div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{fmt("£", q.total||0)}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </SectionCard>
       <SectionCard title="Line Items">
         <LineItemsTable items={items} onChange={setItems} currSymbol={currSymbol} catalogItems={catalogItems} isVat={isVat} />
@@ -1240,21 +1367,21 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
 
 // ─── INVOICES PAGE ────────────────────────────────────────────────────────────
 function InvoicesPage() {
-  const [invoices, setInvoices] = useState(MOCK_INV_LIST);
+  const { invoices, setInvoices } = useContext(AppCtx);
   const [view, setView] = useState("list");
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const FILTERS=["All","Draft","Sent","Paid","Overdue"];
-  const onSave=inv=>{ setInvoices(p=>{ const i=p.findIndex(x=>x.id===inv.id); if(i>=0){const u=[...p];u[i]=inv;return u;} return [inv,...p]; }); setView("list"); setEditing(null); };
+  const onSave=inv=>{ setInvoices(p=>upsert(p,inv)); setView("list"); setEditing(null); };
   const onCancel=()=>{ setView("list"); setEditing(null); };
   if(view!=="list") return <InvoiceForm existing={editing} invoices={invoices} onSave={onSave} onCancel={onCancel} />;
   const filtered=invoices.filter(inv=>(inv.invoice_number?.toLowerCase().includes(search.toLowerCase())||inv.customer_name?.toLowerCase().includes(search.toLowerCase()))&&(filter==="All"||inv.status===filter));
   const totals={ outstanding:invoices.filter(i=>i.status==="Sent").reduce((a,b)=>a+b.total,0), overdue:invoices.filter(i=>i.status==="Overdue").reduce((a,b)=>a+b.total,0), paid:invoices.filter(i=>i.status==="Paid").reduce((a,b)=>a+b.total,0) };
   return (
-    <div style={{ padding:"28px 30px", maxWidth:1200, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,30px)", maxWidth:1200, fontFamily:ff }}>
       <div style={{ marginBottom:20 }}><h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Invoices</h1><p style={{ color:"#AAA", fontSize:13, margin:0 }}>Create, manage and track invoices</p></div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:12, marginBottom:20 }}>
         {[{ l:"Outstanding", v:totals.outstanding, c:"#2563EB" },{ l:"Overdue", v:totals.overdue, c:"#DC2626" },{ l:"Paid (all time)", v:totals.paid, c:"#16A34A" }].map(s=>(
           <div key={s.l} style={{ background:"#fff", borderRadius:12, padding:"15px 17px", border:"1px solid #EBEBEB" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.l}</div>
@@ -1273,7 +1400,7 @@ function InvoicesPage() {
         </div>
         <Btn onClick={()=>{ setEditing(null); setView("new"); }} variant="accent" icon={<Icons.Plus />}>New Invoice</Btn>
       </div>
-      <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", overflow:"hidden" }}>
+      <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse" }}>
           <thead><tr style={{ background:"#FAFAFA", borderBottom:"1px solid #F0F0F0" }}>
             {["Invoice #","Customer","Issue Date","Due Date","Amount","Status",""].map(h=><th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em" }}>{h}</th>)}
@@ -1348,7 +1475,7 @@ function QuoteForm({ existing, quotes, onSave, onCancel }) {
   const previewData={ docNumber:quoteNumber, customer, issueDate, dueDate:expiryDate, currency, status, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms };
 
   return (
-    <div style={{ padding:"24px 30px", maxWidth:860, fontFamily:ff }}>
+    <div style={{ padding:"clamp(12px,3vw,24px) clamp(12px,4vw,30px)", maxWidth:860, fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
         <div><h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:"0 0 2px" }}>{existing?"Edit "+quoteNumber:"New Quote"}</h1><p style={{ color:"#AAA", fontSize:12, margin:0 }}>Fill in the details below</p></div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -1410,22 +1537,56 @@ function QuoteForm({ existing, quotes, onSave, onCancel }) {
 }
 
 // ─── QUOTES PAGE ──────────────────────────────────────────────────────────────
-function QuotesPage() {
-  const [quotes, setQuotes] = useState(MOCK_QUOTES_LIST);
+function QuotesPage({ onNavigate }) {
+  const { quotes, setQuotes, invoices, setInvoices } = useContext(AppCtx);
   const [view, setView] = useState("list");
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [convertMsg, setConvertMsg] = useState("");
   const FILTERS=["All",...QUOTE_STATUSES];
-  const onSave=q=>{ setQuotes(p=>{ const i=p.findIndex(x=>x.id===q.id); if(i>=0){const u=[...p];u[i]=q;return u;} return [q,...p]; }); setView("list"); setEditing(null); };
+  const onSave=q=>{ setQuotes(p=>upsert(p,q)); setView("list"); setEditing(null); };
   const onCancel=()=>{ setView("list"); setEditing(null); };
   const onClone=q=>setQuotes(p=>[{ ...q, id:crypto.randomUUID(), quote_number:nextNum("QUO",[...p.map(x=>x.quote_number),q.quote_number]), status:"Draft", issue_date:todayStr(), expiry_date:addDays(todayStr(),30) },...p]);
+  const onConvertToInvoice=q=>{
+    const newInvNum = nextNum("INV", invoices.map(i=>i.invoice_number));
+    const newInv = {
+      id: crypto.randomUUID(),
+      invoice_number: newInvNum,
+      customer_id: q.customer_id,
+      customer_name: q.customer_name,
+      issue_date: todayStr(),
+      due_date: addDays(todayStr(), 30),
+      payment_terms: "Net 30",
+      status: "Draft",
+      currency: q.currency,
+      subtotal: q.subtotal,
+      discount_type: q.discount_type||"percent",
+      discount_value: q.discount_value||0,
+      discount_amount: q.discount_amount||0,
+      shipping: q.shipping||0,
+      tax_total: q.tax_total||0,
+      cis_deduction: q.cis_deduction||0,
+      total: q.total,
+      notes: q.notes||"",
+      terms: DEFAULT_INV_TERMS,
+      line_items: q.line_items||[],
+      from_quote: q.quote_number,
+    };
+    setInvoices(p=>[newInv,...p]);
+    setQuotes(p=>upsert(p,{...q, status:"Accepted", converted_to_invoice:newInvNum}));
+    setConvertMsg(`Converted → ${newInvNum}`);
+    setTimeout(()=>setConvertMsg(""),4000);
+  };
   if(view!=="list") return <QuoteForm existing={editing} quotes={quotes} onSave={onSave} onCancel={onCancel} />;
   const filtered=quotes.filter(q=>(q.quote_number?.toLowerCase().includes(search.toLowerCase())||q.customer_name?.toLowerCase().includes(search.toLowerCase()))&&(filter==="All"||q.status===filter));
   return (
-    <div style={{ padding:"28px 30px", maxWidth:1200, fontFamily:ff }}>
-      <div style={{ marginBottom:20 }}><h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Quotes</h1><p style={{ color:"#AAA", fontSize:13, margin:0 }}>Create, manage and send quotes to customers</p></div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+    <div style={{ padding:"clamp(16px,4vw,28px) clamp(12px,4vw,30px)", maxWidth:1200, fontFamily:ff }}>
+      <div style={{ marginBottom:20, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+        <div><h1 style={{ fontSize:"clamp(18px,4vw,24px)", fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Quotes</h1><p style={{ color:"#AAA", fontSize:13, margin:0 }}>Create, manage and send quotes to customers</p></div>
+        {convertMsg && <div style={{ display:"flex", alignItems:"center", gap:6, background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:8, padding:"8px 14px", fontSize:13, color:"#16A34A", fontWeight:700 }}><Icons.Check />{convertMsg} — <button onClick={()=>onNavigate?.("invoices")} style={{ background:"none", border:"none", cursor:"pointer", color:"#16A34A", fontWeight:800, textDecoration:"underline", fontFamily:ff, fontSize:13 }}>View Invoices →</button></div>}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:20 }}>
         {[{ l:"Accepted Value", v:quotes.filter(q=>q.status==="Accepted").reduce((a,b)=>a+(b.total||0),0), c:"#16A34A" },{ l:"Awaiting Response", v:quotes.filter(q=>q.status==="Sent").reduce((a,b)=>a+(b.total||0),0), c:"#2563EB" },{ l:"Total Quotes", v:quotes.length, c:"#6B7280", isCount:true }].map(s=>(
           <div key={s.l} style={{ background:"#fff", borderRadius:12, padding:"15px 17px", border:"1px solid #EBEBEB" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.l}</div>
@@ -1433,37 +1594,45 @@ function QuotesPage() {
           </div>
         ))}
       </div>
-      <div style={{ display:"flex", gap:10, marginBottom:12 }}>
-        <div style={{ flex:1, position:"relative" }}>
+      <div style={{ display:"flex", gap:10, marginBottom:12, flexWrap:"wrap" }}>
+        <div style={{ flex:1, minWidth:160, position:"relative" }}>
           <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:"#AAA" }}><Icons.Search /></div>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search quotes…"
             style={{ width:"100%", padding:"9px 12px 9px 32px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", background:"#fff", boxSizing:"border-box" }} />
         </div>
-        <div style={{ display:"flex", gap:2, background:"#F0F0F0", padding:3, borderRadius:8 }}>
+        <div style={{ display:"flex", gap:2, background:"#F0F0F0", padding:3, borderRadius:8, flexWrap:"wrap" }}>
           {FILTERS.map(f=><button key={f} onClick={()=>setFilter(f)} style={{ padding:"5px 10px", borderRadius:6, border:"none", background:filter===f?"#1A1A1A":"transparent", color:filter===f?"#fff":"#888", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:ff }}>{f}</button>)}
         </div>
         <Btn onClick={()=>{ setEditing(null); setView("new"); }} variant="accent" icon={<Icons.Plus />}>New Quote</Btn>
       </div>
-      <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", overflow:"hidden" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+      <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:600 }}>
           <thead><tr style={{ background:"#FAFAFA", borderBottom:"1px solid #F0F0F0" }}>
-            {["Quote #","Customer","Issue Date","Expiry Date","Amount","Status",""].map(h=><th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em" }}>{h}</th>)}
+            {["Quote #","Customer","Issue Date","Expiry Date","Amount","Status",""].map(h=><th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", whiteSpace:"nowrap" }}>{h}</th>)}
           </tr></thead>
           <tbody>{filtered.map(q=>{
             const expired=q.expiry_date&&new Date(q.expiry_date)<new Date()&&q.status!=="Accepted";
+            const alreadyConverted=!!q.converted_to_invoice;
             return (
               <tr key={q.id} style={{ borderBottom:"1px solid #F7F7F7" }}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <td style={{ padding:"11px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{q.quote_number}</td>
+                <td style={{ padding:"11px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", whiteSpace:"nowrap" }}>
+                  {q.quote_number}
+                  {q.converted_to_invoice && <div style={{ fontSize:10, color:"#16A34A", fontWeight:600, marginTop:2 }}>→ {q.converted_to_invoice}</div>}
+                </td>
                 <td style={{ padding:"11px 16px", fontSize:13, color:"#444" }}>{q.customer_name}</td>
-                <td style={{ padding:"11px 16px", fontSize:13, color:"#888" }}>{fmtDate(q.issue_date)}</td>
-                <td style={{ padding:"11px 16px", fontSize:13, color:expired?"#DC2626":"#888" }}>{fmtDate(q.expiry_date)}</td>
-                <td style={{ padding:"11px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt("£",q.total||0)}</td>
+                <td style={{ padding:"11px 16px", fontSize:13, color:"#888", whiteSpace:"nowrap" }}>{fmtDate(q.issue_date)}</td>
+                <td style={{ padding:"11px 16px", fontSize:13, color:expired?"#DC2626":"#888", whiteSpace:"nowrap" }}>{fmtDate(q.expiry_date)}</td>
+                <td style={{ padding:"11px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right", whiteSpace:"nowrap" }}>{fmt("£",q.total||0)}</td>
                 <td style={{ padding:"11px 16px" }}><Tag color={STATUS_COLORS[q.status]}>{q.status}</Tag></td>
                 <td style={{ padding:"11px 16px" }}>
-                  <div style={{ display:"flex", gap:5 }}>
+                  <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                     <Btn onClick={()=>{ setEditing(q); setView("edit"); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
                     <Btn onClick={()=>onClone(q)} variant="ghost" size="sm">Clone</Btn>
+                    {(q.status==="Accepted"||q.status==="Sent") && !alreadyConverted && (
+                      <Btn onClick={()=>onConvertToInvoice(q)} variant="outline" size="sm" icon={<Icons.Invoices />} style={{ color:"#16A34A", borderColor:"#BBF7D0", background:"#F0FDF4" }}>→ Invoice</Btn>
+                    )}
+                    {alreadyConverted && <span style={{ fontSize:11, color:"#16A34A", fontWeight:600, display:"flex", alignItems:"center", gap:3 }}><Icons.Check />Invoiced</span>}
                   </div>
                 </td>
               </tr>
@@ -1574,7 +1743,7 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
   );
 
   return (
-    <div style={{ padding:"28px 32px", maxWidth:900, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:900, fontFamily:ff }}>
       <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", marginBottom:20 }}>Settings</h1>
 
       {/* Organisation */}
@@ -1594,7 +1763,7 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
         <div style={{ fontSize:11, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>PDF Print Template</div>
         <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"18px 20px" }}>
           <p style={{ fontSize:13, color:"#555", margin:"0 0 14px", lineHeight:1.6 }}>Select a template and click <strong>Preview / Edit</strong> to see exactly how your invoices and quotes will look when printed or exported as PDF.</p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:10, marginBottom:14 }}>
             {PDF_TEMPLATES.map(t=>(
               <button key={t.id} onClick={()=>setPdfTemplate(t.id)}
                 style={{ padding:"12px 10px", borderRadius:10, border:`2px solid ${pdfTemplate===t.id?"#1A1A1A":"#E0E0E0"}`, background:pdfTemplate===t.id?"#1A1A1A":"#FAFAFA", cursor:"pointer", textAlign:"center", transition:"all 0.18s", fontFamily:ff, display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
@@ -1698,20 +1867,23 @@ export default function App() {
   const [pdfTemplate, setPdfTemplate] = useState("classic");
   const [catalogItems, setCatalogItems] = useState(MOCK_ITEMS_INIT);
   const [customers, setCustomers] = useState(MOCK_CUSTOMERS);
+  const [invoices, setInvoices] = useState(MOCK_INV_LIST);
+  const [quotes, setQuotes] = useState(MOCK_QUOTES_LIST);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if(screen==="setup") return <OrgSetupPage onComplete={data=>{ setOrgSettings(data); setScreen("app"); }} initialData={orgSettings} />;
 
-  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers };
+  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers, invoices, setInvoices, quotes, setQuotes };
 
   const renderPage = () => {
     switch(activePage) {
       case "home":      return <HomePage user={user} onNavigate={setActivePage} />;
       case "customers": return <CustomersPage />;
       case "items":     return <ItemsPage />;
-      case "quotes":    return <QuotesPage />;
+      case "quotes":    return <QuotesPage onNavigate={setActivePage} />;
       case "invoices":  return <InvoicesPage />;
       case "payments":  return (
-        <div style={{ padding:"28px 32px", fontFamily:ff }}>
+        <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", fontFamily:ff }}>
           <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 4px" }}>Payments Received</h1>
           <p style={{ color:"#AAA", fontSize:13, margin:"0 0 24px" }}>Record and track incoming payments</p>
           <div style={{ background:"#fff", borderRadius:14, border:"1.5px dashed #E8E8E8", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:60, color:"#CCC", gap:10 }}>
@@ -1732,9 +1904,21 @@ export default function App() {
           *{box-sizing:border-box} body{margin:0}
           @keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
           ::-webkit-scrollbar{width:5px;height:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:#DDD;border-radius:10px}
+          @media(max-width:768px){
+            .sidebar-desktop{display:none!important}
+            .mobile-topbar{display:flex!important}
+            .mobile-bottom-nav{display:flex!important}
+            .main-content{margin-left:0!important;padding-top:52px!important;padding-bottom:68px!important}
+          }
+          @media(min-width:769px){
+            .mobile-topbar{display:none!important}
+            .mobile-bottom-nav{display:none!important}
+          }
         `}</style>
-        <Sidebar active={activePage} setActive={setActivePage} user={user} onEditUser={()=>setShowUserEdit(true)} />
-        <main style={{ marginLeft:220, flex:1, overflowY:"auto" }}>{renderPage()}</main>
+        <Sidebar active={activePage} setActive={setActivePage} user={user} onEditUser={()=>setShowUserEdit(true)} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+        <MobileTopBar activePage={activePage} onMenuOpen={()=>setMobileOpen(true)} onNavigate={setActivePage} />
+        <main className="main-content" style={{ marginLeft:220, flex:1, overflowY:"auto" }}>{renderPage()}</main>
+        <MobileBottomNav active={activePage} setActive={setActivePage} />
         {showUserEdit && <UserEditModal user={user} onClose={()=>setShowUserEdit(false)} onSave={u=>setUser(u)} />}
       </div>
     </AppCtx.Provider>
