@@ -36,6 +36,12 @@ const SALUTATIONS = ["Mr.","Mrs.","Ms.","Miss","Dr.","Prof."];
 const ITEM_UNITS = ["hrs","days","qty","kg","m","m²","m³","l","pcs","flat rate"];
 const ITEM_TYPES = ["Service","Material","Labour","Equipment","Other"];
 const CIS_RATES = ["20%","30%","0% (gross payment)"];
+const ACCOUNT_CATEGORIES = [
+  "Sales","Services","Consulting","Design & Creative","Development & IT",
+  "Marketing","Labour","Materials","Equipment Hire","Subcontractors",
+  "Expenses","Travel & Subsistence","Office Supplies","Software & Subscriptions",
+  "Professional Fees","Advertising","Utilities","Rent & Rates","Other Income","Other",
+];
 const STATUS_COLORS = { Sent:"#2563EB", Overdue:"#C0392B", Paid:"#16A34A", Draft:"#6B7280", Void:"#9CA3AF", Accepted:"#16A34A", Declined:"#DC2626", Expired:"#9CA3AF" };
 const QUOTE_STATUSES = ["Draft","Sent","Accepted","Declined","Expired"];
 const PDF_TEMPLATES = [
@@ -656,16 +662,14 @@ function CustomerModal({ existing, onClose, onSave }) {
           {/* TAX DETAILS */}
           <ExpandSection title="Tax Details">
             <div style={{ paddingTop:8 }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                <Field label="VAT Number"><Input value={vatNumber} onChange={setVatNumber} placeholder="GB123456789" /></Field>
-                <Field label="UTR Number" hint="Unique Taxpayer Reference"><Input value={utr} onChange={setUtr} placeholder="1234567890" /></Field>
-              </div>
+              <Field label="VAT Number"><Input value={vatNumber} onChange={setVatNumber} placeholder="GB123456789" /></Field>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 12px", background:"#F9F9F9", borderRadius:8, border:"1px solid #EBEBEB", marginBottom:12 }}>
                 <div><div style={{ fontSize:13, fontWeight:600, color:"#1A1A1A" }}>CIS Registered</div><div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>Construction Industry Scheme</div></div>
                 <Switch checked={cifRegistered} onChange={setCifRegistered} />
               </div>
               {cifRegistered && (
                 <div style={{ background:"#F9F9F9", borderRadius:8, padding:"12px 14px", border:"1px solid #EBEBEB" }}>
+                  <Field label="UTR Number" hint="Unique Taxpayer Reference"><Input value={utr} onChange={setUtr} placeholder="1234567890" /></Field>
                   <Field label="CIS Role"><Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} placeholder="Select role…" /></Field>
                   {(cisRole==="Subcontractor"||cisRole==="Both") && <Field label="CIS Deduction Rate"><Select value={cisDeductRate} onChange={setCisDeductRate} options={CIS_RATES} /></Field>}
                   <InfoBox>CIS deduction will be applied automatically on invoices raised for this customer.</InfoBox>
@@ -791,7 +795,9 @@ function ItemModal({ existing, onClose, onSave }) {
           {!isVat && <InfoBox color="#D97706">VAT Rate hidden — your organisation is not VAT registered. Items cannot legally include VAT.</InfoBox>}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:4 }}>
             <Field label="SKU / Code"><Input value={sku} onChange={setSku} placeholder="e.g. WD-001" /></Field>
-            <Field label="Account / Category"><Input value={account} onChange={setAccount} placeholder="e.g. Sales" /></Field>
+            <Field label="Account / Category">
+              <Select value={account} onChange={setAccount} options={ACCOUNT_CATEGORIES} placeholder="Select category…" />
+            </Field>
           </div>
           {showCIS && (
             <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 10px", border:"1px solid #EBEBEB", marginBottom:14 }}>
@@ -846,7 +852,10 @@ function Sidebar({ active, setActive, user, onEditUser, setMobileOpen, sidebarBg
       {/* Logo / header */}
       <div style={{ padding: collapsed ? "16px 0" : "18px 14px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent: collapsed ? "center" : "space-between", flexShrink:0 }}>
         {collapsed ? (
-          <div style={{ width:28, height:28, background:accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
+          <button onClick={onTogglePin} title="Expand sidebar"
+            style={{ width:28, height:28, background:accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center", border:"none", cursor:"pointer", padding:0 }}>
+            <Icons.Invoices />
+          </button>
         ) : (<>
           <div style={{ display:"flex", alignItems:"center", gap:9 }}>
             <div style={{ width:28, height:28, background:accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
@@ -1858,28 +1867,15 @@ function A4PrintModal({ data, currSymbol, isVat, onClose }) {
       <div style={{ width:"100%", maxWidth:820, background:"#1A1A1A", borderRadius:"12px 12px 0 0", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", flexShrink:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
           <span style={{ fontSize:13, fontWeight:700, color:"#fff" }}>Print Preview — A4</span>
-          {/* Template switcher */}
-          <div style={{ display:"flex", gap:2, background:"rgba(255,255,255,0.08)", borderRadius:6, padding:"2px" }}>
-            {PDF_TEMPLATES.map(t=>(
-              <button key={t.id} onClick={()=>switchTemplate(t.id)}
-                style={{ padding:"4px 9px", borderRadius:5, border:"none", background:activeTemplate===t.id?"#fff":"transparent", color:activeTemplate===t.id?"#1A1A1A":"rgba(255,255,255,0.6)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
-                {t.name}
-              </button>
-            ))}
-          </div>
-          {/* Accent colour */}
-          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>Colour:</span>
-            {["#1A1A1A","#2563EB","#16A34A","#E86C4A","#9333EA","#DC2626","#0891B2","#D97706"].map(c=>(
-              <button key={c} onClick={()=>setAccentColor(c)}
-                style={{ width:18, height:18, borderRadius:"50%", background:c, border:`2px solid ${accentColor===c?"#fff":"transparent"}`, cursor:"pointer" }} />
-            ))}
-            <input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)}
-              style={{ width:24, height:20, borderRadius:4, border:"1px solid rgba(255,255,255,0.2)", padding:1, cursor:"pointer", background:"transparent" }} />
-          </div>
+          <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", background:"rgba(255,255,255,0.08)", padding:"3px 8px", borderRadius:5 }}>
+            {PDF_TEMPLATES.find(t=>t.id===activeTemplate)?.name||"Classic"}
+          </span>
         </div>
-        <div style={{ display:"flex", gap:8 }}>
-          <Btn onClick={onClose} variant="outline" style={{ color:"#fff", borderColor:"rgba(255,255,255,0.2)" }}>Close</Btn>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <button onClick={onClose}
+            style={{ padding:"7px 14px", borderRadius:8, border:"1.5px solid rgba(255,255,255,0.3)", background:"transparent", color:"#fff", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
+            Close
+          </button>
           <Btn onClick={handlePrint} variant="accent" icon={<Icons.Receipt />}>Print</Btn>
         </div>
       </div>
