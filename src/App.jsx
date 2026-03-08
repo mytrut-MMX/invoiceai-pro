@@ -1329,9 +1329,10 @@ function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat }) {
     return u;
   }));
   const applyItem = (rowId, ci) => {
+    const descText = ci.description ? `${ci.name} — ${ci.description}` : ci.name;
     onChange(items.map(it => {
       if(it.id!==rowId) return it;
-      return { ...it, description:ci.name, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:Number(it.quantity)*Number(ci.rate) };
+      return { ...it, description:descText, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:Number(it.quantity)*Number(ci.rate) };
     }));
     setPickerRow(null); setPickerSearch("");
   };
@@ -1365,7 +1366,8 @@ function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat }) {
             {filteredCat.map(ci=>(
               <button key={ci.id} onClick={()=>{
                 // Add as new line item
-                const newItem = { id:crypto.randomUUID(), description:ci.name, quantity:1, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate, sort_order:items.length };
+                const descText = ci.description ? `${ci.name} — ${ci.description}` : ci.name;
+                const newItem = { id:crypto.randomUUID(), description:descText, quantity:1, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate, sort_order:items.length };
                 onChange([...items, newItem]);
                 setPickerRow(null); setPickerSearch("");
               }}
@@ -1447,9 +1449,9 @@ function TotalsBlock({ subtotal, discountType, discountValue, setDiscountType, s
         <span style={{ fontSize:16, fontWeight:800, color:"#1A1A1A" }}>{fmt(currSymbol,total)}</span>
       </div>
       {cisDeduction>0 && (
-        <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0 2px", borderTop:"1px solid #F0F0F0", marginTop:4 }}>
-          <span style={{ fontSize:12, color:"#D97706", fontWeight:700 }}>Amount Due after CIS</span>
-          <span style={{ fontSize:14, fontWeight:800, color:"#D97706" }}>{fmt(currSymbol,total-cisDeduction)}</span>
+        <div style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", marginTop:2 }}>
+          <span style={{ fontSize:11, color:"#AAA" }}>Gross (before CIS)</span>
+          <span style={{ fontSize:11, color:"#AAA" }}>{fmt(currSymbol,total+cisDeduction)}</span>
         </div>
       )}
     </div>
@@ -1498,13 +1500,22 @@ function DocPreview({ data, currSymbol, docType="Invoice", isVat }) {
               ...(discountAmount>0?[["Discount",`− ${fmt(currSymbol,discountAmount)}`,"#E86C4A"]]:[]),
               ...(Number(shipping)>0?[["Shipping",fmt(currSymbol,shipping)]]:[]),
               ...(isVat?taxBreakdown.map(tb=>[`VAT ${tb.rate}%`,fmt(currSymbol,tb.amount)]):[]),
-              ...((cisDeduction||0)>0?[["CIS Deduction",`− ${fmt(currSymbol,cisDeduction)}`,"#D97706"]]:[]),
             ].map(([l,v,c])=>(
               <div key={l} style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"2px 0" }}>
                 <span style={{ fontSize:11, color:"#888" }}>{l}</span>
                 <span style={{ fontSize:11, color:c||"#555" }}>{v}</span>
               </div>
             ))}
+            {(cisDeduction||0)>0 && (<>
+              <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"5px 0 2px", borderTop:"1.5px solid #EBEBEB", marginTop:3 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>Gross Total</span>
+                <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>{fmt(currSymbol,total+cisDeduction)}</span>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"2px 0" }}>
+                <span style={{ fontSize:11, color:"#D97706" }}>CIS Deduction</span>
+                <span style={{ fontSize:11, color:"#D97706" }}>{`− ${fmt(currSymbol,cisDeduction)}`}</span>
+              </div>
+            </>)}
             <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"7px 0 2px", borderTop:"2px solid #1A1A1A", marginTop:4 }}>
               <span style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>Total Due</span>
               <span style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>{fmt(currSymbol,total)}</span>
@@ -1688,15 +1699,20 @@ function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, templ
             <span style={{ fontSize:"8.5pt", color:c||"#555" }}>{v}</span>
           </div>
         ))}
+        {(cisDeduction||0)>0 && (<>
+          <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0", borderTop:"1px solid #F4F4F4", marginTop:2 }}>
+            <span style={{ fontSize:"8.5pt", color:"#555", fontWeight:600 }}>Gross Total</span>
+            <span style={{ fontSize:"8.5pt", fontWeight:700, color:"#555" }}>{fmt(sym,total+cisDeduction)}</span>
+          </div>
+          <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0" }}>
+            <span style={{ fontSize:"8.5pt", color:"#D97706", fontWeight:600 }}>CIS Deduction</span>
+            <span style={{ fontSize:"8.5pt", fontWeight:700, color:"#D97706" }}>{`− ${fmt(sym,cisDeduction)}`}</span>
+          </div>
+        </>)}
         <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"3mm 4mm 2mm", background:accent, borderRadius:4, marginTop:2 }}>
           <span style={{ fontSize:"10pt", fontWeight:800, color:"#fff" }}>Total Due</span>
           <span style={{ fontSize:"11pt", fontWeight:900, color:"#fff" }}>{fmt(sym,total)}</span>
         </div>
-        {(cisDeduction||0)>0 && (
-          <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0" }}>
-            <span style={{ fontSize:"7.5pt", color:"#D97706", fontWeight:700 }}>After CIS</span>
-            <span style={{ fontSize:"8.5pt", fontWeight:800, color:"#D97706" }}>{fmt(sym,total-cisDeduction)}</span>
-          </div>
         )}
       </div>
     </div>
@@ -1851,10 +1867,10 @@ function A4PrintModal({ data, currSymbol, isVat, onClose }) {
     const w = window.open("","_blank","width=900,height=700");
     w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${data.docNumber||""}</title>
       <style>
-        *{box-sizing:border-box;margin:0;padding:0}
+        *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
         body{background:#fff;font-family:'Instrument Sans','DM Sans','Helvetica Neue',sans-serif}
         @page{size:A4;margin:0}
-        @media print{body{margin:0}}
+        @media print{body{margin:0}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}}
       </style>
     </head><body>${el.outerHTML}</body></html>`);
     w.document.close();
@@ -1907,6 +1923,7 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const [terms, setTerms] = useState(existing?.terms||DEFAULT_INV_TERMS);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFreq, setRecurringFreq] = useState("Monthly");
+  const [recurringNextDate, setRecurringNextDate] = useState(existing?.recurring_next_date||addDays(todayStr(),30));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -1944,7 +1961,8 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const taxTotal=taxBreakdown.reduce((s,tb)=>s+tb.amount,0);
   const cisApplicableItems = items.filter(it=>{ const ci = catalogItems?.find(c=>c.name===it.description); return ci?.cisApplicable; });
   const cisDeduction = cisApplicableItems.reduce((s,it)=>{ const ci = catalogItems?.find(c=>c.name===it.description); const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2; return s + it.amount * rate; }, 0);
-  const total=(subtotal-discountAmount)+Number(shipping)+taxTotal;
+  const totalBeforeCIS=(subtotal-discountAmount)+Number(shipping)+taxTotal;
+  const total=totalBeforeCIS-cisDeduction;
 
   const [showPaidConfirm, setShowPaidConfirm] = useState(false);
   const [showA4Print, setShowA4Print] = useState(false);
@@ -2080,9 +2098,9 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
           <Switch checked={isRecurring} onChange={setIsRecurring} />
         </div>
         {isRecurring && <div style={{ marginTop:12, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-          <Field label="Frequency"><Select value={recurringFreq} onChange={setRecurringFreq} options={RECURRING_OPTS} /></Field>
-          <Field label="Next Date"><Input value={dueDate} readOnly /></Field>
-          <div style={{ gridColumn:"1/-1" }}><InfoBox color="#D97706">A reminder will be created. You review and send manually.</InfoBox></div>
+          <Field label="Frequency"><Select value={recurringFreq} onChange={v=>{setRecurringFreq(v);const fd={Weekly:7,Monthly:30,Quarterly:90,Yearly:365};setRecurringNextDate(addDays(issueDate,fd[v]||30));}} options={RECURRING_OPTS} /></Field>
+          <Field label="Next Invoice Date"><Input value={recurringNextDate} onChange={setRecurringNextDate} type="date" /></Field>
+          <div style={{ gridColumn:"1/-1" }}><InfoBox color="#D97706">A new invoice identical to this one will be auto-created on {recurringNextDate?fmtDate(recurringNextDate):"the scheduled date"}. You review and send it manually.</InfoBox></div>
         </div>}
       </SectionCard>
       {showPreview && (
@@ -2229,7 +2247,8 @@ function QuoteForm({ existing, quotes, onSave, onCancel }) {
     const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2;
     return s + it.amount * rate;
   }, 0);
-  const total=(subtotal-discountAmount)+Number(shipping)+taxTotal;
+  const totalBeforeCIS=(subtotal-discountAmount)+Number(shipping)+taxTotal;
+  const total=totalBeforeCIS-cisDeduction;
 
   const doSave = async (forceStatus) => {
     setSaving(true);
@@ -2291,11 +2310,18 @@ function QuoteForm({ existing, quotes, onSave, onCancel }) {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 22px", borderBottom:"1px solid #F0F0F0" }}>
               <span style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Quote Preview</span>
               <div style={{ display:"flex", gap:8 }}>
-                <Btn variant="outline" size="sm" icon={<Icons.Download />}>Download PDF</Btn>
+               <Btn onClick={()=>{
+                  const el = document.getElementById("quote-preview-content");
+                  if(!el){ window.print(); return; }
+                  const w = window.open("","_blank","width=900,height=700");
+                  w.document.write(`<!DOCTYPE html><html><head><title>Quote ${quoteNumber||""}</title><style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}body{background:#fff;font-family:'Instrument Sans','DM Sans','Helvetica Neue',sans-serif}@page{size:A4;margin:10mm}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}</style></head><body>${el.outerHTML}</body></html>`);
+                  w.document.close();
+                  setTimeout(()=>{ w.focus(); w.print(); },400);
+                }} variant="outline" size="sm" icon={<Icons.Download />}>Download PDF</Btn>
                 <button onClick={()=>setShowPreview(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
               </div>
             </div>
-            <div style={{ overflowY:"auto", padding:22 }}>
+            <div id="quote-preview-content" style={{ overflowY:"auto", padding:22 }}>
               <DocPreview data={previewData} currSymbol={currSymbol} docType="Quote" isVat={isVat} />
             </div>
           </div>
