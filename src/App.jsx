@@ -1968,8 +1968,9 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const discountAmount=discountType==="percent"?subtotal*(Number(discountValue)/100):Math.min(Number(discountValue),subtotal);
   const taxBreakdown=isVat?TAX_RATES.filter(r=>r>0).map(rate=>({ rate, amount:items.filter(i=>Number(i.tax_rate)===rate).reduce((s,i)=>s+i.amount*(rate/100),0) })).filter(tb=>tb.amount>0):[];
   const taxTotal=taxBreakdown.reduce((s,tb)=>s+tb.amount,0);
-  const findCatalogItem = (desc) => catalogItems?.find(c => desc && (desc === c.name || desc.startsWith(c.name + " — ")));
-  const cisApplicableItems = items.filter(it=>{ const ci = findCatalogItem(it.description); return ci?.cisApplicable; });
+ const findCatalogItem = (desc) => catalogItems?.find(c => desc && (desc === c.name || desc.startsWith(c.name + " — ")));
+  const customerIsCISContractor = customer?.taxDetails?.cisRegistered && (customer?.taxDetails?.cisRole === "Contractor" || customer?.taxDetails?.cisRole === "Both");
+  const cisApplicableItems = customerIsCISContractor ? items.filter(it=>{ const ci = findCatalogItem(it.description); return ci?.cisApplicable; }) : [];
   const cisDeduction = cisApplicableItems.reduce((s,it)=>{ const ci = findCatalogItem(it.description); const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2; return s + it.amount * rate; }, 0);
   const totalBeforeCIS=(subtotal-discountAmount)+Number(shipping)+taxTotal;
   const total=totalBeforeCIS-cisDeduction;
@@ -2252,12 +2253,13 @@ function QuoteForm({ existing, quotes, onSave, onCancel }) {
   const taxBreakdown=isVat?TAX_RATES.filter(r=>r>0).map(rate=>({ rate, amount:items.filter(i=>Number(i.tax_rate)===rate).reduce((s,i)=>s+i.amount*(rate/100),0) })).filter(tb=>tb.amount>0):[];
   const taxTotal=taxBreakdown.reduce((s,tb)=>s+tb.amount,0);
   const findCatalogItemQ = (desc) => catalogItems?.find(c => desc && (desc === c.name || desc.startsWith(c.name + " — ")));
-  const cisDeduction = items.reduce((s,it)=>{
+  const customerIsCISContractorQ = customer?.taxDetails?.cisRegistered && (customer?.taxDetails?.cisRole === "Contractor" || customer?.taxDetails?.cisRole === "Both");
+  const cisDeduction = customerIsCISContractorQ ? items.reduce((s,it)=>{
     const ci = findCatalogItemQ(it.description);
     if(!ci?.cisApplicable) return s;
     const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2;
     return s + it.amount * rate;
-  }, 0);
+  }, 0) : 0;
   const totalBeforeCIS=(subtotal-discountAmount)+Number(shipping)+taxTotal;
   const total=totalBeforeCIS-cisDeduction;
 
@@ -2308,6 +2310,12 @@ function QuoteForm({ existing, quotes, onSave, onCancel }) {
         <div style={{ display:"flex", justifyContent:"flex-end", marginTop:16 }}>
           <TotalsBlock subtotal={subtotal} discountType={discountType} discountValue={discountValue} setDiscountType={setDiscountType} setDiscountValue={setDiscountValue} shipping={shipping} setShipping={setShipping} taxBreakdown={taxBreakdown} total={total} currSymbol={currSymbol} isVat={isVat} cisDeduction={cisDeduction} />
         </div>
+        {customer && customerIsCISContractor && cisDeduction > 0 && (
+          <InfoBox color="#D97706">CIS deduction of {fmt(currSymbol, cisDeduction)} applied — {customer.name} is registered as a CIS Contractor. The customer will withhold this amount and pay it to HMRC on your behalf.</InfoBox>
+        )}
+        {customer && customer.taxDetails?.cisRegistered && !customerIsCISContractor && (
+          <InfoBox color="#2563EB">{customer.name} is CIS registered as Subcontractor only — CIS deduction does not apply when invoicing a subcontractor. Invoice shows full amount.</InfoBox>
+        )}
       </SectionCard>
       <SectionCard title="Notes & Terms">
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
