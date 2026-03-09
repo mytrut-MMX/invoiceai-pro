@@ -444,6 +444,8 @@ function OrgSetupPage({ onComplete, initialData }) {
   const [cisSub, setCisSub] = useState(initialData?.cisSub||false);
   const [cisRate, setCisRate] = useState(initialData?.cisRate||"20%");
   const [cisUtr, setCisUtr] = useState(initialData?.cisUtr||"");
+  const [orgEmail, setOrgEmail] = useState(initialData?.email||"");
+  const [orgPhone, setOrgPhone] = useState(initialData?.phone||"");
 
   const stateOpts = country==="United Kingdom" ? UK_COUNTIES : [];
   const isCIS = industry==="Construction";
@@ -455,7 +457,7 @@ function OrgSetupPage({ onComplete, initialData }) {
 
   const handleComplete = () => {
     if(!canSubmit){ setVatNumTouched(true); return; }
-    onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode, currency, timezone,
+    onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode, currency, timezone, email:orgEmail, phone:orgPhone,
       vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
       cisReg: cisReg ? "Yes" : "No", cisContractor, cisSub, cisRate, cisUtr });
   };
@@ -480,6 +482,10 @@ function OrgSetupPage({ onComplete, initialData }) {
             </Field>
           )}
           <Field label="Industry" required><Select value={industry} onChange={setIndustry} options={INDUSTRIES} placeholder="Select an industry…" /></Field>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <Field label="Email Address"><Input value={orgEmail} onChange={setOrgEmail} type="email" placeholder="invoices@company.com" /></Field>
+            <Field label="Phone Number"><Input value={orgPhone} onChange={setOrgPhone} placeholder="+44 20 7946 0000" /></Field>
+          </div>
           {/* Organisation Address — country/county included */}
           <Field label="">
             <button onClick={()=>setShowAddr(!showAddr)}
@@ -1624,7 +1630,7 @@ function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, templ
 
   const OrgBlock = () => (
     <div>
-      {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight:52, maxWidth:160, objectFit:"contain", display:"block", marginBottom:5 }} />}
+      {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight:org.logoSize||52, maxWidth:200, objectFit:"contain", display:"block", marginBottom:5 }} />}
       <div style={{ fontSize:"15pt", fontWeight:900, color: template==="modern" ? "#fff" : accent, letterSpacing:"-0.01em" }}>{org.orgName||"Your Company"}</div>
       {addrParts.length>0 && (
         <div style={{ fontSize:"7.5pt", color: template==="modern" ? "rgba(255,255,255,0.75)" : "#666", marginTop:3, lineHeight:1.8 }}>
@@ -1900,7 +1906,7 @@ function A4PrintModal({ data, currSymbol, isVat, onClose }) {
       </div>
       {/* A4 sheet */}
       <div style={{ width:"100%", maxWidth:820, background:"#fff", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", overflow:"hidden" }}>
-        <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat} orgSettings={{...orgSettings, logo:ctxFull.companyLogo}} accentColor={accentColor} template={activeTemplate} />
+        <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat} orgSettings={{...orgSettings, logo:ctxFull.companyLogo, logoSize:ctxFull.companyLogoSize}} accentColor={accentColor} template={activeTemplate} />
       </div>
     </div>
   );
@@ -1962,8 +1968,9 @@ function InvoiceForm({ existing, invoices, onSave, onCancel }) {
   const discountAmount=discountType==="percent"?subtotal*(Number(discountValue)/100):Math.min(Number(discountValue),subtotal);
   const taxBreakdown=isVat?TAX_RATES.filter(r=>r>0).map(rate=>({ rate, amount:items.filter(i=>Number(i.tax_rate)===rate).reduce((s,i)=>s+i.amount*(rate/100),0) })).filter(tb=>tb.amount>0):[];
   const taxTotal=taxBreakdown.reduce((s,tb)=>s+tb.amount,0);
-  const cisApplicableItems = items.filter(it=>{ const ci = catalogItems?.find(c=>c.name===it.description); return ci?.cisApplicable; });
-  const cisDeduction = cisApplicableItems.reduce((s,it)=>{ const ci = catalogItems?.find(c=>c.name===it.description); const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2; return s + it.amount * rate; }, 0);
+  const findCatalogItem = (desc) => catalogItems?.find(c => desc && (desc === c.name || desc.startsWith(c.name + " — ")));
+  const cisApplicableItems = items.filter(it=>{ const ci = findCatalogItem(it.description); return ci?.cisApplicable; });
+  const cisDeduction = cisApplicableItems.reduce((s,it)=>{ const ci = findCatalogItem(it.description); const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2; return s + it.amount * rate; }, 0);
   const totalBeforeCIS=(subtotal-discountAmount)+Number(shipping)+taxTotal;
   const total=totalBeforeCIS-cisDeduction;
 
@@ -2244,8 +2251,9 @@ function QuoteForm({ existing, quotes, onSave, onCancel }) {
   const discountAmount=discountType==="percent"?subtotal*(Number(discountValue)/100):Math.min(Number(discountValue),subtotal);
   const taxBreakdown=isVat?TAX_RATES.filter(r=>r>0).map(rate=>({ rate, amount:items.filter(i=>Number(i.tax_rate)===rate).reduce((s,i)=>s+i.amount*(rate/100),0) })).filter(tb=>tb.amount>0):[];
   const taxTotal=taxBreakdown.reduce((s,tb)=>s+tb.amount,0);
+  const findCatalogItemQ = (desc) => catalogItems?.find(c => desc && (desc === c.name || desc.startsWith(c.name + " — ")));
   const cisDeduction = items.reduce((s,it)=>{
-    const ci = catalogItems?.find(c=>c.name===it.description);
+    const ci = findCatalogItemQ(it.description);
     if(!ci?.cisApplicable) return s;
     const rate = ci?.cisLabourRate ? parseFloat(ci.cisLabourRate)/100 : 0.2;
     return s + it.amount * rate;
@@ -2449,13 +2457,14 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
   const { orgSettings } = useContext(AppCtx);
   const [previewTpl, setPreviewTpl] = useState(null);
   const [tplAccent, setTplAccent] = useState(PDF_TEMPLATES.find(t=>t.id===pdfTemplate)?.defaultAccent||"#1A1A1A");
-  const { companyLogo, setCompanyLogo } = useContext(AppCtx);
+  const { companyLogo, setCompanyLogo, companyLogoSize, setCompanyLogoSize } = useContext(AppCtx);
   const [tplLogo, setTplLogo] = useState(companyLogo || null);
   const [tplShowBankDetails, setTplShowBankDetails] = useState(true);
   const [tplShowPayTerms, setTplShowPayTerms] = useState(true);
   const [tplShowQR, setTplShowQR] = useState(false);
   const [tplNotes, setTplNotes] = useState("Thank you for your business!");
   const [tplFooterText, setTplFooterText] = useState("");
+  const [tplLogoSize, setTplLogoSize] = useState(52);
 
   const handleLogoUpload = (e) => {
     const file = e.target.files?.[0];
@@ -2674,6 +2683,16 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
                     )}
                   </div>
                 </Field>
+                {/* Logo size */}
+                {tplLogo && (
+                  <Field label={`Logo Size: ${tplLogoSize}px`}>
+                    <input type="range" min={24} max={120} value={tplLogoSize} onChange={e=>setTplLogoSize(Number(e.target.value))}
+                      style={{ width:"100%", accentColor:"#1A1A1A" }} />
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#AAA", marginTop:2 }}>
+                      <span>24px</span><span>120px</span>
+                    </div>
+                  </Field>
+                )}
                 {/* Accent colour */}
                 <Field label="Accent Colour">
                   <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
@@ -2723,7 +2742,7 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
                     data={{...SAMPLE_INV, notes:tplNotes, terms: tplShowPayTerms?"Payment is due within 30 days of invoice date.":""}}
                     currSymbol="£"
                     isVat={true}
-                    orgSettings={{ ...orgSettings, logo:tplLogo }}
+                    orgSettings={{ ...orgSettings, logo:tplLogo, logoSize:tplLogoSize }}
                     accentColor={tplAccent}
                     template={previewTpl}
                     footerText={tplFooterText}
@@ -2736,7 +2755,7 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
               <span style={{ fontSize:12, color:"#AAA" }}>Active: <strong style={{ color:"#1A1A1A" }}>{PDF_TEMPLATES.find(t=>t.id===previewTpl)?.name}</strong></span>
               <div style={{ display:"flex", gap:8 }}>
                 <Btn onClick={()=>setPreviewTpl(null)} variant="outline">Close</Btn>
-                <Btn onClick={()=>{ setPdfTemplate(previewTpl); setCompanyLogo(tplLogo); setPreviewTpl(null); }} variant="primary">Apply Template</Btn>
+                <Btn onClick={()=>{ setPdfTemplate(previewTpl); setCompanyLogo(tplLogo); setCompanyLogoSize(tplLogoSize); setPreviewTpl(null); }} variant="primary">Apply Template</Btn>
               </div>
             </div>
           </div>
@@ -3324,11 +3343,12 @@ export default function App() {
   const [appTheme, setAppTheme] = useState({ type:"solid", color:"#1A1A1A", color2:"#E86C4A", accent:"#E86C4A" });
   const [userAvatar, setUserAvatar] = useState(null); // base64 photo
   const [companyLogo, setCompanyLogo] = useState(null); // base64 company logo
+  const [companyLogoSize, setCompanyLogoSize] = useState(52); // logo height in px
 
   if(screen==="auth") return <AuthPage onAuth={(u)=>{ setUser(u); setScreen("setup"); }} />;
   if(screen==="setup") return <OrgSetupPage onComplete={data=>{ setOrgSettings(data); setScreen("app"); }} initialData={orgSettings} />;
 
-  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers, invoices, setInvoices, quotes, setQuotes, payments, setPayments, customPayMethods, setCustomPayMethods, appTheme, setAppTheme, userAvatar, setUserAvatar, sidebarPinned, setSidebarPinned, pdfTemplate, setPdfTemplate, companyLogo, setCompanyLogo };
+  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers, invoices, setInvoices, quotes, setQuotes, payments, setPayments, customPayMethods, setCustomPayMethods, appTheme, setAppTheme, userAvatar, setUserAvatar, sidebarPinned, setSidebarPinned, pdfTemplate, setPdfTemplate, companyLogo, setCompanyLogo, companyLogoSize, setCompanyLogoSize };
 
   const renderPage = () => {
     switch(activePage) {
