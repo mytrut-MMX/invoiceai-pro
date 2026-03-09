@@ -1,0 +1,38 @@
+import { CUR_SYM } from '../constants';
+
+export const fmt = (sym, val) => `${sym}${Number(val||0).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+export const todayStr = () => new Date().toISOString().split("T")[0];
+export const addDays = (d, n) => { const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().split("T")[0]; };
+export const fmtDate = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : "—";
+export const newLine = (order=0) => ({ id:crypto.randomUUID(), description:"", quantity:1, rate:0, tax_rate:20, amount:0, sort_order:order });
+export const nextNum = (prefix, existing) => {
+  const nums = (existing||[]).map(n=>parseInt((n||"").replace(/\D/g,""),10)).filter(Boolean);
+  return `${prefix}-${String(nums.length?Math.max(...nums)+1:1).padStart(4,"0")}`;
+};
+export const upsert = (arr, item) => {
+  const i = arr.findIndex(x=>x.id===item.id);
+  if(i>=0){ const u=[...arr]; u[i]=item; return u; }
+  return [...arr, item];
+};
+export const validateVatNumber = (num) => {
+  if(!num) return false;
+  const clean = num.replace(/\s/g,"").toUpperCase();
+  if(/^GB\d{9}$/.test(clean)) return true;
+  if(/^[A-Z]{2}[A-Z0-9]{2,12}$/.test(clean)) return true;
+  return false;
+};
+
+// Supabase fetch helper
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+export async function sbFetch(method, path, body) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      method,
+      headers: { "Content-Type":"application/json", "apikey":SUPABASE_ANON_KEY, "Authorization":`Bearer ${SUPABASE_ANON_KEY}`, "Prefer":method==="POST"?"return=representation":"" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if(!res.ok) throw new Error(await res.text());
+    return res.status===204 ? null : res.json();
+  } catch(e) { throw e; }
+}
