@@ -1717,7 +1717,6 @@ function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, templ
           <span style={{ fontSize:"10pt", fontWeight:800, color:"#fff" }}>Total Due</span>
           <span style={{ fontSize:"11pt", fontWeight:900, color:"#fff" }}>{fmt(sym,total)}</span>
         </div>
-        )}
       </div>
     </div>
   );
