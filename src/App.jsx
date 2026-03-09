@@ -1445,7 +1445,7 @@ function TotalsBlock({ subtotal, discountType, discountValue, setDiscountType, s
       {isVat && taxBreakdown.map(tb=><R key={tb.rate} label={`VAT ${tb.rate}%`} value={fmt(currSymbol,tb.amount)} />)}
       {cisDeduction>0 && <R label="CIS Deduction" value={`− ${fmt(currSymbol,cisDeduction)}`} color="#D97706" />}
       <div style={{ display:"flex", justifyContent:"space-between", padding:"9px 0 2px", borderTop:"2px solid #1A1A1A", marginTop:6 }}>
-        <span style={{ fontSize:14, fontWeight:800, color:"#1A1A1A" }}>Total</span>
+        <span style={{ fontSize:14, fontWeight:800, color:"#1A1A1A" }}>Total Due</span>
         <span style={{ fontSize:16, fontWeight:800, color:"#1A1A1A" }}>{fmt(currSymbol,total)}</span>
       </div>
       {cisDeduction>0 && (
@@ -1506,16 +1506,18 @@ function DocPreview({ data, currSymbol, docType="Invoice", isVat }) {
                 <span style={{ fontSize:11, color:c||"#555" }}>{v}</span>
               </div>
             ))}
-            {(cisDeduction||0)>0 && (<>
-              <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"5px 0 2px", borderTop:"1.5px solid #EBEBEB", marginTop:3 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>Gross Total</span>
-                <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>{fmt(currSymbol,total+cisDeduction)}</span>
+            {(cisDeduction||0)>0 && (
+              <div>
+                <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"5px 0 2px", borderTop:"1.5px solid #EBEBEB", marginTop:3 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>Gross Total</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>{fmt(currSymbol,total+cisDeduction)}</span>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"2px 0" }}>
+                  <span style={{ fontSize:11, color:"#D97706" }}>CIS Deduction</span>
+                  <span style={{ fontSize:11, color:"#D97706" }}>{`− ${fmt(currSymbol,cisDeduction)}`}</span>
+                </div>
               </div>
-              <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"2px 0" }}>
-                <span style={{ fontSize:11, color:"#D97706" }}>CIS Deduction</span>
-                <span style={{ fontSize:11, color:"#D97706" }}>{`− ${fmt(currSymbol,cisDeduction)}`}</span>
-              </div>
-            </>)}
+            )}
             <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"7px 0 2px", borderTop:"2px solid #1A1A1A", marginTop:4 }}>
               <span style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>Total Due</span>
               <span style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>{fmt(currSymbol,total)}</span>
@@ -1699,16 +1701,18 @@ function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, templ
             <span style={{ fontSize:"8.5pt", color:c||"#555" }}>{v}</span>
           </div>
         ))}
-        {(cisDeduction||0)>0 && (<>
-          <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0", borderTop:"1px solid #F4F4F4", marginTop:2 }}>
-            <span style={{ fontSize:"8.5pt", color:"#555", fontWeight:600 }}>Gross Total</span>
-            <span style={{ fontSize:"8.5pt", fontWeight:700, color:"#555" }}>{fmt(sym,total+cisDeduction)}</span>
+        {(cisDeduction||0)>0 && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0", borderTop:"1px solid #F4F4F4", marginTop:2 }}>
+              <span style={{ fontSize:"8.5pt", color:"#555", fontWeight:600 }}>Gross Total</span>
+              <span style={{ fontSize:"8.5pt", fontWeight:700, color:"#555" }}>{fmt(sym,total+cisDeduction)}</span>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0" }}>
+              <span style={{ fontSize:"8.5pt", color:"#D97706", fontWeight:600 }}>CIS Deduction</span>
+              <span style={{ fontSize:"8.5pt", fontWeight:700, color:"#D97706" }}>{`− ${fmt(sym,cisDeduction)}`}</span>
+            </div>
           </div>
-          <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0" }}>
-            <span style={{ fontSize:"8.5pt", color:"#D97706", fontWeight:600 }}>CIS Deduction</span>
-            <span style={{ fontSize:"8.5pt", fontWeight:700, color:"#D97706" }}>{`− ${fmt(sym,cisDeduction)}`}</span>
-          </div>
-        </>)}
+        )}
         <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"3mm 4mm 2mm", background:accent, borderRadius:4, marginTop:2 }}>
           <span style={{ fontSize:"10pt", fontWeight:800, color:"#fff" }}>Total Due</span>
           <span style={{ fontSize:"11pt", fontWeight:900, color:"#fff" }}>{fmt(sym,total)}</span>
@@ -1897,7 +1901,7 @@ function A4PrintModal({ data, currSymbol, isVat, onClose }) {
       </div>
       {/* A4 sheet */}
       <div style={{ width:"100%", maxWidth:820, background:"#fff", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", overflow:"hidden" }}>
-        <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat} orgSettings={orgSettings} accentColor={accentColor} template={activeTemplate} />
+        <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat} orgSettings={{...orgSettings, logo:ctxFull.companyLogo}} accentColor={accentColor} template={activeTemplate} />
       </div>
     </div>
   );
@@ -2446,7 +2450,8 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
   const { orgSettings } = useContext(AppCtx);
   const [previewTpl, setPreviewTpl] = useState(null);
   const [tplAccent, setTplAccent] = useState(PDF_TEMPLATES.find(t=>t.id===pdfTemplate)?.defaultAccent||"#1A1A1A");
-  const [tplLogo, setTplLogo] = useState(null); // base64 or null
+  const { companyLogo, setCompanyLogo } = useContext(AppCtx);
+  const [tplLogo, setTplLogo] = useState(companyLogo || null);
   const [tplShowBankDetails, setTplShowBankDetails] = useState(true);
   const [tplShowPayTerms, setTplShowPayTerms] = useState(true);
   const [tplShowQR, setTplShowQR] = useState(false);
@@ -2732,7 +2737,7 @@ function SettingsPage({ onOrgSetup, pdfTemplate, setPdfTemplate }) {
               <span style={{ fontSize:12, color:"#AAA" }}>Active: <strong style={{ color:"#1A1A1A" }}>{PDF_TEMPLATES.find(t=>t.id===previewTpl)?.name}</strong></span>
               <div style={{ display:"flex", gap:8 }}>
                 <Btn onClick={()=>setPreviewTpl(null)} variant="outline">Close</Btn>
-                <Btn onClick={()=>{ setPdfTemplate(previewTpl); setPreviewTpl(null); }} variant="primary">Apply Template</Btn>
+                <Btn onClick={()=>{ setPdfTemplate(previewTpl); setCompanyLogo(tplLogo); setPreviewTpl(null); }} variant="primary">Apply Template</Btn>
               </div>
             </div>
           </div>
@@ -3319,11 +3324,12 @@ export default function App() {
   const [sidebarPinned, setSidebarPinned] = useState(true);
   const [appTheme, setAppTheme] = useState({ type:"solid", color:"#1A1A1A", color2:"#E86C4A", accent:"#E86C4A" });
   const [userAvatar, setUserAvatar] = useState(null); // base64 photo
+  const [companyLogo, setCompanyLogo] = useState(null); // base64 company logo
 
   if(screen==="auth") return <AuthPage onAuth={(u)=>{ setUser(u); setScreen("setup"); }} />;
   if(screen==="setup") return <OrgSetupPage onComplete={data=>{ setOrgSettings(data); setScreen("app"); }} initialData={orgSettings} />;
 
-  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers, invoices, setInvoices, quotes, setQuotes, payments, setPayments, customPayMethods, setCustomPayMethods, appTheme, setAppTheme, userAvatar, setUserAvatar, sidebarPinned, setSidebarPinned, pdfTemplate, setPdfTemplate };
+  const ctx = { orgSettings, catalogItems, setCatalogItems, customers, setCustomers, invoices, setInvoices, quotes, setQuotes, payments, setPayments, customPayMethods, setCustomPayMethods, appTheme, setAppTheme, userAvatar, setUserAvatar, sidebarPinned, setSidebarPinned, pdfTemplate, setPdfTemplate, companyLogo, setCompanyLogo };
 
   const renderPage = () => {
     switch(activePage) {
