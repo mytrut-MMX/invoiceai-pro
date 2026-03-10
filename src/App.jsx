@@ -21,6 +21,10 @@ import UserEditModal from "./modals/UserEditModal";
 // ─── localStorage helpers ──────────────────────────────────────────────────
 const LS = {
   get: (key, fallback) => { try { const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; } catch{ return fallback; } },
+    getArray: (key, fallback=[]) => {
+    const value = LS.get(key, fallback);
+    return Array.isArray(value) ? value : fallback;
+  }
   set: (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch{} }
 };
 
@@ -31,12 +35,12 @@ export default function App() {
 
   // App state
   const [page, setPage] = useState("home");
-  const [customers, setCustomers] = useState(()=>LS.get("ai_invoice_customers", MOCK_CUSTOMERS));
-  const [catalogItems, setCatalogItems] = useState(()=>LS.get("ai_invoice_items", MOCK_ITEMS_INIT));
-  const [invoices, setInvoices] = useState(()=>LS.get("ai_invoice_invoices", MOCK_INV_LIST));
-  const [quotes, setQuotes] = useState(()=>LS.get("ai_invoice_quotes", MOCK_QUOTES_LIST));
-  const [payments, setPayments] = useState(()=>LS.get("ai_invoice_payments", MOCK_PAYMENTS));
-  const [customPayMethods, setCustomPayMethods] = useState(()=>LS.get("ai_invoice_pay_methods",[]));
+  const [customers, setCustomers] = useState(()=>LS.getArray("ai_invoice_customers", MOCK_CUSTOMERS));
+  const [catalogItems, setCatalogItems] = useState(()=>LS.getArray("ai_invoice_items", MOCK_ITEMS_INIT));
+  const [invoices, setInvoices] = useState(()=>LS.getArray("ai_invoice_invoices", MOCK_INV_LIST));
+  const [quotes, setQuotes] = useState(()=>LS.getArray("ai_invoice_quotes", MOCK_QUOTES_LIST));
+  const [payments, setPayments] = useState(()=>LS.getArray("ai_invoice_payments", MOCK_PAYMENTS));
+  const [customPayMethods, setCustomPayMethods] = useState(()=>LS.getArray("ai_invoice_pay_methods",[]));
 
   // UI / Prefs
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
