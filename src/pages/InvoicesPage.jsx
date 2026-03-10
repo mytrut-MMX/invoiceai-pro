@@ -1,5 +1,4 @@
 import { useState, useContext, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -116,13 +115,13 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
     setShowItemModal(false);
   };
 
-  return createPortal(
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:900, display:"flex", justifyContent:"flex-end" }}>
+  return (
+    <>
       {showPaidModal && <PaidConfirmModal invoice={{ ...docData, invoice_number:docData.docNumber, currency:orgSettings?.currency||"GBP" }} onConfirm={handlePaidConfirm} onCancel={()=>setShowPaidModal(false)} />}
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
       {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} />}
 
-      <div style={{ width:"100%", maxWidth:860, height:"100%", background:"#F7F7F5", display:"flex", flexDirection:"column", boxShadow:"-8px 0 40px rgba(0,0,0,0.16)", fontFamily:ff }}>
+      <div style={{ width:"100%", maxWidth:1100, margin:"0 auto", background:"#F7F7F5", display:"flex", flexDirection:"column", fontFamily:ff, padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
         {/* Header */}
         <div style={{ background:"#1A1A1A", padding:"12px 20px", display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", flexShrink:0 }}>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:7, padding:"6px 10px", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontSize:13, fontFamily:ff }}>
@@ -259,8 +258,8 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
           </div>
         </div>
       </div>
-    </div>
-  , document.body);
+     </>
+  );
 }
 
 // ─── INVOICES PAGE ────────────────────────────────────────────────────────────
@@ -291,6 +290,16 @@ export default function InvoicesPage() {
     draft:       invoices.filter(i=>i.status==="Draft").reduce((s,i)=>s+(i.total||0),0),
   };
 
+  if (panel) {
+    return (
+      <InvoiceFormPanel
+        existing={panel.mode==="edit" ? panel.invoice : null}
+        onClose={()=>setPanel(null)}
+        onSave={inv=>{ onSave(inv); setPanel(null); }}
+      />
+    );
+  }
+  
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:22 }}>
@@ -369,14 +378,6 @@ export default function InvoicesPage() {
           </tbody>
         </table>
       </div>
-
-      {panel && (
-        <InvoiceFormPanel
-          existing={panel.mode==="edit" ? panel.invoice : null}
-          onClose={()=>setPanel(null)}
-          onSave={inv=>{ onSave(inv); setPanel(null); }}
-        />
-      )}
     </div>
   );
 }
