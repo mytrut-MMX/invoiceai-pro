@@ -1,4 +1,5 @@
 import { useState, useContext, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -115,7 +116,7 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
     setShowItemModal(false);
   };
 
-  return (
+  return createPortal(
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:900, display:"flex", justifyContent:"flex-end" }}>
       {showPaidModal && <PaidConfirmModal invoice={{ ...docData, invoice_number:docData.docNumber, currency:orgSettings?.currency||"GBP" }} onConfirm={handlePaidConfirm} onCancel={()=>setShowPaidModal(false)} />}
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
@@ -259,7 +260,7 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 // ─── INVOICES PAGE ────────────────────────────────────────────────────────────
