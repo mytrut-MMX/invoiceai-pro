@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import "./responsive.css";
 import { ff, MOCK_CUSTOMERS, MOCK_ITEMS_INIT, MOCK_INV_LIST, MOCK_QUOTES_LIST, MOCK_PAYMENTS, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
 import { AppCtx } from "./context/AppContext";
-import { Sidebar, MobileTopBar, MobileBottomNav, SIDEBAR_FULL, SIDEBAR_ICON } from "./components/layout";
+import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer, SIDEBAR_FULL, SIDEBAR_ICON } from "./components/layout";
 
 // pages
 import AuthPage from "./pages/AuthPage";
@@ -43,6 +44,7 @@ export default function App() {
   const [appTheme, setAppTheme] = useState(()=>LS.get("ai_invoice_theme",{ type:"solid", color:"#1A1A1A", color2:"#333", accent:"#E86C4A" }));
   const [userAvatar, setUserAvatar] = useState(()=>LS.get("ai_invoice_avatar",null));
   const [showUserModal, setShowUserModal] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // PDF / Invoice settings
   const [pdfTemplate, setPdfTemplate] = useState(()=>LS.get("ai_invoice_pdf_template","classic"));
@@ -160,14 +162,14 @@ export default function App() {
   return (
     <AppCtx.Provider value={ctx}>
       <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:ff, background:"#F7F7F5" }}>
-        {/* Desktop sidebar */}
-        <div style={{ display:"none", "@media(min-width:640px)":{ display:"block" } }} className="desktop-sidebar">
+
+        {/* Desktop sidebar — hidden on mobile via media query in index.css */}
+        <div className="desktop-only">
           <Sidebar
             activePage={page}
             onNavigate={setPage}
             collapsed={sidebarCollapsed}
             onCollapsedChange={setSidebarCollapsed}
-            pinned={sidebarPinned}
             accent={appTheme.accent}
             sidebarBg={sidebarBg}
             user={user}
@@ -177,43 +179,53 @@ export default function App() {
         </div>
 
         {/* Main content */}
-        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", transition:"margin-left 0.25s" }}>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
+
           {/* Mobile top bar */}
-          <MobileTopBar
-            title={page.charAt(0).toUpperCase()+page.slice(1)}
+          <div className="mobile-only">
+            <MobileTopBar
+              activePage={page}
+              onMenuOpen={()=>setMobileDrawerOpen(true)}
+              sidebarBg={sidebarBg}
+              accent={appTheme.accent}
+              user={user}
+              userAvatar={userAvatar}
+              onUserClick={()=>setShowUserModal(true)}
+            />
+            {/* Spacer so content doesn't hide under fixed topbar */}
+            <div style={{ height:52 }} />
+          </div>
+
+          {/* Page content */}
+          <main style={{ flex:1, overflowY:"auto", position:"relative" }}>
+            {renderPage()}
+          </main>
+
+          {/* Mobile bottom nav */}
+          <div className="mobile-only">
+            <MobileBottomNav
+              activePage={page}
+              onNavigate={setPage}
+              accent={appTheme.accent}
+            />
+            {/* Spacer so content doesn't hide under fixed bottom nav */}
+            <div style={{ height:60 }} />
+          </div>
+        </div>
+
+        {/* Mobile drawer */}
+        {mobileDrawerOpen && (
+          <MobileDrawer
+            activePage={page}
+            onNavigate={setPage}
+            onClose={()=>setMobileDrawerOpen(false)}
+            sidebarBg={sidebarBg}
+            accent={appTheme.accent}
             user={user}
             userAvatar={userAvatar}
             onUserClick={()=>setShowUserModal(true)}
-            accent={appTheme.accent}
           />
-
-          {/* Desktop sidebar spacer + Sidebar */}
-          <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
-            {/* Inline sidebar for desktop */}
-            <div style={{ flexShrink:0, display:"flex" }}>
-              <Sidebar
-                activePage={page}
-                onNavigate={setPage}
-                collapsed={sidebarCollapsed}
-                onCollapsedChange={setSidebarCollapsed}
-                pinned={sidebarPinned}
-                accent={appTheme.accent}
-                sidebarBg={sidebarBg}
-                user={user}
-                userAvatar={userAvatar}
-                onUserClick={()=>setShowUserModal(true)}
-              />
-            </div>
-
-            {/* Page content */}
-            <main style={{ flex:1, overflowY:"auto", position:"relative" }}>
-              {renderPage()}
-            </main>
-          </div>
-
-          {/* Mobile bottom nav */}
-          <MobileBottomNav activePage={page} onNavigate={setPage} accent={appTheme.accent} />
-        </div>
+        )}
 
         {/* User / appearance modal */}
         {showUserModal && (
