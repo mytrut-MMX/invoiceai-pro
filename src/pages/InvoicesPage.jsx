@@ -77,7 +77,7 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const invNumber = inv.invoice_number || nextNum(invoices,"INV");
+  const invNumber = inv.invoice_number || nextNum("INV", invoices);
   const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status };
 
   const buildInvoice = (newStatus) => ({
