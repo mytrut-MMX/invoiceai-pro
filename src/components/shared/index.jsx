@@ -6,8 +6,8 @@ import { Field, Input, Select, Btn, Tag } from "../atoms";
 import { fmt, fmtDate, newLine, todayStr } from "../../utils/helpers";
 
 // ─── LINE ITEMS TABLE ─────────────────────────────────────────────────────────
-export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat }) {
-  const [pickerRow, setPickerRow] = useState(null);
+export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat, onAddNewItem }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
 
   const upd = (id, f, v) => onChange(items.map(it => {
@@ -17,14 +17,14 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
     return u;
   }));
 
-  const add = () => onChange([...items, newLine(items.length)]);
+  const addBlank = () => onChange([...items, newLine(items.length)]);
   const del = id => items.length>1 && onChange(items.filter(i=>i.id!==id));
 
   const activeItems = (catalogItems||[]).filter(i=>i.active);
   const filteredCat = activeItems.filter(i =>
     !pickerSearch ||
     i.name.toLowerCase().includes(pickerSearch.toLowerCase()) ||
-    i.description?.toLowerCase().includes(pickerSearch.toLowerCase())
+    (i.description||"").toLowerCase().includes(pickerSearch.toLowerCase())
   );
 
   const cols = isVat ? "1fr 68px 84px 76px 74px 28px" : "1fr 68px 90px 80px 28px";
@@ -34,51 +34,55 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
 
   return (
     <div>
-      {activeItems.length>0 && (
-        <div style={{ marginBottom:10, padding:"9px 12px", background:"#F9F9F9", borderRadius:8, border:"1px solid #EBEBEB", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <span style={{ fontSize:12, color:"#888" }}>Quick-add from items catalogue</span>
-          <Btn onClick={()=>setPickerRow(items[items.length-1]?.id||null)} variant="outline" size="sm" icon={<Icons.Items />}>Browse Items</Btn>
+      {/* Catalogue picker dropdown */}
+      {activeItems.length > 0 && (
+        <div style={{ position:"relative", marginBottom:10 }}>
+          <div style={{ padding:"9px 12px", background:"#F9F9F9", borderRadius:8, border:"1px solid #EBEBEB", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <span style={{ fontSize:12, color:"#888" }}>Quick-add from items catalogue</span>
+            <Btn onClick={()=>{ setPickerOpen(o=>!o); setPickerSearch(""); }} variant="outline" size="sm" icon={<Icons.Items />}>Browse Items</Btn>
+          </div>
+          {pickerOpen && (
+            <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"#fff", border:"1.5px solid #1A1A1A", borderRadius:10, padding:12, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:400 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                <span style={{ fontSize:12, fontWeight:700, color:"#1A1A1A" }}>Select Item to Add</span>
+                <button onClick={()=>setPickerOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
+              </div>
+              <input value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)} placeholder="Search items…" autoFocus
+                style={{ width:"100%", padding:"7px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, outline:"none", marginBottom:8, boxSizing:"border-box" }} />
+              <div style={{ maxHeight:220, overflowY:"auto" }}>
+                {filteredCat.length===0 && <div style={{ padding:"14px 0", textAlign:"center", color:"#CCC", fontSize:13 }}>No matching items</div>}
+                {filteredCat.map(ci=>(
+                  <button key={ci.id} onClick={()=>{
+                    const descText = ci.description ? `${ci.name} — ${ci.description}` : ci.name;
+                    const newItem = { id:crypto.randomUUID(), description:descText, quantity:1, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate, sort_order:items.length };
+                    onChange([...items, newItem]);
+                    setPickerOpen(false); setPickerSearch("");
+                  }}
+                    style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 10px", background:"none", border:"none", cursor:"pointer", borderRadius:7, textAlign:"left", fontFamily:ff }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"}
+                    onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:600, color:"#1A1A1A" }}>{ci.name}</div>
+                      {ci.description && <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>{ci.description}</div>}
+                    </div>
+                    <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{fmt(currSymbol, ci.rate)}</div>
+                      <div style={{ fontSize:11, color:"#AAA" }}>{ci.unit}{isVat?` · ${ci.taxRate}% VAT`:""}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {pickerRow && (
-        <div style={{ background:"#fff", border:"1.5px solid #1A1A1A", borderRadius:10, padding:"12px", marginBottom:12, boxShadow:"0 8px 24px rgba(0,0,0,0.1)" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:12, fontWeight:700, color:"#1A1A1A" }}>Select Item to Add</span>
-            <button onClick={()=>setPickerRow(null)} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
-          </div>
-          <input value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)} placeholder="Search items…"
-            style={{ width:"100%", padding:"7px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, outline:"none", marginBottom:8, boxSizing:"border-box" }} autoFocus />
-          <div style={{ maxHeight:200, overflowY:"auto" }}>
-            {filteredCat.length===0 && <div style={{ padding:"14px 0", textAlign:"center", color:"#CCC", fontSize:13 }}>No matching items</div>}
-            {filteredCat.map(ci=>(
-              <button key={ci.id} onClick={()=>{
-                const descText = ci.description ? `${ci.name} — ${ci.description}` : ci.name;
-                const newItem = { id:crypto.randomUUID(), description:descText, quantity:1, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate, sort_order:items.length };
-                onChange([...items, newItem]);
-                setPickerRow(null); setPickerSearch("");
-              }}
-                style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 10px", background:"none", border:"none", cursor:"pointer", borderRadius:7, textAlign:"left", fontFamily:ff }}
-                onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"}
-                onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:"#1A1A1A" }}>{ci.name}</div>
-                  {ci.description && <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>{ci.description}</div>}
-                </div>
-                <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{fmt(currSymbol, ci.rate)}</div>
-                  <div style={{ fontSize:11, color:"#AAA" }}>{ci.unit}{isVat?` · ${ci.taxRate}% VAT`:""}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Table headers */}
       <div style={{ display:"grid", gridTemplateColumns:cols, gap:6, paddingBottom:8, borderBottom:"1.5px solid #EBEBEB", marginBottom:8 }}>
         {headers.map(([h,a])=><div key={h} style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", textAlign:a }}>{h}</div>)}
       </div>
 
+      {/* Rows */}
       {items.map((it,idx)=>(
         <div key={it.id} style={{ display:"grid", gridTemplateColumns:cols, gap:6, marginBottom:6, alignItems:"center" }}>
           <Input value={it.description} onChange={v=>upd(it.id,"description",v)} placeholder={`Item ${idx+1}…`} />
@@ -99,7 +103,14 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
           </button>
         </div>
       ))}
-      <Btn onClick={add} variant="ghost" size="sm" icon={<Icons.Plus />} style={{ marginTop:4, color:"#E86C4A" }}>Add Line Item</Btn>
+
+      {/* Add line item buttons */}
+      <div style={{ display:"flex", gap:8, marginTop:8 }}>
+        <Btn onClick={addBlank} variant="ghost" size="sm" icon={<Icons.Plus />} style={{ color:"#E86C4A" }}>Add Line Item</Btn>
+        {onAddNewItem && (
+          <Btn onClick={onAddNewItem} variant="ghost" size="sm" icon={<Icons.Items />} style={{ color:"#4F46E5" }}>Create New Item</Btn>
+        )}
+      </div>
     </div>
   );
 }
@@ -151,92 +162,6 @@ export function TotalsBlock({ subtotal, discountType, discountValue, setDiscount
   );
 }
 
-// ─── DOC PREVIEW ─────────────────────────────────────────────────────────────
-export function DocPreview({ data, currSymbol, docType="Invoice", isVat }) {
-  const { docNumber, customer, dueDate, items, subtotal, discountAmount, shipping, taxBreakdown, total, notes, terms, status, cisDeduction } = data;
-  return (
-    <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", overflow:"hidden", boxShadow:"0 2px 16px rgba(0,0,0,0.06)", fontFamily:ff }}>
-      <div style={{ background:"#1A1A1A", padding:"18px 22px", color:"#fff" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-          <div>
-            <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.3)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:2 }}>AI Invoice</div>
-            <div style={{ fontSize:17, fontWeight:800 }}>{docType.toUpperCase()}</div>
-            <div style={{ fontSize:12, color:"#E86C4A", fontWeight:700, marginTop:1 }}>{docNumber||`${docType.slice(0,3).toUpperCase()}-0001`}</div>
-          </div>
-          <div style={{ textAlign:"right" }}>
-            <Tag color={STATUS_COLORS[status]||"#6B7280"}>{status||"Draft"}</Tag>
-            <div style={{ marginTop:5, fontSize:10, color:"rgba(255,255,255,0.4)" }}>{docType==="Quote"?"Expires":"Due"}: <span style={{ color:"#fff" }}>{fmtDate(dueDate)}</span></div>
-          </div>
-        </div>
-      </div>
-      <div style={{ padding:"16px 22px" }}>
-        <div style={{ marginBottom:14, paddingBottom:12, borderBottom:"1px solid #F0F0F0" }}>
-          <div style={{ fontSize:9, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.09em", marginBottom:4 }}>Bill To</div>
-          {customer
-            ? (<><div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{customer.name}</div><div style={{ fontSize:11, color:"#888", marginTop:1 }}>{customer.email}</div></>)
-            : <div style={{ fontSize:12, color:"#CCC", fontStyle:"italic" }}>Select a customer…</div>}
-        </div>
-        <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:12 }}>
-          <thead>
-            <tr style={{ borderBottom:"1.5px solid #EBEBEB" }}>
-              {["Description","Qty","Rate",...(isVat?["VAT"]:[]),"Amount"].map((h,i)=>(
-                <th key={h} style={{ padding:"4px 0 6px", textAlign:i>0?"right":"left", fontSize:9, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.07em" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {items.filter(i=>i.description||i.amount>0).map((it,idx)=>(
-              <tr key={it.id} style={{ borderBottom:"1px solid #F7F7F7" }}>
-                <td style={{ padding:"6px 0", fontSize:11, color:"#1A1A1A" }}>{it.description||<span style={{ color:"#CCC" }}>Item {idx+1}</span>}</td>
-                <td style={{ padding:"6px 0", fontSize:11, color:"#666", textAlign:"right" }}>{it.quantity}</td>
-                <td style={{ padding:"6px 0", fontSize:11, color:"#666", textAlign:"right" }}>{fmt(currSymbol, it.rate)}</td>
-                {isVat && <td style={{ padding:"6px 0", fontSize:11, color:"#666", textAlign:"right" }}>{it.tax_rate}%</td>}
-                <td style={{ padding:"6px 0", fontSize:11, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt(currSymbol, it.amount)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ display:"flex", justifyContent:"flex-end" }}>
-          <div style={{ minWidth:190 }}>
-            {[["Subtotal", fmt(currSymbol,subtotal)],
-              ...(discountAmount>0?[["Discount",`− ${fmt(currSymbol,discountAmount)}`,"#E86C4A"]]:[]),
-              ...(Number(shipping)>0?[["Shipping",fmt(currSymbol,shipping)]]:[]),
-              ...(isVat?taxBreakdown.map(tb=>[`VAT ${tb.rate}%`,fmt(currSymbol,tb.amount)]):[]),
-            ].map(([l,v,c])=>(
-              <div key={l} style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"2px 0" }}>
-                <span style={{ fontSize:11, color:"#888" }}>{l}</span>
-                <span style={{ fontSize:11, color:c||"#555" }}>{v}</span>
-              </div>
-            ))}
-            {(cisDeduction||0)>0 && (
-              <div>
-                <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"5px 0 2px", borderTop:"1.5px solid #EBEBEB", marginTop:3 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>Gross Total</span>
-                  <span style={{ fontSize:11, fontWeight:700, color:"#555" }}>{fmt(currSymbol,total+cisDeduction)}</span>
-                </div>
-                <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"2px 0" }}>
-                  <span style={{ fontSize:11, color:"#D97706" }}>CIS Deduction</span>
-                  <span style={{ fontSize:11, color:"#D97706" }}>{`− ${fmt(currSymbol,cisDeduction)}`}</span>
-                </div>
-              </div>
-            )}
-            <div style={{ display:"flex", justifyContent:"space-between", gap:20, padding:"7px 0 2px", borderTop:"2px solid #1A1A1A", marginTop:4 }}>
-              <span style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>Total Due</span>
-              <span style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>{fmt(currSymbol,total)}</span>
-            </div>
-          </div>
-        </div>
-        {(notes||terms) && (
-          <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #F0F0F0" }}>
-            {notes && <div style={{ marginBottom:6 }}><div style={{ fontSize:9, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.09em", marginBottom:2 }}>Notes</div><p style={{ fontSize:11, color:"#666", margin:0, lineHeight:1.6 }}>{notes}</p></div>}
-            {terms && <div><div style={{ fontSize:9, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.09em", marginBottom:2 }}>Terms</div><p style={{ fontSize:11, color:"#666", margin:0, lineHeight:1.6 }}>{terms}</p></div>}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── SAVE SPLIT BUTTON ────────────────────────────────────────────────────────
 export function SaveSplitBtn({ onSave, onSaveAndSend, onSaveAndPrint, saving }) {
   const [open, setOpen] = useState(false);
@@ -259,9 +184,9 @@ export function SaveSplitBtn({ onSave, onSaveAndSend, onSaveAndPrint, saving }) 
       {open && (
         <div style={{ position:"absolute", top:"calc(100% + 4px)", right:0, background:"#fff", border:"1.5px solid #E0E0E0", borderRadius:9, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:160, zIndex:500, overflow:"hidden" }}>
           {[
-            { label:"Save",          icon:<Icons.Save />,    action:onSave },
-            { label:"Save & Send",   icon:<Icons.Send />,    action:onSaveAndSend },
-            { label:"Save & Print",  icon:<Icons.Receipt />, action:onSaveAndPrint },
+            { label:"Save",         icon:<Icons.Save />,    action:onSave },
+            { label:"Save & Send",  icon:<Icons.Send />,    action:onSaveAndSend },
+            { label:"Save & Print", icon:<Icons.Receipt />, action:onSaveAndPrint },
           ].map(item=>(
             <button key={item.label} onClick={()=>{ item.action(); setOpen(false); }}
               style={{ width:"100%", padding:"10px 14px", background:"none", border:"none", display:"flex", alignItems:"center", gap:9, fontSize:13, fontWeight:600, color:"#1A1A1A", cursor:"pointer", fontFamily:ff, textAlign:"left" }}
@@ -326,16 +251,16 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   const accent = accentColor || tplDef.defaultAccent;
   const addrParts = [org.street, org.city, [org.postcode, org.state].filter(Boolean).join(" "), org.country].filter(Boolean);
 
-  const OrgBlock = () => (
+  const OrgBlock = ({ dark=false }) => (
     <div>
       {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight:org.logoSize||52, maxWidth:200, objectFit:"contain", display:"block", marginBottom:5 }} />}
-      <div style={{ fontSize:"15pt", fontWeight:900, color: template==="modern" ? "#fff" : accent, letterSpacing:"-0.01em" }}>{org.orgName||"Your Company"}</div>
+      <div style={{ fontSize:"15pt", fontWeight:900, color:dark?"#fff":accent, letterSpacing:"-0.01em" }}>{org.orgName||"Your Company"}</div>
       {addrParts.length>0 && (
-        <div style={{ fontSize:"7.5pt", color: template==="modern" ? "rgba(255,255,255,0.75)" : "#666", marginTop:3, lineHeight:1.8 }}>
+        <div style={{ fontSize:"7.5pt", color:dark?"rgba(255,255,255,0.75)":"#666", marginTop:3, lineHeight:1.8 }}>
           {addrParts.map((line,i)=><div key={i}>{line}</div>)}
         </div>
       )}
-      {org.vatNum && <div style={{ fontSize:"7.5pt", color: template==="modern" ? "rgba(255,255,255,0.6)" : "#AAA", marginTop:2 }}>VAT No: {org.vatNum}</div>}
+      {org.vatNum && <div style={{ fontSize:"7.5pt", color:dark?"rgba(255,255,255,0.6)":"#AAA", marginTop:2 }}>VAT No: {org.vatNum}</div>}
     </div>
   );
 
@@ -378,8 +303,8 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         </tr>
       </thead>
       <tbody>
-        {items.filter(it=>it.description||it.amount>0).map((it,idx)=>(
-          <tr key={it.id} style={{ background:idx%2===0?stripeBg:"#fff" }}>
+        {(items||[]).filter(it=>it.description||it.amount>0).map((it,idx)=>(
+          <tr key={it.id||idx} style={{ background:idx%2===0?stripeBg:"#fff" }}>
             <td style={{ padding:"2.5mm 3mm", fontSize:"9pt" }}>{it.description||`Item ${idx+1}`}</td>
             <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{it.quantity}</td>
             <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{fmt(sym,it.rate)}</td>
@@ -394,10 +319,10 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   const TotalsSection = () => (
     <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"5mm" }}>
       <div style={{ minWidth:"62mm" }}>
-        {[["Subtotal",fmt(sym,subtotal)],
-          ...(discountAmount>0?[["Discount",`− ${fmt(sym,discountAmount)}`,"#E86C4A"]]:[]),
+        {[["Subtotal",fmt(sym,subtotal||0)],
+          ...((discountAmount||0)>0?[["Discount",`− ${fmt(sym,discountAmount)}`,"#E86C4A"]]:[]),
           ...(Number(shipping)>0?[["Shipping",fmt(sym,shipping)]]:[]),
-          ...(isVat?taxBreakdown.map(tb=>[`VAT ${tb.rate}%`,fmt(sym,tb.amount)]):[]),
+          ...(isVat?(taxBreakdown||[]).map(tb=>[`VAT ${tb.rate}%`,fmt(sym,tb.amount)]):[]),
           ...((cisDeduction||0)>0?[["CIS Deduction",`− ${fmt(sym,cisDeduction)}`,"#D97706"]]:[]),
         ].map(([l,v,c])=>(
           <div key={l} style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"1.5mm 0", borderBottom:"1px solid #F4F4F4" }}>
@@ -407,7 +332,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         ))}
         <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"3mm 4mm 2mm", background:accent, borderRadius:4, marginTop:2 }}>
           <span style={{ fontSize:"10pt", fontWeight:800, color:"#fff" }}>Total Due</span>
-          <span style={{ fontSize:"11pt", fontWeight:900, color:"#fff" }}>{fmt(sym,total)}</span>
+          <span style={{ fontSize:"11pt", fontWeight:900, color:"#fff" }}>{fmt(sym,total||0)}</span>
         </div>
       </div>
     </div>
@@ -434,31 +359,11 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 
   const base = { width:"210mm", minHeight:"297mm", background:"#fff", fontFamily:ff, boxSizing:"border-box", fontSize:"10pt", color:"#1A1A1A", position:"relative" };
 
-  if(template==="classic") return (
-    <div id="a4-invoice-doc" style={{ ...base }}>
-      <div style={{ background:accent, padding:"14mm 18mm 10mm", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-        <OrgBlock />
-        <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:"22pt", fontWeight:900, color:"#fff", letterSpacing:"0.04em" }}>INVOICE</div>
-          <div style={{ fontSize:"12pt", color:"rgba(255,255,255,0.8)", fontWeight:700, marginTop:2 }}>{docNumber||"INV-0001"}</div>
-        </div>
-      </div>
-      <div style={{ padding:"8mm 18mm 14mm" }}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8mm", marginBottom:"8mm", paddingBottom:"6mm", borderBottom:`2px solid ${accent}` }}>
-          <BillToBlock /><InvoiceMetaBlock />
-        </div>
-        <ItemsTable headerBg={accent} headerColor="#fff" stripeBg="#F8F8F8" />
-        <TotalsSection /><NotesSection />
-      </div>
-      <FooterBar />
-    </div>
-  );
-
   if(template==="modern") return (
     <div id="a4-invoice-doc" style={{ ...base, display:"flex", flexDirection:"column", padding:0 }}>
       <div style={{ display:"grid", gridTemplateColumns:"42% 58%" }}>
         <div style={{ background:accent, padding:"14mm 12mm 10mm 14mm", minHeight:"62mm" }}>
-          <OrgBlock /><div style={{ marginTop:"8mm" }}><BillToBlock dark={true} /></div>
+          <OrgBlock dark /><div style={{ marginTop:"8mm" }}><BillToBlock dark /></div>
         </div>
         <div style={{ padding:"14mm 14mm 10mm 12mm", background:"#fff" }}>
           <div style={{ fontSize:"28pt", fontWeight:900, color:accent, letterSpacing:"-0.02em", lineHeight:1 }}>INVOICE</div>
@@ -497,7 +402,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       <div style={{ background:`linear-gradient(135deg,${accent} 0%,${accent}BB 100%)`, padding:"12mm 18mm 8mm", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:-20, right:-20, width:140, height:140, borderRadius:"50%", background:"rgba(255,255,255,0.06)" }} />
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", position:"relative" }}>
-          <OrgBlock />
+          <OrgBlock dark />
           <div style={{ textAlign:"right" }}>
             <div style={{ fontSize:"24pt", fontWeight:900, color:"#fff" }}>INVOICE</div>
             <div style={{ fontSize:"12pt", fontWeight:700, color:"rgba(255,255,255,0.75)", marginTop:2 }}>{docNumber||"INV-0001"}</div>
@@ -515,15 +420,35 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     </div>
   );
 
-  return <div>Template not found</div>;
+  // default: classic
+  return (
+    <div id="a4-invoice-doc" style={{ ...base }}>
+      <div style={{ background:accent, padding:"14mm 18mm 10mm", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+        <OrgBlock dark />
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontSize:"22pt", fontWeight:900, color:"#fff", letterSpacing:"0.04em" }}>INVOICE</div>
+          <div style={{ fontSize:"12pt", color:"rgba(255,255,255,0.8)", fontWeight:700, marginTop:2 }}>{docNumber||"INV-0001"}</div>
+        </div>
+      </div>
+      <div style={{ padding:"8mm 18mm 14mm" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8mm", marginBottom:"8mm", paddingBottom:"6mm", borderBottom:`2px solid ${accent}` }}>
+          <BillToBlock /><InvoiceMetaBlock />
+        </div>
+        <ItemsTable headerBg={accent} headerColor="#fff" stripeBg="#F8F8F8" />
+        <TotalsSection /><NotesSection />
+      </div>
+      <FooterBar />
+    </div>
+  );
 }
 
 // ─── A4 PRINT MODAL ───────────────────────────────────────────────────────────
-export function A4PrintModal({ data, currSymbol, isVat, onClose }) {
-  const { orgSettings, pdfTemplate, companyLogo, companyLogoSize } = useContext(AppCtx);
-  const tplDef = PDF_TEMPLATES.find(t=>t.id===pdfTemplate)||PDF_TEMPLATES[0];
-  const [accentColor, setAccentColor] = useState(tplDef.defaultAccent);
-  const [activeTemplate, setActiveTemplate] = useState(pdfTemplate||"classic");
+export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTemplate, _overrideAccent }) {
+  const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText } = useContext(AppCtx);
+  const startTpl = _overrideTemplate || pdfTemplate || "classic";
+  const tplDef = PDF_TEMPLATES.find(t=>t.id===startTpl)||PDF_TEMPLATES[0];
+  const [accentColor, setAccentColor] = useState(_overrideAccent || tplDef.defaultAccent);
+  const [activeTemplate, setActiveTemplate] = useState(startTpl);
 
   const switchTemplate = (id) => {
     setActiveTemplate(id);
@@ -560,13 +485,16 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose }) {
             style={{ padding:"7px 14px", borderRadius:8, border:"1.5px solid rgba(255,255,255,0.3)", background:"transparent", color:"#fff", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
             Close
           </button>
-          <Btn onClick={handlePrint} variant="accent" icon={<Icons.Receipt />}>Print</Btn>
+          <button onClick={handlePrint}
+            style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#E86C4A", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:ff, display:"flex", alignItems:"center", gap:7 }}>
+            <Icons.Receipt /> Print / Save PDF
+          </button>
         </div>
       </div>
       <div style={{ width:"100%", maxWidth:820, background:"#fff", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", overflow:"hidden" }}>
         <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat}
           orgSettings={{...orgSettings, logo:companyLogo, logoSize:companyLogoSize}}
-          accentColor={accentColor} template={activeTemplate} />
+          accentColor={accentColor} template={activeTemplate} footerText={footerText||""} />
       </div>
     </div>
   );
