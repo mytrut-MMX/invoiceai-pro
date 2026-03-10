@@ -84,7 +84,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice }) {
         {/* Header */}
         <div style={{ background:"#1A1A1A", padding:"12px 20px", display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:7, padding:"6px 10px", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontSize:13, fontFamily:ff }}>
-            <Icons.ChevDown style={{ transform:"rotate(90deg)" }} /> Back
+            <span style={{ transform:"rotate(90deg)", display:"flex" }}><Icons.ChevDown /></span> Back
           </button>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:15, fontWeight:800, color:"#fff" }}>{isEdit?`Edit ${q.quote_number}`:"New Quote"}</div>
