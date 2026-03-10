@@ -197,7 +197,7 @@ export default function App() {
           </div>
 
           {/* Page content */}
-          <main style={{ flex:1, overflowY:"auto", position:"relative" }}>
+          <main style={{ flex:1, overflowY:"auto" }}>
             {renderPage()}
           </main>
 
