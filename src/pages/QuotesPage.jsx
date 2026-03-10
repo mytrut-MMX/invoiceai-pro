@@ -1,4 +1,5 @@
 import { useState, useContext, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -83,7 +84,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice }) {
     setShowItemModal(false);
   };
 
-  return (
+  return createPortal(
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:900, display:"flex", justifyContent:"flex-end" }}>
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
       {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} />}
@@ -218,7 +219,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice }) {
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 // ─── QUOTES PAGE ──────────────────────────────────────────────────────────────
