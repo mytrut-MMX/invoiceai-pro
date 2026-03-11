@@ -31,7 +31,9 @@ export default function Dashboard({ store }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [defaultDocType, setDefaultDocType] = useState('invoice')
   const [showTemplateDesigner, setShowTemplateDesigner] = useState(false)
-
+  const [editorAsPage, setEditorAsPage] = useState(false)
+  const [editorReturnPage, setEditorReturnPage] = useState('dashboard')
+  
   // Active template config — stored in settings
   const templateConfig = settings.invoiceTemplateConfig || BUILT_IN_THEMES[0].config
 
@@ -69,7 +71,7 @@ export default function Dashboard({ store }) {
       const newInv = { id: genId(), number: nextInvoiceNum(data.doc_type), date: today(), due_date: dueFromDate(today(), company.payment_terms), ...data, ...totals }
       setInvoices(prev => [newInv, ...prev])
     }
-    setShowEditor(false); setEditingInvoice(null); setAiDraft(null)
+    setShowEditor(false); setEditingInvoice(null); setAiDraft(null); setEditorAsPage(false); setPage(editorReturnPage)
   }
 
   const deleteDoc = id => { if (confirm('Delete this document?')) setInvoices(prev => prev.filter(i => i.id !== id)) }
@@ -88,9 +90,18 @@ export default function Dashboard({ store }) {
     } catch (err) { alert('Email error: ' + err.message) }
   }
 
-  const openNew = (docType = 'invoice') => { setDefaultDocType(docType); setEditingInvoice(null); setAiDraft(null); setShowEditor(true) }
-  const openEdit = inv => { setEditingInvoice(inv); setAiDraft(null); setShowEditor(true) }
-  const openAIDraft = draft => { setAiDraft(draft); setEditingInvoice(null); setShowEditor(true); setShowAI(false) }
+  const openNew = (docType = 'invoice') => {
+    setDefaultDocType(docType)
+    setEditingInvoice(null)
+    setAiDraft(null)
+    setEditorReturnPage(page)
+    const shouldOpenAsPage = docType === 'quote'
+    setEditorAsPage(shouldOpenAsPage)
+    if (shouldOpenAsPage) setPage('quote-editor')
+    setShowEditor(true)
+  }
+  const openEdit = inv => { setEditingInvoice(inv); setAiDraft(null); setEditorReturnPage(page); setEditorAsPage(false); setShowEditor(true) }
+  const openAIDraft = draft => { setAiDraft(draft); setEditingInvoice(null); setEditorReturnPage(page); setEditorAsPage(false); setShowEditor(true); setShowAI(false) }
 
   const filteredDocs = (docType) => invoices.filter(inv => {
     const matchType = inv.doc_type === docType || (!inv.doc_type && docType === 'invoice')
@@ -111,12 +122,15 @@ export default function Dashboard({ store }) {
           <div style={{ fontSize: 10, color: '#334155', marginTop: 3 }}>Invoice Management</div>
         </div>
         <nav style={{ flex: 1, padding: '0 10px' }}>
-          {NAV.map(n => (
-            <button key={n.id} onClick={() => setPage(n.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', marginBottom: 2, textAlign: 'left', background: page === n.id ? '#e2b96a15' : 'transparent', color: page === n.id ? '#e2b96a' : '#94a3b8', fontWeight: page === n.id ? 700 : 400, fontSize: 14, borderLeft: page === n.id ? '3px solid #e2b96a' : '3px solid transparent' }}>
+          {NAV.map(n => {
+            const activePage = page === 'quote-editor' ? 'quotes' : page
+            return (
+            <button key={n.id} onClick={() => setPage(n.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', marginBottom: 2, textAlign: 'left', background: activePage === n.id ? '#e2b96a15' : 'transparent', color: activePage === n.id ? '#e2b96a' : '#94a3b8', fontWeight: activePage === n.id ? 700 : 400, fontSize: 14, borderLeft: activePage === n.id ? '3px solid #e2b96a' : '3px solid transparent' }}>
               <span style={{ fontSize: 15 }}>{n.icon}</span>{n.label}
               {n.id === 'invoices' && allInvoicesList.filter(i => i.status === 'overdue').length > 0 && <span style={{ marginLeft: 'auto', background: '#dc2626', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: 10, fontWeight: 700 }}>{allInvoicesList.filter(i => i.status === 'overdue').length}</span>}
             </button>
-          ))}
+            )
+          })} 
         </nav>
         <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <button onClick={() => setShowTemplateDesigner(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e2b96a44', cursor: 'pointer', background: 'transparent', color: '#e2b96a', fontWeight: 700, fontSize: 12 }}>🎨 Template Designer</button>
@@ -188,6 +202,30 @@ export default function Dashboard({ store }) {
           <PageWithDocs title="Quotes" docs={filteredDocs('quote')} company={company} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} onNew={() => openNew('quote')} onEdit={openEdit} onPreview={setPreviewInvoice} onDelete={deleteDoc} onEmail={sendEmail} setInvoices={setInvoices} newLabel="Quote" />
         )}
 
+        
+         {page === 'quote-editor' && showEditor && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: '#1a1a2e', margin: 0 }}>New Quote</h1>
+              <button
+                onClick={() => { setShowEditor(false); setEditingInvoice(null); setAiDraft(null); setEditorAsPage(false); setPage(editorReturnPage) }}
+                style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #33415533', background: '#fff', color: '#334155', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
+              >
+                ← Back
+              </button>
+            </div>
+            <InvoiceEditor
+              asPage
+              invoice={null}
+              clients={clients}
+              products={products}
+              company={company}
+              onSave={saveInvoice}
+              onClose={() => { setShowEditor(false); setEditingInvoice(null); setAiDraft(null); setEditorAsPage(false); setPage(editorReturnPage) }}
+            />
+          </div>
+        )}
+        
         {page === 'clients' && <ClientsPage clients={clients} setClients={setClients} genId={genId} invoices={invoices} company={company} />}
         {page === 'products' && <ProductsPage products={products} setProducts={setProducts} genId={genId} company={company} />}
         {page === 'settings' && <SettingsPage company={company} settings={settings} setSettings={setSettings} onOpenDesigner={() => setShowTemplateDesigner(true)} templateConfig={templateConfig} />}
@@ -207,7 +245,7 @@ export default function Dashboard({ store }) {
       )}
 
       {/* Invoice Editor */}
-      {showEditor && (
+      {showEditor && !editorAsPage && (
         <InvoiceEditor
           invoice={editingInvoice
             ? { ...editingInvoice }
@@ -216,7 +254,7 @@ export default function Dashboard({ store }) {
               : null}
           clients={clients} products={products} company={company}
           onSave={saveInvoice}
-          onClose={() => { setShowEditor(false); setEditingInvoice(null); setAiDraft(null) }}
+          onClose={() => { setShowEditor(false); setEditingInvoice(null); setAiDraft(null); setEditorAsPage(false); setPage(editorReturnPage) }}
         />
       )}
 
