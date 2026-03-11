@@ -180,7 +180,7 @@ export default function SettingsPage({ onNavigate }) {
       </div>
 
       {/* Organisation */}
-      <Section title="Organisation Details">
+      <div ref={sectionRefs.org}><Section title="Organisation Details">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="Company / Trading Name" required>
             <Input value={orgName} onChange={setOrgName} placeholder="Your Company Ltd" />
