@@ -84,13 +84,12 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
     setShowItemModal(false);
   };
 
-  return createPortal(
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:900, display:"flex", justifyContent:"flex-end" }}>
+  const panelContent = (
+    <div style={{ position: asPage ? "relative" : "fixed", inset: asPage ? "auto" : 0, background: asPage ? "transparent" : "rgba(0,0,0,0.4)", zIndex: asPage ? "auto" : 900, display:"flex", justifyContent: asPage ? "center" : "flex-end" }}>
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
       {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} />}
 
-      <div style={{ width:"100%", maxWidth:860, height:"100%", background:"#F7F7F5", display:"flex", flexDirection:"column", boxShadow:"-8px 0 40px rgba(0,0,0,0.16)", fontFamily:ff }}>
-        {/* Header */}
+           <div style={{ width:"100%", maxWidth:860, height: asPage ? "auto" : "100%", minHeight: asPage ? "calc(100vh - 180px)" : "100%", background:"#F7F7F5", display:"flex", flexDirection:"column", boxShadow: asPage ? "0 12px 34px rgba(0,0,0,0.10)" : "-8px 0 40px rgba(0,0,0,0.16)", borderRadius: asPage ? 12 : 0, overflow:"hidden", fontFamily:ff }}>
         <div style={{ background:"#1A1A1A", padding:"12px 20px", display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", flexShrink:0 }}>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:7, padding:"6px 10px", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontSize:13, fontFamily:ff }}>
             <span style={{ transform:"rotate(90deg)", display:"flex" }}><Icons.ChevDown /></span> Back
@@ -219,7 +218,10 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
         </div>
       </div>
     </div>
-  , document.body);
+  );
+
+  if (asPage) return panelContent;
+  return createPortal(panelContent, document.body);
 }
 
 // ─── QUOTES PAGE ──────────────────────────────────────────────────────────────
@@ -312,11 +314,28 @@ export default function QuotesPage({ onNavigate }) {
               </button>
             ))}
           </div>
-          <Btn onClick={()=>setPanel({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Quote</Btn>
+          <Btn onClick={()=>setPanel({ mode:"new-page" })} variant="primary" icon={<Icons.Plus />}>New Quote</Btn>
         </div>
       </div>
 
+      {isNewQuotePage && (
+        <div style={{ marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, gap:10, flexWrap:"wrap" }}>
+            <div style={{ fontSize:20, fontWeight:800, color:"#1A1A1A" }}>New Quote</div>
+            <Btn onClick={()=>setPanel(null)} variant="outline" icon={<Icons.ChevDown />}>Back to Quotes</Btn>
+          </div>
+          <QuoteFormPanel
+            asPage
+            existing={null}
+            onClose={()=>setPanel(null)}
+            onSave={q=>{ onSave(q); setPanel(null); }}
+            onConvertToInvoice={handleConvertToInvoice}
+          />
+        </div>
+      )}
+
       {/* Table */}
+      {!isNewQuotePage && (
       <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflowX:"auto" }}>
         <div style={{ padding:"10px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
@@ -361,8 +380,9 @@ export default function QuotesPage({ onNavigate }) {
           </tbody>
         </table>
       </div>
+      )}
 
-      {panel && (
+      {panel && panel.mode !== "new-page" && (
         <QuoteFormPanel
           existing={panel.mode==="edit" ? panel.quote : null}
           onClose={()=>setPanel(null)}
