@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo } from "react";
+import { useState, useContext, useMemo, useEffect } from "react";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -24,8 +24,13 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
     : [];
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
   const gross = afterDisc + ship + vatTotal;
-  const cisDed = (customer?.taxDetails?.cisRegistered && (orgSettings?.cisSub||orgSettings?.cisContractor))
-    ? afterDisc * (parseInt(customer?.taxDetails?.cisRate||"20%")/100)
+  const orgCisEnabled = orgSettings?.cisReg === "Yes";
+  const role = orgSettings?.cisRole || "Contractor";
+  const customerCisRate = parseInt(customer?.taxDetails?.cisRate||"20%")/100;
+  const orgCisRate = Number(orgSettings?.cisRate||20)/100;
+  const cisRate = customer?.taxDetails?.cisRegistered ? customerCisRate : orgCisRate;
+  const cisDed = orgCisEnabled && ["Contractor","Both"].includes(role)
+    ? afterDisc * cisRate
     : 0;
   return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed };
 }
@@ -33,8 +38,8 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
 // ─── INVOICE FORM PANEL ───────────────────────────────────────────────────────
-function InvoiceFormPanel({ existing, onClose, onSave }) {
-  const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments } = useContext(AppCtx);
+function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
+  const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, quotes } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg==="Yes";
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
   const isEdit = !!existing;
@@ -63,6 +68,14 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
   const [recurFreq, setRecurFreq] = useState(inv.recurring_frequency||"Monthly");
   const [poNumber, setPoNumber] = useState(inv.po_number||"");
   const [invNumber, setInvNumber] = useState(inv.invoice_number || nextNum("INV", invoices));
+  const acceptedQuotes = useMemo(() => (quotes||[]).filter(q=>q.status==="Accepted"), [quotes]);
+  const [selectedQuoteId, setSelectedQuoteId] = useState("");
+
+  useEffect(() => {
+    if(!selectedQuoteId || !onConvertFromQuote) return;
+    onConvertFromQuote(selectedQuoteId);
+    setSelectedQuoteId("");
+  }, [selectedQuoteId, onConvertFromQuote]);
 
   const totals = useMemo(()=>calcTotals(items,discType,discVal,shipping,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings]);
 
@@ -77,7 +90,7 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status };
+  const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status, poNumber };
 
   const buildInvoice = (newStatus) => ({
     id: inv.id||crypto.randomUUID(),
@@ -181,9 +194,18 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
                 </div>
               )}
             </div>
-            {customer?.taxDetails?.cisRegistered && (
-              <div style={{ marginTop:10, padding:"8px 10px", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:7, fontSize:12, color:"#D97706", fontWeight:600 }}>
-                CIS registered · {customer.taxDetails.cisRate||"20%"} deduction will apply
+            {!isEdit && acceptedQuotes.length>0 && (
+              <div style={{ marginTop:10, padding:"10px", border:"1px solid #D1FAE5", borderRadius:8, background:"#F0FDF4" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:"#166534" }}>Convert Accepted Quote</span>
+                  <Select
+                    value={selectedQuoteId}
+                    onChange={setSelectedQuoteId}
+                    placeholder="Choose accepted quote"
+                    options={acceptedQuotes.map(q=>({ value:q.id, label:`${q.quote_number} · ${q.customer?.name||"No customer"}` }))}
+                    style={{ maxWidth:360 }}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -264,7 +286,7 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
 
 // ─── INVOICES PAGE ────────────────────────────────────────────────────────────
 export default function InvoicesPage() {
-  const { invoices, setInvoices } = useContext(AppCtx);
+  const { invoices, setInvoices, quotes, setQuotes } = useContext(AppCtx);
   const [panel, setPanel] = useState(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -282,6 +304,27 @@ export default function InvoicesPage() {
     if(i>=0){ const u=[...p]; u[i]=inv; return u; }
     return [inv,...p];
   });
+  const handleConvertAcceptedQuote = (quoteId) => {
+    const quote = quotes.find(q=>q.id===quoteId);
+    if(!quote) return;
+    setQuotes(prev=>prev.map(q=>q.id===quoteId?{...q,status:"Invoiced"}:q));
+    setPanel({ mode:"edit", invoice:{
+      invoice_number: nextNum("INV", invoices),
+      customer: quote.customer,
+      issue_date: quote.issue_date||todayStr(),
+      due_date: addDays(quote.issue_date||todayStr(),30),
+      payment_terms: "Net 30",
+      line_items: quote.line_items||[newLine(0)],
+      discount_type: quote.discount_type||"percent",
+      discount_value: quote.discount_value||"",
+      shipping: quote.shipping||"",
+      notes: quote.notes||"",
+      terms: quote.terms||DEFAULT_INV_TERMS,
+      po_number: quote.po_number||"",
+      status: "Draft",
+      converted_from_quote: quote.quote_number,
+    }});
+  };
 
   const summary = {
     outstanding: invoices.filter(i=>["Sent","Partial"].includes(i.status)).reduce((s,i)=>s+(i.total||0),0),
@@ -296,6 +339,7 @@ export default function InvoicesPage() {
         existing={panel.mode==="edit" ? panel.invoice : null}
         onClose={()=>setPanel(null)}
         onSave={inv=>{ onSave(inv); setPanel(null); }}
+        onConvertFromQuote={handleConvertAcceptedQuote}
       />
     );
   }
