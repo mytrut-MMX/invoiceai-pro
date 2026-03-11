@@ -29,7 +29,7 @@ function calcTotals(items, discType, discVal, shipping, isVat) {
 }
 
 // ─── QUOTE FORM PANEL ─────────────────────────────────────────────────────────
-function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice }) {
+function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage = false }) {
   const { customers, catalogItems, setCatalogItems, orgSettings, quotes } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg==="Yes";
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
