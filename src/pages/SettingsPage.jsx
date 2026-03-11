@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef } from "react";
 import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -117,6 +117,14 @@ export default function SettingsPage({ onNavigate }) {
 
   const [saved, setSaved] = useState(false);
 
+  const sectionRefs = {
+    org: useRef(null),
+    tax: useRef(null),
+    bank: useRef(null),
+    templates: useRef(null),
+  };
+  const jumpTo = (key) => sectionRefs[key]?.current?.scrollIntoView({ behavior:"smooth", block:"start" });
+
   const handleSaveOrg = () => {
     setOrgSettings({
       orgName, email, phone, website,
@@ -163,7 +171,13 @@ export default function SettingsPage({ onNavigate }) {
 
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:860, fontFamily:ff }}>
-      <h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:"0 0 22px" }}>Settings</h1>
+      <h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:"0 0 12px" }}>Settings</h1>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
+        <Btn onClick={()=>jumpTo("org")} variant="outline" size="sm">Organization Details</Btn>
+        <Btn onClick={()=>jumpTo("tax")} variant="outline" size="sm">Tax details</Btn>
+        <Btn onClick={()=>jumpTo("bank")} variant="outline" size="sm">Bank Details</Btn>
+        <Btn onClick={()=>jumpTo("templates")} variant="outline" size="sm">Templates</Btn>
+      </div>
 
       {/* Organisation */}
       <Section title="Organisation Details">
@@ -205,10 +219,10 @@ export default function SettingsPage({ onNavigate }) {
             <Input value={crn} onChange={setCrn} placeholder="Optional" />
           </Field>
         </div>
-      </Section>
+      </Section></div>
 
       {/* Tax */}
-      <Section title="Tax Registration">
+      <div ref={sectionRefs.tax}><Section title="Tax Registration">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="VAT Registered">
             <Select value={vatReg} onChange={setVatReg} options={["No","Yes"]} />
@@ -232,10 +246,10 @@ export default function SettingsPage({ onNavigate }) {
             </>
           )}
         </div>
-      </Section>
+      </Section></div>
 
       {/* Bank */}
-      <Section title="Bank Details (shown on invoices)">
+      <div ref={sectionRefs.bank}><Section title="Bank Details (shown on invoices)">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="Bank Name"><Input value={bankName} onChange={setBankName} placeholder="e.g. Barclays" /></Field>
           <Field label="Sort Code"><Input value={bankSort} onChange={setBankSort} placeholder="00-00-00" /></Field>
@@ -243,10 +257,10 @@ export default function SettingsPage({ onNavigate }) {
           <Field label="IBAN (optional)"><Input value={bankIban} onChange={setBankIban} /></Field>
           <Field label="SWIFT / BIC (optional)"><Input value={bankSwift} onChange={setBankSwift} /></Field>
         </div>
-      </Section>
+      </Section></div>
 
       {/* PDF Templates */}
-      <Section title="PDF Invoice Templates">
+      <div ref={sectionRefs.templates}><Section title="PDF Invoice Templates">
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
           <Btn onClick={()=>onNavigate?.("templates")} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
         </div>
@@ -314,7 +328,7 @@ export default function SettingsPage({ onNavigate }) {
           <textarea value={footer} onChange={e=>setFooter(e.target.value)} rows={2} placeholder="e.g. Thank you for your business! Registered in England & Wales No. 12345678"
             style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", resize:"vertical", boxSizing:"border-box" }} />
         </Field>
-      </Section>
+      </Section></div>
 
       {/* Sidebar theme */}
       <Section title="Sidebar Appearance">
