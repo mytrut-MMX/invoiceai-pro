@@ -49,13 +49,14 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const [custSearch, setCustSearch] = useState(inv.customer?.name||"");
   const [custOpen, setCustOpen] = useState(false);
   const [issueDate, setIssueDate] = useState(inv.issue_date||todayStr());
-  const [payTerms, setPayTerms] = useState(inv.payment_terms||"Net 30");
+  const [payTerms, setPayTerms] = useState(inv.payment_terms||customer?.paymentTerms||"Net 30");
   const [customDays, setCustomDays] = useState(inv.custom_payment_days||"");
   const [dueDate, setDueDate] = useState(inv.due_date||addDays(todayStr(),30));
   const [items, setItems] = useState((inv.line_items&&inv.line_items.length>0) ? inv.line_items : [newLine(0)]);
   const [discType, setDiscType] = useState(inv.discount_type||"percent");
   const [discVal, setDiscVal] = useState(inv.discount_value||"");
   const [shipping, setShipping] = useState(inv.shipping||"");
+  const showShipping = orgSettings?.deliversItems !== false;
   const [notes, setNotes] = useState(inv.notes||"");
   const [terms, setTerms] = useState(inv.terms||DEFAULT_INV_TERMS);
   const [status, setStatus] = useState(inv.status||"Draft");
@@ -77,8 +78,8 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     setSelectedQuoteId("");
   }, [selectedQuoteId, onConvertFromQuote]);
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,shipping,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings]);
-
+  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings,showShipping]);
+  
   const handleTermsChange = (t, days) => {
     setPayTerms(t);
     const map = { "Net 30":30,"Net 15":15,"Net 7":7,"Net 60":60,"Net 90":90,"Due on Receipt":0 };
@@ -98,7 +99,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     customer, issue_date:issueDate, due_date:dueDate,
     payment_terms:payTerms, custom_payment_days:customDays,
     line_items:items, discount_type:discType, discount_value:discVal,
-    shipping, ...totals, notes, terms, po_number:poNumber,
+    shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
     status: newStatus||status, template,
     recurring:recurringEnabled, recurring_frequency:recurFreq
   });
@@ -122,8 +123,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const handleNewItemSaved = (item) => {
     setCatalogItems(p=>[...p, item]);
     // auto-add it to the invoice
-    const descText = item.description ? `${item.name} — ${item.description}` : item.name;
-    const newItem = { id:crypto.randomUUID(), description:descText, quantity:1, rate:item.rate, tax_rate:isVat?(item.taxRate||20):0, amount:item.rate, sort_order:items.length };
+    const newItem = { id:crypto.randomUUID(), name:item.name, description:item.description||"", quantity:1, rate:item.rate, tax_rate:isVat?(item.taxRate||20):0, amount:item.rate, sort_order:items.length };
     setItems(p=>[...p, newItem]);
     setShowItemModal(false);
   };
@@ -180,7 +180,14 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
                   {filteredCustomers.length===0
                     ? <div style={{ padding:"14px 16px", fontSize:13, color:"#CCC", textAlign:"center" }}>No customers found</div>
                     : filteredCustomers.map(c=>(
-                        <button key={c.id} onClick={()=>{ setCustomer(c); setCustSearch(c.name); setCustOpen(false); }}
+                        <button key={c.id} onClick={()=>{ setCustomer(c); setCustSearch(c.name); setCustOpen(false);
+                          if(!isEdit || !inv.payment_terms){
+                            const nextTerms = c.paymentTerms || "Net 30";
+                            setPayTerms(nextTerms);
+                            const map = { "Net 30":30,"Net 15":15,"Net 7":7,"Net 60":60,"Net 90":90,"Due on Receipt":0 };
+                            if(nextTerms==="Custom") setDueDate(addDays(issueDate,Number(c.customPaymentDays)||30));
+                            else if(map[nextTerms]!==undefined) setDueDate(addDays(issueDate,map[nextTerms]));
+                          } }}
                           style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"none", border:"none", cursor:"pointer", fontFamily:ff, textAlign:"left" }}
                           onMouseEnter={e=>e.currentTarget.style.background="#F7F7F5"}
                           onMouseLeave={e=>e.currentTarget.style.background="none"}>
@@ -275,7 +282,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
               setDiscountType={setDiscType} setDiscountValue={setDiscVal}
               shipping={shipping} setShipping={setShipping}
               taxBreakdown={totals.taxBreakdown} total={totals.total}
-              currSymbol={currSym} isVat={isVat} cisDeduction={totals.cisDeduction}
+              currSymbol={currSym} isVat={isVat} cisDeduction={totals.cisDeduction} showShipping={showShipping}
             />
           </div>
         </div>
@@ -411,6 +418,7 @@ export default function InvoicesPage() {
                 <td style={{ padding:"12px 16px" }}><Tag color={STATUS_COLORS[inv.status]||"#888"}>{inv.status||"Draft"}</Tag></td>
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
                   <Btn onClick={()=>setPanel({ mode:"edit", invoice:inv })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                  <Btn onClick={()=>window.confirm(`Delete ${inv.invoice_number}?`) && setInvoices(prev=>prev.filter(x=>x.id!==inv.id))} variant="ghost" size="sm" icon={<Icons.Trash />}>Delete</Btn>
                 </td>
               </tr>
             ))}
