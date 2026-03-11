@@ -14,6 +14,7 @@ import InvoicesPage from "./pages/InvoicesPage";
 import QuotesPage from "./pages/QuotesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import SettingsPage from "./pages/SettingsPage";
+import InvoiceTemplatesPage from "./pages/InvoiceTemplatesPage";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -62,6 +63,7 @@ export default function App() {
   const [defaultQuoteTerms, setDefaultQuoteTerms] = useState(()=>LS.get("ai_invoice_quo_terms",DEFAULT_QUOTE_TERMS));
   const [defaultPaymentTerms, setDefaultPaymentTerms] = useState(()=>LS.get("ai_invoice_pay_terms","Net 30"));
   const [footerText, setFooterText] = useState(()=>LS.get("ai_invoice_footer",""));
+  const [invoiceTemplateConfig, setInvoiceTemplateConfig] = useState(()=>LS.get("ai_invoice_template_config",null))
 
   // Integrations
   const [supabaseUrl, setSupabaseUrl] = useState(()=>LS.get("ai_invoice_sb_url",""));
@@ -94,6 +96,7 @@ export default function App() {
   useEffect(()=>LS.set("ai_invoice_quo_terms",defaultQuoteTerms),[defaultQuoteTerms]);
   useEffect(()=>LS.set("ai_invoice_pay_terms",defaultPaymentTerms),[defaultPaymentTerms]);
   useEffect(()=>LS.set("ai_invoice_footer",footerText),[footerText]);
+  useEffect(()=>LS.set("ai_invoice_template_config",invoiceTemplateConfig),[invoiceTemplateConfig]);
   useEffect(()=>LS.set("ai_invoice_sb_url",supabaseUrl),[supabaseUrl]);
   useEffect(()=>LS.set("ai_invoice_sb_key",supabaseKey),[supabaseKey]);
   useEffect(()=>LS.set("ai_invoice_gdrive",googleDriveEnabled),[googleDriveEnabled]);
@@ -124,6 +127,8 @@ export default function App() {
     defaultQuoteTerms, setDefaultQuoteTerms,
     defaultPaymentTerms, setDefaultPaymentTerms,
     footerText, setFooterText,
+    invoiceTemplateConfig, setInvoiceTemplateConfig,
+    appTheme, setAppTheme,
     supabaseUrl, setSupabaseUrl,
     supabaseKey, setSupabaseKey,
     googleDriveEnabled, setGoogleDriveEnabled,
@@ -158,7 +163,8 @@ export default function App() {
       case "quotes":    return <QuotesPage onNavigate={setPage} />;
       case "invoices":  return <InvoicesPage />;
       case "payments":  return <PaymentsPage />;
-      case "settings":  return <SettingsPage />;
+      case "templates": return <InvoiceTemplatesPage />;
+      case "settings":  return <SettingsPage onNavigate={setPage} />;
       default:          return <HomePage user={user} onNavigate={setPage} />;
     }
   };
