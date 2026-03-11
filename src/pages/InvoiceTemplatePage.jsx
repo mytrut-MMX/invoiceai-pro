@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { ff, PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Btn, Field, Input, Select, Checkbox } from "../components/atoms";
+import { A4InvoiceDoc } from "../components/shared";
 import { Icons } from "../components/icons";
 
 export default function InvoiceTemplatesPage() {
@@ -13,6 +14,28 @@ export default function InvoiceTemplatesPage() {
   const [showPoField, setShowPoField] = useState(initial.showPoField !== false);
   const [showNotesField, setShowNotesField] = useState(initial.showNotesField !== false);
   const [customFieldLabel, setCustomFieldLabel] = useState(initial.customFieldLabel || "Project Ref");
+
+  const previewData = {
+    docNumber: "INV-0001",
+    customer: { name: "Preview Customer", companyName: "Preview Customer Ltd", email: "accounts@example.com" },
+    issueDate: new Date().toISOString().slice(0,10),
+    dueDate: new Date(Date.now()+14*864e5).toISOString().slice(0,10),
+    paymentTerms: "Net 14",
+    items: [
+      { id:"1", name:"Design Sprint", description:"Discovery and wireframes", quantity:1, rate:1200, tax_rate:20, amount:1200 },
+      { id:"2", name:"Development", description:"Frontend implementation", quantity:2, rate:800, tax_rate:20, amount:1600 },
+    ],
+    subtotal: 2800,
+    discountAmount: 0,
+    shipping: 0,
+    taxBreakdown: [{ rate:20, amount:560 }],
+    cisDeduction: 0,
+    total: 3360,
+    notes: "Live template preview",
+    terms: "Payment due within 14 days",
+    status: "Draft",
+  };
+
 
   const saveTemplateSettings = () => {
     setCompanyLogoSize(Number(companyLogoSize || 52));
@@ -61,6 +84,15 @@ export default function InvoiceTemplatesPage() {
 
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <Btn onClick={saveTemplateSettings} variant="primary" icon={<Icons.Save />}>Save Template Settings</Btn>
+      </div>
+
+      <div style={{ marginTop: 20, background:"#fff", border:"1px solid #EBEBEB", borderRadius:12, padding:16 }}>
+        <div style={{ fontSize:12, fontWeight:800, color:"#888", textTransform:"uppercase", marginBottom:8 }}>Live Preview</div>
+        <div style={{ border:"1px solid #EBEBEB", borderRadius:10, overflow:"auto", background:"#f3f4f6", padding:12 }}>
+          <div style={{ transform:"scale(0.78)", transformOrigin:"top center", marginBottom:"-180px" }}>
+            <A4InvoiceDoc data={previewData} currSymbol="£" isVat orgSettings={{ orgName:"Demo Company" }} accentColor={accentColor} template={pdfTemplate} footerText="" templateConfig={{ logoPosition, logoSize:Number(companyLogoSize||52), showNotesField, showPoField, customFieldLabel, accentColor }} />
+          </div>
+        </div>
       </div>
     </div>
   );
