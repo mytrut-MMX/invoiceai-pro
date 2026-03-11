@@ -52,6 +52,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [showItemModal, setShowItemModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [poNumber, setPoNumber] = useState(q.po_number||"");
+  const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
 
   const totals = useMemo(()=>calcTotals(items,discType,discVal,shipping,isVat),[items,discType,discVal,shipping,isVat]);
 
@@ -59,7 +60,6 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const quoteNumber = q.quote_number || nextNum("QUO", quotes);
   const docData = { docNumber:quoteNumber, customer, issueDate, dueDate:expiryDate, paymentTerms:`Valid until ${fmtDate(expiryDate)}`, items, ...totals, notes, terms, status };
 
   const buildQuote = (newStatus) => ({
@@ -161,7 +161,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
           <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Quote Details</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
-              <Field label="Quote #"><Input value={quoteNumber} disabled /></Field>
+              <Field label="Quote #"><Input value={quoteNumber} onChange={setQuoteNumber} /></Field>
               <Field label="Issue Date">
                 <input value={issueDate} onChange={e=>setIssueDate(e.target.value)} type="date"
                   style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
