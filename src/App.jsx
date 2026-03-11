@@ -14,7 +14,7 @@ import InvoicesPage from "./pages/InvoicesPage";
 import QuotesPage from "./pages/QuotesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import SettingsPage from "./pages/SettingsPage";
-import InvoiceTemplatesPage from "./pages/InvoiceTemplatesPage";
+import InvoiceTemplatesPage from "./pages/InvoiceTemplatePage";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
