@@ -7,7 +7,7 @@ import { fmt, fmtDate, todayStr } from "../utils/helpers";
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 function PaymentModal({ existing, onClose, onSave }) {
-  const { invoices, customers, customPayMethods } = useContext(AppCtx);
+  const { invoices, customers, customPayMethods, setInvoices } = useContext(AppCtx);
   const allMethods = [...PAYMENT_METHODS, ...(customPayMethods||[])];
   const isEdit = !!existing;
   const p = existing||{};
@@ -34,6 +34,11 @@ function PaymentModal({ existing, onClose, onSave }) {
       date, method, reference, notes, status
     });
     onClose();
+
+    if (linkedInvoice && Number(amount) >= Number(linkedInvoice.total||0)) {
+      setInvoices(prev=>prev.map(inv=>inv.id===linkedInvoice.id?{...inv,status:"Paid"}:inv));
+    }
+
   };
 
   return (
