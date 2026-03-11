@@ -62,6 +62,7 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
   const [recurringEnabled, setRecurringEnabled] = useState(inv.recurring||false);
   const [recurFreq, setRecurFreq] = useState(inv.recurring_frequency||"Monthly");
   const [poNumber, setPoNumber] = useState(inv.po_number||"");
+  const [invNumber, setInvNumber] = useState(inv.invoice_number || nextNum("INV", invoices));
 
   const totals = useMemo(()=>calcTotals(items,discType,discVal,shipping,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings]);
 
@@ -76,7 +77,6 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const invNumber = inv.invoice_number || nextNum("INV", invoices);
   const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status };
 
   const buildInvoice = (newStatus) => ({
@@ -192,7 +192,7 @@ function InvoiceFormPanel({ existing, onClose, onSave }) {
           <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Invoice Details</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
-              <Field label="Invoice #"><Input value={invNumber} disabled /></Field>
+              <Field label="Invoice #"><Input value={invNumber} onChange={setInvNumber} /></Field>
               <Field label="Issue Date">
                 <input value={issueDate} onChange={e=>setIssueDate(e.target.value)} type="date"
                   style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
