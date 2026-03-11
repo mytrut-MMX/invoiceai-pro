@@ -9,6 +9,7 @@ import { fmt, fmtDate, newLine, todayStr } from "../../utils/helpers";
 export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat, onAddNewItem }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerQty, setPickerQty] = useState({});
 
   const upd = (id, f, v) => onChange(items.map(it => {
     if(it.id!==id) return it;
@@ -51,26 +52,38 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
                 style={{ width:"100%", padding:"7px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, outline:"none", marginBottom:8, boxSizing:"border-box" }} />
               <div style={{ maxHeight:220, overflowY:"auto" }}>
                 {filteredCat.length===0 && <div style={{ padding:"14px 0", textAlign:"center", color:"#CCC", fontSize:13 }}>No matching items</div>}
-                {filteredCat.map(ci=>(
-                  <button key={ci.id} onClick={()=>{
-                    const descText = ci.description ? `${ci.name} — ${ci.description}` : ci.name;
-                    const newItem = { id:crypto.randomUUID(), description:descText, quantity:1, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate, sort_order:items.length };
-                    onChange([...items, newItem]);
-                    setPickerOpen(false); setPickerSearch("");
-                  }}
-                    style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 10px", background:"none", border:"none", cursor:"pointer", borderRadius:7, textAlign:"left", fontFamily:ff }}
+                {filteredCat.map(ci=>{
+                  const qty = Number(pickerQty[ci.id] || 1);
+                  return (
+                  <div key={ci.id}
+                    style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 10px", borderRadius:7, fontFamily:ff }}
                     onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"}
                     onMouseLeave={e=>e.currentTarget.style.background="none"}>
                     <div>
                       <div style={{ fontSize:13, fontWeight:600, color:"#1A1A1A" }}>{ci.name}</div>
                       {ci.description && <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>{ci.description}</div>}
                     </div>
-                    <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{fmt(currSymbol, ci.rate)}</div>
-                      <div style={{ fontSize:11, color:"#AAA" }}>{ci.unit}{isVat?` · ${ci.taxRate}% VAT`:""}</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginLeft:12 }}>
+                      <input type="number" min="1" value={pickerQty[ci.id] || 1}
+                        onChange={e=>setPickerQty(prev=>({ ...prev, [ci.id]: e.target.value }))}
+                        style={{ width:64, padding:"6px 8px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:12, fontFamily:ff, background:"#fff", MozAppearance:"textfield" }} />
+                      <button onClick={()=>{
+                        const descText = ci.description ? `${ci.name} — ${ci.description}` : ci.name;
+                        const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
+                        const newItem = { id:crypto.randomUUID(), description:descText, quantity:safeQty, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate*safeQty, sort_order:items.length };
+                        onChange([...items, newItem]);
+                        setPickerOpen(false); setPickerSearch("");
+                      }}
+                        style={{ padding:"6px 10px", border:"1px solid #1A1A1A", background:"#1A1A1A", color:"#fff", borderRadius:7, cursor:"pointer", fontSize:12, fontWeight:700 }}>
+                        Add
+                      </button>
+                      <div style={{ textAlign:"right", flexShrink:0 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{fmt(currSymbol, ci.rate)}</div>
+                        <div style={{ fontSize:11, color:"#AAA" }}>{ci.unit}{isVat?` · ${ci.taxRate}% VAT`:""}</div>
+                      </div>
                     </div>
-                  </button>
-                ))}
+                  </div>
+                )})}
               </div>
             </div>
           )}
@@ -86,8 +99,8 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
       {items.map((it,idx)=>(
         <div key={it.id} style={{ display:"grid", gridTemplateColumns:cols, gap:6, marginBottom:6, alignItems:"center" }}>
           <Input value={it.description} onChange={v=>upd(it.id,"description",v)} placeholder={`Item ${idx+1}…`} />
-          <Input value={it.quantity} onChange={v=>upd(it.id,"quantity",v)} type="number" align="center" />
-          <Input value={it.rate} onChange={v=>upd(it.id,"rate",v)} type="number" align="right" />
+          <Input value={it.quantity} onChange={v=>upd(it.id,"quantity",v)} type="number" align="center" style={{ MozAppearance:"textfield" }} />
+          <Input value={it.rate} onChange={v=>upd(it.id,"rate",v)} type="number" align="right" style={{ MozAppearance:"textfield" }} />
           {isVat && (
             <select value={it.tax_rate} onChange={e=>upd(it.id,"tax_rate",Number(e.target.value))}
               style={{ padding:"8px 4px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#FAFAFA", outline:"none", appearance:"none", textAlign:"center", cursor:"pointer", width:"100%" }}>
@@ -143,7 +156,7 @@ export function TotalsBlock({ subtotal, discountType, discountValue, setDiscount
       {discAmt>0 && <R label="" value={`− ${fmt(currSymbol, discAmt)}`} color="#E86C4A" />}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
         <span style={{ fontSize:13, color:"#666" }}>Shipping</span>
-        <input value={shipping} onChange={e=>setShipping(e.target.value)} type="number" min="0" placeholder="0.00"
+        <input value={shipping} onChange={e=>setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
           style={{ width:86, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
       </div>
       {isVat && taxBreakdown.map(tb=><R key={tb.rate} label={`VAT ${tb.rate}%`} value={fmt(currSymbol, tb.amount)} />)}
@@ -243,17 +256,17 @@ export function PaidConfirmModal({ invoice, onConfirm, onCancel }) {
 }
 
 // ─── A4 INVOICE DOCUMENT ──────────────────────────────────────────────────────
-export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template="classic", footerText="" }) {
+export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template="classic", footerText="", templateConfig }) {
   const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms } = data;
   const sym = currSymbol||"£";
   const org = orgSettings||{};
   const tplDef = PDF_TEMPLATES.find(t=>t.id===template)||PDF_TEMPLATES[0];
-  const accent = accentColor || tplDef.defaultAccent;
+  const accent = accentColor || templateConfig?.accentColor || tplDef.defaultAccent;
   const addrParts = [org.street, org.city, [org.postcode, org.state].filter(Boolean).join(" "), org.country].filter(Boolean);
 
   const OrgBlock = ({ dark=false }) => (
     <div>
-      {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight:org.logoSize||52, maxWidth:200, objectFit:"contain", display:"block", marginBottom:5 }} />}
+      {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight:(templateConfig?.logoSize||org.logoSize||52), maxWidth:200, objectFit:"contain", display:"block", marginBottom:5, marginLeft:(templateConfig?.logoPosition||"left")==="right"?"auto":0, marginRight:(templateConfig?.logoPosition||"left")==="center"?"auto":0 }} />}
       <div style={{ fontSize:"15pt", fontWeight:900, color:dark?"#fff":accent, letterSpacing:"-0.01em" }}>{org.orgName||"Your Company"}</div>
       {addrParts.length>0 && (
         <div style={{ fontSize:"7.5pt", color:dark?"rgba(255,255,255,0.75)":"#666", marginTop:3, lineHeight:1.8 }}>
@@ -338,7 +351,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     </div>
   );
 
-  const NotesSection = () => (notes||terms) ? (
+  const NotesSection = () => (templateConfig?.showNotesField===false?false:(notes||terms)) ? (
     <div style={{ borderTop:"1px solid #EBEBEB", paddingTop:"4mm", display:"grid", gridTemplateColumns:notes&&terms?"1fr 1fr":"1fr", gap:"6mm" }}>
       {notes && <div><div style={{ fontSize:"7pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"2mm" }}>Notes</div><p style={{ fontSize:"8pt", color:"#555", margin:0, lineHeight:1.7 }}>{notes}</p></div>}
       {terms && <div><div style={{ fontSize:"7pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"2mm" }}>Payment Terms</div><p style={{ fontSize:"8pt", color:"#555", margin:0, lineHeight:1.7 }}>{terms}</p></div>}
@@ -444,7 +457,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 
 // ─── A4 PRINT MODAL ───────────────────────────────────────────────────────────
 export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTemplate, _overrideAccent }) {
-  const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText } = useContext(AppCtx);
+  const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
   const startTpl = _overrideTemplate || pdfTemplate || "classic";
   const tplDef = PDF_TEMPLATES.find(t=>t.id===startTpl)||PDF_TEMPLATES[0];
   const [accentColor, setAccentColor] = useState(_overrideAccent || tplDef.defaultAccent);
@@ -494,7 +507,7 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
       <div style={{ width:"100%", maxWidth:820, background:"#fff", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", overflow:"hidden" }}>
         <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat}
           orgSettings={{...orgSettings, logo:companyLogo, logoSize:companyLogoSize}}
-          accentColor={accentColor} template={activeTemplate} footerText={footerText||""} />
+          accentColor={accentColor} template={activeTemplate} footerText={footerText||""} templateConfig={invoiceTemplateConfig} />
       </div>
     </div>
   );
