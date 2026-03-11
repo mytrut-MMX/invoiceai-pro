@@ -28,7 +28,7 @@ function calcTotals(items, discType, discVal, shipping, isVat, orgSettings) {
   const orgCisEnabled = orgSettings?.cisReg === "Yes";
   const cisRate = Number(orgSettings?.cisRate||20)/100;
   const cisDed = orgCisEnabled ? afterDisc * cisRate : 0;
-  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed };
+  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed, grossTotal: gross };
 }
 
 // ─── QUOTE FORM PANEL ─────────────────────────────────────────────────────────
@@ -48,6 +48,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [discType, setDiscType] = useState(q.discount_type||"percent");
   const [discVal, setDiscVal] = useState(q.discount_value||"");
   const [shipping, setShipping] = useState(q.shipping||"");
+  const showShipping = orgSettings?.deliversItems !== false;
   const [notes, setNotes] = useState(q.notes||"");
   const [terms, setTerms] = useState(q.terms||DEFAULT_QUOTE_TERMS);
   const [status, setStatus] = useState(q.status||"Draft");
@@ -57,7 +58,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [poNumber, setPoNumber] = useState(q.po_number||"");
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,shipping,isVat,orgSettings),[items,discType,discVal,shipping,isVat,orgSettings]);
+  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,orgSettings),[items,discType,discVal,shipping,isVat,orgSettings,showShipping]);
 
   const filteredCustomers = customers.filter(c=>
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
@@ -70,7 +71,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
     quote_number: quoteNumber,
     customer, issue_date:issueDate, expiry_date:expiryDate,
     line_items:items, discount_type:discType, discount_value:discVal,
-    shipping, ...totals, notes, terms, po_number:poNumber,
+    shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
     status: newStatus||status,
   });
 
@@ -92,8 +93,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
 
   const handleNewItemSaved = (item) => {
     setCatalogItems(p=>[...p, item]);
-    const descText = item.description ? `${item.name} — ${item.description}` : item.name;
-    const newItem = { id:crypto.randomUUID(), description:descText, quantity:1, rate:item.rate, tax_rate:isVat?(item.taxRate||20):0, amount:item.rate, sort_order:items.length };
+    const newItem = { id:crypto.randomUUID(), name:item.name, description:item.description||"", quantity:1, rate:item.rate, tax_rate:isVat?(item.taxRate||20):0, amount:item.rate, sort_order:items.length };
     setItems(p=>[...p, newItem]);
     setShowItemModal(false);
   };
@@ -226,7 +226,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
               setDiscountType={setDiscType} setDiscountValue={setDiscVal}
               shipping={shipping} setShipping={setShipping}
               taxBreakdown={totals.taxBreakdown} total={totals.total}
-              currSymbol={currSym} isVat={isVat} cisDeduction={totals.cisDeduction}
+              currSymbol={currSym} isVat={isVat} cisDeduction={totals.cisDeduction} showShipping={showShipping}
             />
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function QuotesPage({ onNavigate }) {
       discountAmount: quote.discountAmount,
       taxBreakdown: quote.taxBreakdown,
       cisDeduction: quote.cisDeduction||0,
-      total: quote.total,
+      total: quote.grossTotal ?? quote.total,
       notes: quote.notes,
       terms: quote.terms,
       status: "Draft",
@@ -384,6 +384,7 @@ export default function QuotesPage({ onNavigate }) {
                 <td style={{ padding:"12px 16px" }}><Tag color={STATUS_COLORS[q.status]||"#888"}>{q.status||"Draft"}</Tag></td>
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
                   <Btn onClick={()=>setPanel({ mode:"edit", quote:q })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                  <Btn onClick={()=>window.confirm(`Delete ${q.quote_number}?`) && setQuotes(prev=>prev.filter(x=>x.id!==q.id))} variant="ghost" size="sm" icon={<Icons.Trash />}>Delete</Btn>
                 </td>
               </tr>
             ))}
