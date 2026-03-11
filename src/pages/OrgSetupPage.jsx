@@ -30,6 +30,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const [cisUtr, setCisUtr] = useState(initialData?.cisUtr||"");
   const [orgEmail, setOrgEmail] = useState(initialData?.email||"");
   const [orgPhone, setOrgPhone] = useState(initialData?.phone||"");
+  const [deliversItems, setDeliversItems] = useState(initialData?.deliversItems !== false);
 
   const stateOpts = country==="United Kingdom" ? UK_COUNTIES : [];
   const isCIS = industry==="Construction";
@@ -42,6 +43,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
     if(!canSubmit){ setVatNumTouched(true); return; }
     onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode,
       currency, timezone, email:orgEmail, phone:orgPhone,
+      deliversItems,
       vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
       cisReg: cisReg ? "Yes" : "No", cisContractor, cisSub, cisRate, cisUtr });
   };
@@ -110,6 +112,14 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Field label="Currency" required><Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST} /></Field>
             <Field label="Time Zone"><Select value={timezone} onChange={setTimezone} options={TIMEZONES} /></Field>
+          </div>
+
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #EBEBEB", marginTop:8, marginBottom:12 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>Do you deliver physical items?</div>
+              <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>If disabled, shipping fields stay optional and hidden by default.</div>
+            </div>
+            <SlideToggle value={deliversItems} onChange={setDeliversItems} />
           </div>
 
           {/* VAT */}
