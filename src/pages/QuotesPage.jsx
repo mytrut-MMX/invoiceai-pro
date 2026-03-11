@@ -230,6 +230,7 @@ export default function QuotesPage({ onNavigate }) {
   const [panel, setPanel] = useState(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const isNewQuotePage = panel?.mode === "new-page";
 
   const filtered = quotes.filter(q => {
     const matchSearch = !search ||
