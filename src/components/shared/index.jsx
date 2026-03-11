@@ -68,9 +68,8 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
                         onChange={e=>setPickerQty(prev=>({ ...prev, [ci.id]: e.target.value }))}
                         style={{ width:64, padding:"6px 8px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:12, fontFamily:ff, background:"#fff", MozAppearance:"textfield" }} />
                       <button onClick={()=>{
-                        const descText = ci.description ? `${ci.name} — ${ci.description}` : ci.name;
                         const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
-                        const newItem = { id:crypto.randomUUID(), description:descText, quantity:safeQty, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate*safeQty, sort_order:items.length };
+                        const newItem = { id:crypto.randomUUID(), name:ci.name, description:ci.description||"", quantity:safeQty, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate*safeQty, sort_order:items.length };
                         onChange([...items, newItem]);
                         setPickerOpen(false); setPickerSearch("");
                       }}
@@ -98,7 +97,10 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
       {/* Rows */}
       {items.map((it,idx)=>(
         <div key={it.id} style={{ display:"grid", gridTemplateColumns:cols, gap:6, marginBottom:6, alignItems:"center" }}>
-          <Input value={it.description} onChange={v=>upd(it.id,"description",v)} placeholder={`Item ${idx+1}…`} />
+          <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:6 }}>
+            <Input value={it.name||""} onChange={v=>upd(it.id,"name",v)} placeholder={`Item ${idx+1} name…`} />
+            <Input value={it.description||""} onChange={v=>upd(it.id,"description",v)} placeholder="Description (optional)" />
+          </div>
           <Input value={it.quantity} onChange={v=>upd(it.id,"quantity",v)} type="number" align="center" style={{ MozAppearance:"textfield" }} />
           <Input value={it.rate} onChange={v=>upd(it.id,"rate",v)} type="number" align="right" style={{ MozAppearance:"textfield" }} />
           {isVat && (
@@ -129,7 +131,7 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
 }
 
 // ─── TOTALS BLOCK ─────────────────────────────────────────────────────────────
-export function TotalsBlock({ subtotal, discountType, discountValue, setDiscountType, setDiscountValue, shipping, setShipping, taxBreakdown, total, currSymbol, isVat, cisDeduction }) {
+export function TotalsBlock({ subtotal, discountType, discountValue, setDiscountType, setDiscountValue, shipping, setShipping, taxBreakdown, total, currSymbol, isVat, cisDeduction, showShipping = true }) {
   const discAmt = discountType==="percent" ? subtotal*(Number(discountValue)/100) : Math.min(Number(discountValue), subtotal);
   const R = ({ label, value, color }) => (
     <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0" }}>
@@ -154,11 +156,13 @@ export function TotalsBlock({ subtotal, discountType, discountValue, setDiscount
         </div>
       </div>
       {discAmt>0 && <R label="" value={`− ${fmt(currSymbol, discAmt)}`} color="#E86C4A" />}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
-        <span style={{ fontSize:13, color:"#666" }}>Shipping</span>
-        <input value={shipping} onChange={e=>setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
-          style={{ width:86, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
-      </div>
+      {showShipping && (
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
+          <span style={{ fontSize:13, color:"#666" }}>Shipping</span>
+          <input value={shipping} onChange={e=>setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
+            style={{ width:86, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
+        </div>
+      )}
       {isVat && taxBreakdown.map(tb=><R key={tb.rate} label={`VAT ${tb.rate}%`} value={fmt(currSymbol, tb.amount)} />)}
       {cisDeduction>0 && <R label="CIS Deduction" value={`− ${fmt(currSymbol, cisDeduction)}`} color="#D97706" />}
       <div style={{ display:"flex", justifyContent:"space-between", padding:"9px 0 2px", borderTop:"2px solid #1A1A1A", marginTop:6 }}>
@@ -316,9 +320,9 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         </tr>
       </thead>
       <tbody>
-        {(items||[]).filter(it=>it.description||it.amount>0).map((it,idx)=>(
+        {(items||[]).filter(it=>(it.name||it.description)||it.amount>0).map((it,idx)=>(
           <tr key={it.id||idx} style={{ background:idx%2===0?stripeBg:"#fff" }}>
-            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt" }}>{it.description||`Item ${idx+1}`}</td>
+            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt" }}><div style={{ fontWeight:700 }}>{it.name||`Item ${idx+1}`}</div>{it.description && <div style={{ fontSize:"8pt", color:"#666", marginTop:1 }}>{it.description}</div>}</td>
             <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{it.quantity}</td>
             <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{fmt(sym,it.rate)}</td>
             {isVat && <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#888" }}>{it.tax_rate}%</td>}
