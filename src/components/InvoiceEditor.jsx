@@ -47,7 +47,7 @@ const ItemTypeSelect = ({ value, onChange, itemTypes }) => {
   )
 }
 
-export default function InvoiceEditor({ invoice, clients, products, company, itemTypes, onSave, onClose }) {
+export default function InvoiceEditor({ invoice, clients, products, company, itemTypes, onSave, onClose, asPage = false }) {
   const todayStr = new Date().toISOString().split('T')[0]
   const isCIS = company.cis_registered === 'yes'
   const defaultVat = company.vat_registered === 'yes' ? (Number(company.tax_rate) || 20) : 0
@@ -143,8 +143,8 @@ export default function InvoiceEditor({ invoice, clients, products, company, ite
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,15,30,0.88)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 20, overflowY: 'auto' }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 940, boxShadow: '0 40px 100px rgba(0,0,0,0.5)', marginBottom: 20 }}>
+    <div style={{ position: asPage ? 'relative' : 'fixed', inset: asPage ? 'auto' : 0, background: asPage ? 'transparent' : 'rgba(15,15,30,0.88)', zIndex: asPage ? 'auto' : 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: asPage ? 0 : 20, overflowY: 'auto' }}>
+      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 940, boxShadow: asPage ? '0 10px 30px rgba(2,6,23,0.08)' : '0 40px 100px rgba(0,0,0,0.5)', marginBottom: asPage ? 0 : 20 }}>
 
         {/* Header */}
         <div style={{ padding: '16px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a2e', borderRadius: '16px 16px 0 0' }}>
