@@ -216,7 +216,8 @@ export function InvoicePreview({ invoice, company, template, defaultTemplateConf
                       <td style={{ padding: '9px', textAlign: 'center', color: muted, fontSize: 12 }}>{i + 1}</td>
                       <td style={{ padding: '9px', fontSize: 12, color: muted, whiteSpace: 'nowrap' }}>{item.item_type || '—'}</td>
                       <td style={{ padding: '9px' }}>
-                        <div style={{ fontWeight: 500, color: textCol }}>{item.description}</div>
+                        <div style={{ fontWeight: 700, color: textCol }}>{item.name || item.description || "—"}</div>
+                        {item.description && <div style={{ fontSize: 11, color: muted, marginTop: 1 }}>{item.description}</div>}
                         {item.notes && <div style={{ fontSize: 11, color: muted, marginTop: 1 }}>{item.notes}</div>}
                         {isCIS && item.non_cis && <div style={{ fontSize: 10, color: '#d97706', fontWeight: 700, marginTop: 1 }}>Non-CIS</div>}
                       </td>
