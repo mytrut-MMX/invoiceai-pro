@@ -9,6 +9,7 @@ export const NAV = [
   { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes },
   { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices },
   { id:"payments",  label:"Payments Received", Icon:Icons.Payments },
+  { id:"templates", label:"Templates",         Icon:Icons.Receipt },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings },
 ];
 
@@ -17,6 +18,7 @@ const MOB_NAV = [
   { id:"invoices",  label:"Invoices", Icon:Icons.Invoices },
   { id:"quotes",    label:"Quotes",   Icon:Icons.Quotes },
   { id:"customers", label:"Clients",  Icon:Icons.Customers },
+  { id:"templates", label:"Templates", Icon:Icons.Receipt },
   { id:"settings",  label:"Settings", Icon:Icons.Settings },
 ];
 
