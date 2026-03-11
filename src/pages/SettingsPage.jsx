@@ -62,7 +62,7 @@ function TemplatePreviewModal({ templateId, orgSettings, companyLogo, companyLog
 }
 
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
-export default function SettingsPage() {
+export default function SettingsPage({ onNavigate }) {
   const {
     orgSettings, setOrgSettings,
     pdfTemplate, setPdfTemplate,
@@ -92,6 +92,7 @@ export default function SettingsPage() {
   const [vatNum,       setVatNum]       = useState(org.vatNum||"");
   const [cisReg,       setCisReg]       = useState(org.cisReg||"No");
   const [cisRole,      setCisRole]      = useState(org.cisRole||"Contractor");
+  const [cisRate,      setCisRate]      = useState(org.cisRate||20);
   const [crn,          setCrn]          = useState(org.crn||"");
   const [bankName,     setBankName]     = useState(org.bankName||"");
   const [bankSort,     setBankSort]     = useState(org.bankSort||"");
@@ -121,7 +122,7 @@ export default function SettingsPage() {
       orgName, email, phone, website,
       street, city, postcode, country,
       currency, timezone, industry,
-      vatReg, vatNum, cisReg, cisRole, crn,
+      vatReg, vatNum, cisReg, cisRole, cisRate, crn,
       bankName, bankSort, bankAcc, bankIban, bankSwift,
     });
     setPdfTemplate(selectedTpl);
@@ -221,9 +222,14 @@ export default function SettingsPage() {
             <Select value={cisReg} onChange={setCisReg} options={["No","Yes"]} />
           </Field>
           {cisReg==="Yes" && (
-            <Field label="CIS Role">
-              <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
-            </Field>
+            <>
+              <Field label="CIS Role">
+                <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
+              </Field>
+              <Field label="CIS Deduction Rate (%)">
+                <Input value={cisRate} onChange={setCisRate} type="number" />
+              </Field>
+            </>
           )}
         </div>
       </Section>
@@ -241,6 +247,9 @@ export default function SettingsPage() {
 
       {/* PDF Templates */}
       <Section title="PDF Invoice Templates">
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
+          <Btn onClick={()=>onNavigate?.("templates")} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
+        </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginBottom:16 }}>
           {PDF_TEMPLATES.map(tpl=>{
             const sel = selectedTpl===tpl.id;
