@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo } from "react";
+import { useState, useContext, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
@@ -9,7 +9,7 @@ import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/help
 import ItemModal from "../modals/ItemModal";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function calcTotals(items, discType, discVal, shipping, isVat) {
+function calcTotals(items, discType, discVal, shipping, isVat, orgSettings) {
   const subtotal = items.reduce((s,i)=>s+Number(i.amount||0), 0);
   const discAmt = discType==="percent" ? subtotal*(Number(discVal)/100) : Math.min(Number(discVal)||0, subtotal);
   const afterDisc = subtotal - discAmt;
@@ -24,13 +24,16 @@ function calcTotals(items, discType, discVal, shipping, isVat) {
       },{}))
     : [];
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
-  const total = afterDisc + ship + vatTotal;
-  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:0, total };
+  const gross = afterDisc + ship + vatTotal;
+  const orgCisEnabled = orgSettings?.cisReg === "Yes";
+  const cisRate = Number(orgSettings?.cisRate||20)/100;
+  const cisDed = orgCisEnabled ? afterDisc * cisRate : 0;
+  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed };
 }
 
 // ─── QUOTE FORM PANEL ─────────────────────────────────────────────────────────
 function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage = false }) {
-  const { customers, catalogItems, setCatalogItems, orgSettings, quotes } = useContext(AppCtx);
+  const { customers, catalogItems, setCatalogItems, orgSettings, quotes, invoices, setInvoices } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg==="Yes";
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
   const isEdit = !!existing;
@@ -54,13 +57,13 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [poNumber, setPoNumber] = useState(q.po_number||"");
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,shipping,isVat),[items,discType,discVal,shipping,isVat]);
+  const totals = useMemo(()=>calcTotals(items,discType,discVal,shipping,isVat,orgSettings),[items,discType,discVal,shipping,isVat,orgSettings]);
 
   const filteredCustomers = customers.filter(c=>
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const docData = { docNumber:quoteNumber, customer, issueDate, dueDate:expiryDate, paymentTerms:`Valid until ${fmtDate(expiryDate)}`, items, ...totals, notes, terms, status };
+  const docData = { docNumber:quoteNumber, customer, issueDate, dueDate:expiryDate, paymentTerms:`Valid until ${fmtDate(expiryDate)}`, items, ...totals, notes, terms, status, poNumber };
 
   const buildQuote = (newStatus) => ({
     id: q.id||crypto.randomUUID(),
@@ -75,6 +78,17 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
     setSaving(true);
     setTimeout(()=>{ onSave(buildQuote(newStatus)); setSaving(false); onClose(); }, 400);
   };
+  const handleStatusChange = (nextStatus) => {
+    setStatus(nextStatus);
+    if(!isEdit) return;
+    if(nextStatus === "Accepted" && q.status !== "Accepted" && window.confirm("Quote accepted. Convert it to invoice now?")) {
+      const savedQuote = buildQuote("Accepted");
+      onSave(savedQuote);
+      onConvertToInvoice?.(savedQuote);
+      onClose();
+    }
+  };
+  
 
   const handleNewItemSaved = (item) => {
     setCatalogItems(p=>[...p, item]);
@@ -176,7 +190,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:12, paddingTop:12, borderTop:"1px solid #F0F0F0" }}>
               <span style={{ fontSize:13, fontWeight:600, color:"#333" }}>Status</span>
-              <select value={status} onChange={e=>setStatus(e.target.value)}
+              <select value={status} onChange={e=>handleStatusChange(e.target.value)}
                 style={{ padding:"5px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#FAFAFA", outline:"none", cursor:"pointer" }}>
                 {QUOTE_STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
@@ -212,7 +226,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
               setDiscountType={setDiscType} setDiscountValue={setDiscVal}
               shipping={shipping} setShipping={setShipping}
               taxBreakdown={totals.taxBreakdown} total={totals.total}
-              currSymbol={currSym} isVat={isVat} cisDeduction={0}
+              currSymbol={currSym} isVat={isVat} cisDeduction={totals.cisDeduction}
             />
           </div>
         </div>
@@ -252,7 +266,7 @@ export default function QuotesPage({ onNavigate }) {
     // create invoice from quote
     const inv = {
       id: crypto.randomUUID(),
-      invoice_number: `INV-${String(invoices.length+1).padStart(4,"0")}`,
+      invoice_number: nextNum("INV", invoices),
       customer: quote.customer,
       issue_date: quote.issue_date,
       due_date: addDays(quote.issue_date||todayStr(), 30),
@@ -264,7 +278,7 @@ export default function QuotesPage({ onNavigate }) {
       subtotal: quote.subtotal,
       discountAmount: quote.discountAmount,
       taxBreakdown: quote.taxBreakdown,
-      cisDeduction: 0,
+      cisDeduction: quote.cisDeduction||0,
       total: quote.total,
       notes: quote.notes,
       terms: quote.terms,
