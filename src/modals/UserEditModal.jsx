@@ -90,7 +90,7 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
             <Field label="Role"><Select value={role} onChange={setRole} options={["Admin","Manager","Accountant","Viewer"]} /></Field>
             <div style={{ marginTop:16, paddingTop:12, borderTop:"1px solid #F0F0F0" }}>
               <Btn onClick={()=>{ onClose(); onLogout?.(); }} variant="outline" icon={<Icons.X />}>Log Out</Btn>
-            </div
+            </div>
           </>)}
 
           {tab==="appearance" && (<>
