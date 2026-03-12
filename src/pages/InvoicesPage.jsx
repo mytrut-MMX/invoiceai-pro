@@ -75,6 +75,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const [saving, setSaving] = useState(false);
   const [recurringEnabled, setRecurringEnabled] = useState(inv.recurring||false);
   const [recurFreq, setRecurFreq] = useState(inv.recurring_frequency||"Monthly");
+  const [recurringNextDate, setRecurringNextDate] = useState(inv.recurring_next_date||addDays(issueDate,30));
   const [poNumber, setPoNumber] = useState(inv.po_number||"");
   const [invNumber, setInvNumber] = useState(inv.invoice_number || nextNum("INV", invoices));
   const acceptedQuotes = useMemo(() => (quotes||[]).filter(q=>q.status==="Accepted"), [quotes]);
@@ -99,7 +100,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status, poNumber };
+  const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status, poNumber, docType:"invoice" };
 
   const buildInvoice = (newStatus) => ({
     id: inv.id||crypto.randomUUID(),
@@ -109,12 +110,26 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     line_items:items, discount_type:discType, discount_value:discVal,
     shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
     status: newStatus||status, template,
-    recurring:recurringEnabled, recurring_frequency:recurFreq
+    recurring:recurringEnabled, recurring_frequency:recurFreq,
+    recurring_next_date: recurringEnabled ? recurringNextDate : ""
   });
 
   const handleSave = (newStatus) => {
     setSaving(true);
-    setTimeout(()=>{ onSave(buildInvoice(newStatus)); setSaving(false); onClose(); }, 400);
+    setTimeout(()=>{
+      const previousStatus = inv.status || "Draft";
+      const nextStatus = newStatus || status;
+      const savedInvoice = buildInvoice(newStatus);
+      onSave(savedInvoice);
+      if (nextStatus === "Paid" && previousStatus !== "Paid") {
+        setPayments(p=>[{
+          id:crypto.randomUUID(), invoice_id:savedInvoice.id, invoice_number:savedInvoice.invoice_number,
+          customer_name:customer?.name||"", amount:totals.total, date:todayStr(), method:"Bank Transfer", reference:"Status changed to Paid", status:"Reconciled"
+        },...p]);
+      }
+      setSaving(false);
+      onClose();
+    }, 400);
   };
 
   const handlePaidConfirm = ({ date, method, reference }) => {
@@ -256,7 +271,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontSize:13, fontWeight:600, color:"#333" }}>Recurring</span>
                 <SlideToggle value={recurringEnabled} onChange={setRecurringEnabled} />
-                {recurringEnabled && <Select value={recurFreq} onChange={setRecurFreq} options={["Weekly","Monthly","Quarterly","Annually"]} />}
+                {recurringEnabled && <><Select value={recurFreq} onChange={setRecurFreq} options={["Weekly","Monthly","Quarterly","Annually"]} /><input value={recurringNextDate} onChange={e=>setRecurringNextDate(e.target.value)} type="date" style={{ padding:"5px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#FAFAFA", outline:"none" }} /></>}
               </div>
             </div>
           </div>
