@@ -10,8 +10,7 @@ export const NAV = [
   { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices },
   { id:"payments",  label:"Payments Received", Icon:Icons.Payments },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings },
-  { id:"logout",    label:"Log Out",           Icon:Icons.X },
-];
+  ];
 
 const MOB_NAV = [
   { id:"home",      label:"Home",     Icon:Icons.Home },
@@ -27,7 +26,7 @@ export const SIDEBAR_ICON = 54;
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 export function Sidebar({
   activePage, onNavigate,
-  user, onUserClick,
+  user, onUserClick, onLogout,
   sidebarBg = "#1A1A1A",
   accent = "#E86C4A",
   collapsed = false,
@@ -127,6 +126,10 @@ export function Sidebar({
             onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>
             <Icons.Pen />
           </button>
+          <button onClick={onLogout}
+            style={{ border:"none", background:"rgba(255,255,255,0.08)", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:12, cursor:"pointer", fontFamily:ff }}>
+            Log Out
+          </button>
         </>)}
       </div>
     </div>
@@ -191,7 +194,7 @@ export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
 }
 
 // ─── MOBILE DRAWER (overlay sidebar on mobile) ────────────────────────────────
-export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="#1A1A1A", accent="#E86C4A", user, userAvatar, onUserClick }) {
+export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="#1A1A1A", accent="#E86C4A", user, userAvatar, onUserClick, onLogout }) {
   return (
     <>
       <div onClick={onClose}
@@ -234,6 +237,10 @@ export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="#1A1A
             <div style={{ color:"#fff", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user?.name}</div>
             <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11 }}>{user?.role}</div>
           </div>
+          <button onClick={() => { onLogout?.(); onClose(); }}
+            style={{ border:"none", background:"rgba(255,255,255,0.08)", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:12, cursor:"pointer", fontFamily:ff }}>
+            Log Out
+          </button>
         </div>
       </div>
     </>
