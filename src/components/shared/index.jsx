@@ -261,7 +261,10 @@ export function PaidConfirmModal({ invoice, onConfirm, onCancel }) {
 
 // ─── A4 INVOICE DOCUMENT ──────────────────────────────────────────────────────
 export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template="classic", footerText="", templateConfig }) {
-  const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms } = data;
+  const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms, docType } = data;
+  const isQuote = docType === "quote";
+  const docLabel = isQuote ? "Quote" : "Invoice";
+  const docLabelUpper = docLabel.toUpperCase();
   const sym = currSymbol||"£";
   const org = orgSettings||{};
   const tplDef = PDF_TEMPLATES.find(t=>t.id===template)||PDF_TEMPLATES[0];
@@ -283,8 +286,8 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 
   const InvoiceMetaBlock = ({ dark=false }) => (
     <div>
-      <div style={{ fontSize:"7pt", fontWeight:700, color:dark?"rgba(255,255,255,0.5)":"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"3mm" }}>Invoice Details</div>
-      {[["Invoice No", docNumber||"INV-0001"],["Issue Date", fmtDate(issueDate)],["Due Date", fmtDate(dueDate)],["Payment Terms", paymentTerms||"Net 30"]].map(([l,v])=>(
+      <div style={{ fontSize:"7pt", fontWeight:700, color:dark?"rgba(255,255,255,0.5)":"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"3mm" }}>{docLabel} Details</div>
+      {[[`${docLabel} No`, docNumber||"INV-0001"],["Issue Date", fmtDate(issueDate)],[isQuote ? "Valid Until" : "Due Date", fmtDate(dueDate)],[isQuote ? "Validity" : "Payment Terms", paymentTerms||(isQuote ? "Valid 30 days" : "Net 30")]].map(([l,v])=>(
         <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"1.5mm 0", borderBottom:`1px solid ${dark?"rgba(255,255,255,0.12)":"#F0F0F0"}` }}>
           <span style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#888" }}>{l}</span>
           <span style={{ fontSize:"8.5pt", fontWeight:700, color:dark?"#fff":"#1A1A1A" }}>{v}</span>
@@ -348,7 +351,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
           </div>
         ))}
         <div style={{ display:"flex", justifyContent:"space-between", gap:"8mm", padding:"3mm 4mm 2mm", background:accent, borderRadius:4, marginTop:2 }}>
-          <span style={{ fontSize:"10pt", fontWeight:800, color:"#fff" }}>Total Due</span>
+          <span style={{ fontSize:"10pt", fontWeight:800, color:"#fff" }}>{isQuote ? "Quote Total" : "Total Due"}</span>
           <span style={{ fontSize:"11pt", fontWeight:900, color:"#fff" }}>{fmt(sym,total||0)}</span>
         </div>
       </div>
@@ -383,7 +386,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
           <OrgBlock dark /><div style={{ marginTop:"8mm" }}><BillToBlock dark /></div>
         </div>
         <div style={{ padding:"14mm 14mm 10mm 12mm", background:"#fff" }}>
-          <div style={{ fontSize:"28pt", fontWeight:900, color:accent, letterSpacing:"-0.02em", lineHeight:1 }}>INVOICE</div>
+          <div style={{ fontSize:"28pt", fontWeight:900, color:accent, letterSpacing:"-0.02em", lineHeight:1 }}>{docLabelUpper}</div>
           <div style={{ fontSize:"12pt", fontWeight:700, color:"#555", marginTop:3, marginBottom:"6mm" }}>{docNumber||"INV-0001"}</div>
           <InvoiceMetaBlock />
         </div>
@@ -401,7 +404,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8mm" }}>
         <OrgBlock />
         <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:"10pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.14em" }}>Invoice</div>
+          <div style={{ fontSize:"10pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.14em" }}>{docLabel}</div>
           <div style={{ fontSize:"18pt", fontWeight:900, color:accent, marginTop:1 }}>{docNumber||"INV-0001"}</div>
         </div>
       </div>
@@ -421,7 +424,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", position:"relative" }}>
           <OrgBlock dark />
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontSize:"24pt", fontWeight:900, color:"#fff" }}>INVOICE</div>
+            <div style={{ fontSize:"24pt", fontWeight:900, color:"#fff" }}>{docLabelUpper}</div>
             <div style={{ fontSize:"12pt", fontWeight:700, color:"rgba(255,255,255,0.75)", marginTop:2 }}>{docNumber||"INV-0001"}</div>
           </div>
         </div>
@@ -443,7 +446,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       <div style={{ background:accent, padding:"14mm 18mm 10mm", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
         <OrgBlock dark />
         <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:"22pt", fontWeight:900, color:"#fff", letterSpacing:"0.04em" }}>INVOICE</div>
+          <div style={{ fontSize:"22pt", fontWeight:900, color:"#fff", letterSpacing:"0.04em" }}>{docLabelUpper}</div>
           <div style={{ fontSize:"12pt", color:"rgba(255,255,255,0.8)", fontWeight:700, marginTop:2 }}>{docNumber||"INV-0001"}</div>
         </div>
       </div>
@@ -466,7 +469,8 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
   const tplDef = PDF_TEMPLATES.find(t=>t.id===startTpl)||PDF_TEMPLATES[0];
   const [accentColor, setAccentColor] = useState(_overrideAccent || tplDef.defaultAccent);
   const [activeTemplate, setActiveTemplate] = useState(startTpl);
-
+  const [previewLogoSize, setPreviewLogoSize] = useState(Number(invoiceTemplateConfig?.logoSize || companyLogoSize || 52));
+  
   const switchTemplate = (id) => {
     setActiveTemplate(id);
     setAccentColor(PDF_TEMPLATES.find(t=>t.id===id)?.defaultAccent||"#1A1A1A");
@@ -477,7 +481,7 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
     if(!el) return;
     const w = window.open("","_blank","width=900,height=700");
     w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${data.docNumber||""}</title>
-      <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{background:#fff;font-family:'Instrument Sans','DM Sans','Helvetica Neue',sans-serif}@page{size:A4;margin:0}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}</style>
+      <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{background:#fff;font-family:'Lato','DM Sans','Helvetica Neue',sans-serif}@page{size:A4;margin:0}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}</style>
     </head><body>${el.outerHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{ w.focus(); w.print(); }, 400);
@@ -496,6 +500,17 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
               </button>
             ))}
           </div>
+          <label style={{ display:"flex", alignItems:"center", gap:8, color:"rgba(255,255,255,0.8)", fontSize:11, fontWeight:600 }}>
+            Logo size: {previewLogoSize}px
+            <input
+              type="range"
+              min={24}
+              max={110}
+              value={previewLogoSize}
+              onChange={e=>setPreviewLogoSize(Number(e.target.value))}
+              style={{ accentColor:"#E86C4A" }}
+            />
+          </label>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           <button onClick={onClose}
@@ -510,8 +525,8 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
       </div>
       <div style={{ width:"100%", maxWidth:820, background:"#fff", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", overflow:"hidden" }}>
         <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat}
-          orgSettings={{...orgSettings, logo:companyLogo, logoSize:companyLogoSize}}
-          accentColor={accentColor} template={activeTemplate} footerText={footerText||""} templateConfig={invoiceTemplateConfig} />
+          orgSettings={{...orgSettings, logo:companyLogo, logoSize:previewLogoSize}}
+          accentColor={accentColor} template={activeTemplate} footerText={footerText||""} templateConfig={{ ...(invoiceTemplateConfig||{}), logoSize: previewLogoSize }} />
       </div>
     </div>
   );
