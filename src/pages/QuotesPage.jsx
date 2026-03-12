@@ -64,7 +64,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const docData = { docNumber:quoteNumber, customer, issueDate, dueDate:expiryDate, paymentTerms:`Valid until ${fmtDate(expiryDate)}`, items, ...totals, notes, terms, status, poNumber };
+  const docData = { docNumber:quoteNumber, customer, issueDate, dueDate:expiryDate, paymentTerms:`Valid until ${fmtDate(expiryDate)}`, items, ...totals, notes, terms, status, poNumber, docType:"quote" };
 
   const buildQuote = (newStatus) => ({
     id: q.id||crypto.randomUUID(),
