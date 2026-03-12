@@ -1,5 +1,5 @@
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-export const ff = "'Instrument Sans','DM Sans','Helvetica Neue',sans-serif";
+export const ff = "'Lato','DM Sans','Helvetica Neue',sans-serif";
 export const TAX_RATES = [0, 5, 12.5, 20];
 export const CUR_SYM = { GBP:"£", USD:"$", EUR:"€", AUD:"A$", CAD:"C$", CHF:"Fr", JPY:"¥", INR:"₹" };
 export const PAYMENT_TERMS_OPTS = ["Due on Receipt","Net 7","Net 14","Net 30","Net 60","Net 90","Custom"];
