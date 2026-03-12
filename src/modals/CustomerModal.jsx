@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ff, SALUTATIONS, CUR_SYM, CIS_RATES, COUNTRIES } from "../constants";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Toggle, Switch, Textarea, Btn, ExpandSection, AddressForm, PaymentTermsField, InfoBox } from "../components/atoms";
+import { formatPhoneNumber } from "../utils/helpers";
 
 export default function CustomerModal({ existing, onClose, onSave }) {
   const isEdit = !!existing;
@@ -44,7 +45,7 @@ export default function CustomerModal({ existing, onClose, onSave }) {
       id: existing?.id||crypto.randomUUID(),
       type: custType, salutation, firstName, lastName, companyName,
       name: displayName||`${firstName} ${lastName}`.trim()||companyName,
-      currency, email, phone:workPhone, mobile, website,
+      currency, email, phone:formatPhoneNumber(workPhone), mobile:formatPhoneNumber(mobile), website,
       paymentTerms, customPaymentDays:customDays,
       billingAddress:billing, shippingAddress:sameAddr?null:shippingAddr,
       contactPersons:contacts, customFields, remarks,
@@ -88,10 +89,10 @@ export default function CustomerModal({ existing, onClose, onSave }) {
           </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Field label="Email" required><Input value={email} onChange={setEmail} type="email" placeholder="jane@example.com" /></Field>
-            <Field label="Work Phone"><Input value={workPhone} onChange={setWorkPhone} placeholder="+44 20 7946 0000" /></Field>
+            <Field label="Work Phone"><Input value={workPhone} onChange={v=>setWorkPhone(formatPhoneNumber(v))} placeholder="+44 20 7946 0000" /></Field>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <Field label="Mobile"><Input value={mobile} onChange={setMobile} placeholder="+44 7700 900000" /></Field>
+            <Field label="Mobile"><Input value={mobile} onChange={v=>setMobile(formatPhoneNumber(v))} placeholder="+44 7700 900000" /></Field>
             <Field label="Website"><Input value={website} onChange={setWebsite} placeholder="https://example.com" /></Field>
           </div>
 
@@ -164,7 +165,7 @@ export default function CustomerModal({ existing, onClose, onSave }) {
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                     <Field label="Email"><Input value={cp.email} onChange={v=>updContact(cp.id,"email",v)} /></Field>
-                    <Field label="Phone"><Input value={cp.phone} onChange={v=>updContact(cp.id,"phone",v)} /></Field>
+                    <Field label="Phone"><Input value={cp.phone} onChange={v=>updContact(cp.id,"phone",formatPhoneNumber(v))} /></Field>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                     <Field label="Job Title"><Input value={cp.jobTitle} onChange={v=>updContact(cp.id,"jobTitle",v)} placeholder="Finance Manager" /></Field>
