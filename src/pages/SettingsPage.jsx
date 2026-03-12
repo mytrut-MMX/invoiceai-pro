@@ -262,7 +262,7 @@ export default function SettingsPage({ onNavigate }) {
       {/* PDF Templates */}
       <div ref={sectionRefs.templates}><Section title="PDF Invoice Templates">
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
-          <Btn onClick={()=>onNavigate?.("templates")} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
+          <Btn onClick={()=>onNavigate?.("settings/templates")} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginBottom:16 }}>
           {PDF_TEMPLATES.map(tpl=>{
