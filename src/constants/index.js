@@ -14,7 +14,7 @@ export const UK_COUNTIES = ["Avon","Bedfordshire","Berkshire","Bristol","Bucking
 export const SALUTATIONS = ["Mr.","Mrs.","Ms.","Miss","Dr.","Prof."];
 export const ITEM_UNITS = ["hrs","days","qty","kg","m","m²","m³","l","pcs","flat rate"];
 export const ITEM_TYPES = ["Service","Material","Labour","Equipment","Other"];
-export const CIS_RATES = ["20%","30%","0% (gross payment)"];
+export const CIS_RATES = ["20%","30%","0% (gross payment)","Flat rate"];
 export const ACCOUNT_CATEGORIES = [
   "Sales","Services","Consulting","Design & Creative","Development & IT",
   "Marketing","Labour","Materials","Equipment Hire","Subcontractors",
