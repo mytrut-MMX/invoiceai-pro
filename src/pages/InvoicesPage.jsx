@@ -4,7 +4,7 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
 import { LineItemsTable, TotalsBlock, SaveSplitBtn, PaidConfirmModal, A4PrintModal } from "../components/shared";
-import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
+import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -27,8 +27,8 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
   const orgCisEnabled = orgSettings?.cisReg === "Yes";
   const role = orgSettings?.cisRole || "Contractor";
   const grossRegistered = orgSettings?.cisRegistrationStatus === "Gross";
-  const customerCisRate = parseInt(customer?.taxDetails?.cisRate||"20%")/100;
-  const orgCisRate = Number(orgSettings?.cisRate||20)/100;
+  const customerCisRate = parseCisRate(customer?.taxDetails?.cisRate, 20)/100;
+  const orgCisRate = parseCisRate(orgSettings?.cisRate, 20)/100;
   const cisRate = customer?.taxDetails?.cisRegistered ? customerCisRate : orgCisRate;
   const cisApplicableSubtotal = items.reduce((sum, item) => {
     if (!item?.cisApplicable) return sum;
