@@ -14,7 +14,7 @@ const PRESET_THEMES = [
   { label:"Charcoal", type:"solid",    color:"#292524", color2:"#44403C", accent:"#FCD34D" },
 ];
 
-export default function UserEditModal({ user, onClose, onSave, userAvatar, setUserAvatar, appTheme, setAppTheme, sidebarPinned, setSidebarPinned }) {
+export default function UserEditModal({ user, onClose, onSave, userAvatar, setUserAvatar, appTheme, setAppTheme, sidebarPinned, setSidebarPinned, onLogout }) {
   const [name, setName] = useState(user.name||"");
   const [role, setRole] = useState(user.role||"Admin");
   const [email, setEmail] = useState(user.email||"");
@@ -88,6 +88,9 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
             <Field label="Full Name" required><Input value={name} onChange={setName} placeholder="Your name" /></Field>
             <Field label="Email"><Input value={email} onChange={setEmail} type="email" placeholder="email@example.com" /></Field>
             <Field label="Role"><Select value={role} onChange={setRole} options={["Admin","Manager","Accountant","Viewer"]} /></Field>
+            <div style={{ marginTop:16, paddingTop:12, borderTop:"1px solid #F0F0F0" }}>
+              <Btn onClick={()=>{ onClose(); onLogout?.(); }} variant="outline" icon={<Icons.X />}>Log Out</Btn>
+            </div
           </>)}
 
           {tab==="appearance" && (<>
