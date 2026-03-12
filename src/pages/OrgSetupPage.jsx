@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ff, INDUSTRIES, COUNTRIES, CURRENCIES_LIST, TIMEZONES, UK_COUNTIES, CIS_RATES } from "../constants";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Toggle, Switch, SlideToggle, Checkbox, InfoBox } from "../components/atoms";
-import { validateVatNumber } from "../utils/helpers";
+import { validateVatNumber, formatPhoneNumber } from "../utils/helpers";
 
 export default function OrgSetupPage({ onComplete, initialData }) {
   const [bType, setBType] = useState(initialData?.bType||"");
@@ -28,21 +28,23 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const [cisSub, setCisSub] = useState(initialData?.cisSub||false);
   const [cisRate, setCisRate] = useState(initialData?.cisRate||"20%");
   const [cisUtr, setCisUtr] = useState(initialData?.cisUtr||"");
+  const [cisRegistrationStatus, setCisRegistrationStatus] = useState(initialData?.cisRegistrationStatus||"Net");
   const [orgEmail, setOrgEmail] = useState(initialData?.email||"");
   const [orgPhone, setOrgPhone] = useState(initialData?.phone||"");
   const [deliversItems, setDeliversItems] = useState(initialData?.deliversItems !== false);
 
   const stateOpts = country==="United Kingdom" ? UK_COUNTIES : [];
-  const isCIS = industry==="Construction";
+  const isCIS = industry==="Construction / Tradesperson";
   const vatNumError = vatReg && vatNumTouched && !validateVatNumber(vatNum)
     ? "Please enter a valid VAT number (e.g. GB123456789)" : null;
+  const cisUtrValid = /^\d{10}$/.test(String(cisUtr||""));
   const canSubmit = bType && orgName && industry && country &&
     (!vatReg || (vatReg && validateVatNumber(vatNum)));
 
   const handleComplete = () => {
     if(!canSubmit){ setVatNumTouched(true); return; }
     onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode,
-      currency, timezone, email:orgEmail, phone:orgPhone,
+      currency, timezone, email:orgEmail, phone:formatPhoneNumber(orgPhone),
       deliversItems,
       vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
       cisReg: cisReg ? "Yes" : "No", cisContractor, cisSub, cisRate, cisUtr });
@@ -77,7 +79,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Field label="Email Address"><Input value={orgEmail} onChange={setOrgEmail} type="email" placeholder="invoices@company.com" /></Field>
-            <Field label="Phone Number"><Input value={orgPhone} onChange={setOrgPhone} placeholder="+44 20 7946 0000" /></Field>
+            <Field label="Phone Number"><Input value={orgPhone} onChange={v=>setOrgPhone(formatPhoneNumber(v))} placeholder="+44 20 7946 0000" /></Field>
           </div>
 
           {/* Address toggle */}
@@ -160,12 +162,20 @@ export default function OrgSetupPage({ onComplete, initialData }) {
               {cisReg && (
                 <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 8px", marginBottom:14, border:"1px solid #EBEBEB" }}>
                   <Field label="UTR Number" hint="Unique Taxpayer Reference — 10 digits">
-                    <Input value={cisUtr} onChange={setCisUtr} placeholder="e.g. 1234567890" />
+                    <div style={{ position:"relative" }}>
+                      <Input value={cisUtr} onChange={setCisUtr} placeholder="e.g. 1234567890" />
+                      <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", color:cisUtrValid?"#16A34A":"#DC2626" }}>
+                        {cisUtrValid ? <Icons.Check /> : <Icons.X />}
+                      </span>
+                    </div>
+                  </Field>
+                  <Field label="CIS Registration Status">
+                    <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Net","Gross"]} />
                   </Field>
                   <div style={{ fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:"0.06em", margin:"8px 0 10px" }}>CIS Role</div>
                   <Checkbox checked={cisContractor} onChange={setCisContractor} label="Contractor (I engage subcontractors)" />
                   <Checkbox checked={cisSub} onChange={setCisSub} label="Subcontractor (I work for contractors)" />
-                  {cisSub && <Field label="CIS Deduction Rate"><Select value={cisRate} onChange={setCisRate} options={CIS_RATES} /></Field>}
+                  {cisSub && cisRegistrationStatus!=="Gross" && <Field label="CIS Deduction Rate"><Select value={cisRate} onChange={setCisRate} options={CIS_RATES} /></Field>}
                   <InfoBox>CIS deduction will be shown on invoices and automatically deducted from the total due.</InfoBox>
                 </div>
               )}
