@@ -1,4 +1,5 @@
 import { fmt } from '../store/index.js'
+import { formatPhoneNumber } from "../utils/helpers"
 
 export function TemplateSelector({ templates, selectedId, onSelect, onAdd, onRemove }) {
   return (
@@ -153,7 +154,7 @@ export function InvoicePreview({ invoice, company, template, defaultTemplateConf
                 {company.city && <div>{company.city}{company.postcode ? `, ${company.postcode}` : ''}</div>}
                 {company.country && <div>{company.country}</div>}
                 {company.email && <div>{company.email}</div>}
-                {company.phone && <div>{company.phone}</div>}
+                {company.phone && <div>{formatPhoneNumber(company.phone)}</div>}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -286,7 +287,7 @@ export function InvoicePreview({ invoice, company, template, defaultTemplateConf
           <div style={{ borderTop: `1px solid ${borderCol}`, padding: '12px 44px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: metaBg }}>
             <div style={{ fontSize: 11, color: muted, display: 'flex', gap: 14 }}>
               {company.email && <span>{company.email}</span>}
-              {company.phone && <span>{company.phone}</span>}
+              {company.phone && <span>{formatPhoneNumber(company.phone)}</span>}
               {company.website && <span>{company.website}</span>}
             </div>
             <div style={{ fontSize: 10, color: borderCol }}>Invoice AI Pro</div>
