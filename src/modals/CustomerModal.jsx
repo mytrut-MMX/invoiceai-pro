@@ -31,7 +31,10 @@ export default function CustomerModal({ existing, onClose, onSave }) {
   const [utr, setUtr] = useState(existing?.taxDetails?.utr||"");
   const [cifRegistered, setCifRegistered] = useState(existing?.taxDetails?.cisRegistered||false);
   const [cisRole, setCisRole] = useState(existing?.taxDetails?.cisRole||"");
-  const [cisDeductRate, setCisDeductRate] = useState(existing?.taxDetails?.cisRate||"20%");
+  const existingCisRate = String(existing?.taxDetails?.cisRate||"20%");
+  const existingFlatRateMatch = existingCisRate.match(/(\d+(?:\.\d+)?)/);
+  const [cisDeductRate, setCisDeductRate] = useState(existingCisRate.toLowerCase().includes("flat rate") ? "Flat rate" : existingCisRate);
+  const [cisFlatRate, setCisFlatRate] = useState(existingFlatRateMatch ? existingFlatRateMatch[1] : "");
 
   const addContact = () => setContacts(p=>[...p,{ id:crypto.randomUUID(), salutation:"", firstName:"", lastName:"", email:"", phone:"", jobTitle:"", department:"", isPrimary:false }]);
   const updContact = (id,f,v) => setContacts(p=>p.map(c=>c.id===id?{...c,[f]:v}:c));
@@ -40,6 +43,8 @@ export default function CustomerModal({ existing, onClose, onSave }) {
   const updCF = (id,f,v) => setCustomFields(p=>p.map(x=>x.id===id?{...x,[f]:v}:x));
   const delCF = id => setCustomFields(p=>p.filter(x=>x.id!==id));
 
+  const isFlatRateSelected = cisDeductRate === "Flat rate";
+  
   const handleSave = () => {
     onSave({
       id: existing?.id||crypto.randomUUID(),
@@ -49,7 +54,13 @@ export default function CustomerModal({ existing, onClose, onSave }) {
       paymentTerms, customPaymentDays:customDays,
       billingAddress:billing, shippingAddress:sameAddr?null:shippingAddr,
       contactPersons:contacts, customFields, remarks,
-      taxDetails:{ vatNumber, utr, cisRegistered:cifRegistered, cisRole, cisRate:cisDeductRate }
+      taxDetails:{
+        vatNumber,
+        utr,
+        cisRegistered:cifRegistered,
+        cisRole,
+        cisRate:isFlatRateSelected && cisFlatRate ? `Flat rate (${cisFlatRate}%)` : cisDeductRate
+      }
     });
     onClose();
   };
@@ -134,7 +145,14 @@ export default function CustomerModal({ existing, onClose, onSave }) {
                   <Field label="UTR Number" hint="Unique Taxpayer Reference"><Input value={utr} onChange={setUtr} placeholder="1234567890" /></Field>
                   <Field label="CIS Role"><Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} placeholder="Select role…" /></Field>
                   {(cisRole==="Subcontractor"||cisRole==="Both") && (
-                    <Field label="CIS Deduction Rate"><Select value={cisDeductRate} onChange={setCisDeductRate} options={CIS_RATES} /></Field>
+                    <>
+                      <Field label="CIS Deduction Rate"><Select value={cisDeductRate} onChange={setCisDeductRate} options={CIS_RATES} /></Field>
+                      {isFlatRateSelected && (
+                        <Field label="Flat Rate %">
+                          <Input value={cisFlatRate} onChange={setCisFlatRate} type="number" placeholder="e.g. 12" />
+                        </Field>
+                      )}
+                    </>
                   )}
                   <InfoBox>CIS deduction will be applied automatically on invoices raised for this customer.</InfoBox>
                 </div>
