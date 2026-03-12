@@ -185,7 +185,7 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={ctx}>
-      <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:ff, background:"#F7F7F5" }}>
+      <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:ff, background:"#FFFDF8" }}>
 
         {/* Desktop sidebar — hidden on mobile via media query in index.css */}
         <div className="desktop-only">
