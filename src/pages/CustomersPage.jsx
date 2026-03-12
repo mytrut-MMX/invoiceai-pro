@@ -3,7 +3,7 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag } from "../components/atoms";
-import { upsert } from "../utils/helpers";
+import { upsert, formatPhoneNumber } from "../utils/helpers";
 import CustomerModal from "../modals/CustomerModal";
 
 export default function CustomersPage() {
