@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "./responsive.css";
 import { ff, MOCK_CUSTOMERS, MOCK_ITEMS_INIT, MOCK_INV_LIST, MOCK_QUOTES_LIST, MOCK_PAYMENTS, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
 import { AppCtx } from "./context/AppContext";
-import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer, SIDEBAR_FULL, SIDEBAR_ICON } from "./components/layout";
+import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from "./components/layout";
 
 // pages
 import AuthPage from "./pages/AuthPage";
@@ -14,7 +14,6 @@ import InvoicesPage from "./pages/InvoicesPage";
 import QuotesPage from "./pages/QuotesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import SettingsPage from "./pages/SettingsPage";
-import InvoiceTemplatesPage from "./pages/InvoiceTemplatePage";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -155,17 +154,27 @@ export default function App() {
   );
 
   // ─── page renderer ─────────────────────────────────────────────
+  const handleNavigate = (nextPage) => {
+    if (nextPage === "logout") {
+      setUser(null);
+      setMobileDrawerOpen(false);
+      return;
+    }
+    setPage(nextPage);
+    setMobileDrawerOpen(false);
+  };
+
   const renderPage = () => {
+    if (page.startsWith("settings")) return <SettingsPage activeSubPage={page} onNavigate={handleNavigate} />;
+
     switch(page) {
-      case "home":      return <HomePage user={user} onNavigate={setPage} />;
+      case "home":      return <HomePage user={user} onNavigate={handleNavigate} />;
       case "customers": return <CustomersPage />;
       case "items":     return <ItemsPage />;
-      case "quotes":    return <QuotesPage onNavigate={setPage} />;
+      case "quotes":    return <QuotesPage onNavigate={handleNavigate} />;
       case "invoices":  return <InvoicesPage />;
       case "payments":  return <PaymentsPage />;
-      case "templates": return <InvoiceTemplatesPage />;
-      case "settings":  return <SettingsPage onNavigate={setPage} />;
-      default:          return <HomePage user={user} onNavigate={setPage} />;
+      default:          return <HomePage user={user} onNavigate={handleNavigate} />;
     }
   };
 
@@ -177,7 +186,7 @@ export default function App() {
         <div className="desktop-only">
           <Sidebar
             activePage={page}
-            onNavigate={setPage}
+            onNavigate={handleNavigate}
             collapsed={sidebarCollapsed}
             onCollapsedChange={setSidebarCollapsed}
             accent={appTheme.accent}
@@ -215,7 +224,7 @@ export default function App() {
           <div className="mobile-only">
             <MobileBottomNav
               activePage={page}
-              onNavigate={setPage}
+              onNavigate={handleNavigate}
               accent={appTheme.accent}
             />
             {/* Spacer so content doesn't hide under fixed bottom nav */}
@@ -227,7 +236,7 @@ export default function App() {
         {mobileDrawerOpen && (
           <MobileDrawer
             activePage={page}
-            onNavigate={setPage}
+            onNavigate={handleNavigate}
             onClose={()=>setMobileDrawerOpen(false)}
             sidebarBg={sidebarBg}
             accent={appTheme.accent}
