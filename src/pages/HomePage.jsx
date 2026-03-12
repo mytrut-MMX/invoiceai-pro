@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { ff, STATUS_COLORS } from "../constants";
+import { ff } from "../constants";
 import { Icons } from "../components/icons";
-import { Tag } from "../components/atoms";
-import { fmtDate } from "../utils/helpers";
 
 export default function HomePage({ user, onNavigate }) {
   const [aiInput, setAiInput] = useState("");
@@ -44,13 +42,7 @@ export default function HomePage({ user, onNavigate }) {
     { label:"Draft",       value:"£2,500.00", sub:"2 invoices", color:"#888" },
   ];
 
-  const RECENT = [
-    { id:"INV-0001", customer:"Acme Corp",    date:"01 Mar 2026", due:"31 Mar 2026", amount:"£1,200.00", status:"Sent" },
-    { id:"INV-0002", customer:"Blue Sky Ltd", date:"20 Feb 2026", due:"20 Mar 2026", amount:"£3,120.00", status:"Overdue" },
-    { id:"INV-0003", customer:"Green Media",  date:"15 Feb 2026", due:"15 Mar 2026", amount:"£840.00",   status:"Paid" },
-  ];
-
-  return (
+    return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
       <div style={{ marginBottom:24 }}>
         <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>
@@ -109,36 +101,6 @@ export default function HomePage({ user, onNavigate }) {
         </div>
       </div>
 
-      {/* Recent Invoices */}
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflowX:"auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 18px", borderBottom:"1px solid #F0F0F0" }}>
-          <span style={{ fontWeight:700, fontSize:13, color:"#1A1A1A" }}>Recent Invoices</span>
-          <button onClick={()=>onNavigate?.("invoices")} style={{ fontSize:12, color:"#E86C4A", background:"none", border:"none", cursor:"pointer", fontWeight:600, fontFamily:ff }}>View all →</button>
-        </div>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
-          <thead>
-            <tr style={{ background:"#FAFAFA" }}>
-              {["Invoice #","Customer","Date","Due","Amount","Status"].map(h=>(
-                <th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {RECENT.map(inv=>(
-              <tr key={inv.id} style={{ borderBottom:"1px solid #F7F7F7" }}
-                onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
-                onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <td style={{ padding:"11px 18px", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{inv.id}</td>
-                <td style={{ padding:"11px 18px", fontSize:13, color:"#444" }}>{inv.customer}</td>
-                <td style={{ padding:"11px 18px", fontSize:13, color:"#888" }}>{inv.date}</td>
-                <td style={{ padding:"11px 18px", fontSize:13, color:"#888" }}>{inv.due}</td>
-                <td style={{ padding:"11px 18px", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{inv.amount}</td>
-                <td style={{ padding:"11px 18px" }}><Tag color={STATUS_COLORS[inv.status]}>{inv.status}</Tag></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
