@@ -3,7 +3,7 @@ import { ff, TAX_RATES, CUR_SYM, PDF_TEMPLATES, PAYMENT_METHODS, STATUS_COLORS }
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { Field, Input, Select, Btn, Tag } from "../atoms";
-import { fmt, fmtDate, newLine, todayStr } from "../../utils/helpers";
+import { fmt, fmtDate, newLine, todayStr, formatPhoneNumber } from "../../utils/helpers";
 
 // ─── LINE ITEMS TABLE ─────────────────────────────────────────────────────────
 export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat, onAddNewItem }) {
@@ -69,7 +69,7 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
                         style={{ width:64, padding:"6px 8px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:12, fontFamily:ff, background:"#fff", MozAppearance:"textfield" }} />
                       <button onClick={()=>{
                         const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
-                        const newItem = { id:crypto.randomUUID(), name:ci.name, description:ci.description||"", quantity:safeQty, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate*safeQty, sort_order:items.length };
+                        const newItem = { id:crypto.randomUUID(), name:ci.name, description:ci.description||"", quantity:safeQty, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate*safeQty, cisApplicable:!!ci.cisApplicable, sort_order:items.length };
                         onChange([...items, newItem]);
                         setPickerOpen(false); setPickerSearch("");
                       }}
@@ -300,7 +300,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         <div style={{ fontWeight:700, fontSize:"11pt", color:dark?"#fff":"#1A1A1A" }}>{customer.name}</div>
         {customer.companyName && customer.companyName!==customer.name && <div style={{ fontSize:"9pt", color:dark?"rgba(255,255,255,0.7)":"#555", marginTop:1 }}>{customer.companyName}</div>}
         {customer.email && <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666", marginTop:2 }}>{customer.email}</div>}
-        {customer.phone && <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666" }}>{customer.phone}</div>}
+        {customer.phone && <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666" }}>{formatPhoneNumber(customer.phone}</div>}
         {customer.billingAddress && (
           <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666", marginTop:3, lineHeight:1.7 }}>
             {[customer.billingAddress.street, customer.billingAddress.city, [customer.billingAddress.postcode, customer.billingAddress.county].filter(Boolean).join(" "), customer.billingAddress.country].filter(Boolean).map((l,i)=><div key={i}>{l}</div>)}
