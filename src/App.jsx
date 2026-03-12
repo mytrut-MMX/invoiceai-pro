@@ -154,10 +154,15 @@ export default function App() {
   );
 
   // ─── page renderer ─────────────────────────────────────────────
+  const doLogout = () => {
+    setUser(null);
+    setMobileDrawerOpen(false);
+    setShowUserModal(false);
+  };
+
   const handleNavigate = (nextPage) => {
     if (nextPage === "logout") {
-      setUser(null);
-      setMobileDrawerOpen(false);
+      doLogout(); 
       return;
     }
     setPage(nextPage);
@@ -194,6 +199,7 @@ export default function App() {
             user={user}
             userAvatar={userAvatar}
             onUserClick={()=>setShowUserModal(true)}
+            onLogout={doLogout}
           />
         </div>
 
@@ -243,6 +249,7 @@ export default function App() {
             user={user}
             userAvatar={userAvatar}
             onUserClick={()=>setShowUserModal(true)}
+            onLogout={doLogout}
           />
         )}
 
@@ -258,6 +265,7 @@ export default function App() {
             setAppTheme={setAppTheme}
             sidebarPinned={sidebarPinned}
             setSidebarPinned={setSidebarPinned}
+            onLogout={doLogout}
           />
         )}
       </div>
