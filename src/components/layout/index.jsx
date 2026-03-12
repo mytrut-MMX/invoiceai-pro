@@ -9,8 +9,8 @@ export const NAV = [
   { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes },
   { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices },
   { id:"payments",  label:"Payments Received", Icon:Icons.Payments },
-  { id:"templates", label:"Templates",         Icon:Icons.Receipt },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings },
+  { id:"logout",    label:"Log Out",           Icon:Icons.X },
 ];
 
 const MOB_NAV = [
@@ -18,7 +18,6 @@ const MOB_NAV = [
   { id:"invoices",  label:"Invoices", Icon:Icons.Invoices },
   { id:"quotes",    label:"Quotes",   Icon:Icons.Quotes },
   { id:"customers", label:"Clients",  Icon:Icons.Customers },
-  { id:"templates", label:"Templates", Icon:Icons.Receipt },
   { id:"settings",  label:"Settings", Icon:Icons.Settings },
 ];
 
@@ -81,7 +80,7 @@ export function Sidebar({
       {/* Nav */}
       <nav style={{ flex:1, padding: collapsed ? "8px 0" : "10px 8px", overflowY:"auto" }}>
         {NAV.map(({ id, label, Icon }) => {
-          const on = activePage === id;
+          const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
           return collapsed ? (
             <button key={id} onClick={() => onNavigate(id)} title={label}
               style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?`${accent}22`:"none", color:on?accent:"rgba(255,255,255,0.45)", cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
@@ -178,7 +177,7 @@ export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
       alignItems: "center", justifyContent: "space-around",
     }}>
       {MOB_NAV.map(({ id, label, Icon }) => {
-        const on = activePage === id;
+        const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
         return (
           <button key={id} onClick={() => onNavigate(id)}
             style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"none", border:"none", cursor:"pointer", color:on?accent:"rgba(255,255,255,0.4)", fontFamily:ff, padding:"6px 12px", minWidth:52, transition:"color 0.15s" }}>
@@ -214,7 +213,7 @@ export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="#1A1A
         </div>
         <nav style={{ flex:1, padding:"10px 8px", overflowY:"auto" }}>
           {NAV.map(({ id, label, Icon }) => {
-            const on = activePage === id;
+            const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
             return (
               <button key={id} onClick={() => { onNavigate(id); onClose(); }}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?`${accent}22`:"none", color:on?accent:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
