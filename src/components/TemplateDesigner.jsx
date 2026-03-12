@@ -198,7 +198,7 @@ export function InvoiceRenderer({ invoice, company, config, scale = 1 }) {
         {company.address && <div>{company.address}</div>}
         {company.city && <div>{company.city}{company.postcode ? `, ${company.postcode}` : ''}</div>}
         {company.email && <div>{company.email}</div>}
-        {company.phone && <div>{company.phone}</div>}
+        {company.phone && <div>{formatPhoneNumber(company.phone)}</div>}
       </div>
     </div>
   )
@@ -265,7 +265,7 @@ export function InvoiceRenderer({ invoice, company, config, scale = 1 }) {
       <div style={{ ...base, background: c.primaryColor, borderTop: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 11, color: '#ffffff88', display: 'flex', gap: 14 }}>
           {company.email && <span>{company.email}</span>}
-          {company.phone && <span>{company.phone}</span>}
+          {company.phone && <span>{formatPhoneNumber(company.phone)}</span>}
         </div>
         <div style={{ fontSize: 9, color: '#ffffff44' }}>Invoice AI Pro</div>
       </div>
@@ -275,7 +275,7 @@ export function InvoiceRenderer({ invoice, company, config, scale = 1 }) {
         <Divider />
         <div style={{ fontSize: 11, color: c.mutedText, marginTop: 8, display: 'flex', justifyContent: 'center', gap: 18 }}>
           {company.email && <span>{company.email}</span>}
-          {company.phone && <span>{company.phone}</span>}
+          {company.phone && <span>{formatPhoneNumber(company.phone)}</span>}
           {company.website && <span>{company.website}</span>}
         </div>
       </div>
@@ -292,7 +292,7 @@ export function InvoiceRenderer({ invoice, company, config, scale = 1 }) {
       <div style={{ ...base, background: c.bodyBg, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 11, color: c.mutedText, display: 'flex', gap: 14 }}>
           {company.email && <span>{company.email}</span>}
-          {company.phone && <span>{company.phone}</span>}
+          {company.phone && <span>{formatPhoneNumber(company.phone)}</span>}
         </div>
         <div style={{ fontSize: 9, color: c.borderColor }}>Invoice AI Pro</div>
       </div>
