@@ -4,7 +4,7 @@ export const fmt = (sym, val) => `${sym}${Number(val||0).toLocaleString("en-GB",
 export const todayStr = () => new Date().toISOString().split("T")[0];
 export const addDays = (d, n) => { const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().split("T")[0]; };
 export const fmtDate = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : "—";
-export const newLine = (order=0) => ({ id:crypto.randomUUID(), description:"", quantity:1, rate:0, tax_rate:20, amount:0, sort_order:order });
+export const newLine = (order=0) => ({ id:crypto.randomUUID(), description:"", quantity:1, rate:0, tax_rate:20, amount:0, cisApplicable:false, sort_order:order });
 export const nextNum = (prefix, existing) => {
   const nums = (existing||[])
     .map((entry) => {
@@ -30,6 +30,35 @@ export const validateVatNumber = (num) => {
   if(/^GB\d{9}$/.test(clean)) return true;
   if(/^[A-Z]{2}[A-Z0-9]{2,12}$/.test(clean)) return true;
   return false;
+};
+
+export const formatPhoneNumber = (phone) => {
+  if (!phone) return "";
+  const raw = String(phone).trim();
+  const normalized = raw.replace(/\s+/g, " ");
+  const hasPlus = normalized.startsWith("+");
+  const digits = normalized.replace(/\D/g, "");
+  if (!digits) return normalized;
+
+  let countryCode = "";
+  let remainder = digits;
+
+  if (hasPlus) {
+    const ccLen = digits.length > 10 ? Math.min(3, digits.length - 10) : 2;
+    countryCode = `+${digits.slice(0, ccLen)}`;
+    remainder = digits.slice(ccLen);
+  }
+
+  if (remainder.length <= 4) {
+    return [countryCode, remainder].filter(Boolean).join(" ").trim();
+  }
+
+  const mobileCodeLen = remainder.length > 10 ? 4 : 3;
+  const mobileCode = remainder.slice(0, mobileCodeLen);
+  const local = remainder.slice(mobileCodeLen);
+  const localGrouped = local.replace(/(\d{3})(?=\d)/g, "$1 ");
+
+  return [countryCode, mobileCode, localGrouped].filter(Boolean).join(" ").trim();
 };
 
 // Supabase fetch helper
