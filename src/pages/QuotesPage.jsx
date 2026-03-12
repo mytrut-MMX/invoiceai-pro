@@ -5,7 +5,7 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag } from "../components/atoms";
 import { LineItemsTable, TotalsBlock, SaveSplitBtn, A4PrintModal } from "../components/shared";
-import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
+import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ function calcTotals(items, discType, discVal, shipping, isVat, orgSettings) {
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
   const gross = afterDisc + ship + vatTotal;
   const orgCisEnabled = orgSettings?.cisReg === "Yes";
-  const cisRate = Number(orgSettings?.cisRate||20)/100;
+  const cisRate = parseCisRate(orgSettings?.cisRate, 20)/100;
   const cisDed = orgCisEnabled ? afterDisc * cisRate : 0;
   return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed, grossTotal: gross };
 }
