@@ -55,7 +55,7 @@ export default function CustomersPage() {
                 </td>
                 <td style={{ padding:"12px 18px" }}><Tag color={c.type==="Business"?"#4F46E5":"#EA580C"}>{c.type}</Tag></td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#555" }}>{c.email}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{c.phone}</td>
+                <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{formatPhoneNumber(c.phone)}</td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{c.currency}</td>
                 <td style={{ padding:"12px 18px" }}>
                   <Btn onClick={()=>setModal({ mode:"edit", customer:c })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
