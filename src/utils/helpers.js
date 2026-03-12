@@ -32,6 +32,19 @@ export const validateVatNumber = (num) => {
   return false;
 };
 
+
+export const parseCisRate = (value, fallback = 20) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  const raw = String(value ?? "").trim();
+  if (!raw) return fallback;
+
+  const percentMatch = raw.match(/(\d+(?:\.\d+)?)/);
+  if (percentMatch) return Number(percentMatch[1]);
+
+  return fallback;
+};
+
 export const formatPhoneNumber = (phone) => {
   if (!phone) return "";
   const raw = String(phone).trim();
