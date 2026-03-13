@@ -65,7 +65,7 @@ export function Sidebar({
             <div style={{ width:28, height:28, background:accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
               <Icons.Invoices />
             </div>
-            <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
+            <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>InvoicePilot</span>
           </div>
           <button onClick={toggleCollapsed} title="Collapse sidebar"
             style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.4)", padding:3, display:"flex", borderRadius:5, transition:"color 0.15s" }}
@@ -154,7 +154,7 @@ export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="#1A1A1A", acce
         <div style={{ width:24, height:24, background:accent, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <Icons.Invoices />
         </div>
-        <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
+        <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>InvoicePilot</span>
       </div>
       <span style={{ color:"rgba(255,255,255,0.5)", fontSize:12 }}>{page?.label||""}</span>
       {user && (
@@ -207,7 +207,7 @@ export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="#1A1A
         <div style={{ padding:"18px 14px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ display:"flex", alignItems:"center", gap:9 }}>
             <div style={{ width:28, height:28, background:accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
-            <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>AI INVOICE</span>
+            <span style={{ color:"#fff", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>InvoicePilot</span>
           </div>
           <button onClick={onClose}
             style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.5)", display:"flex" }}>
