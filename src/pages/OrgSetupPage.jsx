@@ -56,7 +56,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
         <div style={{ background:"#1A1A1A", padding:"28px 40px 24px", color:"#fff" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
             <div style={{ width:32, height:32, background:"#E86C4A", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Building /></div>
-            <span style={{ fontSize:15, fontWeight:700, letterSpacing:"0.04em" }}>AI INVOICE</span>
+            <span style={{ fontSize:15, fontWeight:700, letterSpacing:"0.04em" }}>InvoicePilot</span>
           </div>
           <h1 style={{ fontSize:22, fontWeight:800, margin:"0 0 4px" }}>Organization Setup</h1>
           <p style={{ fontSize:13, color:"#AAA", margin:0 }}>Welcome! Enter your details to get started.</p>
