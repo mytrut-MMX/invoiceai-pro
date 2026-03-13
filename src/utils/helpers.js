@@ -11,7 +11,7 @@ export const nextNum = (prefix, existing) => {
       if (typeof entry === "string") return entry;
       if (typeof entry === "number") return String(entry);
       if (entry && typeof entry === "object") {
-        return entry.invoice_number || entry.quote_number || entry.docNumber || "";
+        return entry.payment_number || entry.quote_number || entry.docNumber || "";
       }
       return "";
     })
