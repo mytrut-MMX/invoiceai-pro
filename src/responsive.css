@@ -1,3 +1,8 @@
+html, body, #root {
+  font-size: 13px;
+  background: #EEF6FF;
+}
+
 /* ── Responsive layout helpers ───────────────────────────────── */
 
 /* Desktop sidebar: visible only on screens >= 640px */
