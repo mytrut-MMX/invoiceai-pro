@@ -15,21 +15,21 @@ export const Field = ({ label, children, required, hint, error }) => (
 
 export const Input = ({ value, onChange, placeholder, type="text", style:sx={}, readOnly, align="left", error }) => (
   <input type={type} value={value??""} onChange={e=>onChange?.(e.target.value)} placeholder={placeholder} readOnly={readOnly}
-    style={{ width:"100%", padding:"9px 11px", border:`1px solid ${error?"#FCA5A5":"#DADADA"}`, borderRadius:7, fontSize:13, fontFamily:ff, color:"#1A1A1A", background:readOnly?"#F5F5F5":"#FAFAFA", outline:"none", boxSizing:"border-box", textAlign:align, transition:"border 0.15s", ...sx }}
+    style={{ width:"100%", padding:"9px 11px", border:`1px solid ${error?"#FCA5A5":"#DADADA"}`, borderRadius:5, fontSize:13, fontFamily:ff, color:"#1A1A1A", background:readOnly?"#F5F5F5":"#FAFAFA", outline:"none", boxSizing:"border-box", textAlign:align, transition:"border 0.15s", ...sx }}
     onFocus={e=>{ if(!readOnly) e.target.style.borderColor=error?"#DC2626":"#1A1A1A"; }}
     onBlur={e=>e.target.style.borderColor=error?"#FCA5A5":"#DADADA"} />
 );
 
 export const Textarea = ({ value, onChange, placeholder, rows=3 }) => (
   <textarea value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
-    style={{ width:"100%", padding:"9px 11px", border:"1px solid #DADADA", borderRadius:7, fontSize:13, fontFamily:ff, color:"#1A1A1A", background:"#FAFAFA", outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.6, transition:"border 0.15s" }}
+    style={{ width:"100%", padding:"9px 11px", border:"1px solid #DADADA", borderRadius:5, fontSize:13, fontFamily:ff, color:"#1A1A1A", background:"#FAFAFA", outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.6, transition:"border 0.15s" }}
     onFocus={e=>e.target.style.borderColor="#1A1A1A"} onBlur={e=>e.target.style.borderColor="#E0E0E0"} />
 );
 
 export const Select = ({ value, onChange, options, placeholder, style:sx={} }) => (
   <div style={{ position:"relative" }}>
     <select value={value??""} onChange={e=>onChange(e.target.value)}
-      style={{ width:"100%", padding:"9px 30px 9px 11px", border:"1px solid #DADADA", borderRadius:7, fontSize:13, fontFamily:ff, color:value?"#1A1A1A":"#999", background:"#FAFAFA", outline:"none", appearance:"none", cursor:"pointer", boxSizing:"border-box", ...sx }}>
+      style={{ width:"100%", padding:"9px 30px 9px 11px", border:"1px solid #DADADA", borderRadius:5, fontSize:13, fontFamily:ff, color:value?"#1A1A1A":"#999", background:"#FAFAFA", outline:"none", appearance:"none", cursor:"pointer", boxSizing:"border-box", ...sx }}>
       {placeholder && <option value="">{placeholder}</option>}
       {options.map(o=>typeof o==="string"?<option key={o} value={o}>{o}</option>:<option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
@@ -41,7 +41,7 @@ export const Toggle = ({ value, onChange, options }) => (
   <div style={{ display:"flex", gap:5 }}>
     {options.map(o=>(
       <button key={o} onClick={()=>onChange(o)}
-        style={{ flex:1, padding:"9px 0", border:`1px solid ${value===o?"#1A1A1A":"#DADADA"}`, borderRadius:7, background:value===o?"#1A1A1A":"#FAFAFA", color:value===o?"#fff":"#666", fontSize:13, fontWeight:value===o?700:400, cursor:"pointer", fontFamily:ff, transition:"all 0.18s" }}>
+        style={{ flex:1, padding:"9px 0", border:`1px solid ${value===o?"#1A1A1A":"#DADADA"}`, borderRadius:5, background:value===o?"#1A1A1A":"#FAFAFA", color:value===o?"#fff":"#666", fontSize:13, fontWeight:value===o?700:400, cursor:"pointer", fontFamily:ff, transition:"all 0.18s" }}>
         {o}
       </button>
     ))}
@@ -81,7 +81,7 @@ export const Btn = ({ onClick, children, variant="primary", size="md", disabled,
   const variants = { primary:{background:"#1A1A1A",color:"#fff",border:"none"}, accent:{background:"#E86C4A",color:"#fff",border:"none"}, outline:{background:"#fff",color:"#1A1A1A",border:"1px solid #DADADA"}, ghost:{background:"transparent",color:"#555",border:"none"}, danger:{background:"#FEF2F2",color:"#DC2626",border:"1px solid #FECACA"} };
   return (
     <button onClick={onClick} disabled={disabled}
-      style={{ display:"inline-flex", alignItems:"center", gap:7, borderRadius:8, cursor:disabled?"not-allowed":"pointer", fontFamily:ff, fontWeight:700, transition:"all 0.15s", opacity:disabled?0.5:1, whiteSpace:"nowrap", ...sizes[size], ...variants[variant], ...sx }}>
+      style={{ display:"inline-flex", alignItems:"center", gap:7, borderRadius:6, cursor:disabled?"not-allowed":"pointer", fontFamily:ff, fontWeight:700, transition:"all 0.15s", opacity:disabled?0.5:1, whiteSpace:"nowrap", ...sizes[size], ...variants[variant], ...sx }}>
       {icon}{children}
     </button>
   );
@@ -92,7 +92,7 @@ export const Tag = ({ children, color="#1A1A1A" }) => (
 );
 
 export const SectionCard = ({ title, subtitle, children }) => (
-  <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"18px 20px", marginBottom:14 }}>
+  <div style={{ background:"#fff", borderRadius:10, border:"1px solid #EBEBEB", padding:"18px 20px", marginBottom:14 }}>
     {(title||subtitle) && <div style={{ marginBottom:14 }}>
       {title && <div style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>{title}</div>}
       {subtitle && <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{subtitle}</div>}
@@ -102,7 +102,7 @@ export const SectionCard = ({ title, subtitle, children }) => (
 );
 
 export const InfoBox = ({ children, color="#2563EB" }) => (
-  <div style={{ display:"flex", gap:8, padding:"10px 12px", background:color+"10", borderRadius:8, border:`1px solid ${color}30`, marginTop:8 }}>
+  <div style={{ display:"flex", gap:8, padding:"10px 12px", background:color+"10", borderRadius:6, border:`1px solid ${color}30`, marginTop:8 }}>
     <div style={{ color, marginTop:1, flexShrink:0 }}><Icons.Info /></div>
     <p style={{ margin:0, fontSize:12, color, lineHeight:1.6 }}>{children}</p>
   </div>
