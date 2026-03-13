@@ -4,7 +4,7 @@ import { Icons } from "../components/icons";
 
 export default function HomePage({ user, onNavigate }) {
   const [aiInput, setAiInput] = useState("");
-  const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"} 👋 I'm your AI Invoice assistant. Ask me anything!` }]);
+  const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"} 👋 I'm your InvoicePilot assistant. Ask me anything!` }]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
 
@@ -23,7 +23,7 @@ export default function HomePage({ user, onNavigate }) {
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",
           max_tokens:1000,
-          system:"You are an AI assistant for an invoicing platform called AI Invoice. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
+          system:"You are an AI assistant for an invoicing platform called InvoicePilot. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
           messages:[{ role:"user", content:msg }]
         })
       });
