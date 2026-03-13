@@ -3,11 +3,11 @@ import { ff, STATUS_COLORS, CUR_SYM, PAYMENT_METHODS } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag } from "../components/atoms";
-import { fmt, fmtDate, todayStr } from "../utils/helpers";
+import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 function PaymentModal({ existing, onClose, onSave }) {
-  const { invoices, customers, customPayMethods, setInvoices } = useContext(AppCtx);
+  const { invoices, customers, customPayMethods, setInvoices, payments } = useContext(AppCtx);
   const allMethods = [...PAYMENT_METHODS, ...(customPayMethods||[])];
   const isEdit = !!existing;
   const p = existing||{};
@@ -20,6 +20,7 @@ function PaymentModal({ existing, onClose, onSave }) {
   const [reference, setReference] = useState(p.reference||"");
   const [notes, setNotes] = useState(p.notes||"");
   const [status, setStatus] = useState(p.status||"Reconciled");
+  const [paymentNumber, setPaymentNumber] = useState(p.payment_number || nextNum("PAY", payments));
 
   const linkedInvoice = invoices.find(i=>i.id===invoiceId||i.invoice_number===invoiceId);
   const custSuggestions = customers.filter(c=>!customer||c.name.toLowerCase().includes(customer.toLowerCase()));
@@ -27,9 +28,11 @@ function PaymentModal({ existing, onClose, onSave }) {
   const handleSave = () => {
     onSave({
       id: p.id||crypto.randomUUID(),
+      payment_number: paymentNumber,
       customer_name: customer,
       invoice_id: invoiceId,
       invoice_number: linkedInvoice?.invoice_number||invoiceId,
+      quote_number: linkedInvoice?.converted_from_quote || "",
       amount: Number(amount),
       date, method, reference, notes, status
     });
@@ -53,6 +56,9 @@ function PaymentModal({ existing, onClose, onSave }) {
         </div>
 
         <div style={{ padding:"16px 22px 8px" }}>
+          <Field label="Payment #">
+            <Input value={paymentNumber} onChange={setPaymentNumber} />
+          </Field>
           <Field label="Customer">
             <input value={customer} onChange={e=>setCustomer(e.target.value)} list="cust-list" placeholder="Customer name…"
               style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
@@ -67,7 +73,7 @@ function PaymentModal({ existing, onClose, onSave }) {
             </div>
             {linkedInvoice && (
               <div style={{ marginTop:6, padding:"8px 10px", background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:7, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontSize:12, color:"#15803D", fontWeight:600 }}>{linkedInvoice.invoice_number} · {linkedInvoice.customer?.name}</span>
+               <span style={{ fontSize:12, color:"#15803D", fontWeight:600 }}>{linkedInvoice.invoice_number} · {linkedInvoice.customer?.name}{linkedInvoice.converted_from_quote?` · ${linkedInvoice.converted_from_quote}`:""}</span>
                 <span style={{ fontSize:12, color:"#15803D", fontWeight:700 }}>{fmt("£",linkedInvoice.total)}</span>
               </div>
             )}
@@ -185,7 +191,7 @@ export default function PaymentsPage() {
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
           <thead>
             <tr style={{ background:"#FAFAFA" }}>
-              {["Date","Customer","Invoice","Method","Reference","Amount","Status",""].map(h=>(
+              {["Payment #","Date","Customer","Invoice","Method","Reference","Amount","Status",""].map(h=>(
                 <th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
               ))}
             </tr>
@@ -195,6 +201,7 @@ export default function PaymentsPage() {
               <tr key={pmt.id} style={{ borderBottom:"1px solid #F7F7F7" }}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
+                <td style={{ padding:"12px 16px", fontSize:12, color:"#1A1A1A", fontWeight:700, whiteSpace:"nowrap" }}>{pmt.payment_number||"—"}</td>
                 <td style={{ padding:"12px 16px", fontSize:13, color:"#888", whiteSpace:"nowrap" }}>{fmtDate(pmt.date)}</td>
                 <td style={{ padding:"12px 16px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:7 }}>
@@ -220,7 +227,7 @@ export default function PaymentsPage() {
               </tr>
             ))}
             {filtered.length===0 && (
-              <tr><td colSpan={8} style={{ padding:"40px", textAlign:"center", color:"#CCC", fontSize:13 }}>
+              <tr><td colSpan={9} style={{ padding:"40px", textAlign:"center", color:"#CCC", fontSize:13 }}>
                 {payments.length===0?"No payments recorded yet.":"No payments match your filters."}
               </td></tr>
             )}
