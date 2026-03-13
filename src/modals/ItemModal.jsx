@@ -13,7 +13,7 @@ export default function ItemModal({ existing, onClose, onSave }) {
   const [itemType, setItemType] = useState(existing?.type||"Service");
   const [description, setDescription] = useState(existing?.description||"");
   const [rate, setRate] = useState(existing?.rate??"");
-  const [unit, setUnit] = useState(existing?.unit||"hrs");
+  const [unit, setUnit] = useState(existing?.unit||"");
   const [taxRate, setTaxRate] = useState(existing?.taxRate??20);
   const [active, setActive] = useState(existing?.active??true);
   const [sku, setSku] = useState(existing?.sku||"");
@@ -64,7 +64,14 @@ export default function ItemModal({ existing, onClose, onSave }) {
 
           <div style={{ display:"grid", gridTemplateColumns:isVat?"1fr 1fr 1fr":"1fr 1fr", gap:12 }}>
             <Field label="Rate" required><Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" /></Field>
-            <Field label="Unit"><Select value={unit} onChange={setUnit} options={ITEM_UNITS} /></Field>
+            <Field label="Unit">
+              <div>
+                <Input value={unit} onChange={setUnit} placeholder="Select or type to add" list="item-unit-suggestions" />
+                <datalist id="item-unit-suggestions">
+                  {ITEM_UNITS.map((unitOption) => <option key={unitOption} value={unitOption} />)}
+                </datalist>
+              </div>
+            </Field>
             {isVat && (
               <Field label="VAT Rate">
                 <Select value={String(taxRate)} onChange={v=>setTaxRate(Number(v))} options={TAX_RATES.map(r=>({ value:String(r), label:`${r}%` }))} />
