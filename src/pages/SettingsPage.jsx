@@ -93,6 +93,8 @@ export default function SettingsPage({ onNavigate }) {
   const [cisReg,       setCisReg]       = useState(org.cisReg||"No");
   const [cisRole,      setCisRole]      = useState(org.cisRole||"Contractor");
   const [cisRate,      setCisRate]      = useState(org.cisRate||20);
+  const [cisUtrNo,     setCisUtrNo]     = useState(org.cisUtrNo||"");
+  const [cisRegistrationStatus, setCisRegistrationStatus] = useState(org.cisRegistrationStatus||"Net");
   const [crn,          setCrn]          = useState(org.crn||"");
   const [bankName,     setBankName]     = useState(org.bankName||"");
   const [bankSort,     setBankSort]     = useState(org.bankSort||"");
@@ -126,11 +128,18 @@ export default function SettingsPage({ onNavigate }) {
   const jumpTo = (key) => sectionRefs[key]?.current?.scrollIntoView({ behavior:"smooth", block:"start" });
 
   const handleSaveOrg = () => {
+    if (cisReg === "Yes") {
+      const utr = cisUtrNo.replace(/\D/g, "");
+      if (utr.length !== 10) {
+        window.alert("Please enter a valid UTR number (10 digits).");
+        return;
+      }
+    }
     setOrgSettings({
       orgName, email, phone, website,
       street, city, postcode, country,
       currency, timezone, industry,
-      vatReg, vatNum, cisReg, cisRole, cisRate, crn,
+      vatReg, vatNum, cisReg, cisRole, cisRate, cisUtrNo, cisRegistrationStatus, crn,
       bankName, bankSort, bankAcc, bankIban, bankSwift,
     });
     setPdfTemplate(selectedTpl);
@@ -240,8 +249,14 @@ export default function SettingsPage({ onNavigate }) {
               <Field label="CIS Role">
                 <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
               </Field>
-              <Field label="CIS Deduction Rate (%)">
-                <Input value={cisRate} onChange={setCisRate} type="number" />
+              <Field label="UTR No" required error={cisUtrNo && cisUtrNo.replace(/\D/g,"").length !== 10 ? "UTR must be 10 digits" : ""}>
+                <Input value={cisUtrNo} onChange={setCisUtrNo} placeholder="1234567890" />
+              </Field>
+              <Field label="CIS Registration Status">
+                <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Gross","Net"]} />
+              </Field>
+              <Field label="CIS Deduction Rate">
+                <Select value={String(cisRate)} onChange={setCisRate} options={CIS_RATES.map(rate=>({ value:String(rate), label:String(rate) }))} />
               </Field>
             </>
           )}
