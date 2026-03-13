@@ -47,7 +47,7 @@ export default function AuthPage({ onAuth }) {
 
   return (
     <div style={{ minHeight:"100vh", background:"#F7F7F5", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
-      <div style={{ width:"100%", maxWidth:420 }}>
+      <div style={{ width:"100%", maxWidth:440 }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ width:48, height:48, background:"#1A1A1A", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
             <div style={{ width:28, height:28, background:"#E86C4A", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
@@ -60,13 +60,13 @@ export default function AuthPage({ onAuth }) {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:"1px solid #F0F0F0" }}>
             {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
               <button key={m} onClick={()=>{ setMode(m); setError(""); }}
-                style={{ padding:"16px 0", border:"none", borderBottom:`2.5px solid ${mode===m?"#1A1A1A":"transparent"}`, background:"none", fontSize:13, fontWeight:mode===m?800:500, color:mode===m?"#1A1A1A":"#AAA", cursor:"pointer", fontFamily:ff, transition:"all 0.15s" }}>
+                style={{ padding:"20px 0", border:"none", borderBottom:`2.5px solid ${mode===m?"#1A1A1A":"transparent"}`, background:"none", fontSize:13, fontWeight:mode===m?800:500, color:mode===m?"#1A1A1A":"#AAA", cursor:"pointer", fontFamily:ff, transition:"all 0.15s" }}>
                 {l}
               </button>
             ))}
           </div>
 
-          <div style={{ padding:"24px 28px 28px" }}>
+          <div style={{ padding:"30px 30px 34px" }}>
             {mode==="register" && (
               <Field label="Full Name" required>
                 <Input value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
@@ -80,7 +80,7 @@ export default function AuthPage({ onAuth }) {
                 <input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
                   placeholder={mode==="register"?"Min. 8 characters":"Enter your password"}
-                  style={{ width:"100%", padding:"9px 38px 9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                  style={{ width:"100%", padding:"9px 38px 9px 10px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
                 <button onClick={()=>setShowPw(p=>!p)} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#AAA", padding:2, display:"flex" }}>
                   {eyeIcon}
                 </button>
@@ -91,7 +91,7 @@ export default function AuthPage({ onAuth }) {
                 <input type={showPw?"text":"password"} value={confirmPw} onChange={e=>setConfirmPw(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
                   placeholder="Repeat password"
-                  style={{ width:"100%", padding:"9px 10px", border:`1.5px solid ${confirmPw&&confirmPw!==password?"#DC2626":"#E0E0E0"}`, borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                  style={{ width:"100%", padding:"9px 10px", border:`1.5px solid ${confirmPw&&confirmPw!==password?"#DC2626":"#E0E0E0"}`, borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
               </Field>
             )}
 
@@ -103,7 +103,7 @@ export default function AuthPage({ onAuth }) {
             )}
 
             {mode==="register" && (
-              <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:8, padding:"9px 12px", marginBottom:12 }}>
+              <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:6, padding:"9px 12px", marginBottom:12 }}>
                 <div style={{ fontSize:11, color:"#16A34A", fontWeight:600, marginBottom:4 }}>Password requirements:</div>
                 {[["At least 8 characters", password.length>=8],["Passwords match", password===confirmPw&&confirmPw.length>0]].map(([t,ok])=>(
                   <div key={t} style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:ok?"#16A34A":"#AAA" }}>
@@ -114,7 +114,7 @@ export default function AuthPage({ onAuth }) {
             )}
 
             <button onClick={handleSubmit} disabled={loading}
-              style={{ width:"100%", padding:"12px 0", background:loading?"#CCC":"#1A1A1A", color:"#fff", border:"none", borderRadius:9, fontSize:14, fontWeight:700, cursor:loading?"not-allowed":"pointer", fontFamily:ff, marginTop:4, transition:"background 0.18s" }}
+              style={{ width:"100%", padding:"12px 0", background:loading?"#CCC":"#1A1A1A", color:"#fff", border:"none", borderRadius:7, fontSize:14, fontWeight:700, cursor:loading?"not-allowed":"pointer", fontFamily:ff, marginTop:4, transition:"background 0.18s" }}
               onMouseEnter={e=>{ if(!loading) e.currentTarget.style.background="#E86C4A"; }}
               onMouseLeave={e=>{ if(!loading) e.currentTarget.style.background="#1A1A1A"; }}>
               {loading ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
