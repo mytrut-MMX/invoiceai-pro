@@ -1,10 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useContext } from "react";
 import { ff } from "../constants";
 import { Icons } from "../components/icons";
+import { AppCtx } from "../context/AppContext";
+import { fmt, parseCisRate } from "../utils/helpers";
+import { CUR_SYM } from "../constants";
 
 export default function HomePage({ user, onNavigate }) {
+  const { invoices, orgSettings } = useContext(AppCtx);
   const [aiInput, setAiInput] = useState("");
-  const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"} 👋 I'm your InvoicePilot assistant. Ask me anything!` }]);
+  const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoicePilot assistant. Ask me anything!` }]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
 
@@ -35,12 +39,29 @@ export default function HomePage({ user, onNavigate }) {
     setLoading(false);
   };
 
-  const STATS = [
-    { label:"Outstanding", value:"£4,320.00", sub:"3 invoices", color:"#E86C4A" },
-    { label:"Overdue",     value:"£1,200.00", sub:"1 invoice",  color:"#C0392B" },
-    { label:"Paid (30 days)", value:"£12,800.00", sub:"8 invoices", color:"#1A1A1A" },
-    { label:"Draft",       value:"£2,500.00", sub:"2 invoices", color:"#888" },
-  ];
+  const currencySymbol = CUR_SYM[orgSettings?.currency||"GBP"] || "£";
+  const stats = useMemo(() => {
+    const outstanding = invoices.filter(i=>["Sent","Partial"].includes(i.status)).reduce((sum,i)=>sum+Number(i.total||0),0);
+    const overdue = invoices.filter(i=>i.status==="Overdue").reduce((sum,i)=>sum+Number(i.total||0),0);
+    const paid = invoices.filter(i=>i.status==="Paid").reduce((sum,i)=>sum+Number(i.total||0),0);
+    const draft = invoices.filter(i=>i.status==="Draft").reduce((sum,i)=>sum+Number(i.total||0),0);
+    const vatDue = orgSettings?.vatReg === "Yes"
+      ? invoices.reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0)
+      : 0;
+    const cisRate = parseCisRate(orgSettings?.cisRate, 20) / 100;
+    const cisTracked = orgSettings?.cisReg === "Yes"
+      ? invoices.reduce((sum, inv)=> sum + Number(inv.cisDeduction || (Number(inv.subtotal||0) * cisRate)), 0)
+      : 0;
+
+    return [
+      { label:"Outstanding", value:fmt(currencySymbol, outstanding), sub:`${invoices.filter(i=>["Sent","Partial"].includes(i.status)).length} invoices`, color:"#E86C4A" },
+      { label:"Overdue", value:fmt(currencySymbol, overdue), sub:`${invoices.filter(i=>i.status==="Overdue").length} invoices`, color:"#C0392B" },
+      { label:"Paid", value:fmt(currencySymbol, paid), sub:"Received", color:"#1A1A1A" },
+      { label:"Draft", value:fmt(currencySymbol, draft), sub:"Needs action", color:"#888" },
+      { label:"VAT Tracked", value: orgSettings?.vatReg === "Yes" ? fmt(currencySymbol, vatDue) : "Disabled", sub: orgSettings?.vatReg === "Yes" ? "Output VAT" : "Enable VAT in Settings", color:"#2563EB" },
+      { label:"CIS Tracked", value: orgSettings?.cisReg === "Yes" ? fmt(currencySymbol, cisTracked) : "Disabled", sub: orgSettings?.cisReg === "Yes" ? "CIS deductions" : "Enable CIS in Settings", color:"#7C3AED" },
+    ];
+  }, [invoices, orgSettings, currencySymbol]);
 
     return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
@@ -53,7 +74,7 @@ export default function HomePage({ user, onNavigate }) {
 
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:24 }}>
-        {STATS.map(s=>(
+        {stats.map(s=>(
           <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #EBEBEB" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
             <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
