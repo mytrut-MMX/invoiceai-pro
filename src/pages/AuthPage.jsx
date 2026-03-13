@@ -52,7 +52,7 @@ export default function AuthPage({ onAuth }) {
           <div style={{ width:48, height:48, background:"#1A1A1A", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
             <div style={{ width:28, height:28, background:"#E86C4A", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
           </div>
-          <div style={{ fontSize:20, fontWeight:800, color:"#1A1A1A", letterSpacing:"0.02em" }}>AI INVOICE</div>
+          <div style={{ fontSize:20, fontWeight:800, color:"#1A1A1A", letterSpacing:"0.02em" }}>InvoicePilot</div>
           <div style={{ fontSize:13, color:"#AAA", marginTop:3 }}>Smart invoicing for modern businesses</div>
         </div>
 
@@ -131,7 +131,7 @@ export default function AuthPage({ onAuth }) {
           </div>
         </div>
         <div style={{ textAlign:"center", marginTop:18, fontSize:11, color:"#CCC" }}>
-          Your data stays private and secure · AI Invoice
+          Your data stays private and secure · InvoicePilot
         </div>
       </div>
     </div>
