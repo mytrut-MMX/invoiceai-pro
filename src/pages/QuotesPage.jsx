@@ -57,6 +57,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [saving, setSaving] = useState(false);
   const [poNumber, setPoNumber] = useState(q.po_number||"");
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
+  const isLockedAcceptedQuote = isEdit && q.status === "Invoiced";
 
   const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,orgSettings),[items,discType,discVal,shipping,isVat,orgSettings,showShipping]);
 
@@ -65,6 +66,20 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   );
 
   const docData = { docNumber:quoteNumber, customer, issueDate, dueDate:expiryDate, paymentTerms:`Valid until ${fmtDate(expiryDate)}`, items, ...totals, notes, terms, status, poNumber, docType:"quote" };
+
+  const handleShare = () => {
+    const visibility = window.prompt("Share visibility: Public or Private and secure?", "Public");
+    if (!visibility) return;
+    const expiresOn = window.prompt("Link expiration date (YYYY-MM-DD)", expiryDate || addDays(todayStr(), 30));
+    if (!expiresOn) return;
+    const mode = visibility.toLowerCase().includes("private") ? "private" : "public";
+    const token = crypto.randomUUID().split("-")[0];
+    const basePath = mode === "public" ? "public" : "secure";
+    const shareUrl = `${window.location.origin}/${basePath}/quote/${quoteNumber}?token=${token}&expires=${expiresOn}`;
+    window.prompt(mode === "private"
+      ? "Private link created. Customer will use one-time passcode. Copy link:"
+      : "Public link created. Anyone with the link can access before expiry. Copy link:", shareUrl);
+  };
 
   const buildQuote = (newStatus) => ({
     id: q.id||crypto.randomUUID(),
@@ -76,10 +91,18 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   });
 
   const handleSave = (newStatus) => {
+    if (isLockedAcceptedQuote) {
+      window.alert("You are not allowed to edit an accepted quote.");
+      return;
+    }
     setSaving(true);
     setTimeout(()=>{ onSave(buildQuote(newStatus)); setSaving(false); onClose(); }, 400);
   };
   const handleStatusChange = (nextStatus) => {
+    if (isLockedAcceptedQuote) {
+      window.alert("You are not allowed to edit an accepted quote.");
+      return;
+    }
     setStatus(nextStatus);
     if(!isEdit) return;
     if(nextStatus === "Accepted" && q.status !== "Accepted" && window.confirm("Quote accepted. Convert it to invoice now?")) {
@@ -114,10 +137,11 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
           </div>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
             {isEdit && (
-              <Btn onClick={()=>onConvertToInvoice(buildQuote("Invoiced"))} variant="outline-light" icon={<Icons.Receipt />}>
+              <Btn onClick={()=>onConvertToInvoice(buildQuote("Invoiced"))} disabled={isLockedAcceptedQuote} variant="outline-light" icon={<Icons.Receipt />}>
                 Convert to Invoice
               </Btn>
             )}
+            <Btn onClick={handleShare} variant="outline-light" icon={<Icons.Send />}>Share Link</Btn>
             <Btn onClick={()=>setShowPrintModal(true)} variant="outline-light" icon={<Icons.Receipt />}>Print / PDF</Btn>
             <SaveSplitBtn
               onSave={()=>handleSave()}
@@ -130,6 +154,11 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
 
         {/* Body */}
         <div style={{ flex:1, overflowY:"auto", padding:"20px 24px" }}>
+          {isLockedAcceptedQuote && (
+            <div style={{ marginBottom:12, padding:"10px 12px", border:"1px solid #FECACA", background:"#FEF2F2", borderRadius:8, fontSize:13, color:"#B91C1C", fontWeight:600 }}>
+              You are not allowed to edit an accepted quote.
+            </div>
+          )}
           {/* Customer */}
           <div style={{ background:"#fff", borderRadius:12, border:"1px solid #EBEBEB", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Customer</div>
@@ -261,6 +290,11 @@ export default function QuotesPage({ onNavigate }) {
   });
 
   const handleConvertToInvoice = (quote) => {
+    const alreadyInvoiced = invoices.some(inv => inv.converted_from_quote === quote.quote_number);
+    if (alreadyInvoiced) {
+      const shouldInvoiceAgain = window.confirm("This quote has already been invoiced. Do you want to invoice it again?");
+      if (!shouldInvoiceAgain) return;
+    }
     // save quote as Invoiced
     onSave({ ...quote, status:"Invoiced" });
     // create invoice from quote
@@ -368,7 +402,7 @@ export default function QuotesPage({ onNavigate }) {
           <tbody>
             {filtered.map(q=>(
               <tr key={q.id} style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
-                onClick={()=>setPanel({ mode:"edit", quote:q })}
+                onClick={()=>q.status==="Invoiced"?window.alert("You are not allowed to edit an accepted quote."):setPanel({ mode:"edit", quote:q })}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{q.quote_number}</td>
@@ -383,7 +417,7 @@ export default function QuotesPage({ onNavigate }) {
                 <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt("£",q.total||0)}</td>
                 <td style={{ padding:"12px 16px" }}><Tag color={STATUS_COLORS[q.status]||"#888"}>{q.status||"Draft"}</Tag></td>
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
-                  <Btn onClick={()=>setPanel({ mode:"edit", quote:q })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                  <Btn onClick={()=>q.status==="Invoiced"?window.alert("You are not allowed to edit an accepted quote."):setPanel({ mode:"edit", quote:q })} variant="ghost" size="sm" disabled={q.status==="Invoiced"} icon={<Icons.Edit />}>{q.status==="Invoiced"?"Locked":"Edit"}</Btn>
                   <Btn onClick={()=>window.confirm(`Delete ${q.quote_number}?`) && setQuotes(prev=>prev.filter(x=>x.id!==q.id))} variant="ghost" size="sm" icon={<Icons.Trash />}>Delete</Btn>
                 </td>
               </tr>
