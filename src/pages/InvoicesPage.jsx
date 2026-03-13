@@ -142,6 +142,20 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     setShowPaidModal(false);
     onClose();
   };
+  
+  const handleShare = () => {
+    const visibility = window.prompt("Share visibility: Public or Private and secure?", "Public");
+    if (!visibility) return;
+    const expiresOn = window.prompt("Link expiration date (YYYY-MM-DD)", dueDate || addDays(todayStr(), 30));
+    if (!expiresOn) return;
+    const mode = visibility.toLowerCase().includes("private") ? "private" : "public";
+    const token = crypto.randomUUID().split("-")[0];
+    const basePath = mode === "public" ? "public" : "secure";
+    const shareUrl = `${window.location.origin}/${basePath}/invoice/${invNumber}?token=${token}&expires=${expiresOn}`;
+    window.prompt(mode === "private"
+      ? "Private link created. Customer will use one-time passcode. Copy link:"
+      : "Public link created. Anyone with the link can access before expiry. Copy link:", shareUrl);
+  };
 
   const handleNewItemSaved = (item) => {
     setCatalogItems(p=>[...p, item]);
@@ -172,6 +186,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
               <Btn onClick={()=>setShowPaidModal(true)} variant="success" icon={<Icons.Check />}>Mark Paid</Btn>
             )}
             <Btn onClick={()=>setShowPrintModal(true)} variant="outline-light" icon={<Icons.Receipt />}>Print / PDF</Btn>
+            <Btn onClick={handleShare} variant="outline-light" icon={<Icons.Send />}>Share Link</Btn>
             <SaveSplitBtn onSave={()=>handleSave()} onSaveAndSend={()=>handleSave("Sent")} onSaveAndPrint={()=>{ handleSave(); }} saving={saving} />
           </div>
         </div>
@@ -337,6 +352,11 @@ export default function InvoicesPage() {
   const handleConvertAcceptedQuote = (quoteId) => {
     const quote = quotes.find(q=>q.id===quoteId);
     if(!quote) return;
+    const alreadyInvoiced = invoices.some(inv=>inv.converted_from_quote===quote.quote_number);
+    if (alreadyInvoiced) {
+      const shouldInvoiceAgain = window.confirm("This quote has already been invoiced. Do you want to invoice it again?");
+      if (!shouldInvoiceAgain) return;
+    }
     setQuotes(prev=>prev.map(q=>q.id===quoteId?{...q,status:"Invoiced"}:q));
     setPanel({ mode:"edit", invoice:{
       invoice_number: nextNum("INV", invoices),
