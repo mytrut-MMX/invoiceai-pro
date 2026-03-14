@@ -45,7 +45,7 @@ export default function App() {
   // UI / Prefs
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(()=>LS.get("ai_invoice_sidebar_pinned",true));
-  const [appTheme, setAppTheme] = useState(()=>LS.get("ai_invoice_theme",{ type:"solid", color:"#1A1A1A", color2:"#333", accent:"#E86C4A" }));
+  const [appTheme, setAppTheme] = useState(()=>LS.get("ai_invoice_theme",{ type:"solid", color:"rgb(33, 38, 60)", color2:"#333", accent:"#E86C4A" }));
   const [userAvatar, setUserAvatar] = useState(()=>LS.get("ai_invoice_avatar",null));
   const [showUserModal, setShowUserModal] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
