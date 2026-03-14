@@ -17,6 +17,60 @@ function Section({ title, children }) {
   );
 }
 
+function CheckIcon(props) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      focusable="false"
+      height="1em"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+      width="1em"
+      {...props}
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function ChipToggle({ value, onChange, options }) {
+  return (
+    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+      {options.map(option=>{
+        const selected = value===option;
+        return (
+          <button
+            key={option}
+            type="button"
+            onClick={()=>onChange(option)}
+            style={{
+              border: `1px solid ${selected?"#E86C4A":"#D4D4D8"}`,
+              background: selected?"#E86C4A":"#fff",
+              color: selected?"#fff":"#52525B",
+              borderRadius:999,
+              padding:"7px 12px",
+              fontSize:13,
+              fontWeight:700,
+              display:"inline-flex",
+              alignItems:"center",
+              gap:6,
+              cursor:"pointer",
+              transition:"all 0.15s ease",
+            }}
+          >
+            {selected && <CheckIcon style={{ fontSize:13 }} />}
+            <span>{option}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, orgSettings, companyLogo, companyLogoSize, footerText, onClose }) {
   const demoData = {
@@ -234,7 +288,7 @@ export default function SettingsPage({ onNavigate }) {
       <div ref={sectionRefs.tax}><Section title="Tax Registration">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="VAT Registered">
-            <Select value={vatReg} onChange={setVatReg} options={["No","Yes"]} />
+            <ChipToggle value={vatReg} onChange={setVatReg} options={["No", "Yes"]} />
           </Field>
           {vatReg==="Yes" && (
             <Field label="VAT Number">
@@ -242,7 +296,7 @@ export default function SettingsPage({ onNavigate }) {
             </Field>
           )}
           <Field label="CIS Registered">
-            <Select value={cisReg} onChange={setCisReg} options={["No","Yes"]} />
+            <ChipToggle value={cisReg} onChange={setCisReg} options={["No", "Yes"]} />
           </Field>
           {cisReg==="Yes" && (
             <>
