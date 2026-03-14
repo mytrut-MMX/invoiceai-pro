@@ -7,6 +7,7 @@ import { CUR_SYM } from "../constants";
 
 export default function HomePage({ user, onNavigate }) {
   const { invoices, orgSettings } = useContext(AppCtx);
+  const [reportPeriod, setReportPeriod] = useState("this_month");
   const [aiInput, setAiInput] = useState("");
   const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoicePilot assistant. Ask me anything!` }]);
   const [loading, setLoading] = useState(false);
@@ -40,6 +41,27 @@ export default function HomePage({ user, onNavigate }) {
   };
 
   const currencySymbol = CUR_SYM[orgSettings?.currency||"GBP"] || "£";
+  const periodInvoices = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const inRange = (invoiceDate) => {
+      const d = invoiceDate ? new Date(invoiceDate) : null;
+      if (!d || Number.isNaN(d.getTime())) return reportPeriod === "all_time";
+      if (reportPeriod === "this_month") return d >= startOfMonth && d < startOfNextMonth;
+      if (reportPeriod === "last_month") return d >= startOfLastMonth && d < startOfMonth;
+      if (reportPeriod === "this_quarter") return d >= startOfQuarter && d < startOfNextMonth;
+      if (reportPeriod === "this_year") return d >= startOfYear;
+      return true;
+    };
+
+    return invoices.filter(inv => inRange(inv.issue_date));
+  }, [invoices, reportPeriod]);
+
   const stats = useMemo(() => {
     const outstanding = invoices.filter(i=>["Sent","Partial"].includes(i.status)).reduce((sum,i)=>sum+Number(i.total||0),0);
     const overdue = invoices.filter(i=>i.status==="Overdue").reduce((sum,i)=>sum+Number(i.total||0),0);
@@ -62,6 +84,20 @@ export default function HomePage({ user, onNavigate }) {
       { label:"CIS Tracked", value: orgSettings?.cisReg === "Yes" ? fmt(currencySymbol, cisTracked) : "Disabled", sub: orgSettings?.cisReg === "Yes" ? "CIS deductions" : "Enable CIS in Settings", color:"#7C3AED" },
     ];
   }, [invoices, orgSettings, currencySymbol]);
+
+  const reportSummary = useMemo(() => {
+    const revenue = periodInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+    const vat = periodInvoices.reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0);
+    const cis = periodInvoices.reduce((sum, inv)=>sum + Number(inv.cisDeduction || 0), 0);
+    const reportByStatus = periodInvoices.reduce((acc, inv) => {
+      const key = inv.status || "Draft";
+      if (!acc[key]) acc[key] = { count: 0, amount: 0 };
+      acc[key].count += 1;
+      acc[key].amount += Number(inv.total || 0);
+      return acc;
+    }, {});
+    return { revenue, vat, cis, reportByStatus };
+  }, [periodInvoices]);
 
     return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
@@ -119,6 +155,59 @@ export default function HomePage({ user, onNavigate }) {
             style={{ width:36, height:36, background:loading?"#CCC":"#1A1A1A", border:"none", borderRadius:8, cursor:loading?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}>
             <Icons.Send />
           </button>
+        </div>
+      </div>
+
+      {/* Reports Center */}
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", padding:"14px 16px" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap", marginBottom:14 }}>
+          <div>
+            <div style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Reports Center</div>
+            <div style={{ fontSize:12, color:"#888", marginTop:2 }}>Overview based on selected period</div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:12, color:"#666", fontWeight:600 }}>Period</span>
+            <select
+              value={reportPeriod}
+              onChange={e=>setReportPeriod(e.target.value)}
+              style={{ padding:"7px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:12, fontFamily:ff, background:"#FAFAFA", outline:"none", cursor:"pointer" }}
+            >
+              <option value="this_month">This month</option>
+              <option value="last_month">Last month</option>
+              <option value="this_quarter">This quarter</option>
+              <option value="this_year">This year</option>
+              <option value="all_time">All time</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:10, marginBottom:14 }}>
+          {[
+            { label:"Invoices", value:periodInvoices.length, color:"#1A1A1A" },
+            { label:"Revenue", value:fmt(currencySymbol, reportSummary.revenue), color:"#16A34A" },
+            { label:"VAT", value:fmt(currencySymbol, reportSummary.vat), color:"#2563EB" },
+            { label:"CIS", value:fmt(currencySymbol, reportSummary.cis), color:"#7C3AED" },
+          ].map(card => (
+            <div key={card.label} style={{ border:"1px solid #EFEFEF", borderRadius:10, padding:"10px 12px", background:"#FCFCFC" }}>
+              <div style={{ fontSize:11, color:"#888", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
+              <div style={{ fontSize:16, color:card.color, fontWeight:800, marginTop:5 }}>{card.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ border:"1px solid #F0F0F0", borderRadius:10, overflow:"hidden" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr 1fr", padding:"9px 12px", background:"#FAFAFA", borderBottom:"1px solid #F0F0F0", fontSize:11, color:"#888", fontWeight:700, textTransform:"uppercase" }}>
+            <span>Status</span><span style={{ textAlign:"center" }}>Count</span><span style={{ textAlign:"right" }}>Amount</span>
+          </div>
+          {Object.keys(reportSummary.reportByStatus).length === 0 ? (
+            <div style={{ padding:"12px", fontSize:12, color:"#AAA", textAlign:"center" }}>No invoices in selected period.</div>
+          ) : Object.entries(reportSummary.reportByStatus).map(([status, row]) => (
+            <div key={status} style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr 1fr", padding:"9px 12px", borderBottom:"1px solid #F7F7F7", fontSize:12, color:"#333" }}>
+              <span>{status}</span>
+              <span style={{ textAlign:"center" }}>{row.count}</span>
+              <span style={{ textAlign:"right", fontWeight:700 }}>{fmt(currencySymbol, row.amount)}</span>
+            </div>
+          ))}
         </div>
       </div>
 
