@@ -26,8 +26,19 @@ function calcTotals(items, discType, discVal, shipping, isVat, orgSettings) {
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
   const gross = afterDisc + ship + vatTotal;
   const orgCisEnabled = orgSettings?.cisReg === "Yes";
+  const role = orgSettings?.cisRole || "Contractor";
+  const grossRegistered = orgSettings?.cisRegistrationStatus === "Gross";
   const cisRate = parseCisRate(orgSettings?.cisRate, 20)/100;
-  const cisDed = orgCisEnabled ? afterDisc * cisRate : 0;
+  const cisApplicableSubtotal = items.reduce((sum, item) => {
+    if (!item?.cisApplicable) return sum;
+    return sum + Number(item.amount || 0);
+  }, 0);
+  const cisAfterDiscount = subtotal > 0
+    ? cisApplicableSubtotal - discAmt * (cisApplicableSubtotal / subtotal)
+    : 0;
+  const cisDed = orgCisEnabled && !grossRegistered && ["Contractor","Both"].includes(role)
+    ? cisAfterDiscount * cisRate
+    : 0;
   return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed, grossTotal: gross };
 }
 
