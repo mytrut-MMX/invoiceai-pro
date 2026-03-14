@@ -27,7 +27,7 @@ export const SIDEBAR_ICON = 54;
 export function Sidebar({
   activePage, onNavigate,
   user, onUserClick, onLogout,
-  sidebarBg = "#1A1A1A",
+  sidebarBg = "rgb(33, 38, 60)",
   accent = "#E86C4A",
   collapsed = false,
   onCollapsedChange,
@@ -82,7 +82,7 @@ export function Sidebar({
           const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
           return collapsed ? (
             <button key={id} onClick={() => onNavigate(id)} title={label}
-              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?`${accent}22`:"none", color:on?accent:"rgba(255,255,255,0.45)", cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
+              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?`${accent}22`:"none", color:on?accent:"#fff", cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
               onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="rgba(255,255,255,0.07)"; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
               <Icon />
@@ -90,7 +90,7 @@ export function Sidebar({
             </button>
           ) : (
             <button key={id} onClick={() => onNavigate(id)}
-              style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?`${accent}22`:"none", color:on?accent:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?`${accent}22`:"none", color:on?accent:"#fff", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
               onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
               <Icon />
@@ -137,7 +137,7 @@ export function Sidebar({
 }
 
 // ─── MOBILE TOP BAR ───────────────────────────────────────────────────────────
-export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="#1A1A1A", accent="#E86C4A", user, userAvatar, onUserClick }) {
+export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick }) {
   const page = NAV.find(n => n.id === activePage);
   return (
     <div style={{
@@ -175,7 +175,7 @@ export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
     <div style={{
       display: "flex",
       position: "fixed", bottom:0, left:0, right:0, height:60,
-      background: "#1A1A1A", zIndex:200,
+      background: "rgb(33, 38, 60)", zIndex:200,
       borderTop: "1px solid rgba(255,255,255,0.08)",
       alignItems: "center", justifyContent: "space-around",
     }}>
@@ -183,7 +183,7 @@ export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
         const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
         return (
           <button key={id} onClick={() => onNavigate(id)}
-            style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"none", border:"none", cursor:"pointer", color:on?accent:"rgba(255,255,255,0.4)", fontFamily:ff, padding:"6px 12px", minWidth:52, transition:"color 0.15s" }}>
+            style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"none", border:"none", cursor:"pointer", color:on?accent:"#fff", fontFamily:ff, padding:"6px 12px", minWidth:52, transition:"color 0.15s" }}>
             <Icon />
             <span style={{ fontSize:10, fontWeight:on?700:400 }}>{label}</span>
           </button>
@@ -194,7 +194,7 @@ export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
 }
 
 // ─── MOBILE DRAWER (overlay sidebar on mobile) ────────────────────────────────
-export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="#1A1A1A", accent="#E86C4A", user, userAvatar, onUserClick, onLogout }) {
+export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick, onLogout }) {
   return (
     <>
       <div onClick={onClose}
@@ -219,7 +219,7 @@ export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="#1A1A
             const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
             return (
               <button key={id} onClick={() => { onNavigate(id); onClose(); }}
-                style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?`${accent}22`:"none", color:on?accent:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?`${accent}22`:"none", color:on?accent:"#fff", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
                 onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
                 onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
                 <Icon />{label}
