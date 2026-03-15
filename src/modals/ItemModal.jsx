@@ -65,12 +65,12 @@ export default function ItemModal({ existing, onClose, onSave }) {
           <div style={{ display:"grid", gridTemplateColumns:isVat?"1fr 1fr 1fr":"1fr 1fr", gap:12 }}>
             <Field label="Rate" required><Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" /></Field>
             <Field label="Unit">
-              <div>
-                <Input value={unit} onChange={setUnit} placeholder="Select or type to add" list="item-unit-suggestions" />
-                <datalist id="item-unit-suggestions">
-                  {ITEM_UNITS.map((unitOption) => <option key={unitOption} value={unitOption} />)}
-                </datalist>
-              </div>
+              <Select
+                value={unit}
+                onChange={setUnit}
+                options={ITEM_UNITS}
+                placeholder="Select unit…"
+              />
             </Field>
             {isVat && (
               <Field label="VAT Rate">
