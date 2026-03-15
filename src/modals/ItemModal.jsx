@@ -13,7 +13,12 @@ export default function ItemModal({ existing, onClose, onSave }) {
   const [itemType, setItemType] = useState(existing?.type||"Service");
   const [description, setDescription] = useState(existing?.description||"");
   const [rate, setRate] = useState(existing?.rate??"");
+  const initialUnitOptions = existing?.unit && !ITEM_UNITS.includes(existing.unit)
+    ? [...ITEM_UNITS, existing.unit]
+    : ITEM_UNITS;
+  const [unitOptions, setUnitOptions] = useState(initialUnitOptions);
   const [unit, setUnit] = useState(existing?.unit||"");
+  const [newUnit, setNewUnit] = useState("");
   const [taxRate, setTaxRate] = useState(existing?.taxRate??20);
   const [active, setActive] = useState(existing?.active??true);
   const [sku, setSku] = useState(existing?.sku||"");
@@ -24,6 +29,19 @@ export default function ItemModal({ existing, onClose, onSave }) {
   const showCIS = itemType==="Service"||itemType==="Labour"||itemType==="Material";
   const typeColors = { Service:"#4F46E5", Labour:"#D97706", Material:"#059669", Equipment:"#2563EB", Other:"#6B7280" };
 
+  const addUnitOption = () => {
+    const next = newUnit.trim();
+    if (!next || unitOptions.includes(next)) return;
+    setUnitOptions(prev => [...prev, next]);
+    setUnit(next);
+    setNewUnit("");
+  };
+
+  const removeUnitOption = (unitToRemove) => {
+    setUnitOptions(prev => prev.filter(u => u !== unitToRemove));
+    if (unit === unitToRemove) setUnit("");
+  };
+  
   const handleSave = () => {
     onSave({
       id: existing?.id||crypto.randomUUID(),
@@ -65,12 +83,39 @@ export default function ItemModal({ existing, onClose, onSave }) {
           <div style={{ display:"grid", gridTemplateColumns:isVat?"1fr 1fr 1fr":"1fr 1fr", gap:12 }}>
             <Field label="Rate" required><Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" /></Field>
             <Field label="Unit">
-              <Select
-                value={unit}
-                onChange={setUnit}
-                options={ITEM_UNITS}
-                placeholder="Select unit…"
-              />
+               <div style={{ display:"grid", gap:8 }}>
+                <Select
+                  value={unit}
+                  onChange={setUnit}
+                  options={unitOptions}
+                  placeholder="Select or type to add"
+                />
+                <div style={{ display:"flex", gap:6 }}>
+                  <input
+                    value={newUnit}
+                    onChange={e=>setNewUnit(e.target.value)}
+                    placeholder="Select or type to add"
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addUnitOption(); }} }
+                    style={{ width:"100%", padding:"9px 11px", border:"1px solid #DADADA", borderRadius:5, fontSize:13, fontFamily:ff, color:"#1A1A1A", background:"#FAFAFA", outline:"none", boxSizing:"border-box" }}
+                  />
+                  <Btn onClick={addUnitOption} variant="outline" size="sm">Add</Btn>
+                </div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {unitOptions.map(unitOption => (
+                    <span key={unitOption} style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:16, background:"#F3F4F6", border:"1px solid #E5E7EB", fontSize:11, color:"#4B5563" }}>
+                      {unitOption}
+                      <button
+                        type="button"
+                        onClick={() => removeUnitOption(unitOption)}
+                        style={{ border:"none", background:"transparent", color:"#9CA3AF", cursor:"pointer", fontSize:12, lineHeight:1, padding:0 }}
+                        aria-label={`Delete ${unitOption}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
             </Field>
             {isVat && (
               <Field label="VAT Rate">
