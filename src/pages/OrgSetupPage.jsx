@@ -183,9 +183,9 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           )}
 
           <button onClick={handleComplete} disabled={!canSubmit}
-            style={{ width:"100%", padding:"13px 0", background:canSubmit?"#1A1A1A":"#CCC", color:"#fff", border:"none", borderRadius:9, fontSize:15, fontWeight:700, cursor:canSubmit?"pointer":"not-allowed", fontFamily:ff, marginTop:16, transition:"background 0.2s" }}
-            onMouseEnter={e=>{ if(canSubmit) e.currentTarget.style.background="#E86C4A"; }}
-            onMouseLeave={e=>{ if(canSubmit) e.currentTarget.style.background="#1A1A1A"; }}>
+            style={{ width:"100%", padding:"13px 0", background:canSubmit?"#1e6be0":"#d1d5db", color:"#fff", border:"none", borderRadius:9, fontSize:15, fontWeight:700, cursor:canSubmit?"pointer":"not-allowed", fontFamily:ff, marginTop:16, transition:"background 0.2s" }}
+            onMouseEnter={e=>{ if(canSubmit) e.currentTarget.style.background="#1558c0"; }}
+            onMouseLeave={e=>{ if(canSubmit) e.currentTarget.style.background="#1e6be0"; }}>
             Complete Setup →
           </button>
         </div>
