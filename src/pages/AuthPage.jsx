@@ -60,7 +60,7 @@ export default function AuthPage({ onAuth }) {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:"1px solid #F0F0F0" }}>
             {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
               <button key={m} onClick={()=>{ setMode(m); setError(""); }}
-                style={{ padding:"20px 0", border:"none", borderBottom:`2.5px solid ${mode===m?"#1A1A1A":"transparent"}`, background:"none", fontSize:13, fontWeight:mode===m?800:500, color:mode===m?"#1A1A1A":"#AAA", cursor:"pointer", fontFamily:ff, transition:"all 0.15s" }}>
+                style={{ padding:"20px 0", border:"none", borderBottom:`2.5px solid ${mode===m?"#1e6be0":"transparent"}`, background:"none", fontSize:13, fontWeight:mode===m?800:500, color:mode===m?"#1e6be0":"#AAA", cursor:"pointer", fontFamily:ff, transition:"all 0.15s" }}>
                 {l}
               </button>
             ))}
@@ -114,16 +114,16 @@ export default function AuthPage({ onAuth }) {
             )}
 
             <button onClick={handleSubmit} disabled={loading}
-              style={{ width:"100%", padding:"12px 0", background:loading?"#CCC":"#1A1A1A", color:"#fff", border:"none", borderRadius:7, fontSize:14, fontWeight:700, cursor:loading?"not-allowed":"pointer", fontFamily:ff, marginTop:4, transition:"background 0.18s" }}
-              onMouseEnter={e=>{ if(!loading) e.currentTarget.style.background="#E86C4A"; }}
-              onMouseLeave={e=>{ if(!loading) e.currentTarget.style.background="#1A1A1A"; }}>
+              style={{ width:"100%", padding:"12px 0", background:loading?"#CCC":"#1e6be0", color:"#fff", border:"none", borderRadius:7, fontSize:14, fontWeight:700, cursor:loading?"not-allowed":"pointer", fontFamily:ff, marginTop:4, transition:"background 0.18s" }}
+              onMouseEnter={e=>{ if(!loading) e.currentTarget.style.background="#1558c0"; }}
+              onMouseLeave={e=>{ if(!loading) e.currentTarget.style.background="#1e6be0"; }}>
               {loading ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
             </button>
 
             {mode==="login" && (
               <div style={{ textAlign:"center", marginTop:14 }}>
                 <span style={{ fontSize:12, color:"#AAA" }}>Don't have an account? </span>
-                <button onClick={()=>{ setMode("register"); setError(""); }} style={{ fontSize:12, fontWeight:700, color:"#E86C4A", background:"none", border:"none", cursor:"pointer", fontFamily:ff, padding:0 }}>
+                <button onClick={()=>{ setMode("register"); setError(""); }} style={{ fontSize:12, fontWeight:700, color:"#1e6be0", background:"none", border:"none", cursor:"pointer", fontFamily:ff, padding:0 }}>
                   Create one free
                 </button>
               </div>
