@@ -7,7 +7,7 @@ html, body, #root {
 
 /* Desktop sidebar: visible only on screens >= 640px */
 .desktop-only {
-  display: flex;
+@@ -11,25 +11,36 @@ html, body, #root {
 }
 
 /* Mobile elements: hidden on desktop */
@@ -32,4 +32,15 @@ input[type="number"]::-webkit-inner-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+@media (max-width: 768px) {
+  .auth-right-panel {
+    display: none !important;
+  }
+
+  .auth-left-panel {
+    flex: 1 !important;
+    padding: 32px 24px !important;
+  }
 }
