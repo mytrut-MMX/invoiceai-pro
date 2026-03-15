@@ -21,7 +21,12 @@ export const ACCOUNT_CATEGORIES = [
   "Expenses","Travel & Subsistence","Office Supplies","Software & Subscriptions",
   "Professional Fees","Advertising","Utilities","Rent & Rates","Other Income","Other",
 ];
-export const STATUS_COLORS = { Sent:"#2563EB", Overdue:"#C0392B", Paid:"#16A34A", Draft:"#6B7280", Void:"#9CA3AF", Accepted:"#16A34A", Declined:"#DC2626", Expired:"#9CA3AF", Partial:"#D97706", Reconciled:"#16A34A", Refunded:"#DC2626", Pending:"#6B7280" };
+export const STATUS_COLORS = {
+  Sent:"#1e6be0", Overdue:"#dc2626", Paid:"#059669",
+  Draft:"#6b7280", Void:"#9ca3af", Accepted:"#059669",
+  Declined:"#dc2626", Expired:"#9ca3af", Partial:"#d97706",
+  Reconciled:"#059669", Refunded:"#dc2626", Pending:"#6b7280"
+};
 export const QUOTE_STATUSES = ["Draft","Sent","Accepted","Declined","Expired","Invoiced"];
 export const PDF_TEMPLATES = [
   { id:"classic",  name:"Classic",  description:"Clean header, ruled lines",        defaultAccent:"#1A1A1A", defaultBg:"#fff" },
