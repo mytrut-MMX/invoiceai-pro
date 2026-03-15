@@ -46,7 +46,7 @@ export default function AuthPage({ onAuth }) {
     : <Ic d='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' size={16} sw={2}/>;
 
   return (
-    <div style={{ minHeight:"100vh", background:"#F7F7F5", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+    <div style={{ minHeight:"100vh", background:"#f4f5f7", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
       <div style={{ width:"100%", maxWidth:440 }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ width:48, height:48, background:"#1A1A1A", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
