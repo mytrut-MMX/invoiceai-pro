@@ -29,7 +29,7 @@ export const STATUS_COLORS = {
 };
 export const QUOTE_STATUSES = ["Draft","Sent","Accepted","Declined","Expired","Invoiced"];
 export const PDF_TEMPLATES = [
-  { id:"classic",  name:"Classic",  description:"Clean header, ruled lines",        defaultAccent:"#1A1A1A", defaultBg:"#fff" },
+  { id:"classic",  name:"Classic",  description:"Clean header, ruled lines",        defaultAccent:"#1e6be0", defaultBg:"#fff" },
   { id:"modern",   name:"Modern",   description:"Bold colour band, split layout",    defaultAccent:"#2563EB", defaultBg:"#EFF6FF" },
   { id:"minimal",  name:"Minimal",  description:"Clean typography, accent line",     defaultAccent:"#16A34A", defaultBg:"#fff" },
   { id:"branded",  name:"Branded",  description:"Rich terracotta, premium feel",     defaultAccent:"#E86C4A", defaultBg:"#FFF7F4" },
