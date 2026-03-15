@@ -78,7 +78,7 @@ export const Checkbox = ({ checked, onChange, label }) => (
 
 export const Btn = ({ onClick, children, variant="primary", size="md", disabled, icon, style:sx={} }) => {
   const sizes = { sm:{padding:"6px 11px",fontSize:12}, md:{padding:"9px 16px",fontSize:13}, lg:{padding:"11px 22px",fontSize:14} };
-  const variants = { primary:{background:"#1A1A1A",color:"#fff",border:"none"}, accent:{background:"#E86C4A",color:"#fff",border:"none"}, outline:{background:"#fff",color:"#1A1A1A",border:"1px solid #DADADA"}, ghost:{background:"transparent",color:"#555",border:"none"}, danger:{background:"#FEF2F2",color:"#DC2626",border:"1px solid #FECACA"} };
+  const variants = { primary:{background:"#1e6be0",color:"#fff",border:"none"}, accent:{background:"#E86C4A",color:"#fff",border:"none"}, outline:{background:"#fff",color:"#1A1A1A",border:"1px solid #DADADA"}, ghost:{background:"transparent",color:"#555",border:"none"}, danger:{background:"#FEF2F2",color:"#DC2626",border:"1px solid #FECACA"} };
   return (
     <button onClick={onClick} disabled={disabled}
       style={{ display:"inline-flex", alignItems:"center", gap:7, borderRadius:6, cursor:disabled?"not-allowed":"pointer", fontFamily:ff, fontWeight:700, transition:"all 0.15s", opacity:disabled?0.5:1, whiteSpace:"nowrap", ...sizes[size], ...variants[variant], ...sx }}>
@@ -92,7 +92,7 @@ export const Tag = ({ children, color="#1A1A1A" }) => (
 );
 
 export const SectionCard = ({ title, subtitle, children }) => (
-  <div style={{ background:"#fff", borderRadius:10, border:"1px solid #EBEBEB", padding:"18px 20px", marginBottom:14 }}>
+  <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"18px 20px", marginBottom:14 }}>
     {(title||subtitle) && <div style={{ marginBottom:14 }}>
       {title && <div style={{ fontSize:13, fontWeight:800, color:"#1A1A1A" }}>{title}</div>}
       {subtitle && <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{subtitle}</div>}
