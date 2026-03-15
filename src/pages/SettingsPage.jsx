@@ -1,4 +1,4 @@
-import { useState, useContext, useRef } from "react";
+import { useState, useContext } from "react";
 import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -172,14 +172,16 @@ export default function SettingsPage({ onNavigate }) {
   const [accentColor,  setAccentColor]  = useState(appTheme?.accent||"#E86C4A");
 
   const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState("org");
 
-  const sectionRefs = {
-    org: useRef(null),
-    tax: useRef(null),
-    bank: useRef(null),
-    templates: useRef(null),
-  };
-  const jumpTo = (key) => sectionRefs[key]?.current?.scrollIntoView({ behavior:"smooth", block:"start" });
+  const settingTabs = [
+    { id:"org", label:"Organization Details" },
+    { id:"tax", label:"Tax Details" },
+    { id:"bank", label:"Bank Details" },
+    { id:"templates", label:"Templates" },
+    { id:"appearance", label:"Appearance" },
+    { id:"payments", label:"Payment Methods" },
+  ];
 
   const handleSaveOrg = () => {
     if (cisReg === "Yes") {
@@ -235,15 +237,35 @@ export default function SettingsPage({ onNavigate }) {
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:860, fontFamily:ff }}>
       <h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:"0 0 12px" }}>Settings</h1>
-      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
-        <Btn onClick={()=>jumpTo("org")} variant="outline" size="sm">Organization Details</Btn>
-        <Btn onClick={()=>jumpTo("tax")} variant="outline" size="sm">Tax details</Btn>
-        <Btn onClick={()=>jumpTo("bank")} variant="outline" size="sm">Bank Details</Btn>
-        <Btn onClick={()=>jumpTo("templates")} variant="outline" size="sm">Templates</Btn>
+      <div style={{ display:"flex", gap:18, flexWrap:"wrap", borderBottom:"1px solid #E5E7EB", marginBottom:18 }}>
+        {settingTabs.map(tab=>{
+          const isActive = activeTab===tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={()=>setActiveTab(tab.id)}
+              style={{
+                border:"none",
+                background:"transparent",
+                padding:"4px 0 10px",
+                marginBottom:-1,
+                borderBottom:`2px solid ${isActive?"#E86C4A":"transparent"}`,
+                color:isActive?"#E86C4A":"#6B7280",
+                fontSize:13,
+                fontWeight:isActive?700:600,
+                cursor:"pointer",
+                fontFamily:ff,
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Organisation */}
-      <div ref={sectionRefs.org}><Section title="Organisation Details">
+      {activeTab === "org" && (<Section title="Organisation Details">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="Company / Trading Name" required>
             <Input value={orgName} onChange={setOrgName} placeholder="Your Company Ltd" />
@@ -282,10 +304,10 @@ export default function SettingsPage({ onNavigate }) {
             <Input value={crn} onChange={setCrn} placeholder="Optional" />
           </Field>
         </div>
-      </Section></div>
+      </Section>)}
 
       {/* Tax */}
-      <div ref={sectionRefs.tax}><Section title="Tax Registration">
+     {activeTab === "tax" && (<Section title="Tax Registration">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="VAT Registered">
             <ChipToggle value={vatReg} onChange={setVatReg} options={["No", "Yes"]} />
@@ -315,10 +337,10 @@ export default function SettingsPage({ onNavigate }) {
             </>
           )}
         </div>
-      </Section></div>
+      </Section>)}
 
       {/* Bank */}
-      <div ref={sectionRefs.bank}><Section title="Bank Details (shown on invoices)">
+      {activeTab === "tax" && (<Section title="Bank Details (shown on invoices)">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="Bank Name"><Input value={bankName} onChange={setBankName} placeholder="e.g. Barclays" /></Field>
           <Field label="Sort Code"><Input value={bankSort} onChange={setBankSort} placeholder="00-00-00" /></Field>
@@ -326,10 +348,10 @@ export default function SettingsPage({ onNavigate }) {
           <Field label="IBAN (optional)"><Input value={bankIban} onChange={setBankIban} /></Field>
           <Field label="SWIFT / BIC (optional)"><Input value={bankSwift} onChange={setBankSwift} /></Field>
         </div>
-      </Section></div>
+      </Section>)}
 
       {/* PDF Templates */}
-      <div ref={sectionRefs.templates}><Section title="PDF Invoice Templates">
+      {activeTab === "tax" && (<Section title="PDF Invoice Templates">
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
           <Btn onClick={()=>onNavigate?.("settings/templates")} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
         </div>
@@ -397,10 +419,10 @@ export default function SettingsPage({ onNavigate }) {
           <textarea value={footer} onChange={e=>setFooter(e.target.value)} rows={2} placeholder="e.g. Thank you for your business! Registered in England & Wales No. 12345678"
             style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", resize:"vertical", boxSizing:"border-box" }} />
         </Field>
-      </Section></div>
+      </Section>)}
 
       {/* Sidebar theme */}
-      <Section title="Sidebar Appearance">
+      {activeTab === "tax" && (<Section title="Sidebar Appearance">
         <div style={{ marginBottom:16 }}>
           <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Style</div>
           <div style={{ display:"flex", gap:8 }}>
@@ -456,13 +478,13 @@ export default function SettingsPage({ onNavigate }) {
         {/* Preview strip */}
         <div style={{ marginTop:14, height:42, borderRadius:10, background: themeType==="gradient"?`linear-gradient(90deg,${themeColor},${themeColor2})`:themeColor, display:"flex", alignItems:"center", padding:"0 16px", gap:12 }}>
           <div style={{ width:22, height:22, borderRadius:6, background:accentColor, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
-          <span style={{ color:"#fff", fontSize:12, fontWeight:800, letterSpacing:"0.06em", textShadow:"0 1px 2px rgba(0,0,0,0.3)" }}>InvoicePilot</span>
+          <span style={{ color:"#fff", fontSize:12, fontWeight:800, letterSpacing:"0.06em", textShadow:"0 1px 2px rgba(0,0,0,0.3)" }}>InvoSaga</span>
           <div style={{ marginLeft:"auto", width:20, height:20, borderRadius:"50%", background:accentColor }} />
         </div>
-      </Section>
+      </Section>)}
 
       {/* Payment Methods */}
-      <Section title="Custom Payment Methods">
+      {activeTab === "payments" && (<Section title="Custom Payment Methods">
         <p style={{ margin:"0 0 12px", fontSize:13, color:"#888" }}>Add extra payment methods beyond the built-in options.</p>
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
           {customPayMethods.map(m=>(
@@ -478,7 +500,7 @@ export default function SettingsPage({ onNavigate }) {
             style={{ flex:1, padding:"9px 11px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
           <Btn onClick={addPayMethod} variant="outline" icon={<Icons.Plus />}>Add</Btn>
         </div>
-      </Section>
+      </Section>)}
 
       {/* Save */}
       <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
