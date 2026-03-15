@@ -98,7 +98,7 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
             <div style={{ borderRadius:10, overflow:"hidden", marginBottom:16, border:"1px solid #EBEBEB" }}>
               <div style={{ background:previewBg, padding:"12px 14px", display:"flex", alignItems:"center", gap:9 }}>
                 <div style={{ width:24, height:24, borderRadius:6, background:themeAccent, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
-                <span style={{ color:"#fff", fontSize:12, fontWeight:800, letterSpacing:"0.06em" }}>InvoicePilot</span>
+                <span style={{ color:"#fff", fontSize:12, fontWeight:800, letterSpacing:"0.06em" }}>InvoiceSaga</span>
               </div>
               <div style={{ background:previewBg, padding:"4px 8px 10px" }}>
                 {["Home","Invoices","Payments"].map(l=>(
