@@ -8,7 +8,7 @@ import { A4PrintModal } from "../components/shared";
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }) {
   return (
-    <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", marginBottom:18, overflow:"hidden" }}>
+    <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:18, overflow:"hidden" }}>
       <div style={{ padding:"14px 22px 12px", borderBottom:"1px solid #F5F5F5" }}>
         <h3 style={{ margin:0, fontSize:14, fontWeight:800, color:"#1A1A1A" }}>{title}</h3>
       </div>
@@ -422,7 +422,7 @@ export default function SettingsPage({ onNavigate }) {
           <Field label="Company Logo">
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               {companyLogo && (
-                <img src={companyLogo} alt="logo" style={{ maxHeight:40, maxWidth:120, objectFit:"contain", borderRadius:4, border:"1px solid #EBEBEB" }} />
+                <img src={companyLogo} alt="logo" style={{ maxHeight:40, maxWidth:120, objectFit:"contain", borderRadius:4, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }} />
               )}
               <label style={{ cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, padding:"7px 12px", background:"#F5F5F5", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:12, fontWeight:600, color:"#555", fontFamily:ff }}>
                 <Icons.Items /> {companyLogo?"Change Logo":"Upload Logo"}
