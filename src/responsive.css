@@ -7,7 +7,7 @@ html, body, #root {
 
 /* Desktop sidebar: visible only on screens >= 640px */
 .desktop-only {
-@@ -11,25 +11,36 @@ html, body, #root {
+  display: block;
 }
 
 /* Mobile elements: hidden on desktop */
@@ -34,13 +34,9 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-@media (max-width: 768px) {
-  .auth-right-panel {
-    display: none !important;
-  }
-
-  .auth-left-panel {
-    flex: 1 !important;
-    padding: 32px 24px !important;
+@media (min-width: 1023px) {
+  .auth-page-bg {
+    background-image: linear-gradient(135deg, #dbeafe 0%, #eff6ff 40%, #e0f2fe 100%);
+    background-size: cover;t;
   }
 }
