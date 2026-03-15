@@ -1,5 +1,6 @@
 import { ff } from "../../constants";
 import { Ic, Icons } from "../icons";
+import InvoiceSagaLogo from "../InvoiceSagaLogo";
 
 // ─── NAVIGATION DEFINITION ────────────────────────────────────────────────────
 export const NAV = [
@@ -27,7 +28,6 @@ export const SIDEBAR_ICON = 54;
 export function Sidebar({
   activePage, onNavigate,
   user, onUserClick, onLogout,
-  sidebarBg = "rgb(33, 38, 60)",
   accent = "#E86C4A",
   collapsed = false,
   onCollapsedChange,
@@ -62,16 +62,11 @@ export function Sidebar({
             <Icons.Invoices />
           </button>
         ) : (<>
-          <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-            <div style={{ width:28, height:28, background:"#1e6be0", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <Icons.Invoices />
-            </div>
-            <span style={{ color:"#1a1a2e", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>InvoiceSaga</span>
-          </div>
+          <InvoiceSagaLogo height={24} />
           <button onClick={toggleCollapsed} title="Collapse sidebar"
-            style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", padding:3, display:"flex", borderRadius:5, transition:"color 0.15s" }}
+            style={{ background:"none", border:"none", cursor:"pointer", color:"#9ca3af", padding:3, display:"flex", borderRadius:5, transition:"color 0.15s" }}
             onMouseEnter={e=>e.currentTarget.style.color=accent}
-            onMouseLeave={e=>e.currentTarget.style.color="#6b7280"}>
+            onMouseLeave={e=>e.currentTarget.style.color="#9ca3af"}>
             <Ic d='<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>' size={14} sw={2} />
           </button>
         </>)}
@@ -87,17 +82,18 @@ export function Sidebar({
               onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="#f3f4f6"; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
               <Icon />
-              {on && <div style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:3, height:20, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
+              {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
             </button>
           ) : (
             <button key={id} onClick={() => onNavigate(id)}
-              style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", borderLeft:on?"3px solid #1e6be0":"3px solid transparent", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s", position:"relative" }}
               onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="#f3f4f6"; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
               <span style={on ? { background:"#e8f0fc", borderRadius:7, width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center" } : { width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <Icon />
               </span>
               {label}
+              {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
             </button>
           );
         })}
@@ -123,13 +119,13 @@ export function Sidebar({
             <div style={{ color:"#6b7280", fontSize:11 }}>{user?.role}</div>
           </div>
           <button onClick={onUserClick} title="Edit profile"
-            style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", padding:2, display:"flex" }}
+            style={{ background:"none", border:"none", cursor:"pointer", color:"#9ca3af", padding:2, display:"flex" }}
             onMouseEnter={e=>e.currentTarget.style.color=accent}
             onMouseLeave={e=>e.currentTarget.style.color="#6b7280"}>
             <Icons.Pen />
           </button>
           <button onClick={onLogout}
-            style={{ border:"none", background:"rgba(255,255,255,0.08)", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:12, cursor:"pointer", fontFamily:ff }}>
+            style={{ border:"none", background:"#f3f4f6", color:"#374151", borderRadius:8, padding:"7px 10px", fontSize:12, cursor:"pointer", fontFamily:ff }}>
             Log Out
           </button>
         </>)}
@@ -207,10 +203,7 @@ export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="rgb(3
         display:"flex", flexDirection:"column", fontFamily:ff,
       }}>
         <div style={{ padding:"18px 14px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-            <div style={{ width:28, height:28, background:"#1e6be0", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
-            <span style={{ color:"#1a1a2e", fontSize:13, fontWeight:800, letterSpacing:"0.06em" }}>InvoiceSaga</span>
-          </div>
+          <InvoiceSagaLogo height={22} dark />
           <button onClick={onClose}
             style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.5)", display:"flex" }}>
             <Icons.X />
