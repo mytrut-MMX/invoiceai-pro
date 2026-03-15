@@ -9,7 +9,7 @@ export default function HomePage({ user, onNavigate }) {
   const { invoices, orgSettings } = useContext(AppCtx);
   const [reportPeriod, setReportPeriod] = useState("this_month");
   const [aiInput, setAiInput] = useState("");
-  const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoicePilot assistant. Ask me anything!` }]);
+  const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoiceSaga assistant. Ask me anything!` }]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
 
@@ -28,7 +28,7 @@ export default function HomePage({ user, onNavigate }) {
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",
           max_tokens:1000,
-          system:"You are an AI assistant for an invoicing platform called InvoicePilot. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
+          system:"You are an AI assistant for an invoicing platform called InvoiceSaga. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
           messages:[{ role:"user", content:msg }]
         })
       });
