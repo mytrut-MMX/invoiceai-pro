@@ -4,11 +4,12 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag } from "../components/atoms";
 import { upsert, formatPhoneNumber } from "../utils/helpers";
-import CustomerModal from "../modals/CustomerModal";
+import CustomerForm from "../modals/CustomerModal";
 
 export default function CustomersPage() {
   const { customers, setCustomers } = useContext(AppCtx);
-  const [modal, setModal] = useState(null);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
 
   const filtered = customers.filter(c =>
@@ -17,6 +18,19 @@ export default function CustomersPage() {
   );
 
   const onSave = c => setCustomers(p => upsert(p, c));
+  
+  if (showForm) {
+    return (
+      <CustomerForm
+        existing={editingCustomer}
+        onClose={() => {
+          setShowForm(false);
+          setEditingCustomer(null);
+        }}
+        onSave={onSave}
+      />
+    );
+  }
 
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
@@ -25,7 +39,7 @@ export default function CustomersPage() {
           <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Customers</h1>
           <p style={{ color:"#AAA", fontSize:13, margin:0 }}>{customers.length} total</p>
         </div>
-        <Btn onClick={()=>setModal({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>
+        <Btn onClick={()=> { setEditingCustomer(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>
       </div>
 
       <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
@@ -37,7 +51,7 @@ export default function CustomersPage() {
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead>
             <tr style={{ background:"#FAFAFA" }}>
-              {["Name","Type","Email","Phone","Currency",""].map(h=>(
+              {["Name","Type","Email","Phone","Currency",""] .map(h=>(
                 <th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
               ))}
             </tr>
@@ -58,7 +72,7 @@ export default function CustomersPage() {
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{formatPhoneNumber(c.phone)}</td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{c.currency}</td>
                 <td style={{ padding:"12px 18px" }}>
-                  <Btn onClick={()=>setModal({ mode:"edit", customer:c })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                  <Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
                 </td>
               </tr>
             ))}
