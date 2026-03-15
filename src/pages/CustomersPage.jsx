@@ -37,44 +37,44 @@ export default function CustomersPage() {
   }
 
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
         <div>
-          <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Customers</h1>
-          <p style={{ color:"#AAA", fontSize:13, margin:0 }}>{customers.length} total</p>
+          <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 3px" }}>Customers</h1>
+          <p style={{ color:"#6b7280", fontSize:12, margin:0 }}>{customers.length} total</p>
         </div>
         <Btn onClick={()=> { setEditingCustomer(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>
       </div>
 
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
-        <div style={{ padding:"11px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
+      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
+        <div style={{ padding:"11px 16px", borderBottom:"1px solid #f0f0f4", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…"
-            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1A1A1A", background:"transparent", fontFamily:ff }} />
+            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1a1a2e", background:"transparent", fontFamily:ff }} />
         </div>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead>
-            <tr style={{ background:"#FAFAFA" }}>
+            <tr style={{ background:"#f9fafb" }}>
               {["Name","Type","Email","Phone","Currency",""] .map(h=>(
-                <th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
+                <th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #f0f0f4" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map(c=>(
-              <tr key={c.id} style={{ borderBottom:"1px solid #F7F7F7" }}
-                onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
+              <tr key={c.id} style={{ borderBottom:"1px solid #f3f4f6" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#f9fafb"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 18px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:30, height:30, borderRadius:"50%", background:"#F0F0F0", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:"#555" }}>{c.name[0]}</div>
-                    <span style={{ fontSize:13, fontWeight:600, color:"#1A1A1A" }}>{c.name}</span>
+                    <div style={{ width:30, height:30, borderRadius:"50%", background:"#e8f0fc", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:"#374151" }}>{c.name[0]}</div>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>{c.name}</span>
                   </div>
                 </td>
-                <td style={{ padding:"12px 18px" }}><Tag color={c.type==="Business"?"#4F46E5":"#EA580C"}>{c.type}</Tag></td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#555" }}>{c.email}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{formatPhoneNumber(c.phone)}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{c.currency}</td>
+                <td style={{ padding:"12px 18px" }}><Tag color={c.type==="Business"?"#1e6be0":"#d97706"}>{c.type}</Tag></td>
+                <td style={{ padding:"12px 18px", fontSize:13, color:"#374151" }}>{c.email}</td>
+                <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{formatPhoneNumber(c.phone)}</td>
+                <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{c.currency}</td>
                 <td style={{ padding:"12px 18px" }}>
                   <Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
                 </td>
