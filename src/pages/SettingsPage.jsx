@@ -8,9 +8,9 @@ import { A4PrintModal } from "../components/shared";
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }) {
   return (
-    <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:18, overflow:"hidden" }}>
-      <div style={{ padding:"14px 22px 12px", borderBottom:"1px solid #F5F5F5" }}>
-        <h3 style={{ margin:0, fontSize:14, fontWeight:800, color:"#1A1A1A" }}>{title}</h3>
+    <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:18, overflow:"hidden" }}>
+      <div style={{ padding:"14px 22px 12px", borderBottom:"1px solid #f0f0f4" }}>
+        <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:"#1a1a2e" }}>{title}</h3>
       </div>
       <div style={{ padding:"18px 22px" }}>{children}</div>
     </div>
@@ -48,9 +48,9 @@ function ChipToggle({ value, onChange, options }) {
             type="button"
             onClick={()=>onChange(option)}
             style={{
-              border: `1px solid ${selected?"#E86C4A":"#D4D4D8"}`,
-              background: selected?"#E86C4A":"#fff",
-              color: selected?"#fff":"#52525B",
+              border: `1px solid ${selected?"#1e6be0":"#e8e8ec"}`,
+              background: selected?"#1e6be0":"#fff",
+              color: selected?"#fff":"#374151",
               borderRadius:999,
               padding:"7px 12px",
               fontSize:13,
@@ -244,8 +244,8 @@ export default function SettingsPage({ onNavigate }) {
   ];
 
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:860, fontFamily:ff }}>
-      <h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:"0 0 12px" }}>Settings</h1>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:860, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+      <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 12px" }}>Settings</h1>
       <div style={{ display:"flex", gap:18, flexWrap:"wrap", borderBottom:"1px solid #E5E7EB", marginBottom:18 }}>
         {settingTabs.map(tab=>{
           const isActive = activeTab===tab.id;
@@ -259,8 +259,8 @@ export default function SettingsPage({ onNavigate }) {
                 background:"transparent",
                 padding:"4px 0 10px",
                 marginBottom:-1,
-                borderBottom:`2px solid ${isActive?"#E86C4A":"transparent"}`,
-                color:isActive?"#E86C4A":"#6B7280",
+                borderBottom:`2px solid ${isActive?"#1e6be0":"transparent"}`,
+                color:isActive?"#1e6be0":"#6b7280",
                 fontSize:13,
                 fontWeight:isActive?700:600,
                 cursor:"pointer",
@@ -384,7 +384,7 @@ export default function SettingsPage({ onNavigate }) {
             return (
               <div key={tpl.id}
                 onClick={()=>setSelectedTpl(tpl.id)}
-                style={{ border:`2px solid ${sel?"#E86C4A":"#E0E0E0"}`, borderRadius:12, overflow:"hidden", cursor:"pointer", transition:"all 0.15s", background:sel?"#FFF7F4":"#fff" }}>
+                style={{ border:`2px solid ${sel?"#1e6be0":"#e8e8ec"}`, borderRadius:12, overflow:"hidden", cursor:"pointer", transition:"all 0.15s", background:sel?"#eff6ff":"#fff" }}>
                 {/* Mini preview swatch */}
                 <div style={{ height:80, background:tpl.defaultBg, borderBottom:`3px solid ${tpl.defaultAccent}`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
                   <div style={{ width:60, height:8, background:tpl.defaultAccent, borderRadius:4, opacity:0.8 }} />
@@ -394,7 +394,7 @@ export default function SettingsPage({ onNavigate }) {
                 </div>
                 <div style={{ padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{tpl.name}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e" }}>{tpl.name}</div>
                     <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>{tpl.description}</div>
                   </div>
                   <button
@@ -408,8 +408,8 @@ export default function SettingsPage({ onNavigate }) {
                 </div>
                 {sel && (
                   <div style={{ padding:"0 12px 10px", display:"flex", alignItems:"center", gap:5 }}>
-                    <div style={{ width:8, height:8, borderRadius:"50%", background:"#E86C4A" }} />
-                    <span style={{ fontSize:11, color:"#E86C4A", fontWeight:700 }}>Selected</span>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:"#1e6be0" }} />
+                    <span style={{ fontSize:11, color:"#1e6be0", fontWeight:700 }}>Selected</span>
                   </div>
                 )}
               </div>
@@ -451,7 +451,7 @@ export default function SettingsPage({ onNavigate }) {
           <div style={{ display:"flex", gap:8 }}>
             {["solid","gradient"].map(t=>(
               <button key={t} onClick={()=>setThemeType(t)}
-                style={{ padding:"7px 16px", borderRadius:8, border:`1.5px solid ${themeType===t?"#E86C4A":"#E0E0E0"}`, background:themeType===t?"#FFF7F4":"#fff", color:themeType===t?"#E86C4A":"#555", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff, textTransform:"capitalize" }}>
+                style={{ padding:"7px 16px", borderRadius:8, border:`1.5px solid ${themeType===t?"#1e6be0":"#e8e8ec"}`, background:themeType===t?"#eff6ff":"#fff", color:themeType===t?"#1e6be0":"#374151", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff, textTransform:"capitalize" }}>
                 {t}
               </button>
             ))}
@@ -462,7 +462,7 @@ export default function SettingsPage({ onNavigate }) {
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
               {SIDEBAR_PRESETS.map(p=>(
                 <button key={p.color} onClick={()=>setThemeColor(p.color)} title={p.label}
-                  style={{ width:28, height:28, borderRadius:"50%", background:p.color, border:`2px solid ${themeColor===p.color?"#E86C4A":"transparent"}`, cursor:"pointer", outline:"none", boxShadow:p.color==="#FFFFFF"?"inset 0 0 0 1px #E0E0E0":"none" }} />
+                  style={{ width:28, height:28, borderRadius:"50%", background:p.color, border:`2px solid ${themeColor===p.color?"#1e6be0":"transparent"}`, cursor:"pointer", outline:"none", boxShadow:p.color==="#FFFFFF"?"inset 0 0 0 1px #E0E0E0":"none" }} />
               ))}
             </div>
           </Field>
@@ -487,7 +487,7 @@ export default function SettingsPage({ onNavigate }) {
               <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                 {ACCENT_PRESETS.map(c=>(
                   <button key={c} onClick={()=>setAccentColor(c)}
-                    style={{ width:24, height:24, borderRadius:"50%", background:c, border:`2px solid ${accentColor===c?"#1A1A1A":"transparent"}`, cursor:"pointer", outline:"none" }} />
+                    style={{ width:24, height:24, borderRadius:"50%", background:c, border:`2px solid ${accentColor===c?"#1e6be0":"transparent"}`, cursor:"pointer", outline:"none" }} />
                 ))}
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -511,7 +511,7 @@ export default function SettingsPage({ onNavigate }) {
         <p style={{ margin:"0 0 12px", fontSize:13, color:"#888" }}>Add extra payment methods beyond the built-in options.</p>
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
           {customPayMethods.map(m=>(
-            <div key={m} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 10px", background:"#F5F5F5", border:"1px solid #E0E0E0", borderRadius:20, fontSize:12, fontWeight:600, color:"#444" }}>
+            <div key={m} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 10px", background:"#f3f4f6", border:"1px solid #e8e8ec", borderRadius:20, fontSize:12, fontWeight:600, color:"#444" }}>
               {m}
               <button onClick={()=>removePayMethod(m)} style={{ background:"none", border:"none", cursor:"pointer", color:"#CCC", padding:0, display:"flex" }}><Icons.X /></button>
             </div>
@@ -532,7 +532,7 @@ export default function SettingsPage({ onNavigate }) {
             <Icons.Check /> Settings saved!
           </div>
         )}
-        <Btn onClick={handleSaveOrg} variant="primary" icon={<Icons.Save />}>Save Settings</Btn>
+        <Btn onClick={handleSaveOrg} variant="primary" icon={<Icons.Save />} style={{ background:saved?"#059669":"#1e6be0", color:"#fff" }}>Save Settings</Btn>
       </div>
 
       {/* Template Preview Modal */}
