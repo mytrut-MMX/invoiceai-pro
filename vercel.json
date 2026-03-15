@@ -5,9 +5,10 @@
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api/$1" }],
   "redirects": [
     {
-      "source": "https://www.invoicesaga.com/:path*",
+      "source": "/:path*",
       "destination": "https://invoicesaga.com/:path*",
-      "permanent": true
+      "permanent": true,
+      "has": [{ "type": "host", "value": "www.invoicesaga.com" }]
     }
   ]
 }
