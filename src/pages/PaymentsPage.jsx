@@ -45,17 +45,29 @@ function PaymentModal({ existing, onClose, onSave }) {
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }}>
-      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:480, boxShadow:"0 20px 60px rgba(0,0,0,0.18)", fontFamily:ff, overflow:"hidden" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 22px 12px", borderBottom:"1px solid #F0F0F0" }}>
-          <div>
-            <h2 style={{ margin:0, fontSize:16, fontWeight:800, color:"#1A1A1A" }}>{isEdit?"Edit Payment":"Record Payment"}</h2>
-            <p style={{ margin:"2px 0 0", fontSize:12, color:"#AAA" }}>Manually record a payment received</p>
+    <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+      <div style={{ maxWidth:640, margin:"0 auto", padding:"0 0 40px" }}>
+        <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
+              ← Payments
+            </button>
+            <span style={{ color:"#d1d5db" }}>/</span>
+            <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
+              {isEdit ? "Edit Payment" : "New Payment"}
+            </span>
           </div>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn onClick={onClose} variant="outline">Cancel</Btn>
+            <Btn onClick={handleSave} variant="primary" disabled={!amount||!date}>
+              {isEdit ? "Save Changes" : "Record Payment"}
+            </Btn>
+          </div>
         </div>
 
-        <div style={{ padding:"16px 22px 8px" }}>
+       <div style={{ padding:"20px 24px", display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", padding:"18px 22px" }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e", marginBottom:16 }}>Payment Details</div>
           <Field label="Payment #">
             <Input value={paymentNumber} onChange={setPaymentNumber} />
           </Field>
@@ -102,13 +114,9 @@ function PaymentModal({ existing, onClose, onSave }) {
             <Textarea value={notes} onChange={setNotes} rows={2} placeholder="Optional internal notes…" />
           </Field>
         </div>
-
-        <div style={{ padding:"10px 22px 16px", borderTop:"1px solid #F0F0F0", display:"flex", gap:10, justifyContent:"flex-end" }}>
-          <Btn onClick={onClose} variant="outline">Cancel</Btn>
-          <Btn onClick={handleSave} variant="primary" disabled={!amount||!date}>{isEdit?"Save Changes":"Record Payment"}</Btn>
+          </div>
         </div>
       </div>
-    </div>
   );
 }
 
@@ -116,7 +124,8 @@ function PaymentModal({ existing, onClose, onSave }) {
 export default function PaymentsPage() {
   const { payments, setPayments, orgSettings } = useContext(AppCtx);
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
-  const [modal, setModal] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
   const [search, setSearch] = useState("");
   const [filterMethod, setFilterMethod] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -147,6 +156,14 @@ export default function PaymentsPage() {
   const statusColors = { Reconciled:"#16A34A", Partial:"#D97706", Pending:"#6B7280", Refunded:"#DC2626" };
   const methodIcon = { "Bank Transfer":"🏦","Credit Card":"💳","Cash":"💵","Cheque":"📝","PayPal":"🔵","Stripe":"🟣","Direct Debit":"🔄" };
 
+  if (showForm) return (
+    <PaymentModal
+      existing={editingPayment}
+      onClose={() => { setShowForm(false); setEditingPayment(null); }}
+      onSave={pmt => { onSave(pmt); setShowForm(false); setEditingPayment(null); }}
+    />
+  );
+
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
       {/* Summary */}
@@ -157,7 +174,7 @@ export default function PaymentsPage() {
           { label:"Refunded",       value:fmt(currSym,totalRef), color:"#DC2626" },
           { label:"Transactions",   value:payments.length, color:"#888" },
         ].map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
             <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
           </div>
@@ -178,11 +195,11 @@ export default function PaymentsPage() {
             style={{ padding:"6px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
             {methods.map(m=><option key={m}>{m}</option>)}
           </select>
-          <Btn onClick={()=>setModal({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>Record Payment</Btn>
+          <Btn onClick={() => { setEditingPayment(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>Record Payment</Btn>
         </div>
       </div>
 
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
+      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
         <div style={{ padding:"10px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search payments…"
@@ -190,7 +207,7 @@ export default function PaymentsPage() {
         </div>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
           <thead>
-            <tr style={{ background:"#FAFAFA" }}>
+            <tr style={{ background:"#f9fafb" }}>
               {["Payment #","Date","Customer","Invoice","Method","Reference","Amount","Status",""].map(h=>(
                 <th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
               ))}
@@ -220,7 +237,7 @@ export default function PaymentsPage() {
                 <td style={{ padding:"12px 16px" }}><Tag color={statusColors[pmt.status]||"#888"}>{pmt.status}</Tag></td>
                 <td style={{ padding:"12px 16px" }}>
                   <div style={{ display:"flex", gap:4 }}>
-                    <Btn onClick={()=>setModal({ mode:"edit", payment:pmt })} variant="ghost" size="sm" icon={<Icons.Edit />} />
+                    <Btn onClick={() => { setEditingPayment(pmt); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} />
                     <Btn onClick={()=>del(pmt.id)} variant="ghost" size="sm" icon={<Icons.Trash />} />
                   </div>
                 </td>
@@ -234,14 +251,6 @@ export default function PaymentsPage() {
           </tbody>
         </table>
       </div>
-
-      {modal && (
-        <PaymentModal
-          existing={modal.mode==="edit"?modal.payment:null}
-          onClose={()=>setModal(null)}
-          onSave={pmt=>{ onSave(pmt); setModal(null); }}
-        />
-      )}
     </div>
   );
 }
