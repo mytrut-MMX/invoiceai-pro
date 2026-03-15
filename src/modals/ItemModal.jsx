@@ -4,7 +4,7 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
 
-export default function ItemModal({ existing, onClose, onSave }) {
+export default function ItemForm({ existing, onClose, onSave }) {
   const { orgSettings } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
   const isEdit = !!existing;
@@ -55,17 +55,29 @@ export default function ItemModal({ existing, onClose, onSave }) {
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }}>
-      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:520, boxShadow:"0 20px 60px rgba(0,0,0,0.18)", fontFamily:ff, overflow:"hidden" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 24px 14px", borderBottom:"1px solid #F0F0F0" }}>
-          <div>
-            <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1A1A1A" }}>{isEdit?`Edit — ${existing.name}`:"New Item"}</h2>
-            <p style={{ margin:"2px 0 0", fontSize:12, color:"#AAA" }}>Products and services you sell</p>
+    <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+      <div style={{ maxWidth:640, margin:"0 auto", padding:"0 0 40px" }}>
+        <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, display:"flex", alignItems:"center", gap:4 }}>
+              ← Items
+            </button>
+            <span style={{ color:"#d1d5db" }}>/</span>
+            <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
+              {isEdit ? existing.name : "New Item"}
+            </span>
           </div>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#AAA" }}><Icons.X /></button>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn onClick={onClose} variant="outline">Cancel</Btn>
+            <Btn onClick={handleSave} variant="primary" disabled={!name||!rate}>
+              {isEdit ? "Save Changes" : "Save Item"}
+            </Btn>
+          </div>
         </div>
 
-        <div style={{ padding:"18px 24px" }}>
+        <div style={{ padding:"20px 24px", display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", padding:"18px 22px" }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e", marginBottom:16 }}>Item Details</div>
           <Field label="Item Type" required>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
               {ITEM_TYPES.map(t=>(
@@ -133,8 +145,11 @@ export default function ItemModal({ existing, onClose, onSave }) {
             </Field>
           </div>
 
+          </div>
+
           {showCIS && (
-            <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 10px", border:"1px solid #EBEBEB", marginBottom:14 }}>
+            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", padding:"18px 22px" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e", marginBottom:16 }}>CIS Details</div>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:cisApplicable?12:0 }}>
                 <div>
                   <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>CIS Applicable</div>
@@ -162,11 +177,6 @@ export default function ItemModal({ existing, onClose, onSave }) {
             </div>
             <Switch checked={active} onChange={setActive} />
           </div>
-        </div>
-
-        <div style={{ padding:"12px 24px 16px", borderTop:"1px solid #F0F0F0", display:"flex", gap:10, justifyContent:"flex-end" }}>
-          <Btn onClick={onClose} variant="outline">Cancel</Btn>
-          <Btn onClick={handleSave} variant="primary" disabled={!name||!rate}>{isEdit?"Save Changes":"Save Item"}</Btn>
         </div>
       </div>
     </div>
