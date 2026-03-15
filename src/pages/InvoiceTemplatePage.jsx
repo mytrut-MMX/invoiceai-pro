@@ -53,7 +53,7 @@ export default function InvoiceTemplatesPage() {
     <div style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth: 900, fontFamily: ff }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1A1A1A", margin: "0 0 16px" }}>Invoice Templates</h1>
 
-      <div style={{ background: "#fff", border: "1px solid #EBEBEB", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+      <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
           <Field label="Template">
             <Select value={pdfTemplate} onChange={setPdfTemplate} options={PDF_TEMPLATES.map(t=>({ value:t.id, label:t.name }))} />
@@ -73,7 +73,7 @@ export default function InvoiceTemplatesPage() {
         </div>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #EBEBEB", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+      <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", marginBottom: 10 }}>Custom Fields</div>
         <Checkbox checked={showPoField} onChange={setShowPoField} label="Show PO field in invoice metadata" />
         <Checkbox checked={showNotesField} onChange={setShowNotesField} label="Show Notes section in template" />
@@ -86,9 +86,9 @@ export default function InvoiceTemplatesPage() {
         <Btn onClick={saveTemplateSettings} variant="primary" icon={<Icons.Save />}>Save Template Settings</Btn>
       </div>
 
-      <div style={{ marginTop: 20, background:"#fff", border:"1px solid #EBEBEB", borderRadius:12, padding:16 }}>
+      <div style={{ marginTop: 20, background:"#fff", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:12, padding:16 }}>
         <div style={{ fontSize:12, fontWeight:800, color:"#888", textTransform:"uppercase", marginBottom:8 }}>Live Preview</div>
-        <div style={{ border:"1px solid #EBEBEB", borderRadius:10, overflow:"auto", background:"#f3f4f6", padding:12 }}>
+        <div style={{ border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:10, overflow:"auto", background:"#f3f4f6", padding:12 }}>
           <div style={{ transform:"scale(0.78)", transformOrigin:"top center", marginBottom:"-180px" }}>
             <A4InvoiceDoc data={previewData} currSymbol="£" isVat orgSettings={{ orgName:"Demo Company" }} accentColor={accentColor} template={pdfTemplate} footerText="" templateConfig={{ logoPosition, logoSize:Number(companyLogoSize||52), showNotesField, showPoField, customFieldLabel, accentColor }} />
           </div>
