@@ -30,7 +30,8 @@ export default function ItemsPage() {
 
   const toggleActive = id => setCatalogItems(p => p.map(i => i.id===id ? {...i, active:!i.active} : i));
 
-  const typeColors = { Service:"#4F46E5", Labour:"#D97706", Material:"#059669", Equipment:"#2563EB", Other:"#6B7280" };
+  const typeColors = { Service:"#1e6be0", Labour:"#d97706", Material:"#059669", Equipment:"#0891b2", Other:"#6b7280" };
+  const typeAvatars = { Service:"#e8f0fc", Labour:"#fef3c7", Material:"#d1fae5", Equipment:"#cffafe", Other:"#e5e7eb" };
 
   if (showForm) return (
     <ItemForm
@@ -41,11 +42,11 @@ export default function ItemsPage() {
   );
   
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
         <div>
-          <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Items</h1>
-          <p style={{ color:"#AAA", fontSize:13, margin:0 }}>Products and services you sell</p>
+          <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 3px" }}>Items</h1>
+          <p style={{ color:"#6b7280", fontSize:13, margin:0 }}>Products and services you sell</p>
         </div>
         <Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Item</Btn>
       </div>
@@ -56,33 +57,38 @@ export default function ItemsPage() {
         </div>
       )}
 
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
-        <div style={{ padding:"11px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
+      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
+        <div style={{ padding:"11px 16px", borderBottom:"1px solid #e8e8ec", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items…"
-            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1A1A1A", background:"transparent", fontFamily:ff }} />
+            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1a1a2e", background:"transparent", fontFamily:ff }} />
         </div>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead>
-            <tr style={{ background:"#FAFAFA" }}>
+            <tr style={{ background:"#f9fafb" }}>
               {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status",""].map(h=>(
-                <th key={h} style={{ padding:"8px 18px", textAlign:h==="Rate"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
+                <th key={h} style={{ padding:"8px 18px", textAlign:h==="Rate"?"right":"left", fontSize:10, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #e8e8ec" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map(item=>(
-              <tr key={item.id} style={{ borderBottom:"1px solid #F7F7F7" }}
-                onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
+             <tr key={item.id} style={{ borderBottom:"1px solid #f3f4f6" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#f9fafb"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 18px" }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{item.name}</div>
-                  <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>{item.description}</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div style={{ width:30, height:30, borderRadius:"50%", background:typeAvatars[item.type]||"#e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:typeColors[item.type]||"#6b7280" }}>{(item.type||"—")[0]}</div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e" }}>{item.name}</div>
+                      <div style={{ fontSize:11, color:"#6b7280", marginTop:1 }}>{item.description}</div>
+                    </div>
+                  </div>
                 </td>
-                <td style={{ padding:"12px 18px" }}><Tag color={typeColors[item.type]||"#888"}>{item.type||"—"}</Tag></td>
-                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt("£",item.rate)}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{item.unit}</td>
-                {isVat && <td style={{ padding:"12px 18px", fontSize:13, color:"#888" }}>{item.taxRate}%</td>}
+                <td style={{ padding:"12px 18px" }}><Tag color={typeColors[item.type]||"#6b7280"}>{item.type||"—"}</Tag></td>
+                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:700, color:"#1a1a2e", textAlign:"right" }}>{fmt("£",item.rate)}</td>
+                <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.unit}</td>
+                {isVat && <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.taxRate}%</td>}
                 <td style={{ padding:"12px 18px" }}>
                   {item.cisApplicable
                     ? <Tag color="#D97706">CIS {item.cisLabourRate||"20%"}</Tag>
