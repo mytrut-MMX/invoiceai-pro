@@ -4,12 +4,13 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag, Switch, InfoBox } from "../components/atoms";
 import { fmt } from "../utils/helpers";
-import ItemModal from "../modals/ItemModal";
+import ItemForm from "../modals/ItemModal";
 
 export default function ItemsPage() {
   const { orgSettings, catalogItems, setCatalogItems } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
-  const [modal, setModal] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
 
   const filtered = catalogItems.filter(i =>
@@ -17,16 +18,28 @@ export default function ItemsPage() {
     i.description.toLowerCase().includes(search.toLowerCase())
   );
 
-  const onSave = item => setCatalogItems(p => {
-    const i = p.findIndex(x=>x.id===item.id);
-    if(i>=0){ const u=[...p]; u[i]=item; return u; }
-    return [...p, item];
-  });
+  const onSave = item => {
+    setCatalogItems(p => {
+      const i = p.findIndex(x=>x.id===item.id);
+      if(i>=0){ const u=[...p]; u[i]=item; return u; }
+      return [...p, item];
+    });
+    setShowForm(false);
+    setEditingItem(null);
+  };
 
   const toggleActive = id => setCatalogItems(p => p.map(i => i.id===id ? {...i, active:!i.active} : i));
 
   const typeColors = { Service:"#4F46E5", Labour:"#D97706", Material:"#059669", Equipment:"#2563EB", Other:"#6B7280" };
 
+  if (showForm) return (
+    <ItemForm
+      existing={editingItem}
+      onClose={() => { setShowForm(false); setEditingItem(null); }}
+      onSave={onSave}
+    />
+  );
+  
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
@@ -34,7 +47,7 @@ export default function ItemsPage() {
           <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>Items</h1>
           <p style={{ color:"#AAA", fontSize:13, margin:0 }}>Products and services you sell</p>
         </div>
-        <Btn onClick={()=>setModal({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Item</Btn>
+        <Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Item</Btn>
       </div>
 
       {!isVat && (
@@ -82,7 +95,7 @@ export default function ItemsPage() {
                   </div>
                 </td>
                 <td style={{ padding:"12px 18px" }}>
-                  <Btn onClick={()=>setModal({ mode:"edit", item })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                  <Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
                 </td>
               </tr>
             ))}
@@ -92,14 +105,7 @@ export default function ItemsPage() {
           </tbody>
         </table>
       </div>
-
-      {modal && (
-        <ItemModal
-          existing={modal.mode==="edit" ? modal.item : null}
-          onClose={()=>setModal(null)}
-          onSave={onSave}
-        />
-      )}
+      
     </div>
   );
 }
