@@ -17,7 +17,11 @@ export default function CustomersPage() {
     c.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const onSave = c => setCustomers(p => upsert(p, c));
+  const onSave = c => {
+    setCustomers(p => upsert(p, c));
+    setShowForm(false);
+    setEditingCustomer(null);
+  };
   
   if (showForm) {
     return (
@@ -82,14 +86,6 @@ export default function CustomersPage() {
           </tbody>
         </table>
       </div>
-
-      {modal && (
-        <CustomerModal
-          existing={modal.mode==="edit" ? modal.customer : null}
-          onClose={()=>setModal(null)}
-          onSave={onSave}
-        />
-      )}
     </div>
   );
 }
