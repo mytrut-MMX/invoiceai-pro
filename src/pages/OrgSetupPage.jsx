@@ -51,7 +51,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"#F7F7F5", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+    <div style={{ minHeight:"100vh", background:"#f4f5f7", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
       <div style={{ width:"100%", maxWidth:640, background:"#fff", borderRadius:16, boxShadow:"0 4px 40px rgba(0,0,0,0.08)", overflow:"hidden" }}>
         <div style={{ background:"#1A1A1A", padding:"28px 40px 24px", color:"#fff" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
@@ -92,7 +92,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
             </button>
           </Field>
           {showAddr && (
-            <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 2px", marginBottom:14, border:"1px solid #EBEBEB" }}>
+            <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 2px", marginBottom:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 <Field label="Country" required>
                   <Select value={country} onChange={v=>{ setCountry(v); setState(""); }} options={COUNTRIES} />
@@ -116,7 +116,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
             <Field label="Time Zone"><Select value={timezone} onChange={setTimezone} options={TIMEZONES} /></Field>
           </div>
 
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #EBEBEB", marginTop:8, marginBottom:12 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginTop:8, marginBottom:12 }}>
             <div>
               <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>Do you deliver physical items?</div>
               <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>If disabled, shipping fields stay optional and hidden by default.</div>
@@ -125,7 +125,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           </div>
 
           {/* VAT */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #EBEBEB", marginBottom:4 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:4 }}>
             <div>
               <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>VAT Registered</div>
               <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>Are you registered to charge VAT?</div>
@@ -133,7 +133,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
             <SlideToggle value={vatReg} onChange={v=>{ setVatReg(v); setVatNumTouched(false); }} />
           </div>
           {vatReg && (
-            <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 8px", marginBottom:14, border:"1px solid #EBEBEB" }}>
+            <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 8px", marginBottom:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
               <Field label="VAT Registration Number" required error={vatNumError}>
                 <Input value={vatNum} onChange={v=>{ setVatNum(v); setVatNumTouched(true); }} placeholder="GB123456789" error={!!vatNumError} />
               </Field>
@@ -152,7 +152,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           {/* CIS */}
           {isCIS && (
             <>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #EBEBEB", marginTop:8, marginBottom:4 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginTop:8, marginBottom:4 }}>
                 <div>
                   <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>CIS Registered</div>
                   <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>Construction Industry Scheme</div>
@@ -160,7 +160,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
                 <SlideToggle value={cisReg} onChange={v=>setCisReg(v)} />
               </div>
               {cisReg && (
-                <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 8px", marginBottom:14, border:"1px solid #EBEBEB" }}>
+                <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 8px", marginBottom:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
                   <Field label="UTR Number" hint="Unique Taxpayer Reference — 10 digits">
                     <div style={{ position:"relative" }}>
                       <Input value={cisUtr} onChange={setCisUtr} placeholder="e.g. 1234567890" />
