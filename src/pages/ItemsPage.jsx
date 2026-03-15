@@ -43,7 +43,7 @@ export default function ItemsPage() {
         </div>
       )}
 
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflowX:"auto" }}>
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
         <div style={{ padding:"11px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items…"
