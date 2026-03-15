@@ -21,36 +21,11 @@ const sectionBaseStyle = {
   marginBottom: 14,
 };
 
-function SectionCard({ title, open, onToggle, children }) {
+function SectionCard({ title, children }) {
   return (
-    <section style={sectionBaseStyle}>
-      <button
-        onClick={onToggle}
-        style={{
-          width: "100%",
-          border: "none",
-          background: "none",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 16px",
-          cursor: "pointer",
-          fontFamily: ff,
-        }}
-      >
-        <span style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e" }}>{title}</span>
-        <span
-          style={{
-            display: "flex",
-            color: "#9ca3af",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 0.15s",
-          }}
-        >
-          <Icons.ChevDown />
-        </span>
-      </button>
-      {open && <div style={{ padding: "0 16px 16px" }}>{children}</div>}
+    <section style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", padding:"18px 22px" }}>
+      <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e", marginBottom:16 }}>{title}</div>
+      {children}
     </section>
   );
 }
@@ -88,13 +63,6 @@ export default function CustomerForm({ existing, onClose, onSave }) {
   const existingFlatRateMatch = existingCisRate.match(/(\d+(?:\.\d+)?)/);
   const [cisDeductRate, setCisDeductRate] = useState(existingCisRate.toLowerCase().includes("flat rate") ? "Flat rate" : existingCisRate);
   const [cisFlatRate, setCisFlatRate] = useState(existingFlatRateMatch ? existingFlatRateMatch[1] : "");
-  const [openSections, setOpenSections] = useState({
-    basic: true,
-    address: true,
-    tax: false,
-    contacts: false,
-    remarks: false,
-  });
 
   const addContact = () => setContacts(p => [...p, { id: crypto.randomUUID(), salutation: "", firstName: "", lastName: "", email: "", phone: "", jobTitle: "", department: "", isPrimary: false }]);
   const updContact = (id, f, v) => setContacts(p => p.map(c => (c.id === id ? { ...c, [f]: v } : c)));
@@ -102,7 +70,6 @@ export default function CustomerForm({ existing, onClose, onSave }) {
 
   const isFlatRateSelected = cisDeductRate === "Flat rate";
   const vatValidation = useMemo(() => validateVatNumber(vatNumber), [vatNumber]);
-  const toggleSection = key => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   const handleSave = () => {
     onSave({
@@ -132,28 +99,31 @@ export default function CustomerForm({ existing, onClose, onSave }) {
         cisRate: isFlatRateSelected && cisFlatRate ? `Flat rate (${cisFlatRate}%)` : cisDeductRate,
       },
     });
-    onClose();
-  };
+      };
 
   return (
-    <div style={{ position: "relative", background: "#f4f5f7", minHeight: "100vh", fontFamily: ff }}>
-      <div style={{ maxWidth: 860, margin: "0 auto", background: "transparent" }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#6b7280" }}>
-            <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#374151", display: "flex", alignItems: "center", gap: 5, fontFamily: ff, fontSize: 13, padding: 0 }}>
-              <span style={{ display:"flex", transform:"rotate(90deg)" }}><Icons.ChevDown /></span>Customers
+    <div style={{ background: "#f4f5f7", minHeight: "100vh", fontFamily: ff }}>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding:"0 0 40px" }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, display:"flex", alignItems:"center", gap:4 }}>
+              ← Customers
             </button>
-            <span>/</span>
-            <span style={{ color: "#1a1a2e", fontWeight: 700 }}>{isEdit ? `Edit ${existing?.name || "Customer"}` : "New Customer"}</span>
+            <span style={{ color:"#d1d5db" }}>/</span>
+            <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
+              {isEdit ? existing.name : "New Customer"}
+            </span>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display:"flex", gap:8 }}>
             <Btn onClick={onClose} variant="outline">Cancel</Btn>
-            <Btn onClick={handleSave} variant="primary">{isEdit ? "Save Changes" : "Save"}</Btn>
+            <Btn onClick={handleSave} variant="primary">
+              {isEdit ? "Save Changes" : "Save Customer"}
+            </Btn>
           </div>
         </div>
 
-          <div style={{ padding: "18px 14px 26px" }}>
-          <SectionCard title="Basic Info" open={openSections.basic} onToggle={() => toggleSection("basic")}> 
+          <div style={{ padding:"20px 24px", display:"flex", flexDirection:"column", gap:16 }}>
+          <SectionCard title="Basic Info"> 
             <Field label="Customer Type" required>
               <Toggle value={custType} onChange={setCustType} options={["Business", "Individual"]} />
             </Field>
@@ -184,7 +154,7 @@ export default function CustomerForm({ existing, onClose, onSave }) {
               </div>
           </SectionCard>
 
-                  <SectionCard title="Address & Billing" open={openSections.address} onToggle={() => toggleSection("address")}>
+                  <SectionCard title="Address & Payment">
             <AddressForm address={billing} onChange={setBilling} label="Billing Address" />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#F9F9F9", borderRadius: 8, border: "1px solid #EBEBEB", margin: "4px 0 14px" }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: "#333" }}>Shipping same as billing</span>
@@ -193,7 +163,7 @@ export default function CustomerForm({ existing, onClose, onSave }) {
             {!sameAddr && <AddressForm address={shippingAddr} onChange={setShippingAddr} label="Shipping Address" />}
           </SectionCard>
 
-              <SectionCard title="Tax Details" open={openSections.tax} onToggle={() => toggleSection("tax")}>
+              <SectionCard title="Tax Details">
             {isOrgVatRegistered && (
               <>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#F9F9F9", borderRadius: 8, border: "1px solid #EBEBEB", marginBottom: 12 }}>
@@ -240,7 +210,7 @@ export default function CustomerForm({ existing, onClose, onSave }) {
             )}
           </SectionCard>
 
-          <SectionCard title="Contact Persons" open={openSections.contacts} onToggle={() => toggleSection("contacts")}>
+          <SectionCard title="Contact Persons">
             {contacts.map((cp, idx) => (
               <div key={cp.id} style={{ background: "#F9F9F9", borderRadius: 10, padding: "12px 12px 4px", marginBottom: 10, border: "1px solid #EBEBEB" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -268,7 +238,7 @@ export default function CustomerForm({ existing, onClose, onSave }) {
             <Btn onClick={addContact} variant="outline" size="sm" icon={<Icons.Plus />}>Add Contact Person</Btn>
           </SectionCard>
 
-          <SectionCard title="Remarks" open={openSections.remarks} onToggle={() => toggleSection("remarks")}>
+          <SectionCard title="Remarks">
             <Textarea value={remarks} onChange={setRemarks} placeholder="Internal notes…" rows={3} />
           </SectionCard>
         </div>
