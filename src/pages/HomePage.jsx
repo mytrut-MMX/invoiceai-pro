@@ -111,7 +111,7 @@ export default function HomePage({ user, onNavigate }) {
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:24 }}>
         {stats.map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #EBEBEB" }}>
+          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
             <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
             <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{s.sub}</div>
@@ -120,7 +120,7 @@ export default function HomePage({ user, onNavigate }) {
       </div>
 
       {/* AI Chat */}
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", overflow:"hidden", marginBottom:24 }}>
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflow:"hidden", marginBottom:24 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 18px", borderBottom:"1px solid #F0F0F0", background:"#FAFAFA" }}>
           <div style={{ width:28, height:28, background:"#1A1A1A", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}><Icons.Bot /></div>
           <div>
@@ -159,7 +159,7 @@ export default function HomePage({ user, onNavigate }) {
       </div>
 
       {/* Reports Center */}
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #EBEBEB", padding:"14px 16px" }}>
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"14px 16px" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap", marginBottom:14 }}>
           <div>
             <div style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Reports Center</div>
