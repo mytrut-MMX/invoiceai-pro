@@ -76,10 +76,10 @@ export default function HomePage({ user, onNavigate }) {
       : 0;
 
     return [
-      { label:"Outstanding", value:fmt(currencySymbol, outstanding), sub:`${invoices.filter(i=>["Sent","Partial"].includes(i.status)).length} invoices`, color:"#E86C4A" },
-      { label:"Overdue", value:fmt(currencySymbol, overdue), sub:`${invoices.filter(i=>i.status==="Overdue").length} invoices`, color:"#C0392B" },
-      { label:"Paid", value:fmt(currencySymbol, paid), sub:"Received", color:"#1A1A1A" },
-      { label:"Draft", value:fmt(currencySymbol, draft), sub:"Needs action", color:"#888" },
+     { label:"Outstanding", value:fmt(currencySymbol, outstanding), sub:`${invoices.filter(i=>["Sent","Partial"].includes(i.status)).length} invoices`, color:"#1e6be0" },
+      { label:"Overdue", value:fmt(currencySymbol, overdue), sub:`${invoices.filter(i=>i.status==="Overdue").length} invoices`, color:"#dc2626" },
+      { label:"Paid", value:fmt(currencySymbol, paid), sub:"Received", color:"#059669" },
+      { label:"Draft", value:fmt(currencySymbol, draft), sub:"Needs action", color:"#6b7280" },
       { label:"VAT Tracked", value: orgSettings?.vatReg === "Yes" ? fmt(currencySymbol, vatDue) : "Disabled", sub: orgSettings?.vatReg === "Yes" ? "Output VAT" : "Enable VAT in Settings", color:"#2563EB" },
       { label:"CIS Tracked", value: orgSettings?.cisReg === "Yes" ? fmt(currencySymbol, cisTracked) : "Disabled", sub: orgSettings?.cisReg === "Yes" ? "CIS deductions" : "Enable CIS in Settings", color:"#7C3AED" },
     ];
@@ -100,19 +100,19 @@ export default function HomePage({ user, onNavigate }) {
   }, [periodInvoices]);
 
     return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff, background:"#f4f5f7", minHeight:"100vh" }}>
       <div style={{ marginBottom:24 }}>
-        <h1 style={{ fontSize:24, fontWeight:800, color:"#1A1A1A", margin:"0 0 3px" }}>
+        <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 3px" }}>
           Good morning, {user?.name?.split(" ")[0]||"there"} 👋
         </h1>
-        <p style={{ color:"#888", fontSize:13, margin:0 }}>Sunday, 8 March 2026 · Financial overview</p>
+        <p style={{ color:"#6b7280", fontSize:12, margin:0 }}>Sunday, 8 March 2026 · Financial overview</p>
       </div>
 
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:24 }}>
         {stats.map(s=>(
           <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
-            <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
+            <div style={{ fontSize:11, fontWeight:600, color:"#6b7280", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
             <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
             <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{s.sub}</div>
           </div>
@@ -121,10 +121,10 @@ export default function HomePage({ user, onNavigate }) {
 
       {/* AI Chat */}
       <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflow:"hidden", marginBottom:24 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 18px", borderBottom:"1px solid #F0F0F0", background:"#FAFAFA" }}>
-          <div style={{ width:28, height:28, background:"#1A1A1A", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}><Icons.Bot /></div>
+        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 18px", borderBottom:"1px solid #F0F0F0", background:"#f9fafb" }}>
+          <div style={{ width:28, height:28, background:"#1e6be0", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}><Icons.Bot /></div>
           <div>
-            <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>AI Assistant</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#059669" }}>AI Assistant</div>
             <div style={{ fontSize:11, color:"#AAA" }}>Powered by Claude</div>
           </div>
           <div style={{ marginLeft:"auto", width:7, height:7, borderRadius:"50%", background:"#16A34A" }} />
@@ -133,9 +133,9 @@ export default function HomePage({ user, onNavigate }) {
           {messages.map((m,i)=>(
             <div key={i} style={{ display:"flex", justifyContent:m.role==="user"?"flex-end":"flex-start" }}>
               {m.role==="assistant" && (
-                <div style={{ width:22, height:22, background:"#1A1A1A", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", marginRight:7, marginTop:2, flexShrink:0 }}><Icons.Bot /></div>
+                <div style={{ width:22, height:22, background:"#1e6be0", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", marginRight:7, marginTop:2, flexShrink:0 }}><Icons.Bot /></div>
               )}
-              <div style={{ maxWidth:"72%", padding:"9px 13px", borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px", background:m.role==="user"?"#1A1A1A":"#F4F4F4", color:m.role==="user"?"#fff":"#1A1A1A", fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap" }}>
+              <div style={{ maxWidth:"72%", padding:"9px 13px", borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px", background:m.role==="user"?"#1e6be0":"#F4F4F4", color:m.role==="user"?"#fff":"#1A1A1A", fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap" }}>
                 {m.text}
               </div>
             </div>
@@ -150,9 +150,9 @@ export default function HomePage({ user, onNavigate }) {
         <div style={{ padding:"8px 12px", borderTop:"1px solid #F0F0F0", display:"flex", gap:7 }}>
           <input value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()}
             placeholder="Ask about invoices, VAT, CIS…"
-            style={{ flex:1, padding:"9px 13px", border:"1.5px solid #E8E8E8", borderRadius:9, fontSize:13, fontFamily:ff, outline:"none", background:"#FAFAFA" }} />
+            style={{ flex:1, padding:"9px 13px", border:"1.5px solid #E8E8E8", borderRadius:9, fontSize:13, fontFamily:ff, outline:"none", background:"#f9fafb" }} />
           <button onClick={send} disabled={loading}
-            style={{ width:36, height:36, background:loading?"#CCC":"#1A1A1A", border:"none", borderRadius:8, cursor:loading?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}>
+            style={{ width:36, height:36, background:loading?"#e5e7eb":"#1e6be0", border:"none", borderRadius:8, cursor:loading?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}>
             <Icons.Send />
           </button>
         </div>
@@ -162,15 +162,15 @@ export default function HomePage({ user, onNavigate }) {
       <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"14px 16px" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap", marginBottom:14 }}>
           <div>
-            <div style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Reports Center</div>
-            <div style={{ fontSize:12, color:"#888", marginTop:2 }}>Overview based on selected period</div>
+            <div style={{ fontSize:15, fontWeight:800, color:"#059669" }}>Reports Center</div>
+            <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>Overview based on selected period</div>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:12, color:"#666", fontWeight:600 }}>Period</span>
             <select
               value={reportPeriod}
               onChange={e=>setReportPeriod(e.target.value)}
-              style={{ padding:"7px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:12, fontFamily:ff, background:"#FAFAFA", outline:"none", cursor:"pointer" }}
+              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:7, fontSize:12, fontFamily:ff, background:"#f9fafb", outline:"none", cursor:"pointer" }}
             >
               <option value="this_month">This month</option>
               <option value="last_month">Last month</option>
@@ -183,20 +183,20 @@ export default function HomePage({ user, onNavigate }) {
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:10, marginBottom:14 }}>
           {[
-            { label:"Invoices", value:periodInvoices.length, color:"#1A1A1A" },
+            { label:"Invoices", value:periodInvoices.length, color:"#059669" },
             { label:"Revenue", value:fmt(currencySymbol, reportSummary.revenue), color:"#16A34A" },
             { label:"VAT", value:fmt(currencySymbol, reportSummary.vat), color:"#2563EB" },
             { label:"CIS", value:fmt(currencySymbol, reportSummary.cis), color:"#7C3AED" },
           ].map(card => (
             <div key={card.label} style={{ border:"1px solid #EFEFEF", borderRadius:10, padding:"10px 12px", background:"#FCFCFC" }}>
-              <div style={{ fontSize:11, color:"#888", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
+              <div style={{ fontSize:11, color:"#6b7280", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
               <div style={{ fontSize:16, color:card.color, fontWeight:800, marginTop:5 }}>{card.value}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ border:"1px solid #F0F0F0", borderRadius:10, overflow:"hidden" }}>
-          <div style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr 1fr", padding:"9px 12px", background:"#FAFAFA", borderBottom:"1px solid #F0F0F0", fontSize:11, color:"#888", fontWeight:700, textTransform:"uppercase" }}>
+        <div style={{ border:"1px solid #e8e8ec", borderRadius:8, overflow:"hidden" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr 1fr", padding:"9px 12px", background:"#f9fafb", borderBottom:"1px solid #F0F0F0", fontSize:11, color:"#6b7280", fontWeight:700, textTransform:"uppercase" }}>
             <span>Status</span><span style={{ textAlign:"center" }}>Count</span><span style={{ textAlign:"right" }}>Amount</span>
           </div>
           {Object.keys(reportSummary.reportByStatus).length === 0 ? (
