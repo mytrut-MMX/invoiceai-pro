@@ -2,9 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/$1" }]
-}
-{
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/$1" }],
   "redirects": [
     {
       "source": "https://www.invoicesaga.com/:path*",
