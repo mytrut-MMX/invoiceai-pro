@@ -173,6 +173,8 @@ export default function SettingsPage({ onNavigate }) {
 
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("org");
+  const [vatNumberLocked, setVatNumberLocked] = useState(Boolean(org.vatNum));
+  const [cisNumberLocked, setCisNumberLocked] = useState(Boolean(org.cisUtrNo));
 
   const settingTabs = [
     { id:"org", label:"Organization Details" },
@@ -198,6 +200,8 @@ export default function SettingsPage({ onNavigate }) {
       vatReg, vatNum, cisReg, cisRole, cisRate, cisUtrNo, cisRegistrationStatus, crn,
       bankName, bankSort, bankAcc, bankIban, bankSwift,
     });
+    setVatNumberLocked(Boolean(vatNum));
+    setCisNumberLocked(Boolean(cisUtrNo));
     setPdfTemplate(selectedTpl);
     setCompanyLogoSize(logoSize);
     setFooterText(footer);
@@ -223,6 +227,11 @@ export default function SettingsPage({ onNavigate }) {
   };
 
   const removePayMethod = (m) => setCustomPayMethods(p=>p.filter(x=>x!==m));
+
+  const requestTaxNumberEdit = (unlockField) => {
+    const shouldUnlock = window.confirm("Are you sure this is the correct number?");
+    if (shouldUnlock) unlockField(false);
+  };
 
   const ACCENT_PRESETS = ["#E86C4A","#2563EB","#16A34A","#D97706","#9333EA","#0891B2","#E11D48","#1A1A1A"];
   const SIDEBAR_PRESETS = [
@@ -313,9 +322,16 @@ export default function SettingsPage({ onNavigate }) {
             <ChipToggle value={vatReg} onChange={setVatReg} options={["No", "Yes"]} />
           </Field>
           {vatReg==="Yes" && (
-            <Field label="VAT Number">
-              <Input value={vatNum} onChange={setVatNum} placeholder="GB123456789" />
-            </Field>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <Field label="VAT Number">
+                <Input value={vatNum} onChange={setVatNum} placeholder="GB123456789" readOnly={vatNumberLocked} />
+              </Field>
+              {vatNumberLocked && (
+                <Btn type="button" variant="outline" onClick={()=>requestTaxNumberEdit(setVatNumberLocked)}>
+                  Edit Tax no
+                </Btn>
+              )}
+            </div>
           )}
           <Field label="CIS Registered">
             <ChipToggle value={cisReg} onChange={setCisReg} options={["No", "Yes"]} />
@@ -325,9 +341,16 @@ export default function SettingsPage({ onNavigate }) {
               <Field label="CIS Role">
                 <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
               </Field>
-              <Field label="UTR No" required error={cisUtrNo && cisUtrNo.replace(/\D/g,"").length !== 10 ? "UTR must be 10 digits" : ""}>
-                <Input value={cisUtrNo} onChange={setCisUtrNo} placeholder="1234567890" />
-              </Field>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <Field label="UTR No" required error={cisUtrNo && cisUtrNo.replace(/\D/g,"").length !== 10 ? "UTR must be 10 digits" : ""}>
+                  <Input value={cisUtrNo} onChange={setCisUtrNo} placeholder="1234567890" readOnly={cisNumberLocked} />
+                </Field>
+                {cisNumberLocked && (
+                  <Btn type="button" variant="outline" onClick={()=>requestTaxNumberEdit(setCisNumberLocked)}>
+                    Edit Tax no
+                  </Btn>
+                )}
+              </div>
               <Field label="CIS Registration Status">
                 <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Gross","Net"]} />
               </Field>
@@ -340,7 +363,7 @@ export default function SettingsPage({ onNavigate }) {
       </Section>)}
 
       {/* Bank */}
-      {activeTab === "tax" && (<Section title="Bank Details (shown on invoices)">
+      {activeTab === "Bank" && (<Section title="Bank Details (shown on invoices)">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="Bank Name"><Input value={bankName} onChange={setBankName} placeholder="e.g. Barclays" /></Field>
           <Field label="Sort Code"><Input value={bankSort} onChange={setBankSort} placeholder="00-00-00" /></Field>
@@ -351,7 +374,7 @@ export default function SettingsPage({ onNavigate }) {
       </Section>)}
 
       {/* PDF Templates */}
-      {activeTab === "tax" && (<Section title="PDF Invoice Templates">
+      {activeTab === "templates" && (<Section title="PDF Invoice Templates">
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
           <Btn onClick={()=>onNavigate?.("settings/templates")} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
         </div>
@@ -422,7 +445,7 @@ export default function SettingsPage({ onNavigate }) {
       </Section>)}
 
       {/* Sidebar theme */}
-      {activeTab === "tax" && (<Section title="Sidebar Appearance">
+      {activeTab === "appearance" && (<Section title="Sidebar Appearance">
         <div style={{ marginBottom:16 }}>
           <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Style</div>
           <div style={{ display:"flex", gap:8 }}>
