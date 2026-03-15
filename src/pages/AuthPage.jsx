@@ -46,59 +46,64 @@ export default function AuthPage({ onAuth }) {
     : <Ic d='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' size={16} sw={2}/>;
 
   return (
-    <div style={{ minHeight:"100vh", background:"#fff", display:"flex", alignItems:"stretch", fontFamily:ff }}>
-      <div className="auth-left-panel" style={{ flex:"0 0 480px", display:"flex", flexDirection:"column", justifyContent:"center", padding:"48px 56px", borderRight:"1px solid #e8e8ec" }}>
-        <div style={{ marginBottom:36 }}>
-          <img src="/Invoicesaga-logo.svg" alt="InvoiceSaga" height={32} />
-        </div>
-
-        <div style={{ marginBottom:28 }}>
-          <h1 style={{ fontSize:22, fontWeight:700, color:"#1a1a2e", margin:"0 0 6px" }}>
-            {mode==="login" ? "Welcome back" : "Create your account"}
-          </h1>
-          <p style={{ fontSize:13, color:"#6b7280", margin:0 }}>
-            {mode==="login"
-              ? "Sign in to your InvoiceSaga account"
-              : "Free forever. No credit card required."}
-          </p>
-        </div>
-
-        <div style={{ display:"flex", gap:0, borderBottom:"1px solid #e8e8ec", marginBottom:24 }}>
-          {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
-            <button key={m} onClick={()=>{ setMode(m); setError(""); }}
-              style={{ padding:"8px 0", marginRight:24, border:"none", borderBottom:`2px solid ${mode===m?"#1e6be0":"transparent"}`, background:"none", fontSize:13, fontWeight:mode===m?600:400, color:mode===m?"#1e6be0":"#6b7280", cursor:"pointer", fontFamily:ff, transition:"all 0.15s" }}>
-              {l}
-            </button>
-          ))}
-        </div>
-
-        {mode==="register" && (
-          <Field label="Full Name" required>
-            <Input value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
-          </Field>
-        )}
-        <Field label="Email Address" required>
-          <Input value={email} onChange={setEmail} type="email" placeholder="you@example.com" />
-        </Field>
-        <Field label="Password" required>
-          <div style={{ position:"relative" }}>
-            <input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
-              placeholder={mode==="register"?"Min. 8 characters":"Enter your password"}
-              style={{ width:"100%", padding:"9px 38px 9px 10px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
-            <button onClick={()=>setShowPw(p=>!p)} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#AAA", padding:2, display:"flex" }}>
-              {eyeIcon}
-            </button>
+     <div className="auth-page-bg" style={{ minHeight:"100vh", background:"linear-gradient(135deg, #e8f0fe 0%, #f0f7ff 50%, #e8f4fd 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+      <div style={{ width:"100%", maxWidth:460 }}>
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <div style={{ margin:"0 auto 16px", display:"flex", justifyContent:"center" }}>
+            <img src="/Invoicesaga-logo.svg" alt="InvoiceSaga" height={36} style={{ objectFit:"contain" }} />
           </div>
-        </Field>
+          <h1 style={{ fontSize:26, fontWeight:300, color:"#1a1a2e", lineHeight:1.3, margin:"0 0 6px", letterSpacing:"-0.01em" }}>
+            Your invoicing is about to get a <span style={{ color:"#1e6be0", fontWeight:600 }}>whole lot easier</span>
+          </h1>
+        </div>
+
+        <div style={{ background:"rgba(255,255,255,0.85)", borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.08)", backdropFilter:"blur(8px)", padding:"28px 28px 24px" }}>
+          <div style={{ display:"flex", gap:0, borderBottom:"1px solid #e8e8ec", marginBottom:24 }}>
+            {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
+              <button key={m} onClick={()=>{ setMode(m); setError(""); }}
+                style={{ border:"none", borderBottom:`2px solid ${mode===m?"#1e6be0":"transparent"}`, background:"none", color:mode===m?"#1e6be0":"#6b7280", fontSize:14, padding:"10px 0", marginRight:20, fontWeight:mode===m?600:400, cursor:"pointer", fontFamily:ff, transition:"all 0.15s" }}>
+                {l}
+              </button>
+            ))}
+          </div>
+
         {mode==="register" && (
-          <Field label="Confirm Password" required>
-            <input type={showPw?"text":"password"} value={confirmPw} onChange={e=>setConfirmPw(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
-              placeholder="Repeat password"
-              style={{ width:"100%", padding:"9px 10px", border:`1.5px solid ${confirmPw&&confirmPw!==password?"#DC2626":"#E0E0E0"}`, borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+            <Field label="Full Name" required>
+              <div style={{ position:"relative", marginBottom:12 }}>
+                <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, color:"#9ca3af" }}>🏢</span>
+                <Input value={name} onChange={setName} placeholder="e.g. Alex Morgan" style={{ paddingLeft:36 }} />
+              </div>
+            </Field>
+          )}
+          <Field label="Email Address" required>
+            <div style={{ position:"relative", marginBottom:12 }}>
+              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, color:"#9ca3af" }}>✉</span>
+              <Input value={email} onChange={setEmail} type="email" placeholder="you@example.com" style={{ paddingLeft:36 }} />
+            </div>
           </Field>
-        )}
+        <Field label="Password" required>
+            <div style={{ position:"relative", marginBottom:12 }}>
+              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, color:"#9ca3af", zIndex:1 }}>🔒</span>
+              <input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+                placeholder={mode==="register"?"Min. 8 characters":"Enter your password"}
+                style={{ width:"100%", padding:"9px 38px 9px 36px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+              <button onClick={()=>setShowPw(p=>!p)} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#AAA", padding:2, display:"flex" }}>
+                {eyeIcon}
+              </button>
+            </div>
+          </Field>
+          {mode==="register" && (
+            <Field label="Confirm Password" required>
+              <div style={{ position:"relative", marginBottom:12 }}>
+                <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, color:"#9ca3af", zIndex:1 }}>🔒</span>
+                <input type={showPw?"text":"password"} value={confirmPw} onChange={e=>setConfirmPw(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+                  placeholder="Repeat password"
+                  style={{ width:"100%", padding:"9px 10px 9px 36px", border:`1.5px solid ${confirmPw&&confirmPw!==password?"#DC2626":"#E0E0E0"}`, borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+              </div>
+            </Field>
+          )}
 
           {error && (
           <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:8, padding:"9px 12px", marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
@@ -119,55 +124,27 @@ export default function AuthPage({ onAuth }) {
         )}
 
             <button onClick={handleSubmit} disabled={loading}
-          style={{ width:"100%", padding:"11px 0", background:loading?"#d1d5db":"#1e6be0", color:"#fff", border:"none", borderRadius:8, fontSize:14, fontWeight:600, cursor:loading?"not-allowed":"pointer", fontFamily:ff, marginTop:4, transition:"background 0.15s" }}
-          onMouseEnter={e=>{ if(!loading) e.currentTarget.style.background="#1558c0"; }}
-          onMouseLeave={e=>{ if(!loading) e.currentTarget.style.background="#1e6be0"; }}>
+           style={{ width:"100%", padding:0, lineHeight:"48px", height:48, background:loading?"#d1d5db":"#106cd9", color:"#fff", border:"none", borderRadius:5, fontSize:15, fontWeight:600, cursor:loading?"not-allowed":"pointer", fontFamily:ff, marginTop:4, transition:"background 0.15s" }}
+          onMouseEnter={e=>{ if(!loading) e.currentTarget.style.background="#006dee"; }}
+          onMouseLeave={e=>{ if(!loading) e.currentTarget.style.background="#106cd9"; }}>
           {loading ? "Please wait…" : mode==="login" ? "Sign In" : "Create Account"}
         </button>
 
             {mode==="login" && (
           <div style={{ textAlign:"center", marginTop:16 }}>
-            <span style={{ fontSize:13, color:"#6b7280" }}>Don't have an account? </span>
+            <span style={{ color:"#848484", fontSize:14 }}>Don't have an account? </span>
             <button onClick={()=>{ setMode("register"); setError(""); }}
-              style={{ fontSize:13, fontWeight:600, color:"#1e6be0", background:"none", border:"none", cursor:"pointer", fontFamily:ff }}>
+              style={{ color:"#298ff6", fontWeight:600, background:"none", border:"none", cursor:"pointer", fontFamily:ff, fontSize:14 }}>
               Create one free
             </button>
            </div>
           )}
 
-        <div style={{ marginTop:32, fontSize:11, color:"#9ca3af", textAlign:"center" }}>
+        <div style={{ marginTop:32, color:"#9ca3af", fontSize:12, textAlign:"center" }}>
           Your data stays private · InvoiceSaga
-          </div> 
-       </div>
-
-      <div className="auth-right-panel" style={{ flex:1, background:"#f0f7ff", display:"flex", flexDirection:"column", justifyContent:"center", padding:"48px 56px" }}>
-        <div style={{ maxWidth:400 }}>
-          <h2 style={{ fontSize:24, fontWeight:700, color:"#1a1a2e", margin:"0 0 8px", lineHeight:1.3 }}>
-            Smart invoicing for modern businesses
-          </h2>
-          <p style={{ fontSize:14, color:"#6b7280", margin:"0 0 36px", lineHeight:1.7 }}>
-            Create professional invoices, track payments,
-            and manage clients — all in one place.
-          </p>
-
-          {[
-            { icon:"🧾", title:"Professional Invoices", sub:"Create and send in seconds" },
-            { icon:"💳", title:"Payment Tracking", sub:"Know exactly who owes you" },
-            { icon:"👥", title:"Client Management", sub:"All your customers in one place" },
-            { icon:"📊", title:"Reports & Analytics", sub:"VAT, CIS, P&L at a glance" },
-          ].map(item=>(
-            <div key={item.title} style={{ display:"flex", alignItems:"center", gap:14, marginBottom:20 }}>
-              <div style={{ width:40, height:40, borderRadius:10, background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}>
-                {item.icon}
-              </div>
-              <div>
-                <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>{item.title}</div>
-                <div style={{ fontSize:12, color:"#6b7280" }}>{item.sub}</div>
-              </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
-    </div>
   );
 }
