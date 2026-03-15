@@ -236,7 +236,7 @@ export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="rgb(3
             {userAvatar ? <img src={userAvatar} alt="avatar" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user?.name||"?")[0].toUpperCase()}
           </button>
           <div style={{ flex:1, minWidth:0 }}>
-            < <div style={{ color:"#1a1a2e", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user?.name}</div>
+            <div style={{ color:"#1a1a2e", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user?.name}</div>
             <div style={{ color:"#6b7280", fontSize:11 }}>{user?.role}</div>
           </div>
           <button onClick={() => { onLogout?.(); onClose(); }}
