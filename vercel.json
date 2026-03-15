@@ -13,14 +13,3 @@
     }
   ]
 }
-```
-
-Și în Vercel dashboard → **Settings → Domains**, asigură-te că `www.invoicesaga.com` e adăugat ca domeniu și are un redirect setat către `invoicesaga.com`.
-
----
-
-**Dacă e pe Netlify:**
-
-În `public/_redirects` adaugă:
-```
-https://www.invoicesaga.com/* https://invoicesaga.com/:splat 301!
