@@ -138,22 +138,29 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
       {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} />}
 
            <div style={{ width:"100%", maxWidth:860, height: asPage ? "auto" : "100%", minHeight: asPage ? "calc(100vh - 180px)" : "100%", background:"#f4f5f7", display:"flex", flexDirection:"column", boxShadow: asPage ? "0 12px 34px rgba(0,0,0,0.10)" : "-8px 0 40px rgba(0,0,0,0.16)", borderRadius: asPage ? 12 : 0, overflow:"hidden", fontFamily:ff }}>
-        <div style={{ background:"#1A1A1A", padding:"12px 20px", display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", flexShrink:0 }}>
-          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:7, padding:"6px 10px", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontSize:13, fontFamily:ff }}>
-            <span style={{ transform:"rotate(90deg)", display:"flex" }}><Icons.ChevDown /></span> Back
+        <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
+            ← Quotes
           </button>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:15, fontWeight:800, color:"#fff" }}>{isEdit?`Edit ${q.quote_number}`:"New Quote"}</div>
-            {isEdit && q.customer?.name && <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:1 }}>{q.customer.name}</div>}
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
+                ← Quotes
+              </button>
+              <span style={{ color:"#d1d5db" }}>/</span>
+              <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
+                {isEdit ? q.quote_number : "New Quote"}
+              </span>
+            </div>
           </div>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
             {isEdit && (
-              <Btn onClick={()=>onConvertToInvoice(buildQuote("Invoiced"))} disabled={isLockedAcceptedQuote} variant="outline-light" icon={<Icons.Receipt />}>
+              <Btn onClick={()=>onConvertToInvoice(buildQuote("Invoiced"))} disabled={isLockedAcceptedQuote} variant="outline" icon={<Icons.Receipt />}>
                 Convert to Invoice
               </Btn>
             )}
-            <Btn onClick={handleShare} variant="outline-light" icon={<Icons.Send />}>Share Link</Btn>
-            <Btn onClick={()=>setShowPrintModal(true)} variant="outline-light" icon={<Icons.Receipt />}>Print / PDF</Btn>
+            <Btn onClick={handleShare} variant="outline" icon={<Icons.Send />}>Share Link</Btn>
+            <Btn onClick={()=>setShowPrintModal(true)} variant="outline" icon={<Icons.Receipt />}>Print / PDF</Btn>
             <SaveSplitBtn
               onSave={()=>handleSave()}
               onSaveAndSend={()=>handleSave("Sent")}
@@ -171,10 +178,10 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
             </div>
           )}
           {/* Customer */}
-          <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
+          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Customer</div>
             <div style={{ position:"relative" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px", border:`1.5px solid ${customer?"#1A1A1A":"#E0E0E0"}`, borderRadius:8, background:"#FAFAFA", cursor:"pointer" }}
+              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px", border:`1.5px solid ${customer?"#1A1A1A":"#E0E0E0"}`, borderRadius:8, background:"#f9fafb", cursor:"pointer" }}
                 onClick={()=>!customer && setCustOpen(o=>!o)}>
                 {customer ? (<>
                   <div style={{ width:28, height:28, borderRadius:"50%", background:"#E86C4A22", color:"#E86C4A", fontWeight:800, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{customer.name[0]}</div>
@@ -212,7 +219,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
           </div>
 
           {/* Quote details */}
-          <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
+          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Quote Details</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
               <Field label="Quote #"><Input value={quoteNumber} onChange={setQuoteNumber} /></Field>
@@ -231,14 +238,14 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
             <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:12, paddingTop:12, borderTop:"1px solid #F0F0F0" }}>
               <span style={{ fontSize:13, fontWeight:600, color:"#333" }}>Status</span>
               <select value={status} onChange={e=>handleStatusChange(e.target.value)}
-                style={{ padding:"5px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#FAFAFA", outline:"none", cursor:"pointer" }}>
+                style={{ padding:"5px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#f9fafb", outline:"none", cursor:"pointer" }}>
                 {QUOTE_STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
 
           {/* Line items */}
-          <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
+          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Line Items</div>
             <LineItemsTable
               items={items}
@@ -352,7 +359,7 @@ export default function QuotesPage({ onNavigate }) {
           { label:"Pending",        value:String(summary.pending),      color:"#E86C4A" },
           { label:"Accepted Value", value:fmt("£",summary.value),       color:"#2563EB" },
         ].map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
             <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
           </div>
@@ -366,10 +373,10 @@ export default function QuotesPage({ onNavigate }) {
           <span style={{ fontSize:13, color:"#AAA" }}>{quotes.length} total</span>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          <div style={{ display:"flex", background:"#fff", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:9, overflow:"hidden" }}>
+          <div style={{ display:"flex", background:"#f3f4f6", border:"1px solid #e8e8ec", borderRadius:8, padding:3, overflow:"hidden" }}>
             {["All",...QUOTE_STATUSES].map(s=>(
               <button key={s} onClick={()=>setFilterStatus(s)}
-                style={{ padding:"6px 12px", border:"none", background:filterStatus===s?"#1A1A1A":"transparent", color:filterStatus===s?"#fff":"#888", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
+                style={{ padding:"6px 12px", border:"none", background:filterStatus===s?"#fff":"transparent", color:filterStatus===s?"#1a1a2e":"#6b7280", boxShadow:filterStatus===s?"0 1px 3px rgba(0,0,0,0.08)":"none", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
                 {s}
               </button>
             ))}
@@ -382,7 +389,7 @@ export default function QuotesPage({ onNavigate }) {
         <div style={{ marginBottom:14 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, gap:10, flexWrap:"wrap" }}>
             <div style={{ fontSize:20, fontWeight:800, color:"#1A1A1A" }}>New Quote</div>
-            <Btn onClick={()=>setPanel(null)} variant="outline" icon={<Icons.ChevDown />}>Back to Quotes</Btn>
+            <Btn onClick={()=>setPanel(null)} variant="outline" icon={<Icons.ChevDown />}>← Quotes</Btn>
           </div>
           <QuoteFormPanel
             asPage
@@ -396,7 +403,7 @@ export default function QuotesPage({ onNavigate }) {
 
       {/* Table */}
       {!isNewQuotePage && (
-      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
+      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
         <div style={{ padding:"10px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
           <Icons.Search />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search quotes…"
@@ -404,7 +411,7 @@ export default function QuotesPage({ onNavigate }) {
         </div>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:540 }}>
           <thead>
-            <tr style={{ background:"#FAFAFA" }}>
+            <tr style={{ background:"#f9fafb" }}>
               {["Quote #","Customer","Issue Date","Expires","Amount","Status",""].map(h=>(
                 <th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
               ))}
