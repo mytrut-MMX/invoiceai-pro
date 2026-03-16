@@ -1,8 +1,8 @@
 import { useState, useContext } from "react";
-import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES } from "../constants";
+import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Field, Input, Select, Btn } from "../components/atoms";
+import { Field, Input, Select, Btn, SlideToggle } from "../components/atoms";
 import { A4PrintModal } from "../components/shared";
 import { validateUkCrn } from "../utils/helpers";
 
@@ -130,6 +130,11 @@ export default function SettingsPage({ onNavigate }) {
   const [cisRate,      setCisRate]      = useState(org.cisRate||20);
   const [cisUtrNo,     setCisUtrNo]     = useState(org.cisUtrNo||"");
   const [cisRegistrationStatus, setCisRegistrationStatus] = useState(org.cisRegistrationStatus||"Net");
+  const [cisEnabled,        setCisEnabled]        = useState(org.cis?.enabled ?? CIS_DEFAULT_SETTINGS.enabled);
+  const [cisContractorName, setCisContractorName] = useState(org.cis?.contractorName ?? CIS_DEFAULT_SETTINGS.contractorName);
+  const [cisContractorUTR,  setCisContractorUTR]  = useState(org.cis?.contractorUTR ?? CIS_DEFAULT_SETTINGS.contractorUTR);
+  const [cisEmployerRef,    setCisEmployerRef]    = useState(org.cis?.employerRef ?? CIS_DEFAULT_SETTINGS.employerRef);
+  const [cisDefaultRate,    setCisDefaultRate]    = useState(org.cis?.defaultRate ?? CIS_DEFAULT_SETTINGS.defaultRate);
   const [crn,          setCrn]          = useState(org.crn||"");
   const [bankName,     setBankName]     = useState(org.bankName||"");
   const [bankSort,     setBankSort]     = useState(org.bankSort||"");
@@ -167,6 +172,27 @@ export default function SettingsPage({ onNavigate }) {
     { id:"payments", label:"Payment Methods" },
   ];
 
+  const buildOrgSettings = () => ({
+    orgName, email, phone, website,
+    street, city, postcode, country,
+    currency, timezone, industry,
+    vatReg, vatNum, cisReg, cisRole, cisRate, cisUtrNo, cisRegistrationStatus, crn,
+    bankName, bankSort, bankAcc, bankIban, bankSwift,
+    cis: {
+      enabled: cisEnabled,
+      contractorName: cisContractorName,
+      contractorUTR: cisContractorUTR,
+      employerRef: cisEmployerRef,
+      defaultRate: cisDefaultRate,
+    },
+  });
+
+  const saveCIS = () => {
+    setOrgSettings(buildOrgSettings());
+    setSaved(true);
+    setTimeout(()=>setSaved(false), 2500);
+  };
+  
   const handleSaveOrg = () => {
     if (crn && !validateUkCrn(crn)) {
       window.alert("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
@@ -179,13 +205,7 @@ export default function SettingsPage({ onNavigate }) {
         return;
       }
     }
-    setOrgSettings({
-      orgName, email, phone, website,
-      street, city, postcode, country,
-      currency, timezone, industry,
-      vatReg, vatNum, cisReg, cisRole, cisRate, cisUtrNo, cisRegistrationStatus, crn,
-      bankName, bankSort, bankAcc, bankIban, bankSwift,
-    });
+    setOrgSettings(buildOrgSettings());
     setVatNumberLocked(Boolean(vatNum));
     setCisNumberLocked(Boolean(cisUtrNo));
     setPdfTemplate(selectedTpl);
@@ -346,8 +366,48 @@ export default function SettingsPage({ onNavigate }) {
             </>
           )}
         </div>
-      </Section>)}
+  
+        <div style={{ marginTop:14, paddingTop:16, borderTop:"1px solid #f0f0f4" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, marginBottom: cisEnabled ? 20 : 0 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>Enable CIS</div>
+              <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>
+                Activates Construction Industry Scheme deductions on invoices.
+              </div>
+            </div>
+            <SlideToggle value={cisEnabled} onChange={setCisEnabled} />
+          </div>
 
+          {cisEnabled && (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, padding:"16px 0 0", borderTop:"1px solid #f3f4f6" }}>
+              <Field label="Contractor Name">
+                <Input value={cisContractorName} onChange={setCisContractorName} placeholder="Your company name" />
+              </Field>
+
+              <Field label="Contractor UTR">
+                <Input value={cisContractorUTR} onChange={setCisContractorUTR} placeholder="10-digit UTR number" maxLength={10} />
+              </Field>
+
+              <Field label="Employer's PAYE Reference">
+                <Input value={cisEmployerRef} onChange={setCisEmployerRef} placeholder="e.g. 123/AB456" />
+              </Field>
+
+              <Field label="Default Deduction Rate">
+                <Select
+                  value={String(cisDefaultRate)}
+                  onChange={v=>setCisDefaultRate(Number(v))}
+                  options={CIS_DEDUCTION_RATES}
+                />
+              </Field>
+
+              <div style={{ gridColumn:"1/-1" }}>
+                <Btn variant="primary" onClick={saveCIS}>Save CIS Settings</Btn>
+              </div>
+            </div>
+          )}
+        </div>
+       </Section>)}
+      
       {/* Bank */}
       {activeTab === "bank" && (<Section title="Bank Details (shown on invoices)">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
