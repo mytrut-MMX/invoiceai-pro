@@ -1,277 +1,453 @@
-import { useContext, useMemo, useState } from "react";
-import { ff, SALUTATIONS, CUR_SYM, CIS_RATES } from "../constants";
-import { AppCtx } from "../context/AppContext";
-import { Icons } from "../components/icons";
-import { Field, Input, Select, Toggle, Switch, Textarea, Btn, AddressForm, PaymentTermsField, InfoBox } from "../components/atoms";
-import { formatPhoneNumber } from "../utils/helpers";
+import { useState } from "react";
+import { ff, CUR_SYM, PAYMENT_TERMS_OPTS } from "../constants";
+import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
 
-const TABS = ["Other Details", "Address", "Contact Persons", "Remarks"];
-
-const validateVatNumber = (rawVat) => {
-  const vat = String(rawVat || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (!vat) return null;
-  if (/^GB(\d{9}|\d{12}|GD\d{3}|HA\d{3})$/.test(vat)) return true;
-  if (/^[A-Z]{2}[A-Z0-9]{8,12}$/.test(vat)) return true;
-  return false;
-};
+const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
+const CURRENCIES = Object.keys(CUR_SYM);
+const PAYMENT_TERMS = PAYMENT_TERMS_OPTS.filter((term) => term !== "Custom");
 
 export default function CustomerForm({ existing, onClose, onSave }) {
-  const { orgSettings } = useContext(AppCtx);
-  const isEdit = !!existing;
-  const isOrgVatRegistered = orgSettings?.vatReg === "Yes";
-  const isOrgCisRegistered = orgSettings?.cisReg === "Yes";
-  const ea = { street: "", city: "", county: "", postcode: "", country: "United Kingdom" };
-
   const [activeTab, setActiveTab] = useState("Other Details");
-  const [custType, setCustType] = useState(existing?.type || "Business");
-  const [salutation, setSalutation] = useState(existing?.salutation || "");
+  const [custType, setCustType] = useState("Business");
+  const [salutation, setSalutation] = useState("");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
   const [lastName, setLastName] = useState(existing?.lastName || "");
-  const [companyName, setCompanyName] = useState(existing?.companyName || "");
   const [displayName, setDisplayName] = useState(existing?.name || "");
-  const [currency, setCurrency] = useState(existing?.currency || "GBP");
   const [email, setEmail] = useState(existing?.email || "");
-  const [workPhone, setWorkPhone] = useState(existing?.phone || "");
-  const [mobile, setMobile] = useState(existing?.mobile || "");
+  const [phone, setPhone] = useState(existing?.phone || "");
   const [website, setWebsite] = useState(existing?.website || "");
-  const [paymentTerms, setPaymentTerms] = useState(existing?.paymentTerms || "Net 30");
-  const [customDays, setCustomDays] = useState(existing?.customPaymentDays || "");
-  const [billing, setBilling] = useState(existing?.billingAddress || { ...ea });
-  const [sameAddr, setSameAddr] = useState(!existing?.shippingAddress);
-  const [shippingAddr, setShippingAddr] = useState(existing?.shippingAddress || { ...ea });
-  const [contacts, setContacts] = useState(existing?.contactPersons || []);
-  const [remarks, setRemarks] = useState(existing?.remarks || "");
-  const [customerVatRegistered, setCustomerVatRegistered] = useState(Boolean(existing?.taxDetails?.vatNumber));
-  const [vatNumber, setVatNumber] = useState(existing?.taxDetails?.vatNumber || "");
-  const [utr, setUtr] = useState(existing?.taxDetails?.utr || "");
-  const [cifRegistered, setCifRegistered] = useState(existing?.taxDetails?.cisRegistered || false);
-  const [cisRole, setCisRole] = useState(existing?.taxDetails?.cisRole || "");
-  const existingCisRate = String(existing?.taxDetails?.cisRate || "20%");
-  const existingFlatRateMatch = existingCisRate.match(/(\d+(?:\.\d+)?)/);
-  const [cisDeductRate, setCisDeductRate] = useState(existingCisRate.toLowerCase().includes("flat rate") ? "Flat rate" : existingCisRate);
-  const [cisFlatRate, setCisFlatRate] = useState(existingFlatRateMatch ? existingFlatRateMatch[1] : "");
-
-  const addContact = () => setContacts(p => [...p, { id: crypto.randomUUID(), salutation: "", firstName: "", lastName: "", email: "", phone: "", jobTitle: "", department: "", isPrimary: false }]);
-  const updContact = (id, f, v) => setContacts(p => p.map(c => (c.id === id ? { ...c, [f]: v } : c)));
-  const delContact = id => setContacts(p => p.filter(c => c.id !== id));
-
-  const isFlatRateSelected = cisDeductRate === "Flat rate";
-  const vatValidation = useMemo(() => validateVatNumber(vatNumber), [vatNumber]);
+  const [company, setCompany] = useState(existing?.company || "");
+  const [currency, setCurrency] = useState(existing?.currency || "GBP");
+  const [paymentTerms, setPaymentTerms] = useState(existing?.paymentTerms || "Due on Receipt");
+  const [billStreet1, setBillStreet1] = useState(existing?.billingAddress?.street1 || "");
+  const [billStreet2, setBillStreet2] = useState(existing?.billingAddress?.street2 || "");
+  const [billCity, setBillCity] = useState(existing?.billingAddress?.city || "");
+  const [billState, setBillState] = useState(existing?.billingAddress?.state || "");
+  const [billZip, setBillZip] = useState(existing?.billingAddress?.zip || "");
+  const [billCountry, setBillCountry] = useState(existing?.billingAddress?.country || "");
+  const [shipStreet1, setShipStreet1] = useState("");
+  const [shipStreet2, setShipStreet2] = useState("");
+  const [shipCity, setShipCity] = useState("");
+  const [shipState, setShipState] = useState("");
+  const [shipZip, setShipZip] = useState("");
+  const [shipCountry, setShipCountry] = useState("");
+  const [contactPersons, setContactPersons] = useState(
+    existing?.contactPersons || [{ salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" }],
+  );
+  const [remarks, setRemarks] = useState(existing?.notes || "");
+  
+  const copyBillingToShipping = () => {
+    setShipStreet1(billStreet1);
+    setShipStreet2(billStreet2);
+    setShipCity(billCity);
+    setShipState(billState);
+    setShipZip(billZip);
+    setShipCountry(billCountry);
+  };
 
   const handleSave = () => {
-    onSave({
-      id: existing?.id || crypto.randomUUID(),
-      type: custType,
-      salutation,
+    const customer = {
+      id: existing?.id || Date.now(),
+      name: displayName || `${firstName} ${lastName}`.trim(),
       firstName,
       lastName,
-      companyName,
-      name: displayName || `${firstName} ${lastName}`.trim() || companyName,
-      currency,
+      company,
       email,
-      phone: formatPhoneNumber(workPhone),
-      mobile: formatPhoneNumber(mobile),
+      phone,
       website,
+      currency,
       paymentTerms,
-      customPaymentDays: customDays,
-      billingAddress: billing,
-      shippingAddress: sameAddr ? null : shippingAddr,
-      contactPersons: contacts,
       remarks,
-      taxDetails: {
-        vatNumber: isOrgVatRegistered && customerVatRegistered ? vatNumber : "",
-        utr: isOrgCisRegistered && cifRegistered ? utr : "",
-        cisRegistered: isOrgCisRegistered ? cifRegistered : false,
-        cisRole: isOrgCisRegistered && cifRegistered ? cisRole : "",
-        cisRate: isOrgCisRegistered && cifRegistered
-          ? (isFlatRateSelected && cisFlatRate ? `Flat rate (${cisFlatRate}%)` : cisDeductRate)
-          : "",
+      contactPersons,
+      billingAddress: {
+        street1: billStreet1,
+        street2: billStreet2,
+        city: billCity,
+        state: billState,
+        zip: billZip,
+        country: billCountry,
       },
-    });
-    onClose();
+    shippingAddress: {
+        street1: shipStreet1,
+        street2: shipStreet2,
+        city: shipCity,
+        state: shipState,
+        zip: shipZip,
+        country: shipCountry,
+      },
+    };
+    onSave(customer);
   };
 
   return (
     <div style={{ background: "#f4f5f7", minHeight: "100vh", fontFamily: ff }}>
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 0 40px" }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, fontFamily: ff, display: "flex", alignItems: "center", gap: 4 }}>
-              ← Customers
-            </button>
-            <span style={{ color: "#d1d5db" }}>/</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>
-              {isEdit ? existing.name : "New Customer"}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Btn onClick={onClose} variant="outline">Cancel</Btn>
-            <Btn onClick={handleSave} variant="primary" disabled={!displayName && !companyName && !firstName}>Save Customer</Btn>
-          </div>
-        </div>
-
-          <div style={{
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
           background: "#fff",
           borderBottom: "1px solid #e8e8ec",
-          padding: "0 24px",
-          display: "flex", gap: 0
-        }}>
-          {TABS.map(t => (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                padding: "12px 18px 10px",
-                fontSize: 13, fontWeight: activeTab === t ? 600 : 400,
-                color: activeTab === t ? "#1e6be0" : "#6b7280",
-                borderBottom: activeTab === t ? "2px solid #1e6be0" : "2px solid transparent",
-                fontFamily: "inherit", transition: "all 0.15s",
-                marginBottom: "-1px"
-              }}
-            >
-              {t}
-            </button>
-          ))}
+          padding: "12px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#6b7280",
+              fontSize: 13,
+              fontFamily: ff,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: 0,
+            }}
+          >
+            ← Customers
+          </button>
+          <span style={{ color: "#d1d5db" }}>/</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>
+            {existing ? existing.name || "Edit Customer" : "New Customer"}
+          </span>
         </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn onClick={onClose} variant="outline">
+            Cancel
+          </Btn>
+          <Btn onClick={handleSave} variant="primary">
+            {existing ? "Save Changes" : "Save Customer"}
+          </Btn>
+        </div>
+      </div>
 
-        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", padding: "18px 22px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>Basic Info</div>
+       <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 24px 0" }}>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 10,
+            border: "1px solid #e8e8ec",
+            padding: "18px 22px",
+            marginBottom: 0,
+          }}
+        >
+          <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+            {["Business", "Individual"].map((t) => (
+              <label
+                key={t}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  cursor: "pointer",
+                  fontSize: 13,
+                  color: "#374151",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="custType"
+                  checked={custType === t}
+                  onChange={() => setCustType(t)}
+                  style={{ accentColor: "#1e6be0" }}
+                />
+                {t}
+              </label>
+            ))}
+          </div>
 
-            <Field label="Customer Type">
-              <Toggle value={custType} onChange={setCustType} options={["Business", "Individual"]} />
+           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+            <Field label="Salutation">
+              <Select
+                value={salutation}
+                onChange={setSalutation}
+                options={["Mr.", "Mrs.", "Ms.", "Dr.", "Prof."]}
+                placeholder="Select..."
+              />
             </Field>
-            
-            <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr", gap: 10 }}>
-              <Field label="Salutation"><Select value={salutation} onChange={setSalutation} options={SALUTATIONS} placeholder="—" /></Field>
-              <Field label="First Name"><Input value={firstName} onChange={setFirstName} placeholder="John" /></Field>
-              <Field label="Last Name"><Input value={lastName} onChange={setLastName} placeholder="Doe" /></Field>
-            </div>
-             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <Field label="Company Name"><Input value={companyName} onChange={setCompanyName} placeholder="Company Ltd" /></Field>
-              <Field label="Display Name"><Input value={displayName} onChange={setDisplayName} placeholder="Shown on invoices" /></Field>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <Field label="Email"><Input value={email} onChange={setEmail} type="email" placeholder="billing@company.com" /></Field>
-              <Field label="Work Phone"><Input value={workPhone} onChange={v => setWorkPhone(formatPhoneNumber(v))} placeholder="+44..." /></Field>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <Field label="Mobile"><Input value={mobile} onChange={v => setMobile(formatPhoneNumber(v))} placeholder="+44..." /></Field>
-              <Field label="Website"><Input value={website} onChange={setWebsite} placeholder="https://..." /></Field>
-            </div>
-            </div>
+<Field label="First Name">
+              <Input value={firstName} onChange={setFirstName} placeholder="First name" />
+            </Field>
+            <Field label="Last Name">
+              <Input value={lastName} onChange={setLastName} placeholder="Last name" />
+            </Field>
+          </div>
 
-              <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", padding: "18px 22px" }}>
+          {custType === "Business" && (
+            <div style={{ marginBottom: 14 }}>
+              <Field label="Company Name">
+                <Input value={company} onChange={setCompany} placeholder="Company name" />
+              </Field>
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+            <Field label="Customer Display Name">
+              <Input value={displayName} onChange={setDisplayName} />
+            </Field>
+            <Field label="Email">
+              <Input value={email} onChange={setEmail} type="email" />
+            </Field>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Field label="Phone">
+              <Input value={phone} onChange={setPhone} />
+            </Field>
+            <Field label="Website">
+              <Input value={website} onChange={setWebsite} placeholder="https://" />
+            </Field>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 900, margin: "16px auto 0", padding: "0 24px 40px" }}>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 10,
+            border: "1px solid #e8e8ec",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", borderBottom: "1px solid #e8e8ec", padding: "0 4px" }}>
+            {TABS.map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "12px 16px 10px",
+                  fontSize: 13,
+                  fontWeight: activeTab === t ? 600 : 400,
+                  color: activeTab === t ? "#1e6be0" : "#6b7280",
+                  borderBottom: activeTab === t ? "2px solid #1e6be0" : "2px solid transparent",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                  marginBottom: "-1px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ padding: "20px 22px" }}>
             {activeTab === "Other Details" && (
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>Other Details</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                  <Field label="Currency">
-                    <Select value={currency} onChange={setCurrency} options={Object.keys(CUR_SYM)} />
-                  </Field>
-                  <Field label="Payment Terms">
-                    <PaymentTermsField value={paymentTerms} onChange={setPaymentTerms} customDays={customDays} onCustomDaysChange={setCustomDays} />
-                  </Field>
-                </div>
-                
-               {isOrgVatRegistered && (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#F9F9F9", borderRadius: 8, border: "1px solid #EBEBEB", marginBottom: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>VAT Registered</div>
-                      </div>
-                      <Switch checked={customerVatRegistered} onChange={setCustomerVatRegistered} />
-                    </div>
-                    {customerVatRegistered && (
-                      <Field label="VAT Number" hint="GB + 9 digits (or EU format)">
-                        <div style={{ position: "relative" }}>
-                          <Input value={vatNumber} onChange={setVatNumber} placeholder="GB123456789" style={{ paddingRight: 34 }} />
-                          {vatValidation !== null && (
-                            <div style={{ position: "absolute", top: "50%", right: 10, transform: "translateY(-50%)", color: vatValidation ? "#16A34A" : "#DC2626", display: "flex" }}>
-                              {vatValidation ? <Icons.Check /> : <Icons.X />}
-                            </div>
-                          )}
-                        </div>
-                      </Field>
-                    )}
-                  </>
-                )}
-              
-            {isOrgCisRegistered && (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#F9F9F9", borderRadius: 8, border: "1px solid #EBEBEB", marginBottom: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>CIS Registered</div>
-                        <div style={{ fontSize: 11, color: "#AAA", marginTop: 1 }}>Construction Industry Scheme</div>
-                      </div>
-                      <Switch checked={cifRegistered} onChange={setCifRegistered} />
-                    </div>
-                    {cifRegistered && (
-                      <div style={{ background: "#F9F9F9", borderRadius: 8, padding: "12px 14px", border: "1px solid #EBEBEB" }}>
-                        <Field label="UTR Number" hint="Unique Taxpayer Reference"><Input value={utr} onChange={setUtr} placeholder="1234567890" /></Field>
-                        <Field label="CIS Role"><Select value={cisRole} onChange={setCisRole} options={["Contractor", "Subcontractor", "Both"]} placeholder="Select role…" /></Field>
-                        {(cisRole === "Subcontractor" || cisRole === "Both") && (
-                          <>
-                            <Field label="CIS Deduction Rate"><Select value={cisDeductRate} onChange={setCisDeductRate} options={CIS_RATES} /></Field>
-                            {isFlatRateSelected && <Field label="Flat Rate %"><Input value={cisFlatRate} onChange={setCisFlatRate} type="number" placeholder="e.g. 12" /></Field>}
-                          </>
-                        )}
-                        <InfoBox>CIS deduction will be applied automatically on invoices raised for this customer.</InfoBox>
-                      </div>
-                    )}
-                  </>
-                )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <Field label="Currency">
+                  <Select value={currency} onChange={setCurrency} options={CURRENCIES || ["GBP", "USD", "EUR"]} />
+                </Field>
+                <Field label="Payment Terms">
+                  <Select
+                    value={paymentTerms}
+                    onChange={setPaymentTerms}
+                    options={PAYMENT_TERMS || ["Due on Receipt", "Net 15", "Net 30", "Net 45", "Net 60"]}
+                  />
+                </Field>
               </div>
             )}
           
             {activeTab === "Address" && (
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>Address</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 10 }}>BILLING ADDRESS</div>
-                    <AddressForm address={billing} onChange={setBilling} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                <div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#6b7280",
+                      letterSpacing: "0.05em",
+                      marginBottom: 12,
+                    }}
+                  >
+                    BILLING ADDRESS
                   </div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>SHIPPING ADDRESS</div>
-                      <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: "#6b7280", cursor: "pointer" }}>
-                        <Switch checked={sameAddr} onChange={setSameAddr} /> Same as billing
-                      </label>
-                    </div>
-                    {sameAddr ? (
-                      <InfoBox>Shipping address will follow billing address.</InfoBox>
-                    ) : (
-                      <AddressForm address={shippingAddr} onChange={setShippingAddr} />
-                    )}
+                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <Field label="Street 1">
+                      <Input value={billStreet1} onChange={setBillStreet1} />
+                    </Field>
+                    <Field label="Street 2">
+                      <Input value={billStreet2} onChange={setBillStreet2} />
+                    </Field>
+                    <Field label="City">
+                      <Input value={billCity} onChange={setBillCity} />
+                    </Field>
+                    <Field label="State / County">
+                      <Input value={billState} onChange={setBillState} />
+                    </Field>
+                    <Field label="Postal / ZIP Code">
+                      <Input value={billZip} onChange={setBillZip} />
+                    </Field>
+                    <Field label="Country">
+                      <Input value={billCountry} onChange={setBillCountry} />
+                    </Field>
+                  </div>
+                </div>
+
+                <div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#6b7280",
+                      letterSpacing: "0.05em",
+                      marginBottom: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    SHIPPING ADDRESS
+                    <button
+                      onClick={copyBillingToShipping}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "#1e6be0",
+                        fontSize: 11,
+                        fontFamily: "inherit",
+                        fontWeight: 400,
+                      }}
+                    >
+                      ↓ Copy billing
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <Field label="Street 1">
+                      <Input value={shipStreet1} onChange={setShipStreet1} />
+                    </Field>
+                    <Field label="Street 2">
+                      <Input value={shipStreet2} onChange={setShipStreet2} />
+                    </Field>
+                    <Field label="City">
+                      <Input value={shipCity} onChange={setShipCity} />
+                    </Field>
+                    <Field label="State / County">
+                      <Input value={shipState} onChange={setShipState} />
+                    </Field>
+                    <Field label="Postal / ZIP Code">
+                      <Input value={shipZip} onChange={setShipZip} />
+                    </Field>
+                    <Field label="Country">
+                      <Input value={shipCountry} onChange={setShipCountry} />
+                    </Field>
                   </div>
                 </div>
               </div>
             )}
             
-           {activeTab === "Contact Persons" && (
+            {activeTab === "Contact Persons" && (
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>Contact Persons</div>
-                {contacts.map((cp) => (
-                  <div key={cp.id} style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr 1fr auto", gap: 10, marginBottom: 10 }}>
-                    <Field label="Title"><Select value={cp.salutation} onChange={v => updContact(cp.id, "salutation", v)} options={SALUTATIONS} placeholder="—" /></Field>
-                    <Field label="First Name"><Input value={cp.firstName} onChange={v => updContact(cp.id, "firstName", v)} /></Field>
-                    <Field label="Last Name"><Input value={cp.lastName} onChange={v => updContact(cp.id, "lastName", v)} /></Field>
-                    <Field label="Email"><Input value={cp.email} onChange={v => updContact(cp.id, "email", v)} /></Field>
-                    <button onClick={() => delContact(cp.id)} style={{ alignSelf: "flex-end", marginBottom: 4, background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 16 }}>✕</button>
-                  </div>
-                ))}
-                <button onClick={addContact} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e6be0", fontSize: 13, fontFamily: "inherit", marginTop: 4 }}>
-                  + Add Contact Person
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "#f9fafb" }}>
+                      {["Salutation", "First Name", "Last Name", "Email", "Phone", "Mobile", ""].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: "8px 10px",
+                            textAlign: "left",
+                            fontWeight: 600,
+                            color: "#6b7280",
+                            fontSize: 12,
+                            borderBottom: "1px solid #e8e8ec",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(contactPersons || [{ salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" }]).map(
+                      (cp, i) => (
+                        <tr key={i}>
+                          {["salutation", "firstName", "lastName", "email", "phone", "mobile"].map((f) => (
+                            <td key={f} style={{ padding: "6px 6px" }}>
+                              <Input
+                                value={cp[f] || ""}
+                                onChange={(v) => {
+                                  const arr = [...(contactPersons || [{}])];
+                                  arr[i] = { ...arr[i], [f]: v };
+                                  setContactPersons(arr);
+                                }}
+                              />
+                            </td>
+                          ))}
+                          <td style={{ padding: "6px 4px" }}>
+                            <button
+                              onClick={() => {
+                                const arr = [...(contactPersons || [])];
+                                arr.splice(i, 1);
+                                setContactPersons(arr);
+                              }}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: "#9ca3af",
+                                fontSize: 16,
+                                lineHeight: 1,
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+                <button
+                  onClick={() =>
+                    setContactPersons([
+                      ...(contactPersons || []),
+                      { salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" },
+                    ])
+                  }
+                  style={{
+                    marginTop: 12,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#1e6be0",
+                    fontSize: 13,
+                    fontFamily: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  ＋ Add Contact Person
                 </button>
+              </div>
+            )}
+
+            {activeTab === "Custom Fields" && (
+              <div style={{ color: "#6b7280", fontSize: 13, textAlign: "center", padding: "30px 0" }}>
+                No custom fields configured for Customers.
               </div>
             )}
 
             {activeTab === "Remarks" && (
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>Remarks</div>
-                <Field label="Notes">
+                 <Field
+                  label={
+                    <>
+                      Remarks <span style={{ color: "#9ca3af", fontWeight: 400 }}>(For Internal Use)</span>
+                    </>
+                  }
+                >
                   <Textarea value={remarks} onChange={setRemarks} rows={4} placeholder="Any notes about this customer..." />
                 </Field>
               </div>
