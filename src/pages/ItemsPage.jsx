@@ -39,6 +39,7 @@ export default function ItemsPage() {
       existing={editingItem}
       onClose={() => { setShowForm(false); setEditingItem(null); }}
       onSave={onSave}
+      settings={{ cis: { enabled: orgSettings?.cisReg === "Yes" } }}
     />
   );
   
@@ -91,8 +92,8 @@ export default function ItemsPage() {
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.unit}</td>
                 {isVat && <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.taxRate}%</td>}
                 <td style={{ padding:"12px 18px" }}>
-                  {isCisOrg && item.cisApplicable
-                    ? <Tag color="#D97706">CIS {item.cisLabourRate||"20%"}</Tag>
+                 {isCisOrg && item.cis?.enabled
+                    ? <Tag color="#D97706">CIS {item.cis?.labour ?? 100}% labour</Tag>
                     : <span style={{ fontSize:12, color:"#CCC" }}>—</span>}
                 </td>
                 <td style={{ padding:"12px 18px" }}>
