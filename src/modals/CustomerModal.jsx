@@ -5,9 +5,15 @@ import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
 const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
 const PAYMENT_TERMS = PAYMENT_TERMS_OPTS.filter((term) => term !== "Custom");
+const CIS_RATES = [
+  { label: "20% — Standard", value: 20 },
+  { label: "30% — Higher (unverified)", value: 30 },
+  { label: "0% — Gross payment", value: 0 },
+];
 
-export default function CustomerForm({ existing, onClose, onSave }) {
+export default function CustomerForm({ existing, onClose, onSave, settings }) {
   const [activeTab, setActiveTab] = useState("Other Details");
+  const cisEnabled = settings?.cis?.enabled === true;
   const [custType, setCustType] = useState("Business");
   const [salutation, setSalutation] = useState("");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
@@ -35,6 +41,11 @@ export default function CustomerForm({ existing, onClose, onSave }) {
     existing?.contactPersons || [{ salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" }],
   );
   const [remarks, setRemarks] = useState(existing?.notes || "");
+  const [cisRegistered, setCisRegistered] = useState(existing?.cis?.registered ?? false);
+  const [cisUtr, setCisUtr] = useState(existing?.cis?.utr || "");
+  const [cisRate, setCisRate] = useState(existing?.cis?.rate || CIS_RATES[0].label);
+  const [cisVerification, setCisVerification] = useState(existing?.cis?.verification || "Net");
+  const [cisBusinessType, setCisBusinessType] = useState(existing?.cis?.businessType || "Subcontractor");
   
   const copyBillingToShipping = () => {
     setShipStreet1(billStreet1);
@@ -59,6 +70,14 @@ export default function CustomerForm({ existing, onClose, onSave }) {
       paymentTerms,
       remarks,
       contactPersons,
+      cis: {
+        registered: cisRegistered,
+        utr: cisUtr,
+        rate: cisRate,
+        rateValue: CIS_RATES.find((r) => r.label === cisRate)?.value ?? 0,
+        verification: cisVerification,
+        businessType: cisBusinessType,
+      },
       billingAddress: {
         street1: billStreet1,
         street2: billStreet2,
@@ -243,17 +262,46 @@ export default function CustomerForm({ existing, onClose, onSave }) {
 
           <div style={{ padding: "20px 22px" }}>
             {activeTab === "Other Details" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <Field label="Currency">
-                  <Select value={currency} onChange={setCurrency} options={CURRENCIES || ["GBP", "USD", "EUR"]} />
-                </Field>
-                <Field label="Payment Terms">
-                  <Select
-                    value={paymentTerms}
-                    onChange={setPaymentTerms}
-                    options={PAYMENT_TERMS || ["Due on Receipt", "Net 15", "Net 30", "Net 45", "Net 60"]}
-                  />
-                </Field>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <Field label="Currency">
+                    <Select value={currency} onChange={setCurrency} options={CURRENCIES || ["GBP", "USD", "EUR"]} />
+                  </Field>
+                  <Field label="Payment Terms">
+                    <Select
+                      value={paymentTerms}
+                      onChange={setPaymentTerms}
+                      options={PAYMENT_TERMS || ["Due on Receipt", "Net 15", "Net 30", "Net 45", "Net 60"]}
+                    />
+                  </Field>
+                </div>
+
+                {cisEnabled && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <Field label="CIS Registered">
+                      <Select
+                        value={String(cisRegistered)}
+                        onChange={(v) => setCisRegistered(v === "true")}
+                        options={[
+                          { value: "true", label: "Yes" },
+                          { value: "false", label: "No" },
+                        ]}
+                      />
+                    </Field>
+                    <Field label="CIS UTR">
+                      <Input value={cisUtr} onChange={setCisUtr} placeholder="1234567890" />
+                    </Field>
+                    <Field label="CIS Rate">
+                      <Select value={cisRate} onChange={setCisRate} options={CIS_RATES.map((r) => r.label)} />
+                    </Field>
+                    <Field label="Verification">
+                      <Select value={cisVerification} onChange={setCisVerification} options={["Net", "Gross", "Unverified"]} />
+                    </Field>
+                    <Field label="Business Type">
+                      <Select value={cisBusinessType} onChange={setCisBusinessType} options={["Subcontractor", "Contractor", "Both"]} />
+                    </Field>
+                  </div>
+                )}
               </div>
             )}
           
