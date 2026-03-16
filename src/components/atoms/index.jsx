@@ -4,7 +4,7 @@ import { Icons } from "../icons";
 
 export const Field = ({ label, children, required, hint, error }) => (
   <div style={{ marginBottom:14 }}>
-    {label && <label style={{ display:"block", fontSize:11, fontWeight:700, color:error?"#dc2626":"#6b7280", marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase" }}>
+    {label && <label style={{ display:"block", fontSize:13, fontWeight:700, color:error?"#dc2626":"#6b7280", marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase" }}>
       {label}{required && <span style={{ color:"#E86C4A", marginLeft:2 }}>*</span>}
     </label>}
     {children}
@@ -15,7 +15,7 @@ export const Field = ({ label, children, required, hint, error }) => (
 
 export const Input = ({ value, onChange, placeholder, type="text", style:sx={}, readOnly, align="left", error }) => (
   <input type={type} value={value??""} onChange={e=>onChange?.(e.target.value)} placeholder={placeholder} readOnly={readOnly}
-    style={{ width:"100%", padding:"9px 11px", border:`1px solid ${error?"#fca5a5":"#e8e8ec"}`, borderRadius:5, fontSize:13, fontFamily:ff, color:"#1A1A1A", background:readOnly?"#f9fafb":"#fff", outline:"none", boxSizing:"border-box", textAlign:align, transition:"border 0.15s", ...sx }}
+    style={{ width:"100%", padding:"9px 11px", border:`1px solid ${error?"#fca5a5":"#e8e8ec"}`, borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:readOnly?"#f9fafb":"#fff", outline:"none", boxSizing:"border-box", textAlign:align, transition:"border 0.15s", ...sx }}
     onFocus={e=>{ if(!readOnly) e.target.style.borderColor=error?"#dc2626":"#1e6be0"; }}
     onBlur={e=>e.target.style.borderColor=error?"#fca5a5":"#e8e8ec"} />
 );
