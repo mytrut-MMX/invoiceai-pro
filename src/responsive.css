@@ -1,6 +1,10 @@
 html, body, #root {
   font-size: 13px;
   background: #f4f5f7;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* ── Responsive layout helpers ───────────────────────────────── */
