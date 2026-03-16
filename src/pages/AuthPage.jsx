@@ -52,7 +52,7 @@ export default function AuthPage({ onAuth }) {
           <div style={{ margin:"0 auto 16px", display:"flex", justifyContent:"center" }}>
             <img src="/Invoicesaga-logo.svg" alt="InvoiceSaga" height={36} style={{ objectFit:"contain" }} />
           </div>
-          <h1 style={{ fontSize:26, fontWeight:300, color:"#1a1a2e", lineHeight:1.3, margin:"0 0 6px", letterSpacing:"-0.01em" }}>
+          <h1 style={{ fontSize:29, fontWeight:300, color:"#1a1a2e", lineHeight:1.3, margin:"0 0 6px", letterSpacing:"-0.01em" }}>
             Your invoicing is about to get a <span style={{ color:"#1e6be0", fontWeight:600 }}>whole lot easier</span>
           </h1>
         </div>
@@ -87,7 +87,7 @@ export default function AuthPage({ onAuth }) {
               <input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
                 placeholder={mode==="register"?"Min. 8 characters":"Enter your password"}
-                style={{ width:"100%", padding:"9px 38px 9px 36px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                style={{ width:"100%", padding:"9px 38px 9px 36px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:15, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
               <button onClick={()=>setShowPw(p=>!p)} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#AAA", padding:2, display:"flex" }}>
                 {eyeIcon}
               </button>
@@ -100,7 +100,7 @@ export default function AuthPage({ onAuth }) {
                 <input type={showPw?"text":"password"} value={confirmPw} onChange={e=>setConfirmPw(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
                   placeholder="Repeat password"
-                  style={{ width:"100%", padding:"9px 10px 9px 36px", border:`1.5px solid ${confirmPw&&confirmPw!==password?"#DC2626":"#E0E0E0"}`, borderRadius:6, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                  style={{ width:"100%", padding:"9px 10px 9px 36px", border:`1.5px solid ${confirmPw&&confirmPw!==password?"#DC2626":"#E0E0E0"}`, borderRadius:6, fontSize:15, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
               </div>
             </Field>
           )}
