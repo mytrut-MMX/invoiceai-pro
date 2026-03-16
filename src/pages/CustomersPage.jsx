@@ -7,7 +7,7 @@ import { upsert, formatPhoneNumber } from "../utils/helpers";
 import CustomerForm from "../modals/CustomerModal";
 
 export default function CustomersPage() {
-  const { customers, setCustomers } = useContext(AppCtx);
+  const { customers, setCustomers, orgSettings } = useContext(AppCtx);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
@@ -32,6 +32,7 @@ export default function CustomersPage() {
           setEditingCustomer(null);
         }}
         onSave={onSave}
+        settings={{ cis: { enabled: orgSettings?.cisReg === "Yes" } }}
       />
     );
   }
