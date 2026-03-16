@@ -9,6 +9,7 @@ import ItemForm from "../modals/ItemModal";
 export default function ItemsPage() {
   const { orgSettings, catalogItems, setCatalogItems } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
+  const isCisOrg = orgSettings?.cisReg === "Yes";
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
@@ -90,7 +91,7 @@ export default function ItemsPage() {
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.unit}</td>
                 {isVat && <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.taxRate}%</td>}
                 <td style={{ padding:"12px 18px" }}>
-                  {item.cisApplicable
+                  {isCisOrg && item.cisApplicable
                     ? <Tag color="#D97706">CIS {item.cisLabourRate||"20%"}</Tag>
                     : <span style={{ fontSize:12, color:"#CCC" }}>—</span>}
                 </td>
