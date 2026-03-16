@@ -37,7 +37,7 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
   const cisAfterDiscount = subtotal > 0
     ? cisApplicableSubtotal - discAmt * (cisApplicableSubtotal / subtotal)
     : 0;
-  cconst canApplyCisToCustomer = !!customer?.taxDetails?.cisRegistered;
+  const canApplyCisToCustomer = !!customer?.taxDetails?.cisRegistered;
   const cisDed = orgCisEnabled && canApplyCisToCustomer && !grossRegistered && ["Contractor","Both"].includes(role)
     ? cisAfterDiscount * cisRate
     : 0;
