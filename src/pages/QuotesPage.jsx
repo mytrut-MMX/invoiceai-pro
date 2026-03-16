@@ -4,12 +4,12 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from 
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag } from "../components/atoms";
-import { LineItemsTable, TotalsBlock, SaveSplitBtn, A4PrintModal } from "../components/shared";
+import { LineItemsTable, SaveSplitBtn, A4PrintModal } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function calcTotals(items, discType, discVal, shipping, isVat, orgSettings) {
+function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSettings) {
   const subtotal = items.reduce((s,i)=>s+Number(i.amount||0), 0);
   const discAmt = discType==="percent" ? subtotal*(Number(discVal)/100) : Math.min(Number(discVal)||0, subtotal);
   const afterDisc = subtotal - discAmt;
@@ -25,21 +25,25 @@ function calcTotals(items, discType, discVal, shipping, isVat, orgSettings) {
     : [];
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
   const gross = afterDisc + ship + vatTotal;
-  const orgCisEnabled = orgSettings?.cisReg === "Yes";
-  const role = orgSettings?.cisRole || "Contractor";
-  const grossRegistered = orgSettings?.cisRegistrationStatus === "Gross";
-  const cisRate = parseCisRate(orgSettings?.cisRate, 20)/100;
-  const cisApplicableSubtotal = items.reduce((sum, item) => {
-    if (!item?.cisApplicable) return sum;
-    return sum + Number(item.amount || 0);
-  }, 0);
-  const cisAfterDiscount = subtotal > 0
-    ? cisApplicableSubtotal - discAmt * (cisApplicableSubtotal / subtotal)
+  const cisEnabled = orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes");
+  const customerCIS = customer?.cis || {
+    registered: !!customer?.taxDetails?.cisRegistered,
+    rateValue: parseCisRate(customer?.taxDetails?.cisRate, 20),
+    rate: customer?.taxDetails?.cisRate,
+  };
+  const hasCISItems = cisEnabled && customerCIS?.registered && items.some(i => i?.cis?.enabled || i?.cisApplicable);
+  const cisEstimate = hasCISItems
+    ? items.reduce((sum, item) => {
+        if (!item?.cis?.enabled && !item?.cisApplicable) return sum;
+        const qty = Number(item.quantity ?? item.qty) || 1;
+        const lineTotal = Number(item.amount) || ((Number(item.rate) || 0) * qty);
+        const labourShare = item?.cis?.labour ?? (item?.cisApplicable ? 100 : 0);
+        const labourAmount = lineTotal * (labourShare / 100);
+        const rateValue = customerCIS?.rateValue ?? 20;
+        return sum + (labourAmount * rateValue / 100);
+      }, 0)
     : 0;
-  const cisDed = orgCisEnabled && !grossRegistered && ["Contractor","Both"].includes(role)
-    ? cisAfterDiscount * cisRate
-    : 0;
-  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed, grossTotal: gross };
+  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:0, cisEstimate, hasCISItems, customerCIS, total: gross, grossTotal: gross };
 }
 
 // ─── QUOTE FORM PANEL ─────────────────────────────────────────────────────────
@@ -70,8 +74,9 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
   const isLockedAcceptedQuote = isEdit && q.status === "Invoiced";
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,orgSettings),[items,discType,discVal,shipping,isVat,orgSettings,showShipping]);
-
+  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings,showShipping]);
+  const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
+  const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
   const filteredCustomers = customers.filter(c=>
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
@@ -267,13 +272,67 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
                 <Textarea value={terms} onChange={setTerms} rows={3} />
               </Field>
             </div>
-            <TotalsBlock
-              subtotal={totals.subtotal} discountType={discType} discountValue={discVal}
-              setDiscountType={setDiscType} setDiscountValue={setDiscVal}
-              shipping={shipping} setShipping={setShipping}
-              taxBreakdown={totals.taxBreakdown} total={totals.total}
-              currSymbol={currSym} isVat={isVat} cisDeduction={totals.cisDeduction} showShipping={showShipping}
-            />
+            <div style={{ background:"#FAFAFA", borderRadius:10, border:"1px solid #EBEBEB", padding:"14px 16px", minWidth:260 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
+                <span style={{ fontSize:13, color:"#666" }}>Discount</span>
+                <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                  <div style={{ display:"flex", border:"1.5px solid #E0E0E0", borderRadius:6, overflow:"hidden" }}>
+                    {[["percent","%"],["fixed",currSym]].map(([t,l])=>(
+                      <button key={t} onClick={()=>setDiscType(t)}
+                        style={{ padding:"3px 8px", border:"none", background:discType===t?"#1A1A1A":"transparent", color:discType===t?"#fff":"#999", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:ff }}>{l}</button>
+                    ))}
+                  </div>
+                  <input value={discVal} onChange={e=>setDiscVal(e.target.value)} type="number" min="0"
+                    style={{ width:62, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
+                </div>
+              </div>
+              {showShipping && (
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
+                  <span style={{ fontSize:13, color:"#666" }}>Shipping</span>
+                  <input value={shipping} onChange={e=>setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
+                    style={{ width:86, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
+                </div>
+              )}
+
+              {/* ── Totals ── */}
+              <div style={{ marginTop:16, paddingTop:12, borderTop:"1px solid #e8e8ec" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13 }}>
+                  <span style={{ color:"#6b7280" }}>Subtotal</span>
+                  <span>£{totals.subtotal.toFixed(2)}</span>
+                </div>
+
+                {vatAmount > 0 && (
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13 }}>
+                    <span style={{ color:"#6b7280" }}>VAT ({vatRate}%)</span>
+                    <span>£{vatAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {totals.hasCISItems && (
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:12, marginTop:4, paddingTop:8, borderTop:"1px dashed #e8e8ec", color:"#6b7280" }}>
+                    <span style={{ display:"flex", alignItems:"center", gap:4 }}>
+                      <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:"#d97706", flexShrink:0 }} />
+                      Est. CIS Deduction
+                      <span style={{ fontSize:11, color:"#9ca3af", marginLeft:4 }}>
+                        ({totals.customerCIS?.rate || "20% — Standard"})
+                      </span>
+                    </span>
+                    <span>−£{totals.cisEstimate.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", marginTop:6, borderTop:"2px solid #e8e8ec", fontSize:15, fontWeight:700, color:"#1a1a2e" }}>
+                  <span>Quote Total</span>
+                  <span>£{(totals.subtotal + vatAmount).toFixed(2)}</span>
+                </div>
+
+                {totals.hasCISItems && (
+                  <div style={{ marginTop:12, padding:"10px 12px", background:"#fffbeb", borderRadius:8, border:"1px solid #fde68a", fontSize:12, color:"#92400e", lineHeight:1.6 }}>
+                    <strong>Note:</strong> This quote includes CIS-applicable items. If converted to an invoice, £{totals.cisEstimate.toFixed(2)} will be deducted at {totals.customerCIS?.rateValue ?? 20}% and paid directly to HMRC.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
