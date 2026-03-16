@@ -1,12 +1,11 @@
 import { useState, useContext } from "react";
-import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES, CIS_RATES } from "../constants";
+import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES } from "../constants";
 import { AppCtx } from "../context/AppContext";
-import { Field, Input, Select, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
+import { Field, Input, Select, SlideToggle, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
 
-export default function ItemForm({ existing, onClose, onSave }) {
+export default function ItemForm({ existing, onClose, onSave, settings }) {
   const { orgSettings } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
-  const orgCisEnabled = orgSettings?.cisReg === "Yes";
   const isEdit = !!existing;
 
   const [name, setName] = useState(existing?.name || "");
@@ -18,21 +17,36 @@ export default function ItemForm({ existing, onClose, onSave }) {
   const [active, setActive] = useState(existing?.active ?? true);
   const [sku, setSku] = useState(existing?.sku || "");
   const [account, setAccount] = useState(existing?.account || "");
-  const [cisApplicable, setCisApplicable] = useState(orgCisEnabled ? (existing?.cisApplicable ?? false) : false);
-  const [cisLabourRate, setCisLabourRate] = useState(existing?.cisLabourRate || "20%");
 
-  const showCIS = orgCisEnabled && (itemType === "Service" || itemType === "Labour" || itemType === "Material");
+  const cisEnabled = settings?.cis?.enabled ?? false;
+  const [isCIS, setIsCIS] = useState(existing?.cis?.enabled ?? false);
+  const [cisLabour, setCisLabour] = useState(existing?.cis?.labour ?? 100);
+  const [cisMaterial, setCisMaterial] = useState(existing?.cis?.material ?? 0);
+
   const typeColors = { Service: "#4F46E5", Labour: "#D97706", Material: "#059669", Equipment: "#2563EB", Other: "#6B7280" };
 
   const handleSave = () => {
-    onSave({
-     id: existing?.id || crypto.randomUUID(),
-      name, type: itemType, description, rate: Number(rate), unit,
+    const item = {
+      id: existing?.id || crypto.randomUUID(),
+      name,
+      type: itemType,
+      rate: Number(rate),
+      unit,
+      description,
       taxRate: isVat ? Number(taxRate) : 0,
-      active, sku, account,
-      cisApplicable: showCIS ? cisApplicable : false,
-      cisLabourRate: showCIS && cisApplicable ? cisLabourRate : null
-    });
+      active,
+      sku,
+      account,
+      cis: isCIS
+        ? {
+            enabled: true,
+            labour: Number(cisLabour),
+            material: Number(cisMaterial),
+          }
+        : { enabled: false },
+    };
+
+    onSave(item);
     onClose();
   };
 
@@ -69,7 +83,7 @@ export default function ItemForm({ existing, onClose, onSave }) {
                   </button>
                 ))}
               </div>
-              </Field>
+             </Field>
 
             <Field label="Item Name" required><Input value={name} onChange={setName} placeholder="e.g. Web Design Package" /></Field>
             <Field label="Description"><Textarea value={description} onChange={setDescription} placeholder="Brief description…" rows={2} /></Field>
@@ -121,14 +135,14 @@ export default function ItemForm({ existing, onClose, onSave }) {
                   </datalist>
                 </div>
               </Field>
-           {isVat && (
+              {isVat && (
                 <Field label="VAT Rate">
                   <Select value={String(taxRate)} onChange={v => setTaxRate(Number(v))} options={TAX_RATES.map(r => ({ value: String(r), label: `${r}%` }))} />
                 </Field>
               )}
             </div>
 
-          {!isVat && <InfoBox color="#D97706">VAT Rate hidden — your organisation is not VAT registered.</InfoBox>}
+            {!isVat && <InfoBox color="#D97706">VAT Rate hidden — your organisation is not VAT registered.</InfoBox>}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
               <Field label="SKU / Code"><Input value={sku} onChange={setSku} placeholder="e.g. WD-001" /></Field>
@@ -138,25 +152,93 @@ export default function ItemForm({ existing, onClose, onSave }) {
             </div>
           </div>
 
-          {showCIS && (
+          {cisEnabled && (
             <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", padding: "18px 22px" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>CIS Details</div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: cisApplicable ? 12 : 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  marginBottom: isCIS ? 16 : 0,
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>CIS Applicable</div>
-                  <div style={{ fontSize: 11, color: "#AAA", marginTop: 2 }}>
-                    {itemType === "Material" ? "Materials may include a CIS-liable labour element." :
-                      itemType === "Labour" ? "Labour is typically subject to CIS deduction." :
-                        "Services may be subject to CIS if provided to a contractor."}
+                  <<div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e" }}>
+                    CIS Details
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                    Mark this item as subject to CIS deductions
                   </div>
                 </div>
                 <Switch checked={cisApplicable} onChange={setCisApplicable} />
               </div>
-              {cisApplicable && (
-                <div style={{ marginTop: 10 }}>
-                  <Field label="CIS Deduction Rate"><Select value={cisLabourRate} onChange={setCisLabourRate} options={CIS_RATES} /></Field>
-                  <InfoBox>{itemType === "Material" ? "Only the labour element is subject to CIS." : "CIS will be deducted when this item is included on an invoice to a contractor."}</InfoBox>
-                </div>
+                
+              {isCIS && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <Field label="Labour (%)">
+                      <Input
+                        type="number"
+                        value={cisLabour}
+                        onChange={v => {
+                          const n = Math.min(100, Math.max(0, Number(v)));
+                          setCisLabour(n);
+                          setCisMaterial(100 - n);
+                        }}
+                      />
+                    </Field>
+                    <Field label="Material (%)">
+                      <Input
+                        type="number"
+                        value={cisMaterial}
+                        onChange={v => {
+                          const n = Math.min(100, Math.max(0, Number(v)));
+                          setCisMaterial(n);
+                          setCisLabour(100 - n);
+                        }}
+                      />
+                    </Field>
+                  </div>
+
+                  {Number(cisLabour) + Number(cisMaterial) !== 100 && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: "#dc2626" }}>
+                      ⚠ Labour + Material must equal 100%
+                    </div>
+                  )}
+
+                  {Number(rate) > 0 && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: "10px 14px",
+                        background: "#f0f7ff",
+                        borderRadius: 8,
+                        border: "1px solid #dbeafe",
+                        fontSize: 12,
+                        color: "#374151",
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 6,
+                      }}
+                    >
+                      <div>
+                        Labour value: <strong>
+                          £{((Number(rate) * Number(cisLabour)) / 100).toFixed(2)}
+                        </strong>
+                      </div>
+                      <div>
+                        Material value: <strong>
+                          £{((Number(rate) * Number(cisMaterial)) / 100).toFixed(2)}
+                        </strong>
+                      </div>
+                      <div style={{ gridColumn: "1/-1", color: "#1e6be0", marginTop: 4 }}>
+                        Est. CIS deduction (20%): <strong>
+                          £{((Number(rate) * Number(cisLabour) / 100) * 0.20).toFixed(2)}
+                        </strong> per unit @ standard rate
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
