@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { validateUkCrn } from '../utils/helpers'
 
 const STEPS = [
   { title: 'Company Details', icon: '🏢' },
@@ -24,6 +25,7 @@ export default function SetupWizard({ onComplete }) {
   const validate = () => {
     const errs = {}
     ;(REQUIRED[step] || []).forEach(f => { if (!data[f]?.trim()) errs[f] = true })
+    if (step === 0 && data.crn && !validateUkCrn(data.crn)) errs.crn = true
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -85,7 +87,7 @@ export default function SetupWizard({ onComplete }) {
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <I k="name" label="Company Name" required placeholder="Acme Ltd" />
-          <I k="crn" label="Company Reg. No (CRN)" placeholder="12345678" />
+          <I k="crn" label="Company Reg. No (CRN)" placeholder="12345678 or SC123456" />
         </div>
       </div>
     )
