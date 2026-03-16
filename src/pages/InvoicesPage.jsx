@@ -3,7 +3,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
-import { LineItemsTable, TotalsBlock, SaveSplitBtn, PaidConfirmModal, A4PrintModal } from "../components/shared";
+import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
 
@@ -24,24 +24,25 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
     : [];
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
   const gross = afterDisc + ship + vatTotal;
-  const orgCisEnabled = orgSettings?.cisReg === "Yes";
-  const role = orgSettings?.cisRole || "Contractor";
-  const grossRegistered = orgSettings?.cisRegistrationStatus === "Gross";
-  const customerCisRate = parseCisRate(customer?.taxDetails?.cisRate, 20)/100;
-  const orgCisRate = parseCisRate(orgSettings?.cisRate, 20)/100;
-  const cisRate = customer?.taxDetails?.cisRegistered ? customerCisRate : orgCisRate;
-  const cisApplicableSubtotal = items.reduce((sum, item) => {
-    if (!item?.cisApplicable) return sum;
-    return sum + Number(item.amount || 0);
-  }, 0);
-  const cisAfterDiscount = subtotal > 0
-    ? cisApplicableSubtotal - discAmt * (cisApplicableSubtotal / subtotal)
+  const cisEnabled = orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes");
+  const customerCIS = customer?.cis || {
+    registered: !!customer?.taxDetails?.cisRegistered,
+    rateValue: parseCisRate(customer?.taxDetails?.cisRate, 20),
+    rate: customer?.taxDetails?.cisRate,
+  };
+  const hasCISItems = cisEnabled && customerCIS?.registered && items.some(i => i?.cis?.enabled || i?.cisApplicable);
+  const cisDed = hasCISItems
+    ? items.reduce((sum, item) => {
+        if (!item?.cis?.enabled && !item?.cisApplicable) return sum;
+        const qty = Number(item.quantity ?? item.qty) || 1;
+        const lineTotal = Number(item.amount) || ((Number(item.rate) || 0) * qty);
+        const labourShare = item?.cis?.labour ?? (item?.cisApplicable ? 100 : 0);
+        const labourAmount = lineTotal * (labourShare / 100);
+        const rateValue = customerCIS?.rateValue ?? 20;
+        return sum + (labourAmount * rateValue / 100);
+      }, 0)
     : 0;
-  const canApplyCisToCustomer = !!customer?.taxDetails?.cisRegistered;
-  const cisDed = orgCisEnabled && canApplyCisToCustomer && !grossRegistered && ["Contractor","Both"].includes(role)
-    ? cisAfterDiscount * cisRate
-    : 0;
-  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed };
+  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, hasCISItems, customerCIS, total: gross - cisDed, grossTotal: gross };
 }
 
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
@@ -89,6 +90,8 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   }, [selectedQuoteId, onConvertFromQuote]);
 
   const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings,showShipping]);
+  const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
+  const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
   
   const handleTermsChange = (t, days) => {
     setPayTerms(t);
@@ -247,6 +250,16 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
                 </div>
               )}
             </div>
+            {(orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes")) && customer?.cis?.registered && (
+              <div style={{
+                display:"inline-flex", alignItems:"center", gap:4,
+                marginTop:4, padding:"2px 8px",
+                background:"#fef3c7", borderRadius:20,
+                fontSize:11, fontWeight:600, color:"#92400e"
+              }}>
+                ⚠ CIS Subcontractor · {customer.cis.rate || "20%"}
+              </div>
+            )}
             {!isEdit && acceptedQuotes.length>0 && (
               <div style={{ marginTop:10, padding:"10px", border:"1px solid #D1FAE5", borderRadius:8, background:"#F0FDF4" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
@@ -262,7 +275,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
               </div>
             )}
           </div>
-          {orgSettings?.cisReg === "Yes" && customer && !customer?.taxDetails?.cisRegistered && (
+          {(orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes")) && customer && !customer?.cis?.registered && !customer?.taxDetails?.cisRegistered && (
             <div style={{ marginBottom:14 }}>
               <InfoBox color="#D97706">CIS cannot be applied for this customer because they are not marked as CIS registered.</InfoBox>
             </div>
@@ -328,13 +341,66 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
                 <Textarea value={terms} onChange={setTerms} rows={3} />
               </Field>
             </div>
-            <TotalsBlock
-              subtotal={totals.subtotal} discountType={discType} discountValue={discVal}
-              setDiscountType={setDiscType} setDiscountValue={setDiscVal}
-              shipping={shipping} setShipping={setShipping}
-              taxBreakdown={totals.taxBreakdown} total={totals.total}
-              currSymbol={currSym} isVat={isVat} cisDeduction={totals.cisDeduction} showShipping={showShipping}
-            />
+            <div style={{ background:"#FAFAFA", borderRadius:10, border:"1px solid #EBEBEB", padding:"14px 16px", minWidth:260 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
+                <span style={{ fontSize:13, color:"#666" }}>Discount</span>
+                <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                  <div style={{ display:"flex", border:"1.5px solid #E0E0E0", borderRadius:6, overflow:"hidden" }}>
+                    {[["percent","%"],["fixed",currSym]].map(([t,l])=>(
+                      <button key={t} onClick={()=>setDiscType(t)}
+                        style={{ padding:"3px 8px", border:"none", background:discType===t?"#1A1A1A":"transparent", color:discType===t?"#fff":"#999", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:ff }}>{l}</button>
+                    ))}
+                  </div>
+                  <input value={discVal} onChange={e=>setDiscVal(e.target.value)} type="number" min="0"
+                    style={{ width:62, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
+                </div>
+              </div>
+              {showShipping && (
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
+                  <span style={{ fontSize:13, color:"#666" }}>Shipping</span>
+                  <input value={shipping} onChange={e=>setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
+                    style={{ width:86, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
+                </div>
+              )}
+
+              {/* ── Totals ── */}
+              <div style={{ marginTop:16, paddingTop:12, borderTop:"1px solid #e8e8ec" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13 }}>
+                  <span style={{ color:"#6b7280" }}>Subtotal</span>
+                  <span style={{ color:"#1a1a2e" }}>£{totals.subtotal.toFixed(2)}</span>
+                </div>
+
+                {vatAmount > 0 && (
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13 }}>
+                    <span style={{ color:"#6b7280" }}>VAT ({vatRate}%)</span>
+                    <span style={{ color:"#1a1a2e" }}>£{vatAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {totals.hasCISItems && (
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13, marginTop:4, paddingTop:8, borderTop:"1px dashed #fee2e2" }}>
+                    <span style={{ color:"#dc2626" }}>
+                      CIS Deduction
+                      <span style={{ fontSize:11, color:"#9ca3af", marginLeft:6 }}>
+                        ({totals.customerCIS?.rate || "20% — Standard"})
+                      </span>
+                    </span>
+                    <span style={{ color:"#dc2626", fontWeight:600 }}>−£{totals.cisDeduction.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", marginTop:6, borderTop:"2px solid #e8e8ec", fontSize:15, fontWeight:700, color:"#1a1a2e" }}>
+                  <span>{totals.hasCISItems ? "Total to Pay" : "Total"}</span>
+                  <span>£{Math.max(0, totals.total).toFixed(2)}</span>
+                </div>
+
+                {totals.hasCISItems && (
+                  <div style={{ marginTop:12, padding:"10px 12px", background:"#fff7ed", borderRadius:8, border:"1px solid #fed7aa", fontSize:12, color:"#92400e", lineHeight:1.6 }}>
+                    <strong>CIS applies.</strong> £{totals.cisDeduction.toFixed(2)} will be deducted at {totals.customerCIS?.rateValue ?? 20}% and paid to HMRC on behalf of {customer?.name || "the subcontractor"}.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
