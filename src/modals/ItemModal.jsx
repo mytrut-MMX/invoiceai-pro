@@ -1,12 +1,13 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useMemo } from "react";
 import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES, CIS_RATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
 
 export default function ItemForm({ existing, onClose, onSave }) {
-  const { orgSettings } = useContext(AppCtx);
+  const { orgSettings, catalogItems } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
+  const orgCisEnabled = orgSettings?.cisReg === "Yes";
   const isEdit = !!existing;
 
   const [name, setName] = useState(existing?.name||"");
@@ -21,7 +22,30 @@ export default function ItemForm({ existing, onClose, onSave }) {
   const [cisApplicable, setCisApplicable] = useState(existing?.cisApplicable??false);
   const [cisLabourRate, setCisLabourRate] = useState(existing?.cisLabourRate||"20%");
 
-  const showCIS = itemType==="Service"||itemType==="Labour"||itemType==="Material";
+  const showCIS = orgCisEnabled && (itemType==="Service"||itemType==="Labour"||itemType==="Material");
+  const [newUnitInput, setNewUnitInput] = useState("");
+  const [hiddenUnits, setHiddenUnits] = useState([]);
+
+  const customUnits = useMemo(() => {
+    const fromCatalog = (catalogItems || []).map(item => item?.unit).filter(Boolean);
+    const deduped = Array.from(new Set(fromCatalog));
+    return deduped.filter(u => !ITEM_UNITS.includes(u) && !hiddenUnits.includes(u));
+  }, [catalogItems, hiddenUnits]);
+
+  const allUnits = useMemo(() => [...ITEM_UNITS, ...customUnits], [customUnits]);
+
+  const handleAddUnit = () => {
+    const candidate = newUnitInput.trim();
+    if (!candidate) return;
+    setUnit(candidate);
+    setNewUnitInput("");
+  };
+
+  const handleDeleteUnit = (unitValue) => {
+    if (!customUnits.includes(unitValue)) return;
+    setHiddenUnits(prev => [...prev, unitValue]);
+    if (unit === unitValue) setUnit("");
+  };
   const typeColors = { Service:"#4F46E5", Labour:"#D97706", Material:"#059669", Equipment:"#2563EB", Other:"#6B7280" };
 
   const handleSave = () => {
@@ -30,7 +54,7 @@ export default function ItemForm({ existing, onClose, onSave }) {
       name, type:itemType, description, rate:Number(rate), unit,
       taxRate: isVat ? Number(taxRate) : 0,
       active, sku, account,
-      cisApplicable: showCIS ? cisApplicable : false,
+      cisApplicable: showCIS && orgCisEnabled ? cisApplicable : false,
       cisLabourRate: cisApplicable ? cisLabourRate : null
     });
     onClose();
@@ -77,20 +101,23 @@ export default function ItemForm({ existing, onClose, onSave }) {
           <div style={{ display:"grid", gridTemplateColumns:isVat?"1fr 1fr 1fr":"1fr 1fr", gap:12 }}>
             <Field label="Rate" required><Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" /></Field>
             <Field label="Unit">
-               <div style={{ position:"relative" }}>
-                <input
-                  list="unit-options"
-                  value={unit}
-                 onChange={e => setUnit(e.target.value)}
-                  placeholder="Select or type unit…"
-                  style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1a1a2e", background:"#fff", outline:"none", boxSizing:"border-box" }}
-                  onFocus={e => e.target.style.borderColor="#1e6be0"}
-                  onBlur={e => e.target.style.borderColor="#e8e8ec"}
-                />
-                <datalist id="unit-options">
-                  {ITEM_UNITS.map(u => <option key={u} value={u} />)}
-                </datalist>
+               <Select value={unit} onChange={setUnit} options={allUnits} placeholder="Select unit…" />
+              <div style={{ marginTop:8, display:"flex", gap:8 }}>
+                <Input value={newUnitInput} onChange={setNewUnitInput} placeholder="Add custom unit" />
+                <Btn onClick={handleAddUnit} variant="outline" size="sm">Add</Btn>
               </div>
+              {customUnits.length > 0 && (
+                <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
+                  {customUnits.map(customUnit => (
+                    <div key={customUnit} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 8px", background:"#f9fafb", border:"1px solid #e8e8ec", borderRadius:6 }}>
+                      <span style={{ fontSize:12, color:"#374151" }}>{customUnit}</span>
+                      <button type="button" onClick={() => handleDeleteUnit(customUnit)} title="Remove custom unit" style={{ background:"transparent", border:"none", color:"#6b7280", cursor:"pointer", display:"flex", padding:0 }}>
+                        <Icons.Trash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Field>
             {isVat && (
               <Field label="VAT Rate">
@@ -110,9 +137,10 @@ export default function ItemForm({ existing, onClose, onSave }) {
 
           </div>
 
-          {showCIS && (
+          {(itemType==="Service"||itemType==="Labour"||itemType==="Material") && (
             <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", padding:"18px 22px" }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e", marginBottom:16 }}>CIS Details</div>
+              {!orgCisEnabled && <InfoBox color="#D97706">CIS is disabled for your organisation, so this item cannot be marked as CIS applicable.</InfoBox>}
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:cisApplicable?12:0 }}>
                 <div>
                   <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>CIS Applicable</div>
@@ -122,7 +150,7 @@ export default function ItemForm({ existing, onClose, onSave }) {
                      "Services may be subject to CIS if provided to a contractor."}
                   </div>
                 </div>
-                <Switch checked={cisApplicable} onChange={setCisApplicable} />
+                <Switch checked={cisApplicable} onChange={orgCisEnabled ? setCisApplicable : ()=>setCisApplicable(false)} />
               </div>
               {cisApplicable && (
                 <div style={{ marginTop:10 }}>
