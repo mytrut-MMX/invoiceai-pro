@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ff, INDUSTRIES, COUNTRIES, CURRENCIES_LIST, TIMEZONES, UK_COUNTIES, CIS_RATES } from "../constants";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Toggle, Switch, SlideToggle, Checkbox, InfoBox } from "../components/atoms";
-import { validateVatNumber, formatPhoneNumber } from "../utils/helpers";
+import { validateVatNumber, formatPhoneNumber, validateUkCrn } from "../utils/helpers";
 
 export default function OrgSetupPage({ onComplete, initialData }) {
   const [bType, setBType] = useState(initialData?.bType||"");
@@ -38,8 +38,11 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const vatNumError = vatReg && vatNumTouched && !validateVatNumber(vatNum)
     ? "Please enter a valid VAT number (e.g. GB123456789)" : null;
   const cisUtrValid = /^\d{10}$/.test(String(cisUtr||""));
+  const crnError = bType==="Limited Company" && crn && !validateUkCrn(crn)
+    ? "CRN must be 8 digits or 2 letters followed by 6 digits."
+    : null;
   const canSubmit = bType && orgName && industry && country &&
-    (!vatReg || (vatReg && validateVatNumber(vatNum)));
+    (!vatReg || (vatReg && validateVatNumber(vatNum))) && !crnError;
 
   const handleComplete = () => {
     if(!canSubmit){ setVatNumTouched(true); return; }
@@ -70,8 +73,8 @@ export default function OrgSetupPage({ onComplete, initialData }) {
             <Input value={orgName} onChange={setOrgName} placeholder="e.g. Bright Studio Ltd" />
           </Field>
           {bType==="Limited Company" && (
-            <Field label="Company Registration Number (CRN)" hint="Found on your Companies House certificate">
-              <Input value={crn} onChange={setCrn} placeholder="e.g. 12345678" />
+            <Field label="Company Registration Number (CRN)" hint="Format: 8 digits or 2 letters + 6 digits" error={crnError}>
+              <Input value={crn} onChange={v=>setCrn(v.toUpperCase())} placeholder="e.g. 12345678 or SC123456" error={!!crnError} />
             </Field>
           )}
           <Field label="Industry" required>
