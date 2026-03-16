@@ -1,10 +1,10 @@
-import { useState, useContext, useMemo } from "react";
+import { useState, useContext } from "react";
 import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES, CIS_RATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Field, Input, Select, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
 
 export default function ItemForm({ existing, onClose, onSave }) {
-  const { orgSettings, catalogItems } = useContext(AppCtx);
+  const { orgSettings } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
   const orgCisEnabled = orgSettings?.cisReg === "Yes";
   const isEdit = !!existing;
@@ -20,43 +20,10 @@ export default function ItemForm({ existing, onClose, onSave }) {
   const [account, setAccount] = useState(existing?.account || "");
   const [cisApplicable, setCisApplicable] = useState(orgCisEnabled ? (existing?.cisApplicable ?? false) : false);
   const [cisLabourRate, setCisLabourRate] = useState(existing?.cisLabourRate || "20%");
-  const [newUnitInput, setNewUnitInput] = useState("");
-  const [isUnitMenuOpen, setIsUnitMenuOpen] = useState(false);
-  const [customUnits, setCustomUnits] = useState([]);
-  const [hiddenUnits, setHiddenUnits] = useState([]);
 
   const showCIS = orgCisEnabled && (itemType === "Service" || itemType === "Labour" || itemType === "Material");
   const typeColors = { Service: "#4F46E5", Labour: "#D97706", Material: "#059669", Equipment: "#2563EB", Other: "#6B7280" };
 
-  const catalogUnits = useMemo(() => {
-    const fromCatalog = (catalogItems || []).map(item => item?.unit).filter(Boolean);
-    return Array.from(new Set(fromCatalog));
-  }, [catalogItems]);
-
-  const allUnits = useMemo(() => {
-    const merged = Array.from(new Set([...ITEM_UNITS, ...catalogUnits, ...customUnits]));
-    return merged.filter(u => !hiddenUnits.includes(u));
-  }, [catalogUnits, customUnits, hiddenUnits]);
-
-  const handleAddUnit = () => {
-    const candidate = newUnitInput.trim();
-    if (!candidate) return;
-    if (hiddenUnits.includes(candidate)) {
-      setHiddenUnits(prev => prev.filter(u => u !== candidate));
-    }
-    if (!ITEM_UNITS.includes(candidate) && !catalogUnits.includes(candidate)) {
-      setCustomUnits(prev => (prev.includes(candidate) ? prev : [...prev, candidate]));
-    }
-    setUnit(candidate);
-    setNewUnitInput("");
-  };
-
-  const handleDeleteUnit = (unitValue) => {
-    setHiddenUnits(prev => (prev.includes(unitValue) ? prev : [...prev, unitValue]));
-    setCustomUnits(prev => prev.filter(u => u !== unitValue));
-    if (unit === unitValue) setUnit("");
-  };
-  
   const handleSave = () => {
     onSave({
      id: existing?.id || crypto.randomUUID(),
@@ -111,31 +78,47 @@ export default function ItemForm({ existing, onClose, onSave }) {
               <Field label="Rate" required><Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" /></Field>
               <Field label="Unit">
                 <div style={{ position: "relative" }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsUnitMenuOpen(prev => !prev)}
-                    style={{ width: "100%", padding: "9px 11px", border: "1px solid #e8e8ec", borderRadius: 5, fontSize: 13, fontFamily: ff, color: unit ? "#1A1A1A" : "#999", background: "#fff", textAlign: "left", cursor: "pointer" }}
+                  <input
+                    list="unit-options"
+                    value={unit}
+                    onChange={e => setUnit(e.target.value)}
+                    placeholder="Select or type to add"
+                    style={{
+                      width: "100%",
+                      padding: "9px 32px 9px 11px",
+                      border: "1px solid #e8e8ec",
+                      borderRadius: 5,
+                      fontSize: 14,
+                      fontFamily: ff,
+                      color: "#1a1a2e",
+                      background: "#fff",
+                      outline: "none",
+                      boxSizing: "border-box"
+                    }}
+                    onFocus={e => (e.target.style.borderColor = "#1e6be0")}
+                    onBlur={e => (e.target.style.borderColor = "#e8e8ec")}
+                  />
+                  <i
+                    style={{
+                      position: "absolute",
+                      right: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      pointerEvents: "none",
+                      display: "flex",
+                      alignItems: "center"
+                    }}
                   >
-                    {unit || "Select unit…"}
-                  </button>
-                  {isUnitMenuOpen && (
-                    <div style={{ position: "absolute", zIndex: 20, top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #e8e8ec", borderRadius: 8, boxShadow: "0 8px 20px rgba(0,0,0,0.08)", padding: 8, maxHeight: 240, overflowY: "auto" }}>
-                      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                        <Input value={newUnitInput} onChange={setNewUnitInput} placeholder="Add custom unit" />
-                        <Btn onClick={handleAddUnit} variant="outline" size="sm">Add</Btn>
-                      </div>
-                      {allUnits.map(unitOption => (
-                        <div key={unitOption} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 8px", borderRadius: 6, background: unit === unitOption ? "#eff6ff" : "transparent" }}>
-                          <button type="button" onClick={() => { setUnit(unitOption); setIsUnitMenuOpen(false); }} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", fontSize: 13, fontFamily: ff, color: "#1f2937", flex: 1 }}>
-                            {unitOption}
-                          </button>
-                          <button type="button" onClick={() => handleDeleteUnit(unitOption)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 14 }}>
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 512 512">
+                      <path
+                        d="M2.157 159.57c0 13.773 5.401 27.542 16.195 38.02l198.975 192.867c21.411 20.725 55.94 20.725 77.34 0L493.63 197.59c21.508-20.846 21.637-54.778.269-75.773-21.35-20.994-56.104-21.098-77.612-.26L256.004 276.93 95.721 121.562c-21.528-20.833-56.268-20.734-77.637.26C7.472 132.261 2.157 145.923 2.157 159.57z"
+                        fill="#9ca3af"
+                      />
+                    </svg>
+                  </i>
+                  <datalist id="unit-options">
+                    {ITEM_UNITS.map(u => <option key={u} value={u} />)}
+                  </datalist>
                 </div>
               </Field>
            {isVat && (
@@ -143,7 +126,7 @@ export default function ItemForm({ existing, onClose, onSave }) {
                   <Select value={String(taxRate)} onChange={v => setTaxRate(Number(v))} options={TAX_RATES.map(r => ({ value: String(r), label: `${r}%` }))} />
                 </Field>
               )}
-            </div>>
+            </div>
 
           {!isVat && <InfoBox color="#D97706">VAT Rate hidden — your organisation is not VAT registered.</InfoBox>}
 
