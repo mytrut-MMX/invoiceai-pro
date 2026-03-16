@@ -161,9 +161,9 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
                   justifyContent: "space-between",
                   marginBottom: isCIS ? 16 : 0,
                 }}
-              />
+              >
                 <div>
-                  <<div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e" }}>
                     CIS Details
                   </div>
                   <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
