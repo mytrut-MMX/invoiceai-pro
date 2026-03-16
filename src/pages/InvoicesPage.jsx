@@ -37,7 +37,8 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
   const cisAfterDiscount = subtotal > 0
     ? cisApplicableSubtotal - discAmt * (cisApplicableSubtotal / subtotal)
     : 0;
-  const cisDed = orgCisEnabled && !grossRegistered && ["Contractor","Both"].includes(role)
+  cconst canApplyCisToCustomer = !!customer?.taxDetails?.cisRegistered;
+  const cisDed = orgCisEnabled && canApplyCisToCustomer && !grossRegistered && ["Contractor","Both"].includes(role)
     ? cisAfterDiscount * cisRate
     : 0;
   return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:cisDed, total: gross - cisDed };
@@ -261,7 +262,12 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
               </div>
             )}
           </div>
-
+          {orgSettings?.cisReg === "Yes" && customer && !customer?.taxDetails?.cisRegistered && (
+            <div style={{ marginBottom:14 }}>
+              <InfoBox color="#D97706">CIS cannot be applied for this customer because they are not marked as CIS registered.</InfoBox>
+            </div>
+          )}
+          
           {/* Invoice details */}
           <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Invoice Details</div>
