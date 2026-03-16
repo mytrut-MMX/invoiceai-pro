@@ -106,7 +106,7 @@ export default function CustomerForm({ existing, onClose, onSave }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn onClick={onClose} variant="outline">Cancel</Btn>
-            Btn onClick={handleSave} variant="primary" disabled={!displayName && !companyName && !firstName}>Save Customer</Btn>
+            <Btn onClick={handleSave} variant="primary" disabled={!displayName && !companyName && !firstName}>Save Customer</Btn>
           </div>
         </div>
 
