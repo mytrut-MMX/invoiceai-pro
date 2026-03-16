@@ -4,6 +4,7 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Btn } from "../components/atoms";
 import { A4PrintModal } from "../components/shared";
+import { validateUkCrn } from "../utils/helpers";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }) {
@@ -14,26 +15,6 @@ function Section({ title, children }) {
       </div>
       <div style={{ padding:"18px 22px" }}>{children}</div>
     </div>
-  );
-}
-
-function CheckIcon(props) {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      focusable="false"
-      height="1em"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-      width="1em"
-      {...props}
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
   );
 }
 
@@ -62,7 +43,7 @@ function ChipToggle({ value, onChange, options }) {
               transition:"all 0.15s ease",
             }}
           >
-            {selected && <CheckIcon style={{ fontSize:13 }} />}
+            {selected && <CIcons.Check />}
             <span>{option}</span>
           </button>
         );
@@ -175,6 +156,7 @@ export default function SettingsPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState("org");
   const [vatNumberLocked, setVatNumberLocked] = useState(Boolean(org.vatNum));
   const [cisNumberLocked, setCisNumberLocked] = useState(Boolean(org.cisUtrNo));
+  const crnError = crn && !validateUkCrn(crn) ? "CRN must be 8 digits or 2 letters followed by 6 digits (e.g. 12345678, SC123456)." : "";
 
   const settingTabs = [
     { id:"org", label:"Organization Details" },
@@ -186,6 +168,10 @@ export default function SettingsPage({ onNavigate }) {
   ];
 
   const handleSaveOrg = () => {
+    if (crn && !validateUkCrn(crn)) {
+      window.alert("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
+      return;
+    }
     if (cisReg === "Yes") {
       const utr = cisUtrNo.replace(/\D/g, "");
       if (utr.length !== 10) {
@@ -309,8 +295,8 @@ export default function SettingsPage({ onNavigate }) {
           <Field label="Industry">
             <Select value={industry} onChange={setIndustry} options={["", ...INDUSTRIES]} />
           </Field>
-          <Field label="Company Reg No (CRN)">
-            <Input value={crn} onChange={setCrn} placeholder="Optional" />
+          <Field label="Company Reg No (CRN)" hint="Format: 12345678 or SC123456" error={crnError}>
+            <Input value={crn} onChange={v=>setCrn(v.toUpperCase())} placeholder="Optional" error={!!crnError} />
           </Field>
         </div>
       </Section>)}
@@ -363,7 +349,7 @@ export default function SettingsPage({ onNavigate }) {
       </Section>)}
 
       {/* Bank */}
-      {activeTab === "Bank" && (<Section title="Bank Details (shown on invoices)">
+      {activeTab === "bank" && (<Section title="Bank Details (shown on invoices)">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="Bank Name"><Input value={bankName} onChange={setBankName} placeholder="e.g. Barclays" /></Field>
           <Field label="Sort Code"><Input value={bankSort} onChange={setBankSort} placeholder="00-00-00" /></Field>
