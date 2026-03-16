@@ -32,6 +32,12 @@ export const validateVatNumber = (num) => {
   return false;
 };
 
+export const validateUkCrn = (value) => {
+  if (!value) return true;
+  const clean = String(value).trim().toUpperCase();
+  return /^\d{8}$/.test(clean) || /^[A-Z]{2}\d{6}$/.test(clean);
+};
+
 
 export const parseCisRate = (value, fallback = 20) => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
