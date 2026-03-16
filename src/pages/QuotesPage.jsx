@@ -135,8 +135,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const panelContent = (
     <div style={{ position: asPage ? "relative" : "fixed", inset: asPage ? "auto" : 0, background: asPage ? "transparent" : "rgba(0,0,0,0.4)", zIndex: asPage ? "auto" : 900, display:"flex", justifyContent: asPage ? "center" : "flex-end" }}>
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
-      {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} />}
-
+      {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: orgSettings?.cisReg === "Yes" } }} />}
            <div style={{ width:"100%", maxWidth:860, height: asPage ? "auto" : "100%", minHeight: asPage ? "calc(100vh - 180px)" : "100%", background:"#f4f5f7", display:"flex", flexDirection:"column", boxShadow: asPage ? "0 12px 34px rgba(0,0,0,0.10)" : "-8px 0 40px rgba(0,0,0,0.16)", borderRadius: asPage ? 12 : 0, overflow:"hidden", fontFamily:ff }}>
         <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
