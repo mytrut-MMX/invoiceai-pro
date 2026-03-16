@@ -15,6 +15,18 @@ export const SALUTATIONS = ["Mr.","Mrs.","Ms.","Miss","Dr.","Prof."];
 export const ITEM_UNITS = ["hrs","days","qty","kg","m","m²","m³","l","pcs","flat rate"];
 export const ITEM_TYPES = ["Service","Material","Labour","Equipment","Other"];
 export const CIS_RATES = ["20%","30%","0% (gross payment)","Flat rate"];
+export const CIS_DEDUCTION_RATES = [
+  { label: "20% — Standard", value: 20 },
+  { label: "30% — Higher (unverified)", value: 30 },
+  { label: "0% — Gross payment", value: 0 },
+];
+export const CIS_DEFAULT_SETTINGS = {
+  enabled: false,
+  contractorUTR: "",
+  contractorName: "",
+  employerRef: "",
+  defaultRate: 20,
+};
 export const ACCOUNT_CATEGORIES = [
   "Sales","Services","Consulting","Design & Creative","Development & IT",
   "Marketing","Labour","Materials","Equipment Hire","Subcontractors",
