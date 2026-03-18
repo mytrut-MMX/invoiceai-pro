@@ -6,9 +6,10 @@ import { Field, Input, Select, Textarea, Btn, Tag, SlideToggle, InfoBox, Payment
 import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
+import { useCISSettings } from "../hooks/useCISSettings";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSettings) {
+function calcTotals(items, discType, discVal, shipping, isVat, customer, cisEnabled, cisDefaultRate) {
   const subtotal = items.reduce((s,i)=>s+Number(i.amount||0), 0);
   const discAmt = discType==="percent" ? subtotal*(Number(discVal)/100) : Math.min(Number(discVal)||0, subtotal);
   const afterDisc = subtotal - discAmt;
@@ -24,10 +25,9 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
     : [];
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
   const gross = afterDisc + ship + vatTotal;
-  const cisEnabled = orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes");
   const customerCIS = customer?.cis || {
     registered: !!customer?.taxDetails?.cisRegistered,
-    rateValue: parseCisRate(customer?.taxDetails?.cisRate, 20),
+    rateValue: parseCisRate(customer?.taxDetails?.cisRate, cisDefaultRate),
     rate: customer?.taxDetails?.cisRate,
   };
   const hasCISItems = cisEnabled && customerCIS?.registered && items.some(i => i?.cis?.enabled || i?.cisApplicable);
@@ -50,6 +50,7 @@ const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 // ─── INVOICE FORM PANEL ───────────────────────────────────────────────────────
 function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, quotes } = useContext(AppCtx);
+  const { cisEnabled, cisDefaultRate } = useCISSettings();
   const isVat = orgSettings?.vatReg==="Yes";
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
   const isEdit = !!existing;
@@ -89,7 +90,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     setSelectedQuoteId("");
   }, [selectedQuoteId, onConvertFromQuote]);
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings,showShipping]);
+  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,cisEnabled,cisDefaultRate),[items,discType,discVal,shipping,isVat,customer,showShipping,cisEnabled,cisDefaultRate]);
   const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
   const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
   
@@ -173,7 +174,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     <>
       {showPaidModal && <PaidConfirmModal invoice={{ ...docData, invoice_number:docData.docNumber, currency:orgSettings?.currency||"GBP" }} onConfirm={handlePaidConfirm} onCancel={()=>setShowPaidModal(false)} />}
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
-      {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: orgSettings?.cisReg === "Yes" } }} />}
+      {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: cisEnabled } }} />}
 
       <div style={{ width:"100%", maxWidth:1100, margin:"0 auto", background:"#f4f5f7", display:"flex", flexDirection:"column", fontFamily:ff, padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
         {/* Header */}
@@ -250,7 +251,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
                 </div>
               )}
             </div>
-            {(orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes")) && customer?.cis?.registered && (
+            {(cisEnabled && customer?.cis?.registered && (
               <div style={{
                 display:"inline-flex", alignItems:"center", gap:4,
                 marginTop:4, padding:"2px 8px",
@@ -275,7 +276,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
               </div>
             )}
           </div>
-          {(orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes")) && customer && !customer?.cis?.registered && !customer?.taxDetails?.cisRegistered && (
+          {cisEnabled && customer && !customer?.cis?.registered && !customer?.taxDetails?.cisRegistered && (
             <div style={{ marginBottom:14 }}>
               <InfoBox color="#D97706">CIS cannot be applied for this customer because they are not marked as CIS registered.</InfoBox>
             </div>
