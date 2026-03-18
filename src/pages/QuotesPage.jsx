@@ -10,7 +10,7 @@ import ItemModal from "../modals/ItemModal";
 import { useCISSettings } from "../hooks/useCISSettings";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function calcTotals(items, discType, discVal, shipping, isVat, customer, cisEnabled, cisDefaultRate)) {
+function calcTotals(items, discType, discVal, shipping, isVat, customer, cisEnabled, cisDefaultRate) {
   const subtotal = items.reduce((s,i)=>s+Number(i.amount||0), 0);
   const discAmt = discType==="percent" ? subtotal*(Number(discVal)/100) : Math.min(Number(discVal)||0, subtotal);
   const afterDisc = subtotal - discAmt;
