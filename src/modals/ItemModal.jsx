@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Field, Input, Select, SlideToggle, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
+import { useCISSettings } from "../hooks/useCISSettings";
 
 export default function ItemForm({ existing, onClose, onSave, settings }) {
   const { orgSettings } = useContext(AppCtx);
@@ -18,7 +19,7 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
   const [sku, setSku] = useState(existing?.sku || "");
   const [account, setAccount] = useState(existing?.account || "");
 
-  const cisEnabled = settings?.cis?.enabled ?? false;
+  const { cisEnabled } = useCISSettings();
   const [isCIS, setIsCIS] = useState(existing?.cis?.enabled ?? false);
   const [cisLabour, setCisLabour] = useState(existing?.cis?.labour ?? 100);
   const [cisMaterial, setCisMaterial] = useState(existing?.cis?.material ?? 0);
@@ -170,7 +171,7 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
                     Mark this item as subject to CIS deductions
                   </div>
                 </div>
-                <Switch checked={cisApplicable} onChange={setCisApplicable} />
+                <Switch checked={isCIS} onChange={setIsCIS} />
               </div>
                 
               {isCIS && (
