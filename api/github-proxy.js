@@ -1,13 +1,13 @@
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  let body: any;
+  let body;
   try {
-    const chunks: Buffer[] = [];
+    const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     body = JSON.parse(Buffer.concat(chunks).toString());
   } catch(e) {
@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
     let result;
     try { result = JSON.parse(text); } catch(e) { result = { message: text }; }
     res.status(response.status).json(result);
-  } catch(e: any) {
+  } catch(e) {
     res.status(500).json({ error: e.message });
   }
 }
