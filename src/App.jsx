@@ -14,6 +14,7 @@ import InvoicesPage from "./pages/InvoicesPage";
 import QuotesPage from "./pages/QuotesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import SettingsPage from "./pages/SettingsPage";
+import LandingPage from './pages/landing';
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -141,11 +142,17 @@ export default function App() {
     : appTheme.color;
 
   // ─── gates ─────────────────────────────────────────────────────
-  if(!user) return (
+  if(!user) {
+  const isLanding = window.location.pathname === '/' || window.location.pathname === '';
+  if(isLanding) {
+    return <LandingPage />;
+  }
+  return (
     <AppCtx.Provider value={ctx}>
       <AuthPage onAuth={(u)=>{ setUser(u); }} />
     </AppCtx.Provider>
   );
+}
 
   if(!orgSettings) return (
     <AppCtx.Provider value={ctx}>
