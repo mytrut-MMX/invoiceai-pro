@@ -7,9 +7,10 @@ import { Field, Input, Textarea, Btn, Tag } from "../components/atoms";
 import { LineItemsTable, SaveSplitBtn, A4PrintModal } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
+import { useCISSettings } from "../hooks/useCISSettings";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSettings) {
+function calcTotals(items, discType, discVal, shipping, isVat, customer, cisEnabled, cisDefaultRate)) {
   const subtotal = items.reduce((s,i)=>s+Number(i.amount||0), 0);
   const discAmt = discType==="percent" ? subtotal*(Number(discVal)/100) : Math.min(Number(discVal)||0, subtotal);
   const afterDisc = subtotal - discAmt;
@@ -25,10 +26,9 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
     : [];
   const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
   const gross = afterDisc + ship + vatTotal;
-  const cisEnabled = orgSettings?.cis?.enabled ?? (orgSettings?.cisReg === "Yes");
   const customerCIS = customer?.cis || {
     registered: !!customer?.taxDetails?.cisRegistered,
-    rateValue: parseCisRate(customer?.taxDetails?.cisRate, 20),
+    rateValue: parseCisRate(customer?.taxDetails?.cisRate, cisDefaultRate),
     rate: customer?.taxDetails?.cisRate,
   };
   const hasCISItems = cisEnabled && customerCIS?.registered && items.some(i => i?.cis?.enabled || i?.cisApplicable);
@@ -49,6 +49,7 @@ function calcTotals(items, discType, discVal, shipping, isVat, customer, orgSett
 // ─── QUOTE FORM PANEL ─────────────────────────────────────────────────────────
 function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage = false }) {
   const { customers, catalogItems, setCatalogItems, orgSettings, quotes, invoices, setInvoices } = useContext(AppCtx);
+  const { cisEnabled, cisDefaultRate } = useCISSettings();
   const isVat = orgSettings?.vatReg==="Yes";
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
   const isEdit = !!existing;
@@ -74,7 +75,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
   const isLockedAcceptedQuote = isEdit && q.status === "Invoiced";
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,orgSettings),[items,discType,discVal,shipping,isVat,customer,orgSettings,showShipping]);
+  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,cisEnabled,cisDefaultRate),[items,discType,discVal,shipping,isVat,customer,showShipping,cisEnabled,cisDefaultRate]);
   const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
   const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
   const filteredCustomers = customers.filter(c=>
@@ -140,7 +141,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const panelContent = (
     <div style={{ position: asPage ? "relative" : "fixed", inset: asPage ? "auto" : 0, background: asPage ? "transparent" : "rgba(0,0,0,0.4)", zIndex: asPage ? "auto" : 900, display:"flex", justifyContent: asPage ? "center" : "flex-end" }}>
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
-      {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: orgSettings?.cisReg === "Yes" } }} />}
+      {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: cisEnabled } }} />}
            <div style={{ width:"100%", maxWidth:860, height: asPage ? "auto" : "100%", minHeight: asPage ? "calc(100vh - 180px)" : "100%", background:"#f4f5f7", display:"flex", flexDirection:"column", boxShadow: asPage ? "0 12px 34px rgba(0,0,0,0.10)" : "-8px 0 40px rgba(0,0,0,0.16)", borderRadius: asPage ? 12 : 0, overflow:"hidden", fontFamily:ff }}>
         <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
