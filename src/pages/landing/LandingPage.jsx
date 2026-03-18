@@ -15,39 +15,46 @@ const LandingPage = () => {
         <div style={{ 
           maxWidth: '1200px', 
           margin: '0 auto', 
-          padding: '0 2rem', 
+          padding: '0 1.5rem', 
           display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between' 
+          justifyContent: 'space-between', 
+          alignItems: 'center' 
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: '#0EA5E9' }}>
-            📋 InvoiceSaga
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ 
+              width: '32px', 
+              height: '32px', 
+              backgroundColor: '#0EA5E9', 
+              borderRadius: '6px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold'
+            }}>IS</div>
+            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#0F172A' }}>InvoiceSaga</span>
           </div>
           <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
             <a href="#features" style={{ textDecoration: 'none', color: '#64748b', fontWeight: '500' }}>Features</a>
             <a href="#pricing" style={{ textDecoration: 'none', color: '#64748b', fontWeight: '500' }}>Pricing</a>
-            <a href="/login" style={{ textDecoration: 'none', color: '#64748b', fontWeight: '500' }}>Login</a>
-            <a 
-              href="/signup" 
-              style={{ 
-                backgroundColor: '#0EA5E9', 
-                color: 'white', 
-                padding: '0.75rem 1.5rem', 
-                textDecoration: 'none', 
-                borderRadius: '0.5rem', 
-                fontWeight: '600',
-                transition: 'all 0.2s'
-              }}
-            >
-              Start Free
-            </a>
+            <a href="#how-it-works" style={{ textDecoration: 'none', color: '#64748b', fontWeight: '500' }}>How it Works</a>
+            <a href="/signup" style={{ 
+              backgroundColor: '#0EA5E9', 
+              color: 'white', 
+              padding: '0.75rem 1.5rem', 
+              borderRadius: '6px', 
+              textDecoration: 'none', 
+              fontWeight: '600',
+              border: 'none',
+              cursor: 'pointer'
+            }}>Start Free</a>
           </nav>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section style={{ backgroundColor: '#0F172A', color: 'white', padding: '6rem 0' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', textAlign: 'center' }}>
+      <section style={{ backgroundColor: '#0F172A', color: 'white', padding: '5rem 0' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center' }}>
           <h1 style={{ 
             fontSize: '3.5rem', 
             fontWeight: 'bold', 
@@ -59,58 +66,140 @@ const LandingPage = () => {
           </h1>
           <p style={{ 
             fontSize: '1.25rem', 
-            color: '#94a3b8', 
+            color: '#cbd5e1', 
             marginBottom: '3rem', 
             maxWidth: '600px', 
             margin: '0 auto 3rem auto' 
           }}>
-            Create professional invoices, automate follow-ups, and track payments effortlessly. Perfect for freelancers, small businesses, and agencies.
+            Creează facturi profesionale în secunde, automatizează procesul de plată și urmărește cash flow-ul tău cu InvoiceSaga.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a 
-              href="/signup" 
-              style={{ 
-                backgroundColor: '#0EA5E9', 
-                color: 'white', 
-                padding: '1rem 2rem', 
-                textDecoration: 'none', 
-                borderRadius: '0.5rem', 
-                fontWeight: '600',
-                fontSize: '1.1rem',
-                transition: 'all 0.2s'
-              }}
-            >
-              Start Free Today
+            <a href="/signup" style={{ 
+              backgroundColor: '#0EA5E9', 
+              color: 'white', 
+              padding: '1rem 2rem', 
+              borderRadius: '8px', 
+              textDecoration: 'none', 
+              fontWeight: '600', 
+              fontSize: '1.1rem',
+              display: 'inline-block'
+            }}>
+              Începe gratuit
             </a>
-            <a 
-              href="#demo" 
-              style={{ 
-                backgroundColor: 'transparent', 
-                color: 'white', 
-                padding: '1rem 2rem', 
-                textDecoration: 'none', 
-                borderRadius: '0.5rem', 
-                fontWeight: '600',
-                fontSize: '1.1rem',
-                border: '2px solid #334155',
-                transition: 'all 0.2s'
-              }}
-            >
-              Watch Demo
-            </a>
+            <button style={{ 
+              backgroundColor: 'transparent', 
+              color: 'white', 
+              padding: '1rem 2rem', 
+              borderRadius: '8px', 
+              border: '2px solid #475569', 
+              fontWeight: '600', 
+              fontSize: '1.1rem',
+              cursor: 'pointer'
+            }}>
+              Vizionează demo
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" style={{ backgroundColor: '#F8FAFC', padding: '6rem 0' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
+      {/* Features Grid */}
+      <section id="features" style={{ backgroundColor: '#F8FAFC', padding: '5rem 0' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-              Everything you need to manage invoices
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0F172A', margin: '0 0 1rem 0' }}>
+              Totul ce ai nevoie pentru facturare
             </h2>
-            <p style={{ fontSize: '1.1rem', color: '#64748b', maxWidth: '600px', margin: '0 auto' }}>
-              Powerful features designed to streamline your invoicing process and accelerate payments
+            <p style={{ fontSize: '1.2rem', color: '#64748b' }}>
+              Simplifică procesul de facturare cu instrumentele noastre puternice
+            </p>
+          </div>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+            gap: '2rem' 
+          }}>
+            {[
+              { emoji: '📄', title: 'Creare facturi', desc: 'Creează facturi profesionale în câteva click-uri cu șabloane personalizabile' },
+              { emoji: '📧', title: 'Trimitere automată pe email', desc: 'Trimite automat facturile și reminder-urile către clienți' },
+              { emoji: '📊', title: 'Tracking plăți', desc: 'Urmărește statusul plăților și vezi care facturi sunt în întârziere' },
+              { emoji: '🔄', title: 'Recurring invoices', desc: 'Automatizează facturarea recurentă pentru abonamente și servicii regulate' },
+              { emoji: '📈', title: 'Rapoarte & analytics', desc: 'Analizează veniturile cu rapoarte detaliate și dashboard-uri intuitive' },
+              { emoji: '💼', title: 'Management clienți', desc: 'Organizează informațiile clienților și istoricul tranzacțiilor' }
+            ].map((feature, index) => (
+              <div key={index} style={{ 
+                backgroundColor: 'white', 
+                padding: '2rem', 
+                borderRadius: '12px', 
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
+                textAlign: 'center' 
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{feature.emoji}</div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#0F172A', margin: '0 0 0.75rem 0' }}>
+                  {feature.title}
+                </h3>
+                <p style={{ color: '#64748b', margin: 0 }}>{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works */}
+      <section id="how-it-works" style={{ backgroundColor: 'white', padding: '5rem 0' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0F172A', margin: '0 0 1rem 0' }}>
+              Cum funcționează
+            </h2>
+            <p style={{ fontSize: '1.2rem', color: '#64748b' }}>
+              Trei pași simpli pentru a-ți digitaliza procesul de facturare
+            </p>
+          </div>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gap: '3rem' 
+          }}>
+            {[
+              { step: '1', title: 'Creează contul', desc: 'Înregistrează-te gratuit și configurează profilul companiei tale' },
+              { step: '2', title: 'Adaugă clienți', desc: 'Importă sau adaugă manual informațiile clienților tăi' },
+              { step: '3', title: 'Trimite facturi', desc: 'Generează și trimite facturi profesionale în câteva secunde' }
+            ].map((step, index) => (
+              <div key={index} style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  width: '60px', 
+                  height: '60px', 
+                  backgroundColor: '#0EA5E9', 
+                  borderRadius: '50%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  margin: '0 auto 1.5rem auto', 
+                  color: 'white', 
+                  fontSize: '1.5rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  {step.step}
+                </div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#0F172A', margin: '0 0 0.75rem 0' }}>
+                  {step.title}
+                </h3>
+                <p style={{ color: '#64748b', margin: 0 }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Teaser */}
+      <section id="pricing" style={{ backgroundColor: '#F8FAFC', padding: '5rem 0' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 1.5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0F172A', margin: '0 0 1rem 0' }}>
+              Prețuri simple și transparente
+            </h2>
+            <p style={{ fontSize: '1.2rem', color: '#64748b' }}>
+              Începe gratuit, upgradeaza când ești gata
             </p>
           </div>
           <div style={{ 
@@ -120,201 +209,67 @@ const LandingPage = () => {
           }}>
             <div style={{ 
               backgroundColor: 'white', 
-              padding: '2rem', 
-              borderRadius: '1rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              textAlign: 'center'
+              padding: '2.5rem', 
+              borderRadius: '12px', 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
+              textAlign: 'center',
+              border: '2px solid transparent'
             }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📄</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Creare facturi
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Create professional invoices in seconds with customizable templates and automatic calculations
-              </p>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#0F172A', margin: '0 0 1rem 0' }}>Free</h3>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0F172A', marginBottom: '1rem' }}>
+                0€<span style={{ fontSize: '1rem', color: '#64748b' }}>/lună</span>
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem 0' }}>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Până la 5 facturi/lună</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• 2 clienți</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Șabloane de bază</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Support email</li>
+              </ul>
+              <button style={{ 
+                backgroundColor: 'transparent', 
+                color: '#0EA5E9', 
+                padding: '0.75rem 2rem', 
+                borderRadius: '8px', 
+                border: '2px solid #0EA5E9', 
+                fontWeight: '600',
+                cursor: 'pointer',
+                width: '100%'
+              }}>
+                Începe gratuit
+              </button>
             </div>
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '2rem', 
-              borderRadius: '1rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Trimitere automată pe email
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Send invoices automatically and set up smart reminders for overdue payments
-              </p>
-            </div>
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '2rem', 
-              borderRadius: '1rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Tracking plăți
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Monitor payment status in real-time and get notified when clients pay
-              </p>
-            </div>
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '2rem', 
-              borderRadius: '1rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔄</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Recurring invoices
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Set up automatic recurring invoices for subscription clients and regular services
-              </p>
-            </div>
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '2rem', 
-              borderRadius: '1rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📈</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Rapoarte & analytics
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Get detailed insights into your revenue, outstanding payments, and business performance
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* How it Works */}
-      <section style={{ backgroundColor: 'white', padding: '6rem 0' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-              How it works
-            </h2>
-            <p style={{ fontSize: '1.1rem', color: '#64748b', maxWidth: '600px', margin: '0 auto' }}>
-              Get started in minutes with our simple 3-step process
-            </p>
-          </div>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-            gap: '3rem',
-            textAlign: 'center'
-          }}>
-            <div>
-              <div style={{ 
-                backgroundColor: '#0EA5E9', 
-                color: 'white', 
-                width: '60px', 
-                height: '60px', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                fontSize: '1.5rem', 
-                fontWeight: 'bold', 
-                margin: '0 auto 1.5rem auto' 
-              }}>
-                1
-              </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Create your invoice
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Add client details, line items, and customize your invoice template in minutes
-              </p>
-            </div>
-            <div>
-              <div style={{ 
-                backgroundColor: '#0EA5E9', 
-                color: 'white', 
-                width: '60px', 
-                height: '60px', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                fontSize: '1.5rem', 
-                fontWeight: 'bold', 
-                margin: '0 auto 1.5rem auto' 
-              }}>
-                2
-              </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Send automatically
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Send invoices via email instantly or schedule them for later delivery
-              </p>
-            </div>
-            <div>
-              <div style={{ 
-                backgroundColor: '#0EA5E9', 
-                color: 'white', 
-                width: '60px', 
-                height: '60px', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                fontSize: '1.5rem', 
-                fontWeight: 'bold', 
-                margin: '0 auto 1.5rem auto' 
-              }}>
-                3
-              </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Get paid faster
-              </h3>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Track payments in real-time and get automatic reminders for overdue invoices
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Teaser */}
-      <section id="pricing" style={{ backgroundColor: '#F8FAFC', padding: '6rem 0' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 2rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-              Simple, transparent pricing
-            </h2>
-            <p style={{ fontSize: '1.1rem', color: '#64748b', margin: 0 }}>
-              Start free, upgrade when you need more
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
             <div style={{ 
               backgroundColor: 'white', 
               padding: '2.5rem', 
-              borderRadius: '1rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              textAlign: 'center'
+              borderRadius: '12px', 
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)', 
+              textAlign: 'center',
+              border: '2px solid #0EA5E9',
+              position: 'relative'
             }}>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                Free
-              </h3>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
-                $0
+              <div style={{ 
+                position: 'absolute', 
+                top: '-12px', 
+                left: '50%', 
+                transform: 'translateX(-50%)', 
+                backgroundColor: '#0EA5E9', 
+                color: 'white', 
+                padding: '0.5rem 1rem', 
+                borderRadius: '20px', 
+                fontSize: '0.875rem', 
+                fontWeight: '600' 
+              }}>
+                Recomandat
               </div>
-              <p style={{ color: '#64748b', marginBottom: '2rem', margin: '0 0 2rem 0' }}>
-                Perfect for getting started
-              </p>
-              <ul style={{ textAlign: 'left', marginBottom: '2rem', paddingLeft: '1rem', margin: '0 0 2rem 0' }}>
-                <li style={{ marginBottom: '0.5rem' }}>Up to 5 invoices/month</li>
-                <li style={{ marginBottom:
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#0F172A', margin: '0 0 1rem 0' }}>Pro</h3>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0F172A', marginBottom: '1rem' }}>
+                29€<span style={{ fontSize: '1rem', color: '#64748b' }}>/lună</span>
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem 0' }}>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Facturi nelimitate</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Clienți nelimitați</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Toate șabloanele</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Recurring invoices</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Rapoarte avansate</li>
+                <li style={{ padding: '0.5rem 0', color: '#64748b' }}>• Support prioritar</li>
