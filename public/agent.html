@@ -283,7 +283,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
+          max_tokens: 8000,
           messages: [{ role: 'user', content: prompt }]
         })
       });
@@ -363,22 +363,22 @@
         const audience = document.getElementById('audience').value.trim();
         const pricing = document.getElementById('pricing').value.trim();
 
-        const prompt = `You are a senior React developer. Generate a complete, production-ready landing page React component for a SaaS invoicing app called InvoiceSaga.
+        const prompt = `Generate a React landing page component for InvoiceSaga, a SaaS invoicing app.
 
 Tagline: ${tagline}
 Features: ${features}
-Target audience: ${audience}
-Pricing model: ${pricing}
+Audience: ${audience}
+Pricing: ${pricing}
 
-Requirements:
-- Single React component, default export named LandingPage
-- Use ONLY inline styles, zero external CSS imports
-- Sections: sticky header (logo + nav + CTA), hero (headline + subheadline + 2 CTAs), features grid (emoji + title + description per card), how it works (3 steps), pricing teaser (Free vs Pro), final CTA banner, footer
-- Color scheme: dark sections #0F172A, accent/CTA #0EA5E9, light sections #F8FAFC, white cards with subtle shadow
-- All signup CTAs use href="/signup"
-- Professional, modern SaaS aesthetic with good spacing
-- Only import: import React from 'react'
-- Return ONLY the JSX component code, no markdown fences, no explanation`;
+STRICT requirements:
+- Default export named LandingPage
+- Inline styles only, no imports except: import React from 'react'
+- Keep code CONCISE - use variables for repeated styles
+- Sections: header (logo + CTA button), hero, features grid (4 features max with emoji), pricing (Free vs Pro), footer
+- Colors: #0F172A dark, #0EA5E9 accent, #F8FAFC light bg
+- CTAs: href="/signup"
+- NO comments in code
+- Return ONLY the component code, no markdown, no explanation`;
 
         const componentCode = await callClaude(prompt);
         log(`  → LandingPage.jsx generat (${componentCode.length} chars) ✓`, 'ok');
