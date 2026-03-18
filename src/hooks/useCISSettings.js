@@ -1,12 +1,25 @@
+import { useState, useEffect } from "react";
+
 export function useCISSettings() {
-  const raw = localStorage.getItem("invoicesaga_settings");
-  const settings = raw ? JSON.parse(raw) : {};
+  const [cis, setCIS] = useState(() => {
+    const raw = localStorage.getItem("invoicesaga_settings");
+    return raw ? JSON.parse(raw)?.cis ?? {} : {};
+  });
+
+  useEffect(() => {
+    const handler = () => {
+      const raw = localStorage.getItem("invoicesaga_settings");
+      setCIS(raw ? JSON.parse(raw)?.cis ?? {} : {});
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   return {
-    cisEnabled: settings?.cis?.enabled ?? false,
-    cisDefaultRate: settings?.cis?.defaultRate ?? 20,
-    contractorName: settings?.cis?.contractorName ?? "",
-    contractorUTR: settings?.cis?.contractorUTR ?? "",
-    employerRef: settings?.cis?.employerRef ?? "",
+    cisEnabled:     cis?.enabled        ?? false,
+    cisDefaultRate: cis?.defaultRate     ?? 20,
+    contractorName: cis?.contractorName  ?? "",
+    contractorUTR:  cis?.contractorUTR   ?? "",
+    employerRef:    cis?.employerRef      ?? "",
   };
 }
