@@ -331,6 +331,15 @@ export default function SettingsPage({ onNavigate }) {
           <Field label="Company Reg No (CRN)" hint="Format: 12345678 or SC123456" error={crnError}>
             <Input value={crn} onChange={v=>setCrn(v.toUpperCase())} placeholder="Optional" error={!!crnError} />
           </Field>
+          <div style={{ marginTop:20, paddingTop:16, borderTop:"1px solid #f0f0f4" }}>
+  <div style={{ fontSize:13, color:"#64748B", marginBottom:8 }}>Want to go through the setup wizard again?</div>
+  <Btn variant="outline" onClick={() => {
+    localStorage.removeItem("ai_invoice_onboarding_done");
+    window.location.reload();
+  }}>
+    Restart onboarding
+  </Btn>
+</div>
         </div>
       </Section>)}
 
