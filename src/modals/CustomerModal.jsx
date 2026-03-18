@@ -14,7 +14,7 @@ const CIS_RATES = [
 
 export default function CustomerForm({ existing, onClose, onSave, settings }) {
   const [activeTab, setActiveTab] = useState("Other Details");
-  { cisEnabled } = useCISSettings();
+  const { cisEnabled } = useCISSettings();
   const [custType, setCustType] = useState("Business");
   const [salutation, setSalutation] = useState("");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
