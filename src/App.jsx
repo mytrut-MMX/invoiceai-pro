@@ -33,6 +33,7 @@ export default function App() {
   // Auth
   const [user, setUser] = useState(()=>LS.get("ai_invoice_user",null));
   const [orgSettings, setOrgSettingsState] = useState(()=>LS.get("ai_invoice_org",null));
+  const [onboardingDone, setOnboardingDoneState] = useState(() => LS.get("ai_invoice_onboarding_done", false));
 
   // App state
   const [page, setPage] = useState("home");
@@ -103,6 +104,7 @@ export default function App() {
   useEffect(()=>LS.set("ai_invoice_email_en",emailEnabled),[emailEnabled]);
   useEffect(()=>LS.set("ai_invoice_email_prov",emailProvider),[emailProvider]);
   useEffect(()=>LS.set("ai_invoice_email_from",emailFrom),[emailFrom]);
+  useEffect(() => LS.set("ai_invoice_onboarding_done", onboardingDone), [onboardingDone]);
 
   const setOrgSettings = (s) => { setOrgSettingsState(s); LS.set("ai_invoice_org",s); };
 
@@ -154,11 +156,22 @@ export default function App() {
   );
 }
 
-  if(!orgSettings) return (
-    <AppCtx.Provider value={ctx}>
-      <OrgSetupPage onComplete={(s)=>setOrgSettings(s)} />
-    </AppCtx.Provider>
-  );
+  if (!orgSettings || !onboardingDone) return (
+  <OnboardingFlow
+    user={user}
+    orgSettings={orgSettings}
+    onComplete={({ orgSettings: org, done }) => {
+      if (org) setOrgSettings(org);
+      if (done) { setOnboardingDoneState(true); LS.set("ai_invoice_onboarding_done", true); }
+    }}
+    customers={customers}
+    setCustomers={setCustomers}
+    invoices={invoices}
+    setInvoices={setInvoices}
+    invoicePrefix={invoicePrefix}
+    invoiceStartNum={invoiceStartNum}
+  />
+);
 
   // ─── page renderer ─────────────────────────────────────────────
   const doLogout = () => {
