@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ff, CUR_SYM, PAYMENT_TERMS_OPTS } from "../constants";
 import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
+import { useCISSettings } from "../hooks/useCISSettings";
 
 const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
@@ -13,7 +14,7 @@ const CIS_RATES = [
 
 export default function CustomerForm({ existing, onClose, onSave, settings }) {
   const [activeTab, setActiveTab] = useState("Other Details");
-  const cisEnabled = settings?.cis?.enabled === true;
+  { cisEnabled } = useCISSettings();
   const [custType, setCustType] = useState("Business");
   const [salutation, setSalutation] = useState("");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
