@@ -43,7 +43,7 @@ function ChipToggle({ value, onChange, options }) {
               transition:"all 0.15s ease",
             }}
           >
-            {selected && <CIcons.Check />}
+            {selected && <Icons.Check />}
             <span>{option}</span>
           </button>
         );
