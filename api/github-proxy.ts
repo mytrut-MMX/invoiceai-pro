@@ -26,7 +26,9 @@ export default async function handler(req: any, res: any) {
       },
       ...(data ? { body: JSON.stringify(data) } : {})
     });
-    const result = await response.json();
+    const text = await response.text();
+    let result;
+    try { result = JSON.parse(text); } catch(e) { result = { message: text }; }
     res.status(response.status).json(result);
   } catch(e: any) {
     res.status(500).json({ error: e.message });
