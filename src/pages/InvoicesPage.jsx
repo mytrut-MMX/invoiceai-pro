@@ -251,7 +251,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
                 </div>
               )}
             </div>
-            {(cisEnabled && customer?.cis?.registered && (
+            {cisEnabled && customer?.cis?.registered && (
               <div style={{
                 display:"inline-flex", alignItems:"center", gap:4,
                 marginTop:4, padding:"2px 8px",
