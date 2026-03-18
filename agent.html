@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InvoiceSaga — Landing Page Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0F172A;
+      color: #E2E8F0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      width: 36px; height: 36px;
+      background: #0EA5E9;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 16px; color: #fff;
+    }
+
+    h1 { font-size: 18px; font-weight: 600; color: #F1F5F9; }
+    h1 span { color: #0EA5E9; }
+
+    .badge {
+      margin-left: auto;
+      font-size: 11px; padding: 3px 10px;
+      border-radius: 99px;
+      background: #134e4a; color: #5eead4;
+      border: 1px solid #0f766e;
+    }
+
+    .card {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      font-weight: 500;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #94A3B8;
+      margin-bottom: 5px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 9px 12px;
+      font-size: 14px;
+      background: #0F172A;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #F1F5F9;
+      font-family: inherit;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    input:focus, textarea:focus { border-color: #0EA5E9; }
+    input[type="password"] { font-family: monospace; letter-spacing: 0.1em; }
+    textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .steps {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      padding: 8px 4px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #1E293B;
+      border: 1px solid #334155;
+      color: #64748B;
+      transition: all 0.2s;
+    }
+
+    .step.active {
+      background: #0c4a6e;
+      border-color: #0EA5E9;
+      color: #7dd3fc;
+    }
+
+    .step.done {
+      background: #134e4a;
+      border-color: #0f766e;
+      color: #5eead4;
+    }
+
+    .step.error {
+      background: #450a0a;
+      border-color: #dc2626;
+      color: #fca5a5;
+    }
+
+    .arrow { color: #334155; font-size: 12px; }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      background: #0EA5E9;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      margin-bottom: 1rem;
+    }
+
+    .btn:hover { background: #0284c7; }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { background: #1E293B; color: #475569; cursor: not-allowed; transform: none; }
+
+    .log {
+      background: #020617;
+      border: 1px solid #1E293B;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      color: #64748B;
+      min-height: 160px;
+      max-height: 320px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .log .ok { color: #4ade80; }
+    .log .err { color: #f87171; }
+    .log .info { color: #38bdf8; }
+    .log .warn { color: #fbbf24; }
+
+    .hint {
+      font-size: 12px;
+      color: #475569;
+      margin-top: 4px;
+    }
+
+    a { color: #0EA5E9; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="logo">IS</div>
+      <h1>Invoice<span>Saga</span> Agent</h1>
+      <div class="badge">Landing Page</div>
+    </header>
+
+    <div class="steps">
+      <div class="step" id="s1">1. Proxy</div>
+      <div class="arrow">→</div>
+      <div class="step" id="s2">2. Generare</div>
+      <div class="arrow">→</div>
+      <div class="step" id="s3">3. Commit</div>
+      <div class="arrow">→</div>
+      <div class="step" id="s4">4. Deploy</div>
+    </div>
+
+    <div class="card">
+      <h2>Configurare GitHub</h2>
+      <div class="row">
+        <div class="field">
+          <label>Username</label>
+          <input id="ghUser" value="mytrut-MMX" />
+        </div>
+        <div class="field">
+          <label>Repo</label>
+          <input id="ghRepo" value="invoiceai-pro" />
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>GitHub Token</label>
+        <input id="ghToken" type="password" placeholder="github_pat_..." />
+        <p class="hint">Rămâne local în browser. <a href="https://github.com/settings/tokens" target="_blank">Generează token →</a></p>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div class="field">
+          <label>Folder destinație</label>
+          <input id="destFolder" value="src/pages/landing" />
+        </div>
+        <div class="field">
+          <label>Branch</label>
+          <input id="ghBranch" value="main" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Context Landing Page</h2>
+      <div class="field">
+        <label>Tagline (lasă gol pentru auto-generare)</label>
+        <input id="tagline" placeholder="ex: Facturare simplă, plăți mai rapide" />
+      </div>
+      <div class="field">
+        <label>Features</label>
+        <textarea id="features">Creare facturi, Trimitere automată pe email, Tracking plăți, Recurring invoices, Rapoarte & analytics</textarea>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Audiență</label>
+          <input id="audience" value="Freelanceri, SMB, agenții" />
+        </div>
+        <div class="field">
+          <label>Model pricing</label>
+          <input id="pricing" value="Freemium + paid" />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" id="runBtn" onclick="runAgent()">Rulează agentul →</button>
+
+    <div class="card">
+      <h2>Log execuție</h2>
+      <div class="log" id="log">Agent gata. Completează token-ul GitHub și apasă Rulează.</div>
+    </div>
+
+  </div>
+
+  <script>
+    const BASE = window.location.origin;
+
+    function log(msg, cls) {
+      const el = document.getElementById('log');
+      el.innerHTML += (cls ? `<span class="${cls}">${msg}</span>` : msg) + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function setStep(n, isErr) {
+      [1,2,3,4].forEach(i => {
+        const s = document.getElementById('s' + i);
+        if (i < n) s.className = 'step done';
+        else if (i === n) s.className = isErr ? 'step error' : 'step active';
+        else s.className = 'step';
+      });
+    }
+
+    async function callClaude(prompt) {
+      const r = await fetch(BASE + '/api/claude-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      if (!r.ok) throw new Error(`Claude proxy ${r.status}: ${await r.text()}`);
+      const data = await r.json();
+      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+      const text = data.content?.find(b => b.type === 'text')?.text;
+      if (!text) throw new Error('Raspuns gol de la Claude');
+      return text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+    }
+
+    async function githubRequest(path, method, data, token) {
+      const r = await fetch(BASE + '/api/github-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, method, data, token })
+      });
+      const result = await r.json();
+      if (!r.ok) throw new Error(result.message || result.error || `GitHub error ${r.status}`);
+      return result;
+    }
+
+    async function commitFile(user, repo, token, branch, path, content, message) {
+      let sha;
+      try {
+        const check = await githubRequest(`/repos/${user}/${repo}/contents/${path}?ref=${branch}`, 'GET', null, token);
+        sha = check.sha;
+      } catch(e) {}
+
+      await githubRequest(`/repos/${user}/${repo}/contents/${path}`, 'PUT', {
+        message,
+        content: btoa(unescape(encodeURIComponent(content))),
+        branch,
+        ...(sha ? { sha } : {})
+      }, token);
+    }
+
+    async function runAgent() {
+      const btn = document.getElementById('runBtn');
+      const token = document.getElementById('ghToken').value.trim();
+      const user = document.getElementById('ghUser').value.trim();
+      const repo = document.getElementById('ghRepo').value.trim();
+      const branch = document.getElementById('ghBranch').value.trim();
+      const folder = document.getElementById('destFolder').value.trim();
+
+      if (!token) { alert('Adauga GitHub Token!'); return; }
+
+      btn.disabled = true;
+      document.getElementById('log').innerHTML = '';
+
+      try {
+        setStep(1);
+        log('Pasul 1: Verificare proxy-uri...', 'info');
+
+        const claudeCheck = await fetch(BASE + '/api/claude-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] })
+        });
+        if (claudeCheck.status === 500) throw new Error('claude-proxy returneaza 500');
+        log('  → claude-proxy ✓', 'ok');
+
+        const ghCheck = await fetch(BASE + '/api/github-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: '/zen', method: 'GET', token })
+        });
+        if (ghCheck.status === 500) throw new Error('github-proxy returneaza 500');
+        log('  → github-proxy ✓', 'ok');
+
+        setStep(2);
+        log('\nPasul 2: Generare landing page cu Claude...', 'info');
+
+        const tagline = document.getElementById('tagline').value.trim()
+          || 'The simplest way to invoice clients and get paid faster';
+        const features = document.getElementById('features').value.trim();
+        const audience = document.getElementById('audience').value.trim();
+        const pricing = document.getElementById('pricing').value.trim();
+
+        const prompt = `You are a senior React developer. Generate a complete, production-ready landing page React component for a SaaS invoicing app called InvoiceSaga.
+
+Tagline: ${tagline}
+Features: ${features}
+Target audience: ${audience}
+Pricing model: ${pricing}
+
+Requirements:
+- Single React component, default export named LandingPage
+- Use ONLY inline styles, zero external CSS imports
+- Sections: sticky header (logo + nav + CTA), hero (headline + subheadline + 2 CTAs), features grid (emoji + title + description per card), how it works (3 steps), pricing teaser (Free vs Pro), final CTA banner, footer
+- Color scheme: dark sections #0F172A, accent/CTA #0EA5E9, light sections #F8FAFC, white cards with subtle shadow
+- All signup CTAs use href="/signup"
+- Professional, modern SaaS aesthetic with good spacing
+- Only import: import React from 'react'
+- Return ONLY the JSX component code, no markdown fences, no explanation`;
+
+        const componentCode = await callClaude(prompt);
+        log(`  → LandingPage.jsx generat (${componentCode.length} chars) ✓`, 'ok');
+
+        setStep(3);
+        log('\nPasul 3: Commit pe GitHub...', 'info');
+
+        await commitFile(user, repo, token, branch,
+          `${folder}/LandingPage.jsx`,
+          componentCode,
+          'feat: add landing page (InvoiceSaga Agent)');
+        log('  → LandingPage.jsx ✓', 'ok');
+
+        const indexCode = `import LandingPage from './LandingPage';\nexport default LandingPage;\n`;
+        await commitFile(user, repo, token, branch,
+          `${folder}/index.js`,
+          indexCode,
+          'feat: add landing page index');
+        log('  → index.js ✓', 'ok');
+
+        setStep(4);
+        log('\nPasul 4: Deploy automat pe Vercel...', 'info');
+        log('  → Push detectat pe main', 'ok');
+        log('  → Deploy in curs (~1-2 min)', 'ok');
+        log('\n✓ Agent finalizat cu succes!', 'ok');
+        log(`\nFisiere create:\n  ${folder}/LandingPage.jsx\n  ${folder}/index.js`, 'info');
+        log(`\nAdauga in router:\n  import LandingPage from './${folder}';\n  <Route path="/" element={<LandingPage />} />`, 'info');
+
+      } catch(e) {
+        log('\nEroare: ' + e.message, 'err');
+        setStep(1, true);
+      }
+
+      btn.disabled = false;
+    }
+  </script>
+</body>
+</html>
