@@ -15,6 +15,7 @@ import QuotesPage from "./pages/QuotesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LandingPage from './pages/landing';
+import OnboardingFlow from "./pages/OnboardingFlow";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
