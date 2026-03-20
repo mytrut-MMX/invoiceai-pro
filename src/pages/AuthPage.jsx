@@ -14,8 +14,19 @@ export default function AuthPage({ onAuth }) {
   const [loading, setLoading] = useState(false);
 
   const STORAGE_KEY = "ai_invoice_users";
-  const getUsers = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); } catch { return []; } };
-  const saveUsers = users => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); } catch {} };
+  const getUsers = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+  const saveUsers = (users) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.isArray(users) ? users : []));
+    } catch {}
+  };
 
   const handleSubmit = () => {
     setError("");
