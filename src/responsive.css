@@ -41,6 +41,6 @@ input[type="number"] {
 @media (min-width: 1023px) {
   .auth-page-bg {
     background-image: linear-gradient(135deg, #dbeafe 0%, #eff6ff 40%, #e0f2fe 100%);
-    background-size: cover;t;
+    background-size: cover;
   }
 }

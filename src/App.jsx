@@ -15,7 +15,7 @@ import QuotesPage from "./pages/QuotesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LandingPage from './pages/landing';
-import OnboardingFlow from "./pages/OnboardingFlow";
+import OnboardingFlow from "./pages/OnboardingFlow.jsx";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -158,20 +158,22 @@ export default function App() {
 }
 
   if (!orgSettings || !onboardingDone) return (
-  <OnboardingFlow
-    user={user}
-    orgSettings={orgSettings}
-    onComplete={({ orgSettings: org, done }) => {
-      if (org) setOrgSettings(org);
-      if (done) { setOnboardingDoneState(true); LS.set("ai_invoice_onboarding_done", true); }
-    }}
-    customers={customers}
-    setCustomers={setCustomers}
-    invoices={invoices}
-    setInvoices={setInvoices}
-    invoicePrefix={invoicePrefix}
-    invoiceStartNum={invoiceStartNum}
-  />
+  <AppCtx.Provider value={ctx}>
+    <OnboardingFlow
+      user={user}
+      orgSettings={orgSettings}
+      onComplete={({ orgSettings: org, done }) => {
+        if (org) setOrgSettings(org);
+        if (done) { setOnboardingDoneState(true); LS.set("ai_invoice_onboarding_done", true); }
+      }}
+      customers={customers}
+      setCustomers={setCustomers}
+      invoices={invoices}
+      setInvoices={setInvoices}
+      invoicePrefix={invoicePrefix}
+      invoiceStartNum={invoiceStartNum}
+    />
+  </AppCtx.Provider>
 );
 
   // ─── page renderer ─────────────────────────────────────────────
