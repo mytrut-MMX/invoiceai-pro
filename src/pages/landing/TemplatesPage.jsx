@@ -204,7 +204,8 @@ export default function TemplatesPage() {
                 <li key={i}><span className="tp-ck">✓</span>{f}</li>
               ))}
             </ul>
-            <a href="https://invoicesaga.com/buy" className="tp-btn-buy">Get InvoiceSaga →</a>
+            <a href="https://invoicesaga.lemonsqueezy.com/checkout/buy/ddb25220-5d21-4641-b2b0-98cdd1b02062?embed=1" className="tp-btn-buy lemonsqueezy-button">Buy it now →</a>
+            <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
             <p className="tp-pricing-guarantee">🔒 Secure payment · Instant download · No subscription</p>
           </div>
         </div>
