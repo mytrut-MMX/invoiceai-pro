@@ -14,7 +14,7 @@ const features = [
 ];
 
 const steps = [
-  { n: 1, title: 'Purchase once',        desc: 'Pay once and you'll receive the .html file instantly. No subscription, no renewal, ever.' },
+  { n: 1, title: 'Purchase once',        desc: "Pay once and you'll receive the .html file instantly. No subscription, no renewal, ever." },
   { n: 2, title: 'Open in your browser', desc: 'Double-click the file to open it. Works in Chrome, Firefox, Safari, Edge — any modern browser.' },
   { n: 3, title: 'Fill in your details', desc: 'Enter your company info, client details, line items, currency, and any notes.' },
   { n: 4, title: 'Save & send',          desc: 'Export a polished PDF with one click. Send it to your client directly from your downloads folder.' },
