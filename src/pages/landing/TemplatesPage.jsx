@@ -196,7 +196,7 @@ export default function TemplatesPage() {
           </h2>
           <div className="tp-pricing-card tp-reveal">
             <div className="tp-pricing-badge">✓ One-time purchase</div>
-            <div className="tp-pricing-price"><sup>$</sup>9</div>
+            <div className="tp-pricing-price"><sup>£</sup>5.99</div>
             <p className="tp-pricing-note">Pay once — use forever. No subscription, ever.</p>
             <hr className="tp-pricing-divider" />
             <ul className="tp-pricing-features">
