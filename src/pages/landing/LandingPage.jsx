@@ -166,6 +166,8 @@ export default function LandingPage() {
           {' · '}
           <a href="/templates" style={{ color:'#475569' }}>Offline Generator</a>
           {' · '}
+          <a href="/contact" style={{ color:'#475569' }}>Contact</a>
+          {' · '}
           <a href="/privacy" style={{ color:'#475569' }}>Privacy Policy</a>
           {' · '}
           <a href="/terms" style={{ color:'#475569' }}>Terms of Service</a>
