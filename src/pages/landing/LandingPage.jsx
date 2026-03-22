@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icons } from '../../components/icons';
 
 const s = {
   nav: { position:'sticky', top:0, zIndex:100, background:'#0F172A', borderBottom:'1px solid #1E293B', padding:'0 2rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:64 },
@@ -18,7 +19,7 @@ const s = {
   sectionSub: { fontSize:16, color:'#64748B', textAlign:'center', marginBottom:56, maxWidth:520, margin:'0 auto 56px' },
   grid: { display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:24 },
   card: { background:'#fff', border:'1px solid #E2E8F0', borderRadius:12, padding:'28px 24px' },
-  cardIcon: { fontSize:32, marginBottom:16 },
+  cardIcon: { width:44, height:44, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16, fontSize:20 },
   cardTitle: { fontSize:17, fontWeight:700, color:'#0F172A', marginBottom:8 },
   cardDesc: { fontSize:14, color:'#64748B', lineHeight:1.6 },
   steps: { display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:32 },
@@ -46,12 +47,12 @@ const s = {
 };
 
 const features = [
-  { icon:'🧾', title:'Create Invoices', desc:'Professional invoices in seconds. Customize with your logo and branding.' },
-  { icon:'📧', title:'Auto Email', desc:'Send invoices automatically to clients the moment they\'re ready.' },
-  { icon:'💳', title:'Track Payments', desc:'Know exactly who has paid and who hasn\'t with real-time tracking.' },
-  { icon:'🔁', title:'Recurring Invoices', desc:'Set up recurring billing and never forget to invoice a client again.' },
-  { icon:'📊', title:'Analytics', desc:'Get insights into your revenue, outstanding payments, and growth.' },
-  { icon:'⚡', title:'Fast & Simple', desc:'No learning curve. Start invoicing in minutes, not hours.' },
+  { icon: Icons.Invoices,  color:'#0EA5E9', bg:'#EFF6FF', title:'Create Invoices',    desc:'Professional invoices in seconds. Customize with your logo and branding.' },
+  { icon: Icons.Send,      color:'#8B5CF6', bg:'#F5F3FF', title:'Auto Email',         desc:'Send invoices automatically to clients the moment they\'re ready.' },
+  { icon: Icons.Payments,  color:'#10B981', bg:'#ECFDF5', title:'Track Payments',     desc:'Know exactly who has paid and who hasn\'t with real-time tracking.' },
+  { icon: Icons.Receipt,   color:'#F59E0B', bg:'#FFFBEB', title:'Recurring Invoices', desc:'Set up recurring billing and never forget to invoice a client again.' },
+  { icon: Icons.Bank,      color:'#EF4444', bg:'#FEF2F2', title:'Analytics',          desc:'Get insights into your revenue, outstanding payments, and growth.' },
+  { icon: Icons.Check,     color:'#0EA5E9', bg:'#EFF6FF', title:'Fast & Simple',      desc:'No learning curve. Start invoicing in minutes, not hours.' },
 ];
 
 export default function LandingPage() {
@@ -83,7 +84,9 @@ export default function LandingPage() {
           <div style={s.grid}>
             {features.map((f, i) => (
               <div key={i} style={s.card}>
-                <div style={s.cardIcon}>{f.icon}</div>
+                <div style={{ ...s.cardIcon, background: f.bg, color: f.color }}>
+                    <div style={{ transform:'scale(1.5)', display:'flex' }}><f.icon /></div>
+                  </div>
                 <div style={s.cardTitle}>{f.title}</div>
                 <div style={s.cardDesc}>{f.desc}</div>
               </div>
