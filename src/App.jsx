@@ -20,6 +20,7 @@ import PrivacyPage from "./pages/landing/PrivacyPage";
 import TermsPage from "./pages/landing/TermsPage";
 import CookiePolicyPage from "./pages/landing/CookiePolicyPage";
 import GdprPage from "./pages/landing/GdprPage";
+import TemplatesPage from "./pages/landing/TemplatesPage";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -156,6 +157,7 @@ export default function App() {
   if(path === '/terms')           return <TermsPage />;
   if(path === '/cookies')         return <CookiePolicyPage />;
   if(path === '/gdpr')            return <GdprPage />;
+  if(path === '/templates')       return <TemplatesPage />;
   return (
     <AppCtx.Provider value={ctx}>
       <AuthPage onAuth={(u)=>{ setUser(u); }} />
