@@ -62,7 +62,10 @@ export default function LandingPage() {
       {/* Nav */}
       <nav style={s.nav}>
         <div style={s.logo}>Invoice<span style={s.logoAccent}>Saga</span></div>
-        <a href="/signup" style={s.navCta}>Get started free</a>
+        <div style={{ display:'flex', alignItems:'center', gap:24 }}>
+          <a href="/templates" style={{ color:'#94A3B8', fontSize:14, fontWeight:500, textDecoration:'none' }}>Offline Generator</a>
+          <a href="/signup" style={s.navCta}>Get started free</a>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -160,6 +163,8 @@ export default function LandingPage() {
       <footer style={s.footer}>
         <div style={{ marginBottom:8 }}>
           <span style={{ color:'#0EA5E9', fontWeight:700 }}>InvoiceSaga</span>
+          {' · '}
+          <a href="/templates" style={{ color:'#475569' }}>Offline Generator</a>
           {' · '}
           <a href="/privacy" style={{ color:'#475569' }}>Privacy Policy</a>
           {' · '}
