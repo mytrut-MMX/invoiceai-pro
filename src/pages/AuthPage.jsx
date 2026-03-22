@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ff } from "../constants";
 import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
+import { supabase } from "../lib/supabase";
 
 export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState("login");
@@ -28,13 +29,26 @@ export default function AuthPage({ onAuth }) {
     } catch {}
   };
 
+  const saveProfileToSupabase = async (email, name) => {
+    try {
+      await supabase.from("profiles").upsert({ email, name }, { onConflict: "email" });
+    } catch {}
+  };
+
+  const fetchNameFromSupabase = async (email) => {
+    try {
+      const { data } = await supabase.from("profiles").select("name").eq("email", email).single();
+      return data?.name || null;
+    } catch { return null; }
+  };
+
   const handleSubmit = () => {
     setError("");
     if(!email || !password) { setError("Email and password are required."); return; }
     if(!/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email address."); return; }
     if(password.length < 8) { setError("Password must be at least 8 characters."); return; }
     setLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       const users = getUsers();
       if(mode==="register") {
         if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
@@ -42,11 +56,13 @@ export default function AuthPage({ onAuth }) {
         if(users.find(u=>u.email===email)) { setError("An account with this email already exists."); setLoading(false); return; }
         const newUser = { name: name.trim(), email, password, role:"Admin", createdAt: new Date().toISOString() };
         saveUsers([...users, newUser]);
+        await saveProfileToSupabase(email, name.trim());
         onAuth({ name: newUser.name, email: newUser.email, role:"Admin" });
       } else {
         const found = users.find(u=>u.email===email && u.password===password);
         if(!found) { setError("Incorrect email or password."); setLoading(false); return; }
-        onAuth({ name: found.name, email: found.email, role: found.role||"Admin" });
+        const sbName = await fetchNameFromSupabase(email);
+        onAuth({ name: sbName || found.name, email: found.email, role: found.role||"Admin" });
       }
       setLoading(false);
     }, 600);
