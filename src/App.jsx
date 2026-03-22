@@ -16,6 +16,10 @@ import PaymentsPage from "./pages/PaymentsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LandingPage from './pages/landing';
 import OnboardingFlow from "./pages/OnboardingFlow.jsx";
+import PrivacyPage from "./pages/landing/PrivacyPage";
+import TermsPage from "./pages/landing/TermsPage";
+import CookiePolicyPage from "./pages/landing/CookiePolicyPage";
+import GdprPage from "./pages/landing/GdprPage";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -146,10 +150,12 @@ export default function App() {
 
   // ─── gates ─────────────────────────────────────────────────────
   if(!user) {
-  const isLanding = window.location.pathname === '/' || window.location.pathname === '';
-  if(isLanding) {
-    return <LandingPage />;
-  }
+  const path = window.location.pathname;
+  if(path === '/' || path === '') return <LandingPage />;
+  if(path === '/privacy')         return <PrivacyPage />;
+  if(path === '/terms')           return <TermsPage />;
+  if(path === '/cookies')         return <CookiePolicyPage />;
+  if(path === '/gdpr')            return <GdprPage />;
   return (
     <AppCtx.Provider value={ctx}>
       <AuthPage onAuth={(u)=>{ setUser(u); }} />
