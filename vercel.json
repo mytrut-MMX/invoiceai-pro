@@ -4,6 +4,7 @@
   "framework": "vite",
   "routes": [
     { "src": "/agent", "dest": "/agent.html" },
+    { "src": "/demo", "dest": "/demo.html" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }

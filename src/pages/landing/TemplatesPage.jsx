@@ -63,7 +63,7 @@ export default function TemplatesPage() {
           <a href="#features"     className="tp-nav-link">Features</a>
           <a href="#how-it-works" className="tp-nav-link">How it works</a>
           <a href="#pricing"      className="tp-nav-link">Pricing</a>
-          <a href="/signup"       className="tp-nav-link tp-nav-cta">Try Demo →</a>
+          <a href="/demo"       className="tp-nav-link tp-nav-cta">Try Demo →</a>
         </div>
       </nav>
 
@@ -78,7 +78,7 @@ export default function TemplatesPage() {
           A single HTML file that lives in your browser. Fill in your details, generate a professional PDF — done.
         </p>
         <div className="tp-hero-actions">
-          <a href="/signup" className="tp-btn-primary">▶ Try the Live Demo</a>
+          <a href="/demo" className="tp-btn-primary">▶ Try the Live Demo</a>
           <a href="#pricing" className="tp-btn-secondary">See Pricing</a>
         </div>
         <p className="tp-hero-note">✓ No account required &nbsp;·&nbsp; ✓ Works without internet &nbsp;·&nbsp; ✓ One-time purchase</p>
@@ -125,7 +125,7 @@ export default function TemplatesPage() {
             </div>
           </div>
           <div className="tp-mockup-overlay">
-            <a href="/signup" className="tp-btn-primary" style={{ fontSize: 13, padding: '11px 22px' }}>Open Full Demo →</a>
+            <a href="/demo" className="tp-btn-primary" style={{ fontSize: 13, padding: '11px 22px' }}>Open Full Demo →</a>
             <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Fully interactive · No signup needed</span>
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function TemplatesPage() {
             The live demo is fully functional — fill in your details, add line items, change the currency and preview the result.
             PDF export is unlocked in the full version.
           </p>
-          <a href="/signup" className="tp-btn-primary">▶ Open Live Demo</a>
+          <a href="/demo" className="tp-btn-primary">▶ Open Live Demo</a>
         </div>
         <div className="tp-demo-cta-visual tp-reveal">
           <p className="tp-dcv-label">Demo vs Full version</p>
@@ -214,7 +214,7 @@ export default function TemplatesPage() {
       <footer className="tp-footer">
         <p>
           <strong>InvoiceSaga</strong> &nbsp;·&nbsp;
-          <a href="/signup">Try Demo</a> &nbsp;·&nbsp;
+          <a href="/demo">Try Demo</a> &nbsp;·&nbsp;
           <a href="#pricing">Buy</a> &nbsp;·&nbsp;
           <a href="mailto:hello@invoicesaga.com">Contact</a>
         </p>
