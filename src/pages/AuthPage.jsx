@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ff } from "../constants";
 import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
-import { supabase } from "../lib/supabase";
+import { supabase, supabaseReady } from "../lib/supabase";
 
 async function hashPassword(pw) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
@@ -35,12 +35,14 @@ export default function AuthPage({ onAuth }) {
   };
 
   const saveProfileToSupabase = async (email, name) => {
+    if (!supabaseReady || !supabase) return;
     try {
       await supabase.from("profiles").upsert({ email, name }, { onConflict: "email" });
     } catch {}
   };
 
   const fetchNameFromSupabase = async (email) => {
+    if (!supabaseReady || !supabase) return null;
     try {
       const { data } = await supabase.from("profiles").select("name").eq("email", email).single();
       return data?.name || null;
@@ -83,6 +85,12 @@ export default function AuthPage({ onAuth }) {
 
   return (
      <div className="auth-page-bg" style={{ minHeight:"100vh", background:"linear-gradient(135deg, #e8f0fe 0%, #f0f7ff 50%, #e8f4fd 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+      {!supabaseReady && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, background:"#fef3c7", borderBottom:"1px solid #f59e0b", padding:"8px 16px", display:"flex", alignItems:"center", gap:8, zIndex:999, fontSize:12, color:"#92400e" }}>
+          <span>⚠️</span>
+          <span><strong>Supabase not configured</strong> — accounts are saved locally only. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</span>
+        </div>
+      )}
       <div style={{ width:"100%", maxWidth:460 }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ margin:"0 auto 16px", display:"flex", justifyContent:"center" }}>
