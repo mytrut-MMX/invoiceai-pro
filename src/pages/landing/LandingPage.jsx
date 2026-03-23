@@ -127,7 +127,7 @@ export default function LandingPage() {
           <div style={s.pricingGrid}>
             <div style={s.pricingCard}>
               <div style={s.pricingName}>Free</div>
-              <div style={s.pricingPrice}>$0</div>
+              <div style={s.pricingPrice}>£0</div>
               <div style={s.pricingPer}>forever</div>
               <ul style={s.pricingList}>
                 {['Up to 5 invoices/month','2 clients','Basic templates','Email support'].map((item, i) => (
@@ -139,7 +139,7 @@ export default function LandingPage() {
             <div style={s.pricingCardPro}>
               <div style={s.pricingBadge}>Most popular</div>
               <div style={s.pricingNamePro}>Pro</div>
-              <div style={s.pricingPricePro}>$19</div>
+              <div style={s.pricingPricePro}>£4.99</div>
               <div style={s.pricingPerPro}>per month</div>
               <ul style={s.pricingList}>
                 {['Unlimited invoices','Unlimited clients','Recurring invoices','Auto email reminders','Analytics & reports','Priority support'].map((item, i) => (
