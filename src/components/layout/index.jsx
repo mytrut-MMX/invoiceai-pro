@@ -138,7 +138,7 @@ export function Sidebar({
 export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick }) {
   const page = NAV.find(n => n.id === activePage);
   return (
-    <div style={{
+    <div className="mobile-topbar" style={{
       display: "flex",
       position: "fixed", top:0, left:0, right:0, height:52,
       background: sidebarBg, zIndex:200,
@@ -170,7 +170,7 @@ export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="rgb(33, 38, 60
 // ─── MOBILE BOTTOM NAV ────────────────────────────────────────────────────────
 export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
   return (
-    <div style={{
+    <div className="mobile-bottom-nav" style={{
       display: "flex",
       position: "fixed", bottom:0, left:0, right:0, height:60,
       background: "rgb(33, 38, 60)", zIndex:200,
