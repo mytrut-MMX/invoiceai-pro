@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const ADMIN_PASSWORD = 'AdminSaga2026!';
 const ff = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 const s = {
@@ -75,7 +74,7 @@ function SubjectBadge({ subject }) {
 }
 
 // ── Admin Dashboard ──────────────────────────────────────────────────────────
-function AdminDashboard({ onLogout }) {
+function AdminDashboard({ onLogout, password }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -86,7 +85,7 @@ function AdminDashboard({ onLogout }) {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin-data?password=${encodeURIComponent(ADMIN_PASSWORD)}`);
+      const res = await fetch(`/api/admin-data?password=${encodeURIComponent(password)}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to load');
       setData(json);
@@ -95,7 +94,7 @@ function AdminDashboard({ onLogout }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [password]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -247,28 +246,43 @@ function AdminDashboard({ onLogout }) {
 // ── Password Gate ────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('admin_authed') === '1');
+  const [sessionPw, setSessionPw] = useState(() => sessionStorage.getItem('admin_pw') || '');
   const [pw, setPw] = useState('');
   const [error, setError] = useState('');
   const [show, setShow] = useState(false);
+  const [checking, setChecking] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (pw === ADMIN_PASSWORD) {
-      sessionStorage.setItem('admin_authed', '1');
-      setAuthed(true);
-    } else {
-      setError('Incorrect password.');
-      setPw('');
+    setChecking(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin-data?password=${encodeURIComponent(pw)}`);
+      if (res.ok) {
+        sessionStorage.setItem('admin_authed', '1');
+        sessionStorage.setItem('admin_pw', pw);
+        setSessionPw(pw);
+        setAuthed(true);
+      } else {
+        setError('Incorrect password.');
+        setPw('');
+      }
+    } catch {
+      setError('Could not reach server. Try again.');
+    } finally {
+      setChecking(false);
     }
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem('admin_authed');
+    sessionStorage.removeItem('admin_pw');
+    setSessionPw('');
     setAuthed(false);
     setPw('');
   };
 
-  if (authed) return <AdminDashboard onLogout={handleLogout} />;
+  if (authed) return <AdminDashboard onLogout={handleLogout} password={sessionPw} />;
 
   return (
     <div style={s.loginWrap}>
@@ -298,7 +312,7 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
-          <button type="submit" style={s.btn}>Enter Admin Panel →</button>
+          <button type="submit" disabled={checking} style={{ ...s.btn, opacity: checking ? 0.7 : 1 }}>{checking ? 'Verifying…' : 'Enter Admin Panel →'}</button>
         </form>
 
         <div style={{ textAlign:'center', marginTop:20, fontSize:12, color:'#9CA3AF' }}>

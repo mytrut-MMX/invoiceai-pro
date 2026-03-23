@@ -2,7 +2,12 @@ import { useState } from "react";
 import { ff } from "../constants";
 import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
-import { supabase } from "../lib/supabase";
+import { supabase, supabaseReady } from "../lib/supabase";
+
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState("login");
@@ -30,12 +35,14 @@ export default function AuthPage({ onAuth }) {
   };
 
   const saveProfileToSupabase = async (email, name) => {
+    if (!supabaseReady || !supabase) return;
     try {
       await supabase.from("profiles").upsert({ email, name }, { onConflict: "email" });
     } catch {}
   };
 
   const fetchNameFromSupabase = async (email) => {
+    if (!supabaseReady || !supabase) return null;
     try {
       const { data } = await supabase.from("profiles").select("name").eq("email", email).single();
       return data?.name || null;
@@ -50,17 +57,23 @@ export default function AuthPage({ onAuth }) {
     setLoading(true);
     setTimeout(async () => {
       const users = getUsers();
+      const pwHash = await hashPassword(password);
       if(mode==="register") {
         if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
         if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
         if(users.find(u=>u.email===email)) { setError("An account with this email already exists."); setLoading(false); return; }
-        const newUser = { name: name.trim(), email, password, role:"Admin", createdAt: new Date().toISOString() };
+        const newUser = { name: name.trim(), email, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
         saveUsers([...users, newUser]);
         await saveProfileToSupabase(email, name.trim());
         onAuth({ name: newUser.name, email: newUser.email, role:"Admin" });
       } else {
-        const found = users.find(u=>u.email===email && u.password===password);
+        // Accept both SHA-256 hash (new) and plaintext (legacy migration)
+        const found = users.find(u => u.email === email && (u.password === pwHash || u.password === password));
         if(!found) { setError("Incorrect email or password."); setLoading(false); return; }
+        // Migrate plaintext password to hash on first login
+        if(found.password === password) {
+          saveUsers(users.map(u => u.email === email ? { ...u, password: pwHash } : u));
+        }
         const sbName = await fetchNameFromSupabase(email);
         onAuth({ name: sbName || found.name, email: found.email, role: found.role||"Admin" });
       }
@@ -72,6 +85,12 @@ export default function AuthPage({ onAuth }) {
 
   return (
      <div className="auth-page-bg" style={{ minHeight:"100vh", background:"linear-gradient(135deg, #e8f0fe 0%, #f0f7ff 50%, #e8f4fd 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+      {!supabaseReady && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, background:"#fef3c7", borderBottom:"1px solid #f59e0b", padding:"8px 16px", display:"flex", alignItems:"center", gap:8, zIndex:999, fontSize:12, color:"#92400e" }}>
+          <span>⚠️</span>
+          <span><strong>Supabase not configured</strong> — accounts are saved locally only. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</span>
+        </div>
+      )}
       <div style={{ width:"100%", maxWidth:460 }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ margin:"0 auto 16px", display:"flex", justifyContent:"center" }}>
