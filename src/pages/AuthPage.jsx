@@ -4,6 +4,11 @@ import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
 import { supabase } from "../lib/supabase";
 
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
@@ -50,17 +55,23 @@ export default function AuthPage({ onAuth }) {
     setLoading(true);
     setTimeout(async () => {
       const users = getUsers();
+      const pwHash = await hashPassword(password);
       if(mode==="register") {
         if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
         if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
         if(users.find(u=>u.email===email)) { setError("An account with this email already exists."); setLoading(false); return; }
-        const newUser = { name: name.trim(), email, password, role:"Admin", createdAt: new Date().toISOString() };
+        const newUser = { name: name.trim(), email, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
         saveUsers([...users, newUser]);
         await saveProfileToSupabase(email, name.trim());
         onAuth({ name: newUser.name, email: newUser.email, role:"Admin" });
       } else {
-        const found = users.find(u=>u.email===email && u.password===password);
+        // Accept both SHA-256 hash (new) and plaintext (legacy migration)
+        const found = users.find(u => u.email === email && (u.password === pwHash || u.password === password));
         if(!found) { setError("Incorrect email or password."); setLoading(false); return; }
+        // Migrate plaintext password to hash on first login
+        if(found.password === password) {
+          saveUsers(users.map(u => u.email === email ? { ...u, password: pwHash } : u));
+        }
         const sbName = await fetchNameFromSupabase(email);
         onAuth({ name: sbName || found.name, email: found.email, role: found.role||"Admin" });
       }
