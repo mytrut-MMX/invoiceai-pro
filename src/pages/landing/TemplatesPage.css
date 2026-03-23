@@ -109,8 +109,7 @@
   position: relative;
 }
 .tp-preview-badge {
-  position: absolute; top: 14px; right: 14px;
-  display: flex; flex-direction: column; gap: 5px; align-items: flex-end;
+  display: flex; flex-direction: row; gap: 5px; align-items: center; flex-wrap: wrap;
 }
 .tp-pbadge {
   font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
