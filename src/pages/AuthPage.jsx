@@ -4,10 +4,70 @@ import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
 import { supabase, supabaseReady } from "../lib/supabase";
 
-async function hashPassword(pw) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+// AUTH-002: PBKDF2-SHA256 with random salt — NIST SP 800-132 compliant
+// Format stored: "pbkdf2:310000:<saltHex>:<hashHex>"
+const PBKDF2_ITERATIONS = 310000;
+
+function bytesToHex(buf) {
+  return Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+function hexToBytes(hex) {
+  return new Uint8Array(hex.match(/.{2}/g).map(h => parseInt(h, 16)));
+}
+
+async function hashPassword(password, existingSaltHex = null) {
+  const salt = existingSaltHex
+    ? hexToBytes(existingSaltHex)
+    : crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    keyMaterial, 256
+  );
+  return `pbkdf2:${PBKDF2_ITERATIONS}:${bytesToHex(salt)}:${bytesToHex(new Uint8Array(bits))}`;
+}
+
+async function verifyPassword(password, stored) {
+  if (stored && stored.startsWith('pbkdf2:')) {
+    const [, iterStr, saltHex, expectedHash] = stored.split(':');
+    const salt = hexToBytes(saltHex);
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations: Number(iterStr), hash: 'SHA-256' },
+      keyMaterial, 256
+    );
+    return bytesToHex(new Uint8Array(bits)) === expectedHash;
+  }
+  // AUTH-002: Legacy SHA-256 fallback — will be upgraded on successful login
+  if (stored && /^[0-9a-f]{64}$/.test(stored)) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+    return bytesToHex(new Uint8Array(buf)) === stored;
+  }
+  return false;
+}
+
+// AUTH-008: In-memory brute-force lockout (per email, 5 attempts → 15 min lockout)
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
+
+function checkLockout(email) {
+  const entry = loginAttempts.get(email);
+  if (!entry) return false;
+  if (Date.now() > entry.until) { loginAttempts.delete(email); return false; }
+  return entry.count >= MAX_ATTEMPTS;
+}
+function recordFailure(email) {
+  const entry = loginAttempts.get(email) || { count: 0, until: Date.now() + LOCKOUT_MS };
+  entry.count += 1;
+  entry.until = Date.now() + LOCKOUT_MS;
+  loginAttempts.set(email, entry);
+}
+function clearAttempts(email) { loginAttempts.delete(email); }
 
 export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState("login");
@@ -34,14 +94,17 @@ export default function AuthPage({ onAuth }) {
     } catch {}
   };
 
-  // SEC-008: Migrate any remaining plaintext passwords to SHA-256 hashes on load
+  // AUTH-002: Migrate plaintext passwords (no hash prefix) to PBKDF2 on mount
+  // SHA-256 hashes (64-char hex) are left as-is and upgraded on next successful login
   const migratePasswords = async () => {
     const users = getUsers();
-    const looksLikeHash = (pw) => /^[0-9a-f]{64}$/.test(pw);
-    const needsMigration = users.some(u => u.password && !looksLikeHash(u.password));
+    const isPbkdf2 = (pw) => pw && pw.startsWith('pbkdf2:');
+    const isSha256 = (pw) => pw && /^[0-9a-f]{64}$/.test(pw);
+    const isPlaintext = (pw) => pw && !isPbkdf2(pw) && !isSha256(pw);
+    const needsMigration = users.some(u => isPlaintext(u.password));
     if (!needsMigration) return;
     const migrated = await Promise.all(users.map(async u => {
-      if (u.password && !looksLikeHash(u.password)) {
+      if (isPlaintext(u.password)) {
         return { ...u, password: await hashPassword(u.password) };
       }
       return u;
@@ -72,24 +135,47 @@ export default function AuthPage({ onAuth }) {
     if(!email || !password) { setError("Email and password are required."); return; }
     if(!/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email address."); return; }
     if(password.length < 8) { setError("Password must be at least 8 characters."); return; }
+
+    // AUTH-008: Check lockout before attempting
+    if(checkLockout(email)) {
+      setError("Too many failed attempts. Try again in 15 minutes.");
+      return;
+    }
+
     setLoading(true);
     setTimeout(async () => {
       const users = getUsers();
-      const pwHash = await hashPassword(password);
       if(mode==="register") {
         if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
         if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
         if(users.find(u=>u.email===email)) { setError("An account with this email already exists."); setLoading(false); return; }
+        // AUTH-002: Hash new passwords with PBKDF2 (not SHA-256)
+        const pwHash = await hashPassword(password);
         const newUser = { name: name.trim(), email, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
         saveUsers([...users, newUser]);
         await saveProfileToSupabase(email, name.trim());
         onAuth({ name: newUser.name, email: newUser.email, role:"Admin" });
       } else {
-        // SEC-008: Only compare against SHA-256 hashes (migration runs on mount)
-        const found = users.find(u => u.email === email && u.password === pwHash);
-        if(!found) { setError("Incorrect email or password."); setLoading(false); return; }
+        const found = users.find(u => u.email === email);
+        if(!found || !(await verifyPassword(password, found.password))) {
+          // AUTH-008: Record failure for lockout tracking
+          recordFailure(email);
+          setError("Incorrect email or password."); setLoading(false); return;
+        }
+        // AUTH-002: Upgrade SHA-256 hash to PBKDF2 on successful login
+        if(found.password && !found.password.startsWith('pbkdf2:')) {
+          const upgraded = await hashPassword(password);
+          saveUsers(users.map(u => u.email === email ? { ...u, password: upgraded } : u));
+        }
+        clearAttempts(email);
         const sbName = await fetchNameFromSupabase(email);
-        onAuth({ name: sbName || found.name, email: found.email, role: found.role||"Admin" });
+        // AUTH-003: Add session expiry (8 hours from now)
+        onAuth({
+          name: sbName || found.name,
+          email: found.email,
+          role: found.role || "Admin",
+          expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        });
       }
       setLoading(false);
     }, 600);

@@ -90,7 +90,8 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
     const expiresOn = window.prompt("Link expiration date (YYYY-MM-DD)", expiryDate || addDays(todayStr(), 30));
     if (!expiresOn) return;
     const mode = visibility.toLowerCase().includes("private") ? "private" : "public";
-    const token = crypto.randomUUID().split("-")[0];
+    // AUTH-005: Use full UUID (122 bits entropy) instead of truncated 8-char segment (32 bits)
+    const token = crypto.randomUUID();
     const basePath = mode === "public" ? "public" : "secure";
     const shareUrl = `${window.location.origin}/${basePath}/quote/${quoteNumber}?token=${token}&expires=${expiresOn}`;
     window.prompt(mode === "private"

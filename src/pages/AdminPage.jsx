@@ -74,7 +74,7 @@ function SubjectBadge({ subject }) {
 }
 
 // ── Admin Dashboard ──────────────────────────────────────────────────────────
-function AdminDashboard({ onLogout, password }) {
+function AdminDashboard({ onLogout, token }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,19 +85,19 @@ function AdminDashboard({ onLogout, password }) {
     setLoading(true);
     setError('');
     try {
-      // SEC-001: Password sent via Authorization header, not query string
+      // AUTH-001: Use signed HMAC token — password never re-transmitted
       const res = await fetch('/api/admin-data', {
-        headers: { 'Authorization': `Bearer ${password}` },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to load');
+      if (!res.ok) throw new Error(json.error || 'Session expired — please log in again');
       setData(json);
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [password]);
+  }, [token]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -248,8 +248,8 @@ function AdminDashboard({ onLogout, password }) {
 
 // ── Password Gate ────────────────────────────────────────────────────────────
 export default function AdminPage() {
-  // SEC-002: Password kept in component state only — never persisted to storage
-  const [sessionPw, setSessionPw] = useState('');
+  // AUTH-001: Store the HMAC-signed token (not the raw password) in state
+  const [token, setToken] = useState('');
   const [authed, setAuthed] = useState(false);
   const [pw, setPw] = useState('');
   const [error, setError] = useState('');
@@ -261,13 +261,18 @@ export default function AdminPage() {
     setChecking(true);
     setError('');
     try {
-      // SEC-001: Password sent via Authorization header, not query string
-      const res = await fetch('/api/admin-data', {
-        headers: { 'Authorization': `Bearer ${pw}` },
+      // AUTH-001: POST to /api/admin-login → receive a signed HMAC token
+      // Password is sent once; subsequent data fetches use the token only
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
       });
-      if (res.ok) {
-        setSessionPw(pw);
+      const json = await res.json();
+      if (res.ok && json.token) {
+        setToken(json.token);
         setAuthed(true);
+        setPw(''); // Clear password from state immediately after use
       } else {
         setError('Incorrect password.');
         setPw('');
@@ -280,12 +285,12 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    setSessionPw('');
+    setToken('');
     setAuthed(false);
     setPw('');
   };
 
-  if (authed) return <AdminDashboard onLogout={handleLogout} password={sessionPw} />;
+  if (authed) return <AdminDashboard onLogout={handleLogout} token={token} />;
 
   return (
     <div style={s.loginWrap}>
