@@ -232,8 +232,15 @@ export default function SettingsPage({ onNavigate }) {
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if(!file) return;
+    // XSS-004: Validate MIME type is an image — prevents data:text/html XSS via img src
+    if(!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setCompanyLogo(ev.target.result);
+    reader.onload = (ev) => {
+      const result = ev.target.result;
+      if(typeof result === 'string' && result.startsWith('data:image/')) {
+        setCompanyLogo(result);
+      }
+    };
     reader.readAsDataURL(file);
   };
 

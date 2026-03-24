@@ -18,6 +18,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // HDR-004: Prevent caching of proxied API responses
+  res.setHeader('Cache-Control', 'no-store');
+
   let body;
   try {
     const chunks = [];

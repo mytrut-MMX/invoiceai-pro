@@ -36,8 +36,15 @@ export default function SetupWizard({ onComplete }) {
 
   const handleLogo = e => {
     const file = e.target.files[0]; if (!file) return
+    // XSS-004: Validate MIME type is an image
+    if (!file.type.startsWith('image/')) return
     const reader = new FileReader()
-    reader.onload = ev => { setLogoPreview(ev.target.result); set('logo', ev.target.result) }
+    reader.onload = ev => {
+      const result = ev.target.result
+      if (typeof result === 'string' && result.startsWith('data:image/')) {
+        setLogoPreview(result); set('logo', result)
+      }
+    }
     reader.readAsDataURL(file)
   }
 
