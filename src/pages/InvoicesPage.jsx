@@ -1,9 +1,9 @@
 import { useState, useContext, useMemo, useEffect } from "react";
-import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS } from "../constants";
+import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS, PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
-import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal } from "../components/shared";
+import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, A4InvoiceDoc } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
 import { useCISSettings } from "../hooks/useCISSettings";
@@ -410,6 +410,114 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   );
 }
 
+// ─── INVOICE VIEW PANEL ───────────────────────────────────────────────────────
+function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
+  const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig, setInvoices } = useContext(AppCtx);
+  const { cisEnabled, cisDefaultRate } = useCISSettings();
+  const isVat = orgSettings?.vatReg === "Yes";
+  const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  const totals = calcTotals(
+    invoice.line_items || [],
+    invoice.discount_type || "percent",
+    invoice.discount_value || "",
+    invoice.shipping || "",
+    isVat,
+    invoice.customer,
+    cisEnabled,
+    cisDefaultRate
+  );
+
+  const docData = {
+    docNumber: invoice.invoice_number,
+    customer: invoice.customer,
+    issueDate: invoice.issue_date,
+    dueDate: invoice.due_date,
+    paymentTerms: invoice.payment_terms,
+    items: invoice.line_items || [],
+    ...totals,
+    notes: invoice.notes || "",
+    terms: invoice.terms || "",
+    status: invoice.status,
+    poNumber: invoice.po_number || "",
+    docType: "invoice",
+  };
+
+  const activeTemplate = invoice.template || pdfTemplate || "classic";
+  const tplDef = PDF_TEMPLATES.find(t => t.id === activeTemplate) || PDF_TEMPLATES[0];
+
+  return (
+    <>
+      {showPrintModal && (
+        <A4PrintModal
+          data={docData}
+          currSymbol={currSym}
+          isVat={isVat}
+          onClose={() => setShowPrintModal(false)}
+        />
+      )}
+      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", fontFamily: ff, padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
+        {/* Action bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button onClick={onClose}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", border: "1.5px solid #e0e0e0", borderRadius: 8, background: "#fff", color: "#444", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
+              ← Invoices
+            </button>
+            <span style={{ fontSize: 16, fontWeight: 800, color: "#1A1A1A" }}>{invoice.invoice_number}</span>
+            <Tag color={STATUS_COLORS[invoice.status] || "#888"}>{invoice.status || "Draft"}</Tag>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Btn variant="outline" icon={<Icons.Receipt />} onClick={() => setShowPrintModal(true)}>Print / PDF</Btn>
+            <Btn variant="primary" icon={<Icons.Edit />} onClick={onEdit}>Edit</Btn>
+            <Btn variant="ghost" icon={<Icons.Trash />}
+              onClick={() => {
+                if (window.confirm(`Delete ${invoice.invoice_number}?`)) {
+                  setInvoices(prev => prev.filter(x => x.id !== invoice.id));
+                  onClose();
+                }
+              }}>
+              Delete
+            </Btn>
+          </div>
+        </div>
+
+        {/* Invoice meta row */}
+        <div style={{ display: "flex", gap: 24, marginBottom: 20, flexWrap: "wrap" }}>
+          {[
+            { label: "Customer", value: invoice.customer?.name || "—" },
+            { label: "Issue Date", value: fmtDate(invoice.issue_date) },
+            { label: "Due Date",   value: fmtDate(invoice.due_date) },
+            { label: "Amount",     value: fmt(currSym, invoice.total || 0) },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ background: "#fff", border: "1px solid #e8e8ec", borderRadius: 8, padding: "10px 16px", minWidth: 120 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* A4 document preview */}
+        <div style={{ background: "#e8e8ec", padding: "28px 16px", borderRadius: 12, display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "100%", maxWidth: 794, background: "#fff", boxShadow: "0 4px 24px rgba(0,0,0,0.14)" }}>
+            <A4InvoiceDoc
+              data={docData}
+              currSymbol={currSym}
+              isVat={isVat}
+              orgSettings={{ ...orgSettings, logo: companyLogo, logoSize: Number(invoiceTemplateConfig?.logoSize || companyLogoSize || 52) }}
+              accentColor={tplDef?.defaultAccent || "#1A1A1A"}
+              template={activeTemplate}
+              footerText={footerText || ""}
+              templateConfig={invoiceTemplateConfig || {}}
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── INVOICES PAGE ────────────────────────────────────────────────────────────
 export default function InvoicesPage() {
   const { invoices, setInvoices, quotes, setQuotes } = useContext(AppCtx);
@@ -463,6 +571,17 @@ export default function InvoicesPage() {
     paid:        invoices.filter(i=>i.status==="Paid").reduce((s,i)=>s+(i.total||0),0),
     draft:       invoices.filter(i=>i.status==="Draft").reduce((s,i)=>s+(i.total||0),0),
   };
+
+  if (panel?.mode === "view") {
+    return (
+      <InvoiceViewPanel
+        invoice={panel.invoice}
+        onClose={() => setPanel(null)}
+        onEdit={() => setPanel({ mode: "edit", invoice: panel.invoice })}
+        onDelete={() => {}}
+      />
+    );
+  }
 
   if (panel) {
     return (
@@ -526,7 +645,7 @@ export default function InvoicesPage() {
           <tbody>
             {filtered.map(inv=>(
               <tr key={inv.id} style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
-                onClick={()=>setPanel({ mode:"edit", invoice:inv })}
+                onClick={()=>setPanel({ mode:"view", invoice:inv })}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{inv.invoice_number}</td>
