@@ -238,6 +238,9 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
                             const map = { "Net 30":30,"Net 15":15,"Net 7":7,"Net 60":60,"Net 90":90,"Due on Receipt":0 };
                             if(nextTerms==="Custom") setDueDate(addDays(issueDate,Number(c.customPaymentDays)||30));
                             else if(map[nextTerms]!==undefined) setDueDate(addDays(issueDate,map[nextTerms]));
+                          }
+                          if(cisEnabled && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered)){
+                            setItems(prev => prev.map(it => ({ ...it, cisApplicable: true })));
                           } }}
                           style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"none", border:"none", cursor:"pointer", fontFamily:ff, textAlign:"left" }}
                           onMouseEnter={e=>e.currentTarget.style.background="#f4f5f7"}
@@ -329,6 +332,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
               catalogItems={catalogItems}
               isVat={isVat}
               onAddNewItem={()=>setShowItemModal(true)}
+              isCISInvoice={cisEnabled && !!(customer?.cis?.registered || customer?.taxDetails?.cisRegistered)}
             />
           </div>
 
