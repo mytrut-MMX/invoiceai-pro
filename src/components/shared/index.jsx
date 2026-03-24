@@ -488,7 +488,8 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.72)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-start", zIndex:4000, overflowY:"auto", padding:"16px 16px 40px" }}>
+   <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.72)", zIndex:4000, overscrollBehaviorY:"contain", touchAction:"pan-y" }}>
+      <div style={{ width:"100%", height:"100%", overflowY:"auto", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column", alignItems:"center", padding:"16px 16px 40px" }}>
       <div style={{ width:"100%", maxWidth:820, background:"#1A1A1A", borderRadius:"12px 12px 0 0", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", flexShrink:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
           <span style={{ fontSize:13, fontWeight:700, color:"#fff" }}>Print Preview — A4</span>
@@ -527,6 +528,7 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
         <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat}
           orgSettings={{...orgSettings, logo:companyLogo, logoSize:previewLogoSize}}
           accentColor={accentColor} template={activeTemplate} footerText={footerText||""} templateConfig={{ ...(invoiceTemplateConfig||{}), logoSize: previewLogoSize }} />
+      </div>
       </div>
     </div>
   );
