@@ -6,7 +6,7 @@ import { Field, Input, Select, Btn, Tag } from "../atoms";
 import { fmt, fmtDate, newLine, todayStr, formatPhoneNumber } from "../../utils/helpers";
 
 // ─── LINE ITEMS TABLE ─────────────────────────────────────────────────────────
-export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat, onAddNewItem }) {
+export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat, onAddNewItem, isCISInvoice }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
   const [pickerQty, setPickerQty] = useState({});
@@ -14,11 +14,11 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
   const upd = (id, f, v) => onChange(items.map(it => {
     if(it.id!==id) return it;
     const u = {...it, [f]:v};
-    u.amount = Number(u.quantity) * Number(u.rate);
+    if (f !== 'cisApplicable') u.amount = Number(u.quantity) * Number(u.rate);
     return u;
   }));
 
-  const addBlank = () => onChange([...items, newLine(items.length)]);
+  const addBlank = () => onChange([...items, { ...newLine(items.length), cisApplicable: !!isCISInvoice }]);
   const del = id => items.length>1 && onChange(items.filter(i=>i.id!==id));
 
   const activeItems = (catalogItems||[]).filter(i=>i.active);
@@ -28,10 +28,12 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
     (i.description||"").toLowerCase().includes(pickerSearch.toLowerCase())
   );
 
-  const cols = isVat ? "1fr 68px 84px 76px 74px 28px" : "1fr 68px 90px 80px 28px";
+  const cols = isVat
+    ? (isCISInvoice ? "1fr 68px 84px 76px 74px 44px 28px" : "1fr 68px 84px 76px 74px 28px")
+    : (isCISInvoice ? "1fr 68px 90px 80px 44px 28px"      : "1fr 68px 90px 80px 28px");
   const headers = isVat
-    ? [["Description","left"],["Qty","center"],[`Rate (${currSymbol})`,"right"],["VAT","center"],["Amount","right"],["",""]]
-    : [["Description","left"],["Qty","center"],[`Rate (${currSymbol})`,"right"],["Amount","right"],["",""]];
+    ? [["Description","left"],["Qty","center"],[`Rate (${currSymbol})`,"right"],["VAT","center"],["Amount","right"],...(isCISInvoice?[["CIS","center"]]:[]),["",""]]
+    : [["Description","left"],["Qty","center"],[`Rate (${currSymbol})`,"right"],["Amount","right"],...(isCISInvoice?[["CIS","center"]]:[]),["",""]];
 
   return (
     <div>
@@ -69,7 +71,7 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
                         style={{ width:64, padding:"6px 8px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:12, fontFamily:ff, background:"#fff", MozAppearance:"textfield" }} />
                       <button onClick={()=>{
                         const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
-                        const newItem = { id:crypto.randomUUID(), name:ci.name, description:ci.description||"", quantity:safeQty, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate*safeQty, cisApplicable:!!ci.cisApplicable, sort_order:items.length };
+                        const newItem = { id:crypto.randomUUID(), name:ci.name, description:ci.description||"", quantity:safeQty, rate:ci.rate, tax_rate:isVat?(ci.taxRate||20):0, amount:ci.rate*safeQty, cisApplicable: isCISInvoice ? (ci.cisApplicable !== false) : !!ci.cisApplicable, sort_order:items.length };
                         onChange([...items, newItem]);
                         setPickerOpen(false); setPickerSearch("");
                       }}
@@ -110,6 +112,24 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
             </select>
           )}
           <div style={{ textAlign:"right", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{fmt(currSymbol, it.amount)}</div>
+          {isCISInvoice && (
+            <div style={{ display:"flex", justifyContent:"center" }}>
+              <button
+                onClick={() => upd(it.id, "cisApplicable", !it.cisApplicable)}
+                title={it.cisApplicable ? "CIS applies — click to exclude" : "Click to apply CIS deduction"}
+                style={{
+                  width: 36, height: 22, borderRadius: 11, border: "none", cursor: "pointer",
+                  background: it.cisApplicable ? "#D97706" : "#E5E7EB",
+                  position: "relative", transition: "background 0.15s", flexShrink: 0,
+                }}>
+                <span style={{
+                  position: "absolute", top: 2, left: it.cisApplicable ? 16 : 2,
+                  width: 18, height: 18, borderRadius: "50%", background: "#fff",
+                  transition: "left 0.15s", boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                }} />
+              </button>
+            </div>
+          )}
           <button onClick={()=>del(it.id)} disabled={items.length===1}
             style={{ width:26, height:26, border:"none", background:"none", cursor:items.length===1?"not-allowed":"pointer", color:"#DDD", display:"flex", alignItems:"center", justifyContent:"center" }}
             onMouseEnter={e=>{ if(items.length>1) e.currentTarget.style.color="#DC2626"; }}
