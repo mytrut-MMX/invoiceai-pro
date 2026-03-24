@@ -52,11 +52,25 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Supabase not configured on server' });
   }
 
+  // SSRF-001: Validate SUPABASE_URL is a legitimate supabase.co HTTPS endpoint
+  // Prevents SSRF if env var is misconfigured or set to internal network address
+  try {
+    const parsed = new URL(supabaseUrl);
+    if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.supabase.co')) {
+      return res.status(503).json({ error: 'Invalid database configuration' });
+    }
+  } catch {
+    return res.status(503).json({ error: 'Invalid database configuration' });
+  }
+
   const headers = {
     'apikey': serviceRoleKey,
     'Authorization': `Bearer ${serviceRoleKey}`,
     'Content-Type': 'application/json',
   };
+
+  // HDR-004: Prevent caching of sensitive admin data
+  res.setHeader('Cache-Control', 'no-store');
 
   try {
     const [profilesRes, contactRes] = await Promise.all([

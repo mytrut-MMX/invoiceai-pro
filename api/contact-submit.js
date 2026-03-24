@@ -33,6 +33,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // HDR-004: Prevent caching of API responses
+  res.setHeader('Cache-Control', 'no-store');
+
   // SEC-009: Rate limiting by IP
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
   if (isRateLimited(clientIp)) {
@@ -62,6 +65,16 @@ export default async function handler(req, res) {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
+    return res.status(503).json({ error: 'Server not configured.' });
+  }
+
+  // SSRF-001: Validate SUPABASE_URL is a legitimate supabase.co HTTPS endpoint
+  try {
+    const parsed = new URL(supabaseUrl);
+    if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.supabase.co')) {
+      return res.status(503).json({ error: 'Server not configured.' });
+    }
+  } catch {
     return res.status(503).json({ error: 'Server not configured.' });
   }
 

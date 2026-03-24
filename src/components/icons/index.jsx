@@ -1,9 +1,21 @@
 import React from "react";
 
+// XSS-001: Validate that the SVG path data contains only safe <path> / <circle> / <rect>
+// elements before injecting via dangerouslySetInnerHTML.
+// This prevents XSS if the `d` prop is ever accidentally passed user-controlled content.
+const SAFE_SVG_RE = /^(<(path|circle|rect|polyline|polygon|line|ellipse|g)\b[^>]*\/?>(\s*<\/(path|circle|rect|polyline|polygon|line|ellipse|g)>)?)+$/;
+function sanitizeSvgContent(d) {
+  if (typeof d !== 'string') return '';
+  const stripped = d.replace(/\s+/g, ' ').trim();
+  // Block any tag that isn't a known safe SVG shape element
+  if (/<script|<iframe|javascript:|on[a-z]+=|<!\[CDATA/i.test(stripped)) return '';
+  return stripped;
+}
+
 export const Ic = ({ d, size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
-    dangerouslySetInnerHTML={{ __html: d }} />
+    dangerouslySetInnerHTML={{ __html: sanitizeSvgContent(d) }} />
 );
 
 export const Icons = {

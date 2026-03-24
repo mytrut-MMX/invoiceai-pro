@@ -29,8 +29,16 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if(!file) return;
+    // XSS-004: Validate MIME type is an image — prevents data:text/html XSS via img src
+    if(!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = ev => setLocalAvatar(ev.target.result);
+    reader.onload = ev => {
+      const result = ev.target.result;
+      // Double-check the data URL starts with image MIME type
+      if(typeof result === 'string' && result.startsWith('data:image/')) {
+        setLocalAvatar(result);
+      }
+    };
     reader.readAsDataURL(file);
   };
 
