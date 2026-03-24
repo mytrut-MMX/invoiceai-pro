@@ -126,16 +126,13 @@ export default function SettingsPage({ onNavigate }) {
   const [industry,     setIndustry]     = useState(org.industry||"");
   const [vatReg,       setVatReg]       = useState(org.vatReg||"No");
   const [vatNum,       setVatNum]       = useState(org.vatNum||"");
-  const [cisReg,       setCisReg]       = useState(org.cisReg||"No");
   const [cisRole,      setCisRole]      = useState(org.cisRole||"Contractor");
-  const [cisRate,      setCisRate]      = useState(org.cisRate||20);
-  const [cisUtrNo,     setCisUtrNo]     = useState(org.cisUtrNo||"");
   const [cisRegistrationStatus, setCisRegistrationStatus] = useState(org.cisRegistrationStatus||"Net");
   const [cisEnabled,        setCisEnabled]        = useState(storedSettings?.cis?.enabled ?? org.cis?.enabled ?? CIS_DEFAULT_SETTINGS.enabled);
   const [cisContractorName, setCisContractorName] = useState(storedSettings?.cis?.contractorName ?? org.cis?.contractorName ?? CIS_DEFAULT_SETTINGS.contractorName);
-  const [cisContractorUTR,  setCisContractorUTR]  = useState(storedSettings?.cis?.contractorUTR ?? org.cis?.contractorUTR ?? CIS_DEFAULT_SETTINGS.contractorUTR);
+  const [cisContractorUTR,  setCisContractorUTR]  = useState(storedSettings?.cis?.contractorUTR ?? org.cis?.contractorUTR ?? org.cisUtrNo ?? CIS_DEFAULT_SETTINGS.contractorUTR);
   const [cisEmployerRef,    setCisEmployerRef]    = useState(storedSettings?.cis?.employerRef ?? org.cis?.employerRef ?? CIS_DEFAULT_SETTINGS.employerRef);
-  const [cisDefaultRate,    setCisDefaultRate]    = useState(storedSettings?.cis?.defaultRate ?? org.cis?.defaultRate ?? CIS_DEFAULT_SETTINGS.defaultRate);
+  const [cisDefaultRate,    setCisDefaultRate]    = useState(storedSettings?.cis?.defaultRate ?? org.cis?.defaultRate ?? org.cisRate ?? CIS_DEFAULT_SETTINGS.defaultRate);
   const [crn,          setCrn]          = useState(org.crn||"");
   const [bankName,     setBankName]     = useState(org.bankName||"");
   const [bankSort,     setBankSort]     = useState(org.bankSort||"");
@@ -161,7 +158,6 @@ export default function SettingsPage({ onNavigate }) {
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("org");
   const [vatNumberLocked, setVatNumberLocked] = useState(Boolean(org.vatNum));
-  const [cisNumberLocked, setCisNumberLocked] = useState(Boolean(org.cisUtrNo));
   const crnError = crn && !validateUkCrn(crn) ? "CRN must be 8 digits or 2 letters followed by 6 digits (e.g. 12345678, SC123456)." : "";
 
   const settingTabs = [
@@ -177,7 +173,9 @@ export default function SettingsPage({ onNavigate }) {
     orgName, email, phone, website,
     street, city, postcode, country,
     currency, timezone, industry,
-    vatReg, vatNum, cisReg, cisRole, cisRate, cisUtrNo, cisRegistrationStatus, crn,
+    vatReg, vatNum,
+    cisReg: cisEnabled ? "Yes" : "No",
+    cisRole, cisRate: cisDefaultRate, cisUtrNo: cisContractorUTR, cisRegistrationStatus, crn,
     bankName, bankSort, bankAcc, bankIban, bankSwift,
     cis: {
       enabled: cisEnabled,
@@ -189,12 +187,21 @@ export default function SettingsPage({ onNavigate }) {
   });
 
   const saveCIS = () => {
+    if (cisEnabled) {
+      const utr = cisContractorUTR.replace(/\D/g, "");
+      if (utr.length > 0 && utr.length !== 10) {
+        window.alert("Please enter a valid UTR number (10 digits).");
+        return;
+      }
+    }
     const cisData = {
       enabled: cisEnabled,
       contractorName: cisContractorName,
       contractorUTR: cisContractorUTR,
       employerRef: cisEmployerRef,
       defaultRate: cisDefaultRate,
+      role: cisRole,
+      registrationStatus: cisRegistrationStatus,
     };
     const existing = JSON.parse(localStorage.getItem("invoicesaga_settings") || "{}");
     localStorage.setItem("invoicesaga_settings", JSON.stringify({
@@ -211,16 +218,8 @@ export default function SettingsPage({ onNavigate }) {
       window.alert("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
       return;
     }
-    if (cisReg === "Yes") {
-      const utr = cisUtrNo.replace(/\D/g, "");
-      if (utr.length !== 10) {
-        window.alert("Please enter a valid UTR number (10 digits).");
-        return;
-      }
-    }
     setOrgSettings(buildOrgSettings());
     setVatNumberLocked(Boolean(vatNum));
-    setCisNumberLocked(Boolean(cisUtrNo));
     setPdfTemplate(selectedTpl);
     setCompanyLogoSize(logoSize);
     setFooterText(footer);
@@ -368,34 +367,8 @@ export default function SettingsPage({ onNavigate }) {
               )}
             </div>
           )}
-          <Field label="CIS Registered">
-            <ChipToggle value={cisReg} onChange={setCisReg} options={["No", "Yes"]} />
-          </Field>
-          {cisReg==="Yes" && (
-            <>
-              <Field label="CIS Role">
-                <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
-              </Field>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                <Field label="UTR No" required error={cisUtrNo && cisUtrNo.replace(/\D/g,"").length !== 10 ? "UTR must be 10 digits" : ""}>
-                  <Input value={cisUtrNo} onChange={setCisUtrNo} placeholder="1234567890" readOnly={cisNumberLocked} />
-                </Field>
-                {cisNumberLocked && (
-                  <Btn type="button" variant="outline" onClick={()=>requestTaxNumberEdit(setCisNumberLocked)}>
-                    Edit Tax no
-                  </Btn>
-                )}
-              </div>
-              <Field label="CIS Registration Status">
-                <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Gross","Net"]} />
-              </Field>
-              <Field label="CIS Deduction Rate">
-                <Select value={String(cisRate)} onChange={setCisRate} options={CIS_RATES.map(rate=>({ value:String(rate), label:String(rate) }))} />
-              </Field>
-            </>
-          )}
         </div>
-  
+
         <div style={{ marginTop:14, paddingTop:16, borderTop:"1px solid #f0f0f4" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, marginBottom: cisEnabled ? 20 : 0 }}>
             <div>
@@ -413,8 +386,16 @@ export default function SettingsPage({ onNavigate }) {
                 <Input value={cisContractorName} onChange={setCisContractorName} placeholder="Your company name" />
               </Field>
 
-              <Field label="Contractor UTR">
+              <Field label="CIS Role">
+                <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
+              </Field>
+
+              <Field label="UTR Number" error={cisContractorUTR && cisContractorUTR.replace(/\D/g,"").length !== 10 ? "UTR must be 10 digits" : ""}>
                 <Input value={cisContractorUTR} onChange={setCisContractorUTR} placeholder="10-digit UTR number" maxLength={10} />
+              </Field>
+
+              <Field label="CIS Registration Status">
+                <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Gross","Net"]} />
               </Field>
 
               <Field label="Employer's PAYE Reference">
