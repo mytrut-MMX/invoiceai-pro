@@ -34,6 +34,24 @@ export default function AuthPage({ onAuth }) {
     } catch {}
   };
 
+  // SEC-008: Migrate any remaining plaintext passwords to SHA-256 hashes on load
+  const migratePasswords = async () => {
+    const users = getUsers();
+    const looksLikeHash = (pw) => /^[0-9a-f]{64}$/.test(pw);
+    const needsMigration = users.some(u => u.password && !looksLikeHash(u.password));
+    if (!needsMigration) return;
+    const migrated = await Promise.all(users.map(async u => {
+      if (u.password && !looksLikeHash(u.password)) {
+        return { ...u, password: await hashPassword(u.password) };
+      }
+      return u;
+    }));
+    saveUsers(migrated);
+  };
+
+  // Run migration once on component mount
+  useState(() => { migratePasswords(); });
+
   const saveProfileToSupabase = async (email, name) => {
     if (!supabaseReady || !supabase) return;
     try {
@@ -67,13 +85,9 @@ export default function AuthPage({ onAuth }) {
         await saveProfileToSupabase(email, name.trim());
         onAuth({ name: newUser.name, email: newUser.email, role:"Admin" });
       } else {
-        // Accept both SHA-256 hash (new) and plaintext (legacy migration)
-        const found = users.find(u => u.email === email && (u.password === pwHash || u.password === password));
+        // SEC-008: Only compare against SHA-256 hashes (migration runs on mount)
+        const found = users.find(u => u.email === email && u.password === pwHash);
         if(!found) { setError("Incorrect email or password."); setLoading(false); return; }
-        // Migrate plaintext password to hash on first login
-        if(found.password === password) {
-          saveUsers(users.map(u => u.email === email ? { ...u, password: pwHash } : u));
-        }
         const sbName = await fetchNameFromSupabase(email);
         onAuth({ name: sbName || found.name, email: found.email, role: found.role||"Admin" });
       }

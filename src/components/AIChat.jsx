@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 
-export default function AIChat({ company, clients, products, invoices, onCreateInvoice, onAction, apiKey }) {
+// SEC-005: apiKey prop removed — server-side ANTHROPIC_API_KEY used via /api/claude-proxy
+export default function AIChat({ company, clients, products, invoices, onCreateInvoice, onAction }) {
   const [messages, setMessages] = useState([{
     role: 'assistant',
     content: `Hello! I'm your Invoice AI assistant for **${company.name}**.\n\nI can help you:\n• Create invoices from natural language\n• Look up client history\n• Summarize outstanding payments\n• Draft invoice notes\n\nJust tell me what you need!`
@@ -44,11 +45,13 @@ Always respond in valid JSON only, no text outside JSON.`
     setLoading(true)
 
     try {
-      const res = await fetch('/api/chat', {
+      // SEC-005: Use server-side proxy (no client API key transmitted)
+      const res = await fetch('/api/claude-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          apiKey,
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1024,
           system: systemPrompt,
           messages: [{ role: 'user', content: txt }]
         })

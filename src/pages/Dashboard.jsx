@@ -239,7 +239,8 @@ export default function Dashboard({ store }) {
             <button onClick={() => setShowAI(false)} style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8' }}>×</button>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <AIChat company={company} clients={clients} products={products} invoices={invoices} onCreateInvoice={openAIDraft} apiKey={settings.anthropic_key} />
+            {/* SEC-005: apiKey prop removed — AIChat uses server-side key via /api/claude-proxy */}
+            <AIChat company={company} clients={clients} products={products} invoices={invoices} onCreateInvoice={openAIDraft} />
           </div>
         </div>
       )}
@@ -523,7 +524,8 @@ function SettingsPage({ company, settings, setSettings, onOpenDesigner, template
         </div>
         <div style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #f1f5f9' }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, fontFamily: "'Playfair Display',serif", color: '#1a1a2e' }}>✨ AI (Anthropic)</div>
-          <F label="Anthropic API Key" k="anthropic_key" placeholder="sk-ant-..." type="password" hint="console.anthropic.com" />
+          {/* SEC-005: API key configured server-side via ANTHROPIC_API_KEY env var */}
+          <div style={{ fontSize: 13, color: '#64748b', padding: '8px 0' }}>AI features use the server-configured Anthropic key. No client-side key required.</div>
         </div>
 
         {/* Template Designer Card */}

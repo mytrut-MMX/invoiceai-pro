@@ -479,10 +479,21 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
   const handlePrint = () => {
     const el = document.getElementById("a4-invoice-doc");
     if(!el) return;
+    // SEC-007: Sanitize cloned DOM before writing to new window — prevent XSS
+    // via stored invoice content (e.g. malicious client names, notes)
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('script').forEach(s => s.remove());
+    clone.querySelectorAll('*').forEach(node => {
+      Array.from(node.attributes).forEach(attr => {
+        if (/^on[a-z]/i.test(attr.name)) node.removeAttribute(attr.name);
+      });
+    });
+    const safeHTML = clone.outerHTML;
+    const safeTitle = (data.docNumber || "").replace(/[<>"'&]/g, "");
     const w = window.open("","_blank","width=900,height=700");
-    w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${data.docNumber||""}</title>
+    w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${safeTitle}</title>
       <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{background:#fff;font-family:'Lato','DM Sans','Helvetica Neue',sans-serif}@page{size:A4;margin:0}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}</style>
-    </head><body>${el.outerHTML}</body></html>`);
+    </head><body>${safeHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{ w.focus(); w.print(); }, 400);
   };
