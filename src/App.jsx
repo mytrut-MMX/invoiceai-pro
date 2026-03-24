@@ -38,8 +38,16 @@ const LS = {
 };
 
 export default function App() {
-  // Auth
-  const [user, setUser] = useState(()=>LS.get("ai_invoice_user",null));
+  // Auth — AUTH-003: validate session expiry on load
+  const [user, setUser] = useState(() => {
+    const stored = LS.get("ai_invoice_user", null);
+    if (!stored) return null;
+    if (stored.expiresAt && Date.now() > stored.expiresAt) {
+      localStorage.removeItem("ai_invoice_user");
+      return null;
+    }
+    return stored;
+  });
   const [orgSettings, setOrgSettingsState] = useState(()=>LS.get("ai_invoice_org",null));
   const [onboardingDone, setOnboardingDoneState] = useState(() => LS.get("ai_invoice_onboarding_done", false));
 

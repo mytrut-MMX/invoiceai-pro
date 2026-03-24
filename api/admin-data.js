@@ -1,3 +1,30 @@
+// AUTH-001: Validates a signed HMAC-SHA256 token (issued by /api/admin-login).
+// The raw admin password is never re-transmitted after login.
+import { createHmac, timingSafeEqual } from 'crypto';
+
+function verifyAdminToken(token, secret) {
+  if (!token || typeof token !== 'string') return false;
+  const dot = token.indexOf('.');
+  if (dot === -1) return false;
+  const payloadB64 = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+
+  // Constant-time signature verification
+  const expected = createHmac('sha256', secret).update(payloadB64).digest('base64url');
+  const expectedBuf = Buffer.from(expected);
+  const sigBuf = Buffer.from(sig);
+  if (expectedBuf.length !== sigBuf.length) return false;
+  if (!timingSafeEqual(expectedBuf, sigBuf)) return false;
+
+  // Validate expiry
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+    return payload.admin === true && payload.exp > Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
@@ -7,12 +34,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // SEC-001: Read password from Authorization header, not query string
-  const authHeader = req.headers['authorization'] || '';
-  const password = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) return res.status(503).json({ error: 'Not configured' });
 
-  if (!adminPassword || !password || password !== adminPassword) {
+  // AUTH-001: Accept signed HMAC token — not raw password
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!verifyAdminToken(token, adminPassword)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -40,7 +69,6 @@ export default async function handler(req, res) {
 
     res.status(200).json({ profiles, contactSubmissions });
   } catch {
-    // SEC-015: Do not expose internal error details
     res.status(500).json({ error: 'Internal server error' });
   }
 }
