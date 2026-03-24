@@ -61,10 +61,10 @@ export default async function handler(req, res) {
   // SEC-013: Enforce subject enum
   const safeSubject = ALLOWED_SUBJECTS.includes(subject) ? subject : 'General';
 
-  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://oecvlkllkpyfpgczqwii.supabase.co';
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!serviceRoleKey) {
     return res.status(503).json({ error: 'Server not configured.' });
   }
 
