@@ -36,7 +36,8 @@ export const useStore = () => {
   const [clients, setClientsRaw] = useState(() => load(KEYS.clients, []))
   const [products, setProductsRaw] = useState(() => load(KEYS.products, []))
   const [settings, setSettingsRaw] = useState(() => load(KEYS.settings, {
-    emailjs_service: '', emailjs_template: '', emailjs_public: '', anthropic_key: '',
+    // SEC-005: anthropic_key removed — server-side ANTHROPIC_API_KEY env var used instead
+    emailjs_service: '', emailjs_template: '', emailjs_public: '',
     itemTypes: DEFAULT_ITEM_TYPES,
     emailColumns: DEFAULT_EMAIL_COLUMNS,
     defaultTemplate: {
@@ -74,7 +75,8 @@ export const useStore = () => {
   }, [])
   const setSelectedTemplateId = useCallback(v => { save(KEYS.selectedTemplate, v); setSelectedTemplateIdRaw(v) }, [])
 
-  const genId = () => Math.random().toString(36).slice(2, 9).toUpperCase()
+  // SEC-014: Use cryptographically secure UUID instead of Math.random()
+  const genId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()
   const today = () => new Date().toISOString().split('T')[0]
   const dueFromDate = (fromDate, days) => {
     const d = new Date(fromDate || new Date())

@@ -20,7 +20,8 @@ export default function SetupWizard({ onComplete }) {
 
   const set = (k, v) => { setData(d => ({ ...d, [k]: v })); setErrors(e => ({ ...e, [k]: false })) }
 
-  const REQUIRED = [['name'], ['address', 'city', 'email'], [], [], ['anthropic_key']]
+  // SEC-005: anthropic_key removed from required — server-side ANTHROPIC_API_KEY env var is used
+  const REQUIRED = [['name'], ['address', 'city', 'email'], [], [], []]
 
   const validate = () => {
     const errs = {}
@@ -143,12 +144,8 @@ export default function SetupWizard({ onComplete }) {
 
     if (step === 4) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: errors.anthropic_key ? '#dc2626' : '#64748b', display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Anthropic API Key *</label>
-          <input type="password" value={data.anthropic_key || ''} onChange={e => set('anthropic_key', e.target.value)} placeholder="sk-ant-..."
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${errors.anthropic_key ? '#dc2626' : '#e2e8f0'}`, background: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
-          {errors.anthropic_key && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>Required for AI features</div>}
-          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Get yours free at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>console.anthropic.com</a></div>
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px', fontSize: 13, color: '#15803d' }}>
+          ✅ <strong>AI features</strong> are powered by the server-configured Anthropic key — no setup needed here.
         </div>
         <div style={{ background: '#f8fafc', borderRadius: 10, padding: 14, border: '1px solid #e2e8f0' }}>
           <div style={{ fontWeight: 600, fontSize: 13, color: '#334155', marginBottom: 10 }}>✉️ EmailJS (optional — for sending invoices by email)</div>

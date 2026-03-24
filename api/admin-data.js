@@ -3,11 +3,13 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { password } = req.query;
+  // SEC-001: Read password from Authorization header, not query string
+  const authHeader = req.headers['authorization'] || '';
+  const password = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (!adminPassword || !password || password !== adminPassword) {
@@ -37,7 +39,8 @@ export default async function handler(req, res) {
     const contactSubmissions = contactRes.ok ? await contactRes.json() : [];
 
     res.status(200).json({ profiles, contactSubmissions });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch {
+    // SEC-015: Do not expose internal error details
+    res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -85,7 +85,10 @@ function AdminDashboard({ onLogout, password }) {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin-data?password=${encodeURIComponent(password)}`);
+      // SEC-001: Password sent via Authorization header, not query string
+      const res = await fetch('/api/admin-data', {
+        headers: { 'Authorization': `Bearer ${password}` },
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to load');
       setData(json);
@@ -245,8 +248,9 @@ function AdminDashboard({ onLogout, password }) {
 
 // ── Password Gate ────────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem('admin_authed') === '1');
-  const [sessionPw, setSessionPw] = useState(() => sessionStorage.getItem('admin_pw') || '');
+  // SEC-002: Password kept in component state only — never persisted to storage
+  const [sessionPw, setSessionPw] = useState('');
+  const [authed, setAuthed] = useState(false);
   const [pw, setPw] = useState('');
   const [error, setError] = useState('');
   const [show, setShow] = useState(false);
@@ -257,10 +261,11 @@ export default function AdminPage() {
     setChecking(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin-data?password=${encodeURIComponent(pw)}`);
+      // SEC-001: Password sent via Authorization header, not query string
+      const res = await fetch('/api/admin-data', {
+        headers: { 'Authorization': `Bearer ${pw}` },
+      });
       if (res.ok) {
-        sessionStorage.setItem('admin_authed', '1');
-        sessionStorage.setItem('admin_pw', pw);
         setSessionPw(pw);
         setAuthed(true);
       } else {
@@ -275,8 +280,6 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('admin_authed');
-    sessionStorage.removeItem('admin_pw');
     setSessionPw('');
     setAuthed(false);
     setPw('');
