@@ -124,18 +124,63 @@ export default function LandingPage() {
       {/* Features */}
       <div style={s.sectionLight}>
         <div style={s.section}>
-          <h2 style={s.sectionTitle}>Everything you need to get paid</h2>
-          <p style={s.sectionSub}>Powerful features that save you time and help you look professional.</p>
-          <div style={s.grid}>
-            {features.map((f, i) => (
-              <div key={i} style={s.card}>
-                <div style={{ ...s.cardIcon, background: f.bg, color: f.color }}>
-                    <div style={{ transform:'scale(1.5)', display:'flex' }}><f.icon /></div>
-                  </div>
-                <div style={s.cardTitle}>{f.title}</div>
-                <div style={s.cardDesc}>{f.desc}</div>
+          <h2 style={s.sectionTitle}>Built around how you actually work.</h2>
+          <p style={s.sectionSub}>No bloat. Every feature earns its place.</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+            {/* Row 1 — wide left, narrow right */}
+            <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20 }}>
+              <div style={{ background:'#111110', border:'none', borderRadius:12, padding:'40px 36px' }}>
+                <div style={{ ...s.cardIcon, background:'rgba(217,119,6,0.15)', color:'#D97706' }}>
+                  <div style={{ transform:'scale(1.5)', display:'flex' }}><features[0].icon /></div>
+                </div>
+                <div style={{ fontSize:18, fontWeight:600, color:'#FAFAF7', marginBottom:8 }}>{features[0].title}</div>
+                <div style={{ fontSize:14, color:'#9A9A9A', lineHeight:1.6 }}>{features[0].desc}</div>
               </div>
-            ))}
+              <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'28px 24px' }}>
+                <div style={{ ...s.cardIcon, background: features[1].bg, color: features[1].color }}>
+                  <div style={{ transform:'scale(1.5)', display:'flex' }}><features[1].icon /></div>
+                </div>
+                <div style={{ ...s.cardTitle, color:'#111110' }}>{features[1].title}</div>
+                <div style={{ ...s.cardDesc, color:'#6B6B6B' }}>{features[1].desc}</div>
+              </div>
+            </div>
+            {/* Row 2 — narrow left, wide right */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:20 }}>
+              <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'28px 24px' }}>
+                <div style={{ ...s.cardIcon, background: features[2].bg, color: features[2].color }}>
+                  <div style={{ transform:'scale(1.5)', display:'flex' }}><features[2].icon /></div>
+                </div>
+                <div style={{ ...s.cardTitle, color:'#111110' }}>{features[2].title}</div>
+                <div style={{ ...s.cardDesc, color:'#6B6B6B' }}>{features[2].desc}</div>
+              </div>
+              <div style={{ background:'#111110', border:'none', borderRadius:12, padding:'40px 36px' }}>
+                <div style={{ ...s.cardIcon, background:'rgba(217,119,6,0.15)', color:'#D97706' }}>
+                  <div style={{ transform:'scale(1.5)', display:'flex' }}><features[3].icon /></div>
+                </div>
+                <div style={{ fontSize:18, fontWeight:600, color:'#FAFAF7', marginBottom:8 }}>{features[3].title}</div>
+                <div style={{ fontSize:14, color:'#9A9A9A', lineHeight:1.6 }}>{features[3].desc}</div>
+              </div>
+            </div>
+            {/* Row 3 — three equal */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:20 }}>
+              <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'28px 24px' }}>
+                <div style={{ ...s.cardIcon, background: features[4].bg, color: features[4].color }}>
+                  <div style={{ transform:'scale(1.5)', display:'flex' }}><features[4].icon /></div>
+                </div>
+                <div style={{ ...s.cardTitle, color:'#111110' }}>{features[4].title}</div>
+                <div style={{ ...s.cardDesc, color:'#6B6B6B' }}>{features[4].desc}</div>
+              </div>
+              <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'28px 24px' }}>
+                <div style={{ ...s.cardIcon, background: features[5].bg, color: features[5].color }}>
+                  <div style={{ transform:'scale(1.5)', display:'flex' }}><features[5].icon /></div>
+                </div>
+                <div style={{ ...s.cardTitle, color:'#111110' }}>{features[5].title}</div>
+                <div style={{ ...s.cardDesc, color:'#6B6B6B' }}>{features[5].desc}</div>
+              </div>
+              <div style={{ background:'#F5F4F0', border:'1px solid #E8E6E0', borderRadius:12, padding:'28px 24px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ fontSize:14, color:'#9A9A9A', fontStyle:'italic' }}>More features coming</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
