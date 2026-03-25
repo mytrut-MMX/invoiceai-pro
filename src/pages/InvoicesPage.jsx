@@ -81,6 +81,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const [recurringNextDate, setRecurringNextDate] = useState(inv.recurring_next_date||addDays(issueDate,30));
   const [poNumber, setPoNumber] = useState(inv.po_number||"");
   const [invNumber, setInvNumber] = useState(inv.invoice_number || nextNum("INV", invoices));
+  const [invNumError, setInvNumError] = useState("");
   const acceptedQuotes = useMemo(() => (quotes||[]).filter(q=>q.status==="Accepted"), [quotes]);
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
 
@@ -120,6 +121,12 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   });
 
   const handleSave = (newStatus) => {
+    const duplicate = invoices.some(x => x.invoice_number === invNumber && x.id !== inv.id);
+    if (duplicate) {
+      setInvNumError(`Invoice number "${invNumber}" already exists. Please use a unique number.`);
+      return;
+    }
+    setInvNumError("");
     setSaving(true);
     setTimeout(()=>{
       const previousStatus = inv.status || "Draft";
@@ -211,7 +218,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Customer</div>
             <div style={{ position:"relative" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px", border:`1.5px solid ${customer?"#1A1A1A":"#E0E0E0"}`, borderRadius:8, background:"#f9fafb", cursor:"pointer" }}
-                onClick={()=>!customer && setCustOpen(o=>!o)}>
+                onClick={()=>{ if(!customer) setCustOpen(o=>!o); }}>
                 {customer ? (<>
                   <div style={{ width:28, height:28, borderRadius:"50%", background:"#E86C4A22", color:"#E86C4A", fontWeight:800, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{customer.name[0]}</div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -221,7 +228,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
                   <button onClick={e=>{ e.stopPropagation(); setCustomer(null); setCustSearch(""); setCustOpen(false); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#CCC", flexShrink:0 }}><Icons.X /></button>
                 </>) : (<>
                   <Icons.Search />
-                  <input value={custSearch} onChange={e=>{ setCustSearch(e.target.value); setCustOpen(true); }} onClick={e=>e.stopPropagation()} placeholder="Search or select customer…"
+                  <input value={custSearch} onChange={e=>{ setCustSearch(e.target.value); setCustOpen(true); }} onClick={()=>setCustOpen(true)} placeholder="Search or select customer…"
                     style={{ flex:1, border:"none", outline:"none", fontSize:13, fontFamily:ff, background:"transparent" }} />
                   <Icons.ChevDown />
                 </>)}
@@ -290,7 +297,10 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
           <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Invoice Details</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
-              <Field label="Invoice #"><Input value={invNumber} onChange={setInvNumber} /></Field>
+              <Field label="Invoice #">
+                <Input value={invNumber} onChange={v=>{ setInvNumber(v); if(invNumError) setInvNumError(""); }} style={invNumError ? { borderColor:"#DC2626" } : {}} />
+                {invNumError && <div style={{ fontSize:11, color:"#DC2626", marginTop:3 }}>{invNumError}</div>}
+              </Field>
               <Field label="Issue Date">
                 <input value={issueDate} onChange={e=>setIssueDate(e.target.value)} type="date"
                   style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
