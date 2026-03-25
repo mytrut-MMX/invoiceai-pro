@@ -5,6 +5,113 @@ import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag } from "../components/atoms";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 
+// ─── Status config ─────────────────────────────────────────────────────────────
+const STATUS_STYLE = {
+  Reconciled: { color: "#16A34A", bg: "#F0FDF4", dot: "#16A34A" },
+  Partial:    { color: "#D97706", bg: "#FFFBEB", dot: "#D97706" },
+  Pending:    { color: "#6B7280", bg: "#F9FAFB", dot: "#6B7280" },
+  Refunded:   { color: "#DC2626", bg: "#FEF2F2", dot: "#DC2626" },
+};
+
+const METHOD_ICON = {
+  "Bank Transfer": "🏦", "Credit Card": "💳", "Cash": "💵",
+  "Cheque": "📝", "PayPal": "🔵", "Stripe": "🟣", "Direct Debit": "🔄",
+};
+
+function StatusBadge({ status }) {
+  const s = STATUS_STYLE[status] || { color: "#888", bg: "#f3f4f6", dot: "#888" };
+  return (
+    <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:20, background:s.bg, fontSize:12, fontWeight:600, color:s.color }}>
+      <span style={{ width:6, height:6, borderRadius:"50%", background:s.dot, flexShrink:0 }} />
+      {status}
+    </span>
+  );
+}
+
+// ─── Payment Detail View ───────────────────────────────────────────────────────
+function PaymentDetailView({ payment, onClose, onEdit, onDelete }) {
+  const { orgSettings } = useContext(AppCtx);
+  const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
+  const p = payment;
+
+  const rows = [
+    { label: "Payment Number", value: p.payment_number || "—" },
+    { label: "Date",           value: fmtDate(p.date) },
+    { label: "Customer",       value: p.customer_name || "—" },
+    { label: "Invoice",        value: p.invoice_number || "—" },
+    { label: "Payment Mode",   value: p.method ? `${METHOD_ICON[p.method]||"💰"} ${p.method}` : "—" },
+    { label: "Reference",      value: p.reference || "—" },
+    { label: "Status",         value: <StatusBadge status={p.status} /> },
+    ...(p.notes ? [{ label: "Notes", value: p.notes }] : []),
+  ];
+
+  return (
+    <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+      {/* Sticky header */}
+      <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, padding:0 }}>
+            ← Payments
+          </button>
+          <span style={{ color:"#d1d5db" }}>/</span>
+          <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>{p.payment_number || "Payment"}</span>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <Btn onClick={onEdit} variant="outline" icon={<Icons.Edit />}>Edit</Btn>
+          <Btn onClick={onDelete} variant="ghost" icon={<Icons.Trash />} style={{ color:"#DC2626" }} />
+        </div>
+      </div>
+
+      <div style={{ maxWidth:700, margin:"0 auto", padding:"28px 24px 48px" }}>
+        {/* Amount hero card */}
+        <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e8ec", padding:"28px 32px", marginBottom:20, textAlign:"center" }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Amount Received</div>
+          <div style={{ fontSize:38, fontWeight:800, color: p.status==="Refunded" ? "#DC2626" : "#16A34A", letterSpacing:"-0.5px" }}>
+            {p.status==="Refunded" ? "-" : ""}{fmt(currSym, p.amount||0)}
+          </div>
+          <div style={{ marginTop:12 }}><StatusBadge status={p.status} /></div>
+        </div>
+
+        {/* Details card */}
+        <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e8ec", overflow:"hidden" }}>
+          <div style={{ padding:"14px 22px", borderBottom:"1px solid #f0f0f0" }}>
+            <span style={{ fontSize:13, fontWeight:700, color:"#1a1a2e" }}>Payment Details</span>
+          </div>
+          <div style={{ padding:"4px 0" }}>
+            {rows.map(({ label, value }) => (
+              <div key={label} style={{ display:"flex", alignItems:"center", padding:"13px 22px", borderBottom:"1px solid #f7f7f7" }}>
+                <div style={{ width:180, fontSize:13, color:"#888", fontWeight:500, flexShrink:0 }}>{label}</div>
+                <div style={{ fontSize:13, color:"#1a1a2e", fontWeight:500 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Applied to invoice */}
+        {p.invoice_number && (
+          <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e8ec", overflow:"hidden", marginTop:20 }}>
+            <div style={{ padding:"14px 22px", borderBottom:"1px solid #f0f0f0" }}>
+              <span style={{ fontSize:13, fontWeight:700, color:"#1a1a2e" }}>Applied To</span>
+            </div>
+            <div style={{ padding:"16px 22px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:34, height:34, borderRadius:8, background:"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Icons.Invoices />
+                </div>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#4F46E5" }}>{p.invoice_number}</div>
+                  {p.quote_number && <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>from {p.quote_number}</div>}
+                </div>
+              </div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#16A34A" }}>{fmt(currSym, p.amount||0)}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 function PaymentModal({ existing, onClose, onSave }) {
   const { invoices, customers, customPayMethods, setInvoices, payments } = useContext(AppCtx);
@@ -41,7 +148,6 @@ function PaymentModal({ existing, onClose, onSave }) {
     if (linkedInvoice && Number(amount) >= Number(linkedInvoice.total||0)) {
       setInvoices(prev=>prev.map(inv=>inv.id===linkedInvoice.id?{...inv,status:"Paid"}:inv));
     }
-
   };
 
   return (
@@ -126,6 +232,7 @@ export default function PaymentsPage() {
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
   const [showForm, setShowForm] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
+  const [viewingPayment, setViewingPayment] = useState(null);
   const [search, setSearch] = useState("");
   const [filterMethod, setFilterMethod] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -148,14 +255,36 @@ export default function PaymentsPage() {
     return [pmt,...p];
   });
 
-  const del = id => { if(window.confirm("Delete this payment?")) setPayments(p=>p.filter(x=>x.id!==id)); };
+  const del = id => {
+    if(window.confirm("Delete this payment?")) {
+      setPayments(p=>p.filter(x=>x.id!==id));
+      setViewingPayment(null);
+    }
+  };
 
-  const totalIn = filtered.reduce((s,p)=>s+(p.status!=="Refunded"?Number(p.amount||0):0),0);
   const totalRef = filtered.reduce((s,p)=>s+(p.status==="Refunded"?Number(p.amount||0):0),0);
 
-  const statusColors = { Reconciled:"#16A34A", Partial:"#D97706", Pending:"#6B7280", Refunded:"#DC2626" };
-  const methodIcon = { "Bank Transfer":"🏦","Credit Card":"💳","Cash":"💵","Cheque":"📝","PayPal":"🔵","Stripe":"🟣","Direct Debit":"🔄" };
+  // Detail view
+  if (viewingPayment) {
+    const latest = payments.find(p=>p.id===viewingPayment.id) || viewingPayment;
+    if (showForm) return (
+      <PaymentModal
+        existing={latest}
+        onClose={() => setShowForm(false)}
+        onSave={pmt => { onSave(pmt); setShowForm(false); setViewingPayment(pmt); }}
+      />
+    );
+    return (
+      <PaymentDetailView
+        payment={latest}
+        onClose={() => setViewingPayment(null)}
+        onEdit={() => { setEditingPayment(latest); setShowForm(true); }}
+        onDelete={() => del(latest.id)}
+      />
+    );
+  }
 
+  // New payment form
   if (showForm) return (
     <PaymentModal
       existing={editingPayment}
@@ -215,8 +344,10 @@ export default function PaymentsPage() {
           </thead>
           <tbody>
             {filtered.map(pmt=>(
-              <tr key={pmt.id} style={{ borderBottom:"1px solid #F7F7F7" }}
-                onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
+              <tr key={pmt.id}
+                onClick={() => setViewingPayment(pmt)}
+                style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#F5F8FF"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 16px", fontSize:12, color:"#1A1A1A", fontWeight:700, whiteSpace:"nowrap" }}>{pmt.payment_number||"—"}</td>
                 <td style={{ padding:"12px 16px", fontSize:13, color:"#888", whiteSpace:"nowrap" }}>{fmtDate(pmt.date)}</td>
@@ -228,14 +359,14 @@ export default function PaymentsPage() {
                 </td>
                 <td style={{ padding:"12px 16px", fontSize:13, color:"#4F46E5", fontWeight:600 }}>{pmt.invoice_number||"—"}</td>
                 <td style={{ padding:"12px 16px", fontSize:13, color:"#555" }}>
-                  <span>{methodIcon[pmt.method]||"💰"} {pmt.method}</span>
+                  <span>{METHOD_ICON[pmt.method]||"💰"} {pmt.method}</span>
                 </td>
                 <td style={{ padding:"12px 16px", fontSize:12, color:"#AAA", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pmt.reference||"—"}</td>
                 <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:pmt.status==="Refunded"?"#DC2626":"#16A34A", textAlign:"right", whiteSpace:"nowrap" }}>
                   {pmt.status==="Refunded"?"-":""}{fmt(currSym,pmt.amount||0)}
                 </td>
-                <td style={{ padding:"12px 16px" }}><Tag color={statusColors[pmt.status]||"#888"}>{pmt.status}</Tag></td>
-                <td style={{ padding:"12px 16px" }}>
+                <td style={{ padding:"12px 16px" }}><StatusBadge status={pmt.status} /></td>
+                <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
                   <div style={{ display:"flex", gap:4 }}>
                     <Btn onClick={() => { setEditingPayment(pmt); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} />
                     <Btn onClick={()=>del(pmt.id)} variant="ghost" size="sm" icon={<Icons.Trash />} />
