@@ -1,8 +1,101 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef, useEffect } from "react";
 import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Field, Input, Select, SlideToggle, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
 import { useCISSettings } from "../hooks/useCISSettings";
+
+function UnitCombobox({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState(value || "");
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    setSearch(value || "");
+  }, [value]);
+
+  useEffect(() => {
+    const handler = e => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = options.filter(o =>
+    !search || o.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const select = opt => {
+    onChange(opt);
+    setSearch(opt);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center",
+          border: `1px solid ${open ? "#1e6be0" : "#e8e8ec"}`,
+          borderRadius: 5, background: "#fff", cursor: "text",
+          boxShadow: open ? "0 0 0 2px #1e6be022" : "none",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+        }}>
+        <input
+          value={search}
+          onChange={e => { setSearch(e.target.value); onChange(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Select or type to add"
+          style={{
+            flex: 1, padding: "9px 4px 9px 11px",
+            border: "none", outline: "none",
+            fontSize: 14, fontFamily: ff, color: "#1a1a2e", background: "transparent",
+          }}
+        />
+        <span style={{ padding: "0 10px", display: "flex", alignItems: "center", color: "#9ca3af", flexShrink: 0 }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 512 512"
+            style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+            <path d="M2.157 159.57c0 13.773 5.401 27.542 16.195 38.02l198.975 192.867c21.411 20.725 55.94 20.725 77.34 0L493.63 197.59c21.508-20.846 21.637-54.778.269-75.773-21.35-20.994-56.104-21.098-77.612-.26L256.004 276.93 95.721 121.562c-21.528-20.833-56.268-20.734-77.637.26C7.472 132.261 2.157 145.923 2.157 159.57z" fill="currentColor" />
+          </svg>
+        </span>
+      </div>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 3px)", left: 0, right: 0,
+          background: "#fff", border: "1.5px solid #e8e8ec", borderRadius: 7,
+          boxShadow: "0 6px 20px rgba(0,0,0,0.10)", zIndex: 500,
+          maxHeight: 200, overflowY: "auto",
+        }}>
+          {filtered.length === 0 && search ? (
+            <div
+              onMouseDown={() => select(search)}
+              style={{ padding: "9px 13px", fontSize: 13, color: "#1e6be0", cursor: "pointer", fontFamily: ff }}
+              onMouseEnter={e => e.currentTarget.style.background = "#f0f5ff"}
+              onMouseLeave={e => e.currentTarget.style.background = ""}>
+              Add "{search}"
+            </div>
+          ) : filtered.map(opt => (
+            <div
+              key={opt}
+              onMouseDown={() => select(opt)}
+              style={{
+                padding: "9px 13px", fontSize: 13,
+                color: opt === value ? "#1e6be0" : "#1a1a2e",
+                fontWeight: opt === value ? 600 : 400,
+                cursor: "pointer", fontFamily: ff,
+                background: opt === value ? "#f0f5ff" : "",
+              }}
+              onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = "#f7f7f9"; }}
+              onMouseLeave={e => { if (opt !== value) e.currentTarget.style.background = ""; }}>
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ItemForm({ existing, onClose, onSave, settings }) {
   const { orgSettings } = useContext(AppCtx);
@@ -92,49 +185,7 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
             <div style={{ display: "grid", gridTemplateColumns: isVat ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
               <Field label="Rate" required><Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" /></Field>
               <Field label="Unit">
-                <div style={{ position: "relative" }}>
-                  <input
-                    list="unit-options"
-                    value={unit}
-                    onChange={e => setUnit(e.target.value)}
-                    placeholder="Select or type to add"
-                    style={{
-                      width: "100%",
-                      padding: "9px 32px 9px 11px",
-                      border: "1px solid #e8e8ec",
-                      borderRadius: 5,
-                      fontSize: 14,
-                      fontFamily: ff,
-                      color: "#1a1a2e",
-                      background: "#fff",
-                      outline: "none",
-                      boxSizing: "border-box"
-                    }}
-                    onFocus={e => (e.target.style.borderColor = "#1e6be0")}
-                    onBlur={e => (e.target.style.borderColor = "#e8e8ec")}
-                  />
-                  <i
-                    style={{
-                      position: "absolute",
-                      right: 10,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      pointerEvents: "none",
-                      display: "flex",
-                      alignItems: "center"
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 512 512">
-                      <path
-                        d="M2.157 159.57c0 13.773 5.401 27.542 16.195 38.02l198.975 192.867c21.411 20.725 55.94 20.725 77.34 0L493.63 197.59c21.508-20.846 21.637-54.778.269-75.773-21.35-20.994-56.104-21.098-77.612-.26L256.004 276.93 95.721 121.562c-21.528-20.833-56.268-20.734-77.637.26C7.472 132.261 2.157 145.923 2.157 159.57z"
-                        fill="#9ca3af"
-                      />
-                    </svg>
-                  </i>
-                  <datalist id="unit-options">
-                    {ITEM_UNITS.map(u => <option key={u} value={u} />)}
-                  </datalist>
-                </div>
+                <UnitCombobox value={unit} onChange={setUnit} options={ITEM_UNITS} />
               </Field>
               {isVat && (
                 <Field label="VAT Rate">
