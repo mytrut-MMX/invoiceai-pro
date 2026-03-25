@@ -251,13 +251,36 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section style={s.cta}>
-        <h2 style={s.ctaH2}>Ready to get paid faster?</h2>
-        <p style={s.ctaSub}>Join thousands of freelancers and businesses already using InvoiceSaga.</p>
-        <a href="/signup" style={s.btnPrimary}>Create your free account →</a>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:64, alignItems:'center' }}>
+          {/* Left */}
+          <div>
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6B6B6B', marginBottom:16 }}>Ready when you are</div>
+            <h2 style={s.ctaH2}>Stop leaving money on the table.</h2>
+            <p style={s.ctaSub}>Every day without a proper invoicing system is a day you're working harder than you need to. It takes 2 minutes to start.</p>
+          </div>
+          {/* Right */}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:16 }}>
+            <a href="/signup" style={s.btnPrimary}>Create your free account →</a>
+            <div style={{ fontSize:13, color:'#6B6B6B' }}>Free to start · No credit card · Cancel anytime</div>
+            <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:32 }}>
+              {[
+                { n:'2,400+', label:'freelancers' },
+                { n:'£4.2M+', label:'invoiced' },
+                { n:'4.8★',   label:'avg rating' },
+              ].map(({ n, label }) => (
+                <div key={label} style={{ textAlign:'left' }}>
+                  <div style={{ fontSize:20, fontWeight:300, fontFamily:'Georgia, "Times New Roman", serif', color:'#FAFAF7' }}>{n}</div>
+                  <div style={{ fontSize:12, color:'#6B6B6B' }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer style={s.footer}>
+      <footer style={{ ...s.footer, borderTop:'1px solid #1C1C1B' }}>
+        <div style={{ marginBottom:24, fontSize:16, fontWeight:600, color:'#FAFAF7' }}>Invoice<span style={{ color:'#D97706' }}>Saga</span></div>
         <div style={{ marginBottom:8 }}>
           <span style={{ color:'#0EA5E9', fontWeight:700 }}>InvoiceSaga</span>
           {' · '}
