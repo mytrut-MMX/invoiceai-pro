@@ -53,7 +53,8 @@ export default function TemplatesPage() {
   }, []);
 
   return (
-    <div className="tp-root">
+    <div style={{ minHeight:'100vh', background:'#FAFAF7', padding:'clamp(24px, 5vw, 48px) clamp(16px, 5vw, 40px)', fontFamily:"'Lato','DM Sans','Helvetica Neue',sans-serif", boxSizing:'border-box' }}>
+      <div style={{ maxWidth:960, margin:'0 auto' }}>
 
       {/* NAV */}
       <nav className="tp-nav">
@@ -73,8 +74,8 @@ export default function TemplatesPage() {
           <span>›</span>
           <span>Templates</span>
         </div>
-        <h1>Invoice &amp; Quote<br />Templates</h1>
-        <p>Professional, offline-first generators. Pick the one that fits your industry. One-time purchase, yours forever.</p>
+        <h1 style={{ fontSize:'clamp(20px, 4vw, 28px)', fontWeight:400, fontFamily:'Georgia, serif', color:'#111110', margin:'0 0 8px', letterSpacing:-0.5 }}>Invoice Templates</h1>
+        <p style={{ fontSize:14, color:'#6B6B6B', margin:'0 0 32px', lineHeight:1.6 }}>Customize your template, then download or send directly from your account.</p>
       </section>
 
       {/* TEMPLATES GRID */}
@@ -267,6 +268,7 @@ export default function TemplatesPage() {
       </footer>
 
       <script src="https://assets.lemonsqueezy.com/lemon.js" defer />
+      </div>
     </div>
   );
 }
