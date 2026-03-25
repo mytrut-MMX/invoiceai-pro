@@ -4,7 +4,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from 
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag } from "../components/atoms";
-import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc } from "../components/shared";
+import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { PDF_TEMPLATES } from "../constants";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
@@ -187,45 +187,18 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
           {/* Customer */}
           <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Customer</div>
-            <div style={{ position:"relative" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px", border:`1.5px solid ${customer?"#1A1A1A":"#E0E0E0"}`, borderRadius:8, background:"#f9fafb", cursor:"pointer" }}
-                onClick={()=>!customer && setCustOpen(o=>!o)}>
-                {customer ? (<>
-                  <div style={{ width:28, height:28, borderRadius:"50%", background:"#E86C4A22", color:"#E86C4A", fontWeight:800, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{customer.name[0]}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{customer.name}</div>
-                    <div style={{ fontSize:11, color:"#AAA" }}>{customer.email}</div>
-                  </div>
-                  <button onClick={e=>{ e.stopPropagation(); setCustomer(null); setCustSearch(""); setCustOpen(false); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#CCC", flexShrink:0 }}><Icons.X /></button>
-                </>) : (<>
-                  <Icons.Search />
-                  <input value={custSearch} onChange={e=>{ setCustSearch(e.target.value); setCustOpen(true); }} onClick={e=>e.stopPropagation()} placeholder="Search or select customer…"
-                    style={{ flex:1, border:"none", outline:"none", fontSize:13, fontFamily:ff, background:"transparent" }} />
-                  <Icons.ChevDown />
-                </>)}
-              </div>
-              {custOpen && !customer && (
-                <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"#fff", border:"1.5px solid #E0E0E0", borderRadius:9, boxShadow:"0 8px 28px rgba(0,0,0,0.12)", zIndex:300, maxHeight:220, overflowY:"auto" }}>
-                  {filteredCustomers.length===0
-                    ? <div style={{ padding:"14px 16px", fontSize:13, color:"#CCC", textAlign:"center" }}>No customers found</div>
-                    : filteredCustomers.map(c=>(
-                        <button key={c.id} onClick={()=>{ setCustomer(c); setCustSearch(c.name); setCustOpen(false);
-                          if(cisEnabled && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered)){
-                            setItems(prev => prev.map(it => ({ ...it, cisApplicable: true })));
-                          } }}
-                          style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"none", border:"none", cursor:"pointer", fontFamily:ff, textAlign:"left" }}
-                          onMouseEnter={e=>e.currentTarget.style.background="#f4f5f7"}
-                          onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                          <div style={{ width:28, height:28, borderRadius:"50%", background:"#E86C4A22", color:"#E86C4A", fontWeight:800, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center" }}>{c.name[0]}</div>
-                          <div>
-                            <div style={{ fontSize:13, fontWeight:600, color:"#1A1A1A" }}>{c.name}</div>
-                            <div style={{ fontSize:11, color:"#888" }}>{c.email}</div>
-                          </div>
-                        </button>
-                      ))}
-                </div>
-              )}
-            </div>
+            <CustomerPicker
+              customers={customers}
+              value={customer}
+              onChange={c => {
+                setCustomer(c);
+                setCustSearch(c.name);
+                if(cisEnabled && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered)){
+                  setItems(prev => prev.map(it => ({ ...it, cisApplicable: true })));
+                }
+              }}
+              onClear={() => { setCustomer(null); setCustSearch(""); setCustOpen(false); }}
+            />
           </div>
 
           {/* Quote details */}
