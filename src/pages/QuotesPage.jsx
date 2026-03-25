@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Field, Input, Textarea, Btn, Tag } from "../components/atoms";
+import { Field, Input, Textarea, Btn, Tag, Ribbon } from "../components/atoms";
 import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { PDF_TEMPLATES } from "../constants";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
@@ -409,7 +409,9 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
 
         {/* A4 document */}
         <div style={{ background: "#e8e8ec", padding: "28px 16px", borderRadius: 12, display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 794, background: "#fff", boxShadow: "0 4px 24px rgba(0,0,0,0.14)" }}>
+          <div style={{ width: "100%", maxWidth: 794, position: "relative" }}>
+            <Ribbon status={quote.status || "Draft"} />
+            <div style={{ background: "#fff", boxShadow: "0 4px 24px rgba(0,0,0,0.14)" }}>
             <A4InvoiceDoc
               data={docData}
               currSymbol={currSym}
@@ -420,6 +422,7 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
               footerText={footerText || ""}
               templateConfig={invoiceTemplateConfig || {}}
             />
+            </div>
           </div>
         </div>
       </div>

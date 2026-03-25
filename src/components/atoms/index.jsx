@@ -91,6 +91,36 @@ export const Tag = ({ children, color="#1A1A1A" }) => (
   <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:color+"18", color }}>{children}</span>
 );
 
+const RIBBON_COLORS = {
+  Draft:    "#9ca3af",
+  Sent:     "#3b82f6",
+  Paid:     "#16a34a",
+  Overdue:  "#dc2626",
+  Partial:  "#d97706",
+  Accepted: "#059669",
+  Declined: "#dc2626",
+  Invoiced: "#6366f1",
+  Expired:  "#f97316",
+  Pending:  "#9ca3af",
+};
+export const Ribbon = ({ status }) => {
+  const color = RIBBON_COLORS[status] || "#9ca3af";
+  return (
+    <div style={{ position:"absolute", top:0, right:0, width:88, height:88, overflow:"hidden", zIndex:10, pointerEvents:"none" }}>
+      <div style={{
+        position:"absolute", top:22, right:-26, width:110,
+        background:color, color:"#fff",
+        fontSize:9, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em",
+        textAlign:"center", padding:"5px 0",
+        transform:"rotate(45deg)",
+        boxShadow:"0 2px 6px rgba(0,0,0,0.25)",
+      }}>
+        {status}
+      </div>
+    </div>
+  );
+};
+
 export const SectionCard = ({ title, subtitle, children }) => (
   <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"18px 20px", marginBottom:14 }}>
     {(title||subtitle) && <div style={{ marginBottom:14 }}>
