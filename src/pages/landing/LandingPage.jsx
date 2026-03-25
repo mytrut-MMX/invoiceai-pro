@@ -188,18 +188,20 @@ export default function LandingPage() {
       {/* How it works */}
       <div style={{ background:'#fff' }}>
         <div style={s.section}>
-          <h2 style={s.sectionTitle}>Up and running in 3 steps</h2>
-          <p style={s.sectionSub}>No setup headaches. You'll be sending invoices in under 5 minutes.</p>
-          <div style={s.steps}>
+          <h2 style={s.sectionTitle}>Three steps. Zero confusion.</h2>
+          <p style={s.sectionSub}>You'll send your first invoice before finishing your coffee.</p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:0, position:'relative' }}>
+            {/* Connecting line */}
+            <div style={{ position:'absolute', top:19, left:'16.66%', right:'16.66%', height:1, background:'#E8E6E0', zIndex:0 }} />
             {[
               { n:1, title:'Create your account', desc:'Sign up free and set up your business profile in minutes.' },
               { n:2, title:'Add your clients', desc:'Import or add clients manually. We store everything securely.' },
               { n:3, title:'Send & get paid', desc:'Create an invoice, send it, and watch the payments come in.' },
             ].map((step) => (
-              <div key={step.n}>
-                <div style={s.stepNum}>{step.n}</div>
-                <div style={s.stepTitle}>{step.title}</div>
-                <div style={s.stepDesc}>{step.desc}</div>
+              <div key={step.n} style={{ position:'relative', zIndex:1, textAlign:'center', padding:'0 24px' }}>
+                <div style={{ width:38, height:38, borderRadius:'50%', background: step.n===3 ? '#111110' : '#FAFAF7', border: step.n===3 ? '2px solid #111110' : '2px solid #E8E6E0', color: step.n===3 ? '#FAFAF7' : '#111110', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:600, fontSize:15, margin:'0 auto 20px', position:'relative', zIndex:2 }}>{step.n}</div>
+                <div style={{ textAlign:'center', fontSize:15, fontWeight:600, color:'#111110', marginBottom:8 }}>{step.title}</div>
+                <div style={{ textAlign:'center', fontSize:14, color:'#6B6B6B', lineHeight:1.6, maxWidth:200, margin:'0 auto' }}>{step.desc}</div>
               </div>
             ))}
           </div>
