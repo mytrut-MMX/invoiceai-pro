@@ -75,12 +75,17 @@ export default function ItemsPage() {
           </thead>
           <tbody>
             {filtered.map(item=>(
-             <tr key={item.id} style={{ borderBottom:"1px solid #f3f4f6" }}
+             <tr key={item.id}
+                onClick={() => { setEditingItem(item); setShowForm(true); }}
+                style={{ borderBottom:"1px solid #f3f4f6", cursor:"pointer" }}
                 onMouseEnter={e=>e.currentTarget.style.background="#f9fafb"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 18px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:30, height:30, borderRadius:"50%", background:typeAvatars[item.type]||"#e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:typeColors[item.type]||"#6b7280" }}>{(item.type||"—")[0]}</div>
+                    {item.photo
+                      ? <img src={item.photo} alt="" style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+                      : <div style={{ width:30, height:30, borderRadius:"50%", background:typeAvatars[item.type]||"#e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:typeColors[item.type]||"#6b7280", flexShrink:0 }}>{(item.type||"—")[0]}</div>
+                    }
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e" }}>{item.name}</div>
                       <div style={{ fontSize:11, color:"#6b7280", marginTop:1 }}>{item.description}</div>
@@ -96,13 +101,13 @@ export default function ItemsPage() {
                     ? <Tag color="#D97706">CIS {item.cis?.labour ?? 100}% labour</Tag>
                     : <span style={{ fontSize:12, color:"#CCC" }}>—</span>}
                 </td>
-                <td style={{ padding:"12px 18px" }}>
+                <td style={{ padding:"12px 18px" }} onClick={e=>e.stopPropagation()}>
                   <div style={{ display:"flex", alignItems:"center", gap:7 }}>
                     <Switch checked={item.active} onChange={()=>toggleActive(item.id)} />
                     <span style={{ fontSize:12, color:item.active?"#16A34A":"#9CA3AF" }}>{item.active?"Active":"Inactive"}</span>
                   </div>
                 </td>
-                <td style={{ padding:"12px 18px" }}>
+                <td style={{ padding:"12px 18px" }} onClick={e=>e.stopPropagation()}>
                   <Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
                 </td>
               </tr>
