@@ -63,8 +63,9 @@ export default function InvoiceTemplatesPage() {
 
         {/* LEFT COLUMN — controls */}
         <div>
-          <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
+          <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'20px 20px', marginBottom:12 }}>
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'#9A9A9A', marginBottom:16 }}>Template settings</div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16 }}>
               <Field label="Template">
                 <Select value={pdfTemplate} onChange={setPdfTemplate} options={PDF_TEMPLATES.map(t=>({ value:t.id, label:t.name }))} />
               </Field>
@@ -83,8 +84,8 @@ export default function InvoiceTemplatesPage() {
             </div>
           </div>
 
-          <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", marginBottom: 10 }}>Custom Fields</div>
+          <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'20px 20px', marginBottom:12 }}>
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'#9A9A9A', marginBottom:16 }}>Custom Fields</div>
             <Checkbox checked={showPoField} onChange={setShowPoField} label="Show PO field in invoice metadata" />
             <Checkbox checked={showNotesField} onChange={setShowNotesField} label="Show Notes section in template" />
             <Field label="Extra field label">
@@ -92,7 +93,7 @@ export default function InvoiceTemplatesPage() {
             </Field>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ display:'flex', justifyContent:'flex-start', paddingTop:4 }}>
             <Btn onClick={saveTemplateSettings} variant="primary" icon={<Icons.Save />}>Save Template Settings</Btn>
           </div>
         </div>
