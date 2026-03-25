@@ -47,6 +47,14 @@ export const PDF_TEMPLATES = [
   { id:"branded",  name:"Branded",  description:"Rich terracotta, premium feel",     defaultAccent:"#E86C4A", defaultBg:"#FFF7F4" },
 ];
 export const PAYMENT_METHODS = ["Bank Transfer","Card","Cash","Cheque","PayPal","Stripe","Direct Debit","Crypto","Other"];
+export const EXPENSE_CATEGORIES = [
+  "Advertising","Automobile","Bank Charges","Client Entertainment","Equipment",
+  "Fuel","Insurance","IT & Software","Meals & Subsistence","Office Supplies",
+  "Postage & Courier","Professional Services","Rent & Rates",
+  "Repairs & Maintenance","Stationery","Subscriptions","Travel","Utilities",
+  "Wages & Salaries","Other",
+];
+export const EXPENSE_STATUSES = ["Draft","Submitted","Approved","Reimbursed"];
 
 // ─── EMPTY STARTING DATA ──────────────────────────────────────────────────────
 export const MOCK_CUSTOMERS = [];

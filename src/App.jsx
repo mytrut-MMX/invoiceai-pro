@@ -13,6 +13,7 @@ import ItemsPage from "./pages/ItemsPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import QuotesPage from "./pages/QuotesPage";
 import PaymentsPage from "./pages/PaymentsPage";
+import ExpensesPage from "./pages/ExpensesPage";
 import SettingsPage from "./pages/SettingsPage";
 import LandingPage from './pages/landing';
 import OnboardingFlow from "./pages/OnboardingFlow.jsx";
@@ -59,6 +60,7 @@ export default function App() {
   const [quotes, setQuotes] = useState(()=>LS.getArray("ai_invoice_quotes", MOCK_QUOTES_LIST));
   const [payments, setPayments] = useState(()=>LS.getArray("ai_invoice_payments", MOCK_PAYMENTS));
   const [customPayMethods, setCustomPayMethods] = useState(()=>LS.getArray("ai_invoice_pay_methods",[]));
+  const [expenses, setExpenses] = useState(()=>LS.getArray("ai_invoice_expenses",[]));
 
   // UI / Prefs
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -99,6 +101,7 @@ export default function App() {
   useEffect(()=>LS.set("ai_invoice_quotes",quotes),[quotes]);
   useEffect(()=>LS.set("ai_invoice_payments",payments),[payments]);
   useEffect(()=>LS.set("ai_invoice_pay_methods",customPayMethods),[customPayMethods]);
+  useEffect(()=>LS.set("ai_invoice_expenses",expenses),[expenses]);
   useEffect(()=>LS.set("ai_invoice_sidebar_pinned",sidebarPinned),[sidebarPinned]);
   useEffect(()=>LS.set("ai_invoice_theme",appTheme),[appTheme]);
   useEffect(()=>LS.set("ai_invoice_avatar",userAvatar),[userAvatar]);
@@ -134,6 +137,7 @@ export default function App() {
     quotes, setQuotes,
     payments, setPayments,
     customPayMethods, setCustomPayMethods,
+    expenses, setExpenses,
     pdfTemplate, setPdfTemplate,
     companyLogo, setCompanyLogo,
     companyLogoSize, setCompanyLogoSize,
@@ -222,6 +226,7 @@ export default function App() {
       case "quotes":    return <QuotesPage onNavigate={handleNavigate} />;
       case "invoices":  return <InvoicesPage />;
       case "payments":  return <PaymentsPage />;
+      case "expenses":  return <ExpensesPage />;
       default:          return <HomePage user={user} onNavigate={handleNavigate} />;
     }
   };
