@@ -59,12 +59,21 @@ export default function LandingPage() {
   return (
     <div style={{ fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin:0 }}>
 
+      {/* Announcement bar */}
+      <div style={{ background:'#D97706', padding:'8px 2rem', textAlign:'center', fontSize:13, fontWeight:500, color:'#fff' }}>
+        🎉 Early access is open — <a href="/signup" style={{ color:'#fff', fontWeight:700, textDecoration:'underline' }}>Join free and lock in 40% off Pro →</a>
+      </div>
+
       {/* Nav */}
       <nav style={s.nav}>
-        <div style={s.logo}>Invoice<span style={s.logoAccent}>Saga</span></div>
+        <div style={{ display:'flex', alignItems:'center' }}>
+          <div style={s.logo}>Invoice<span style={s.logoAccent}>Saga</span></div>
+          <span style={{ display:'inline-block', width:1, height:16, background:'#E8E6E0', margin:'0 24px', verticalAlign:'middle' }} />
+        </div>
         <div style={{ display:'flex', alignItems:'center', gap:24 }}>
-          <a href="/templates" style={{ color:'#94A3B8', fontSize:14, fontWeight:500, textDecoration:'none' }}>Offline Generator</a>
-          <a href="/signup" style={s.navCta}>Get started free</a>
+          <a href="#pricing" style={{ color:'#6B6B6B', fontSize:14, fontWeight:400, textDecoration:'none' }}>Pricing</a>
+          <a href="/templates" style={{ color:'#94A3B8', fontSize:14, fontWeight:500, textDecoration:'none' }}>Templates</a>
+          <a href="/signup" style={s.navCta}>Start free →</a>
         </div>
       </nav>
 
