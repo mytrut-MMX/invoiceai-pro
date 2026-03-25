@@ -10,6 +10,7 @@ export const NAV = [
   { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes },
   { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices },
   { id:"payments",  label:"Payments Received", Icon:Icons.Payments },
+  { id:"expenses",  label:"Expenses",          Icon:Icons.Expenses },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings },
   ];
 
