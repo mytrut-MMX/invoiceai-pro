@@ -209,7 +209,10 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
                   {filteredCustomers.length===0
                     ? <div style={{ padding:"14px 16px", fontSize:13, color:"#CCC", textAlign:"center" }}>No customers found</div>
                     : filteredCustomers.map(c=>(
-                        <button key={c.id} onClick={()=>{ setCustomer(c); setCustSearch(c.name); setCustOpen(false); }}
+                        <button key={c.id} onClick={()=>{ setCustomer(c); setCustSearch(c.name); setCustOpen(false);
+                          if(cisEnabled && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered)){
+                            setItems(prev => prev.map(it => ({ ...it, cisApplicable: true })));
+                          } }}
                           style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"none", border:"none", cursor:"pointer", fontFamily:ff, textAlign:"left" }}
                           onMouseEnter={e=>e.currentTarget.style.background="#f4f5f7"}
                           onMouseLeave={e=>e.currentTarget.style.background="none"}>
@@ -261,6 +264,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
               catalogItems={catalogItems}
               isVat={isVat}
               onAddNewItem={()=>setShowItemModal(true)}
+              isCISInvoice={cisEnabled && !!(customer?.cis?.registered || customer?.taxDetails?.cisRegistered)}
             />
           </div>
 
