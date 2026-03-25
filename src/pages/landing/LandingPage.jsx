@@ -213,11 +213,14 @@ export default function LandingPage() {
         <div style={s.section}>
           <h2 style={s.sectionTitle}>Simple, honest pricing</h2>
           <p style={s.sectionSub}>Start free, upgrade when you need more.</p>
+          <div style={{ textAlign:'center', marginBottom:40, fontSize:14, color:'#9A9A9A' }}>
+            <span>Trusted by </span><span style={{ fontWeight:600, color:'#111110' }}>2,400+ freelancers</span><span> · No credit card required · Cancel anytime</span>
+          </div>
           <div style={s.pricingGrid}>
             <div style={s.pricingCard}>
               <div style={s.pricingName}>Free</div>
-              <div style={s.pricingPrice}>£0</div>
-              <div style={s.pricingPer}>forever</div>
+              <div style={{ ...s.pricingPrice, fontSize:36, fontWeight:400, fontFamily:'Georgia, "Times New Roman", serif' }}>Free</div>
+              <div style={s.pricingPer}>always free · no card needed</div>
               <ul style={s.pricingList}>
                 {['Up to 5 invoices/month','2 clients','Basic templates','Email support'].map((item, i) => (
                   <li key={i} style={s.pricingItem}><span style={s.check}>✓</span>{item}</li>
@@ -228,15 +231,20 @@ export default function LandingPage() {
             <div style={s.pricingCardPro}>
               <div style={s.pricingBadge}>Most popular</div>
               <div style={s.pricingNamePro}>Pro</div>
-              <div style={s.pricingPricePro}>£4.99</div>
-              <div style={s.pricingPerPro}>per month</div>
+              <div style={s.pricingPricePro}>£9</div>
+              <div style={s.pricingPerPro}>per month · cancel anytime</div>
               <ul style={s.pricingList}>
+                <li style={{ color:'#94A3B8', fontSize:13, fontStyle:'italic', marginBottom:4 }}>Everything in Free, plus:</li>
                 {['Unlimited invoices','Unlimited clients','Recurring invoices','Auto email reminders','Analytics & reports','Priority support'].map((item, i) => (
                   <li key={i} style={s.pricingItemPro}><span style={s.check}>✓</span>{item}</li>
                 ))}
               </ul>
               <a href="/signup" style={{ ...s.btnPrimary, display:'block', textAlign:'center' }}>Start free trial</a>
             </div>
+          </div>
+          <div style={{ textAlign:'center', marginTop:32, fontSize:13, color:'#9A9A9A' }}>
+            Early users get a permanent 40% discount at launch.{' '}
+            <a href="/signup" style={{ textDecoration:'none', color:'#D97706' }}><span style={{ color:'#D97706', fontWeight:500 }}>Join the waitlist to lock it in →</span></a>
           </div>
         </div>
       </div>
