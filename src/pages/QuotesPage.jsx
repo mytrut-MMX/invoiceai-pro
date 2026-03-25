@@ -4,7 +4,8 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from 
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag } from "../components/atoms";
-import { LineItemsTable, SaveSplitBtn, A4PrintModal } from "../components/shared";
+import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc } from "../components/shared";
+import { PDF_TEMPLATES } from "../constants";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
 import { useCISSettings } from "../hooks/useCISSettings";
@@ -345,6 +346,110 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   return createPortal(panelContent, document.body);
 }
 
+// ─── QUOTE VIEW PANEL ─────────────────────────────────────────────────────────
+function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
+  const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
+  const { cisEnabled, cisDefaultRate } = useCISSettings();
+  const isVat = orgSettings?.vatReg === "Yes";
+  const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  const totals = calcTotals(
+    quote.line_items || [],
+    quote.discount_type || "percent",
+    quote.discount_value || "",
+    quote.shipping || "",
+    isVat,
+    quote.customer,
+    cisEnabled,
+    cisDefaultRate
+  );
+
+  const docData = {
+    docNumber: quote.quote_number,
+    customer: quote.customer,
+    issueDate: quote.issue_date,
+    dueDate: quote.expiry_date,
+    paymentTerms: quote.payment_terms || "Valid 30 days",
+    items: quote.line_items || [],
+    ...totals,
+    notes: quote.notes || "",
+    terms: quote.terms || "",
+    status: quote.status,
+    poNumber: quote.po_number || "",
+    docType: "quote",
+  };
+
+  const activeTemplate = quote.template || pdfTemplate || "classic";
+  const tplDef = PDF_TEMPLATES.find(t => t.id === activeTemplate) || PDF_TEMPLATES[0];
+  const isInvoiced = quote.status === "Invoiced";
+
+  return (
+    <>
+      {showPrintModal && (
+        <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={() => setShowPrintModal(false)} />
+      )}
+      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", fontFamily: ff, padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
+        {/* Action bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button onClick={onClose}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", border: "1.5px solid #e0e0e0", borderRadius: 8, background: "#fff", color: "#444", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
+              ← Quotes
+            </button>
+            <span style={{ fontSize: 16, fontWeight: 800, color: "#1A1A1A" }}>{quote.quote_number}</span>
+            <Tag color={STATUS_COLORS[quote.status] || "#888"}>{quote.status || "Draft"}</Tag>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <Btn variant="outline" icon={<Icons.Receipt />} onClick={() => setShowPrintModal(true)}>Print / PDF</Btn>
+            {!isInvoiced && (
+              <>
+                <Btn variant="outline" icon={<Icons.Invoices />} onClick={onConvert}>Convert to Invoice</Btn>
+                <Btn variant="primary" icon={<Icons.Edit />} onClick={onEdit}>Edit</Btn>
+              </>
+            )}
+            <Btn variant="ghost" icon={<Icons.Trash />}
+              onClick={() => { if (window.confirm(`Delete ${quote.quote_number}?`)) onDelete(); }}>
+              Delete
+            </Btn>
+          </div>
+        </div>
+
+        {/* Meta cards */}
+        <div style={{ display: "flex", gap: 24, marginBottom: 20, flexWrap: "wrap" }}>
+          {[
+            { label: "Customer",    value: quote.customer?.name || "—" },
+            { label: "Issue Date",  value: fmtDate(quote.issue_date) },
+            { label: "Expires",     value: fmtDate(quote.expiry_date) },
+            { label: "Amount",      value: fmt(currSym, quote.total || 0) },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ background: "#fff", border: "1px solid #e8e8ec", borderRadius: 8, padding: "10px 16px", minWidth: 120 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* A4 document */}
+        <div style={{ background: "#e8e8ec", padding: "28px 16px", borderRadius: 12, display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "100%", maxWidth: 794, background: "#fff", boxShadow: "0 4px 24px rgba(0,0,0,0.14)" }}>
+            <A4InvoiceDoc
+              data={docData}
+              currSymbol={currSym}
+              isVat={isVat}
+              orgSettings={{ ...orgSettings, logo: companyLogo, logoSize: Number(invoiceTemplateConfig?.logoSize || companyLogoSize || 52) }}
+              accentColor={tplDef?.defaultAccent || "#1A1A1A"}
+              template={activeTemplate}
+              footerText={footerText || ""}
+              templateConfig={invoiceTemplateConfig || {}}
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── QUOTES PAGE ──────────────────────────────────────────────────────────────
 export default function QuotesPage({ onNavigate }) {
   const { quotes, setQuotes, invoices, setInvoices } = useContext(AppCtx);
@@ -352,6 +457,7 @@ export default function QuotesPage({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const isNewQuotePage = panel?.mode === "new-page";
+  const isViewPage = panel?.mode === "view";
 
   const filtered = quotes.filter(q => {
     const matchSearch = !search ||
@@ -408,6 +514,18 @@ export default function QuotesPage({ onNavigate }) {
     pending:  quotes.filter(q=>["Draft","Sent"].includes(q.status)).length,
     value:    quotes.filter(q=>q.status==="Accepted").reduce((s,q)=>s+(q.total||0),0),
   };
+
+  if (isViewPage) {
+    return (
+      <QuoteViewPanel
+        quote={panel.quote}
+        onClose={() => setPanel(null)}
+        onEdit={() => setPanel({ mode: "edit", quote: panel.quote })}
+        onDelete={() => { setQuotes(prev => prev.filter(x => x.id !== panel.quote.id)); setPanel(null); }}
+        onConvert={() => handleConvertToInvoice(panel.quote)}
+      />
+    );
+  }
 
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
@@ -480,7 +598,7 @@ export default function QuotesPage({ onNavigate }) {
           <tbody>
             {filtered.map(q=>(
               <tr key={q.id} style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
-                onClick={()=>q.status==="Invoiced"?window.alert("You are not allowed to edit an accepted quote."):setPanel({ mode:"edit", quote:q })}
+                onClick={()=>setPanel({ mode:"view", quote:q })}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{q.quote_number}</td>
