@@ -2,7 +2,7 @@ import { useState, useContext, useMemo, useEffect } from "react";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS, PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Field, Input, Select, Textarea, Btn, Tag, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
+import { Field, Input, Select, Textarea, Btn, Tag, Ribbon, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
 import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
 import ItemModal from "../modals/ItemModal";
@@ -487,7 +487,9 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
 
         {/* A4 document preview */}
         <div style={{ background: "#e8e8ec", padding: "28px 16px", borderRadius: 12, display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 794, background: "#fff", boxShadow: "0 4px 24px rgba(0,0,0,0.14)" }}>
+          <div style={{ width: "100%", maxWidth: 794, position: "relative" }}>
+            <Ribbon status={invoice.status || "Draft"} />
+            <div style={{ background: "#fff", boxShadow: "0 4px 24px rgba(0,0,0,0.14)" }}>
             <A4InvoiceDoc
               data={docData}
               currSymbol={currSym}
@@ -498,6 +500,7 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
               footerText={footerText || ""}
               templateConfig={invoiceTemplateConfig || {}}
             />
+            </div>
           </div>
         </div>
       </div>
