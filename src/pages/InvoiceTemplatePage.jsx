@@ -50,50 +50,65 @@ export default function InvoiceTemplatesPage() {
   };
 
   return (
+    <>
+    <style>{`
+      @media (max-width: 768px) {
+        .templates-grid { grid-template-columns: 1fr !important; }
+      }
+    `}</style>
     <div style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth: 900, fontFamily: ff }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1A1A1A", margin: "0 0 16px" }}>Invoice Templates</h1>
 
-      <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
-          <Field label="Template">
-            <Select value={pdfTemplate} onChange={setPdfTemplate} options={PDF_TEMPLATES.map(t=>({ value:t.id, label:t.name }))} />
-          </Field>
-          <Field label="Logo Position">
-            <Select value={logoPosition} onChange={setLogoPosition} options={["left","center","right"]} />
-          </Field>
-          <Field label="Accent Color">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)} style={{ width: 36, height: 36, border: "none", background: "none" }} />
-              <Input value={accentColor} onChange={setAccentColor} />
+      <div className="templates-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 340px) 1fr', gap: 28, alignItems: 'start' }}>
+
+        {/* LEFT COLUMN — controls */}
+        <div>
+          <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
+              <Field label="Template">
+                <Select value={pdfTemplate} onChange={setPdfTemplate} options={PDF_TEMPLATES.map(t=>({ value:t.id, label:t.name }))} />
+              </Field>
+              <Field label="Logo Position">
+                <Select value={logoPosition} onChange={setLogoPosition} options={["left","center","right"]} />
+              </Field>
+              <Field label="Accent Color">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)} style={{ width: 36, height: 36, border: "none", background: "none" }} />
+                  <Input value={accentColor} onChange={setAccentColor} />
+                </div>
+              </Field>
+              <Field label={`Logo Size: ${companyLogoSize || 52}px`}>
+                <input type="range" min={24} max={100} value={companyLogoSize || 52} onChange={e=>setCompanyLogoSize(Number(e.target.value))} style={{ width: "100%", accentColor: "#E86C4A" }} />
+              </Field>
             </div>
-          </Field>
-          <Field label={`Logo Size: ${companyLogoSize || 52}px`}>
-            <input type="range" min={24} max={100} value={companyLogoSize || 52} onChange={e=>setCompanyLogoSize(Number(e.target.value))} style={{ width: "100%", accentColor: "#E86C4A" }} />
-          </Field>
-        </div>
-      </div>
+          </div>
 
-      <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", marginBottom: 10 }}>Custom Fields</div>
-        <Checkbox checked={showPoField} onChange={setShowPoField} label="Show PO field in invoice metadata" />
-        <Checkbox checked={showNotesField} onChange={setShowNotesField} label="Show Notes section in template" />
-        <Field label="Extra field label">
-          <Input value={customFieldLabel} onChange={setCustomFieldLabel} placeholder="Project Ref" />
-        </Field>
-      </div>
+          <div style={{ background: "#fff", border: "1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", marginBottom: 10 }}>Custom Fields</div>
+            <Checkbox checked={showPoField} onChange={setShowPoField} label="Show PO field in invoice metadata" />
+            <Checkbox checked={showNotesField} onChange={setShowNotesField} label="Show Notes section in template" />
+            <Field label="Extra field label">
+              <Input value={customFieldLabel} onChange={setCustomFieldLabel} placeholder="Project Ref" />
+            </Field>
+          </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <Btn onClick={saveTemplateSettings} variant="primary" icon={<Icons.Save />}>Save Template Settings</Btn>
-      </div>
-
-      <div style={{ marginTop: 20, background:"#fff", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:12, padding:16 }}>
-        <div style={{ fontSize:12, fontWeight:800, color:"#888", textTransform:"uppercase", marginBottom:8 }}>Live Preview</div>
-        <div style={{ border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:10, overflow:"auto", background:"#f3f4f6", padding:12 }}>
-          <div style={{ transform:"scale(0.78)", transformOrigin:"top center", marginBottom:"-180px" }}>
-            <A4InvoiceDoc data={previewData} currSymbol="£" isVat orgSettings={{ orgName:"Demo Company" }} accentColor={accentColor} template={pdfTemplate} footerText="" templateConfig={{ logoPosition, logoSize:Number(companyLogoSize||52), showNotesField, showPoField, customFieldLabel, accentColor }} />
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <Btn onClick={saveTemplateSettings} variant="primary" icon={<Icons.Save />}>Save Template Settings</Btn>
           </div>
         </div>
+
+        {/* RIGHT COLUMN — preview */}
+        <div style={{ background:"#fff", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:12, padding:16 }}>
+          <div style={{ fontSize:12, fontWeight:800, color:"#888", textTransform:"uppercase", marginBottom:8 }}>Live Preview</div>
+          <div style={{ border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:10, overflow:"auto", background:"#f3f4f6", padding:12 }}>
+            <div style={{ transform:"scale(0.78)", transformOrigin:"top center", marginBottom:"-180px" }}>
+              <A4InvoiceDoc data={previewData} currSymbol="£" isVat orgSettings={{ orgName:"Demo Company" }} accentColor={accentColor} template={pdfTemplate} footerText="" templateConfig={{ logoPosition, logoSize:Number(companyLogoSize||52), showNotesField, showPoField, customFieldLabel, accentColor }} />
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
+    </>
   );
 }
