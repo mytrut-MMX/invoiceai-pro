@@ -69,13 +69,55 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section style={s.hero}>
-        <div style={s.heroTag}>✨ Free to start — no credit card required</div>
-        <h1 style={s.heroH1}>The simplest way to<br />invoice clients &amp; get paid faster</h1>
-        <p style={s.heroSub}>Create professional invoices, automate reminders, and track payments — all in one place. Built for freelancers, agencies, and small businesses.</p>
-        <div style={s.heroBtns}>
-          <a href="/signup" style={s.btnPrimary}>Start for free →</a>
-          <a href="/signup" style={s.btnSecondary}>See how it works</a>
+      <section style={{ ...s.hero, textAlign:'left' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:64, alignItems:'center' }}>
+          {/* Left column */}
+          <div>
+            <div style={s.heroTag}>✨ Free to start — no credit card required</div>
+            <h1 style={s.heroH1}>The quiet way to get paid.</h1>
+            <p style={s.heroSub}>Professional invoices, automatic reminders, and payment tracking — without the complexity. Built for freelancers who'd rather be working.</p>
+            <div style={{ ...s.heroBtns, justifyContent:'flex-start' }}>
+              <a href="/signup" style={s.btnPrimary}>Start for free →</a>
+              <a href="/signup" style={s.btnSecondary}>See how it works</a>
+            </div>
+          </div>
+          {/* Right column — invoice mockup */}
+          <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:32, boxShadow:'0 2px 40px rgba(0,0,0,0.06)' }}>
+            {/* Header row */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:'#111110' }}>Alex Chen</div>
+                <div style={{ fontSize:12, color:'#9A9A9A', marginTop:2 }}>Freelance Designer</div>
+              </div>
+              <div style={{ background:'#D4EDDA', color:'#155724', borderRadius:4, padding:'3px 10px', fontSize:11, fontWeight:600, letterSpacing:'0.06em' }}>PAID</div>
+            </div>
+            {/* Divider */}
+            <div style={{ borderTop:'1px solid #E8E6E0', margin:'20px 0' }} />
+            {/* Line items */}
+            <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+              {[
+                { desc:'Brand Identity Design', amt:'$2,400' },
+                { desc:'UI Kit — 5 screens',    amt:'$1,250' },
+                { desc:'Strategy Session',       amt:'$350'   },
+              ].map(({ desc, amt }) => (
+                <div key={desc} style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ fontSize:13, color:'#6B6B6B' }}>{desc}</span>
+                  <span style={{ fontSize:13, color:'#111110', fontWeight:500 }}>{amt}</span>
+                </div>
+              ))}
+            </div>
+            {/* Divider */}
+            <div style={{ borderTop:'1px solid #E8E6E0', margin:'20px 0' }} />
+            {/* Total row */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+              <span style={{ fontSize:13, color:'#9A9A9A' }}>Total</span>
+              <span style={{ fontSize:20, fontFamily:'Georgia, "Times New Roman", serif', fontWeight:400, color:'#111110' }}>$4,000</span>
+            </div>
+            {/* Payment confirmation */}
+            <div style={{ marginTop:24, background:'#FEF3C7', borderRadius:6, padding:'10px 14px', fontSize:13, color:'#92400E' }}>
+              💸 Payment received · just now
+            </div>
+          </div>
         </div>
       </section>
 
