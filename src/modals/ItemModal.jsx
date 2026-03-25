@@ -1,4 +1,4 @@
-import { useState, useContext, useRef, useEffect } from "react";
+import { useState, useContext, useRef, useEffect, useCallback } from "react";
 import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Field, Input, Select, SlideToggle, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
@@ -97,6 +97,71 @@ function UnitCombobox({ value, onChange, options }) {
   );
 }
 
+function ImageUpload({ value, onChange }) {
+  const inputRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+
+  const loadFile = useCallback(file => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > MAX_SIZE) { alert("Image must be under 2 MB"); return; }
+    const reader = new FileReader();
+    reader.onload = e => onChange(e.target.result);
+    reader.readAsDataURL(file);
+  }, [onChange]);
+
+  const onDrop = e => {
+    e.preventDefault(); setDragging(false);
+    loadFile(e.dataTransfer.files[0]);
+  };
+
+  return (
+    <div
+      onDragOver={e => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={onDrop}
+      style={{
+        border: `2px dashed ${dragging ? "#1e6be0" : "#d1d5db"}`,
+        borderRadius: 10, background: dragging ? "#f0f5ff" : "#fafafa",
+        transition: "border-color 0.15s, background 0.15s",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: 130, padding: 16, gap: 20, flexWrap: "wrap",
+      }}>
+      {value ? (
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <img src={value} alt="item" style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 8, border: "1px solid #e8e8ec" }} />
+          <button onClick={() => onChange("")}
+            style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 13, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: ff }}>
+            ×
+          </button>
+        </div>
+      ) : (
+        <div style={{ textAlign: "center" }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 472.7 386.4" style={{ width: 44, height: 36, color: "#9ca3af", display: "block", margin: "0 auto 8px" }}>
+            <path d="M392 0H81C36 0 0 36 0 81v224a81 81 0 0081 81h311c44 0 81-36 81-81V81c0-45-37-81-81-81zM42 81c0-21 18-39 39-39h311c21 0 39 18 39 39v101l-112 76c-10 7-23 7-33-1l-94-66a72 72 0 00-82 1l-68 48V81zm389 224c0 22-18 39-39 39H81c-21 0-39-17-39-39v-14l92-65c10-7 24-7 34 0l94 66a71 71 0 0081 1l88-60v72z" fill="currentColor"/>
+            <path d="M301 83a56 56 0 100 113 56 56 0 000-113zm0 78a21 21 0 110-43 21 21 0 010 43z" fill="currentColor"/>
+          </svg>
+          <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>Drag image here or</div>
+          <button onClick={() => inputRef.current?.click()}
+            style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "none", cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: 0 }}>
+            Browse images
+          </button>
+          <div style={{ fontSize: 11, color: "#c4c4c4", marginTop: 4 }}>JPG, PNG, GIF — max 2 MB</div>
+        </div>
+      )}
+      {value && (
+        <button onClick={() => inputRef.current?.click()}
+          style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "1px solid #1e6be0", borderRadius: 6, cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: "6px 12px" }}>
+          Change image
+        </button>
+      )}
+      <input ref={inputRef} type="file" accept="image/gif,image/jpeg,image/png,image/bmp,image/jpg"
+        style={{ display: "none" }} onChange={e => loadFile(e.target.files[0])} />
+    </div>
+  );
+}
+
 export default function ItemForm({ existing, onClose, onSave, settings }) {
   const { orgSettings } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
@@ -111,6 +176,7 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
   const [active, setActive] = useState(existing?.active ?? true);
   const [sku, setSku] = useState(existing?.sku || "");
   const [account, setAccount] = useState(existing?.account || "");
+  const [photo, setPhoto] = useState(existing?.photo || "");
 
   const { cisEnabled } = useCISSettings();
   const [isCIS, setIsCIS] = useState(existing?.cis?.enabled ?? false);
@@ -131,6 +197,7 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
       active,
       sku,
       account,
+      photo: photo || "",
       cis: isCIS
         ? {
             enabled: true,
@@ -168,6 +235,9 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", padding: "18px 22px" }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>Item Details</div>
+            <Field label="Photo">
+              <ImageUpload value={photo} onChange={setPhoto} />
+            </Field>
             <Field label="Item Type" required>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {ITEM_TYPES.map(t => (
