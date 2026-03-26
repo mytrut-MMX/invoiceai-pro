@@ -6,6 +6,7 @@ const s = {
   logo: { fontSize:20, fontWeight:700, color:'#111110', letterSpacing:-0.5 },
   logoAccent: { color:'#D97706' },
   navCta: { background:'#111110', color:'#FAFAF7', border:'none', borderRadius:6, padding:'7px 18px', fontWeight:500, fontSize:13, cursor:'pointer', textDecoration:'none' },
+  navLogin: { background:'transparent', color:'#374151', border:'1px solid #E8E6E0', borderRadius:6, padding:'7px 16px', fontWeight:400, fontSize:13, cursor:'pointer', textDecoration:'none' },
   hero: { background:'#FAFAF7', padding:'120px 2rem 100px', textAlign:'center' },
   heroTag: { display:'inline-block', background:'#FEF3C7', color:'#92400E', borderRadius:4, padding:'4px 12px', fontSize:12, fontWeight:500, marginBottom:24, letterSpacing:'0.04em' },
   heroH1: { fontSize:'clamp(2.4rem, 5vw, 4rem)', fontWeight:400, color:'#111110', lineHeight:1.1, marginBottom:20, letterSpacing:-1, fontFamily:'Georgia, "Times New Roman", serif' },
@@ -73,6 +74,7 @@ export default function LandingPage() {
         <div style={{ display:'flex', alignItems:'center', gap:24 }}>
           <a href="#pricing" style={{ color:'#6B6B6B', fontSize:14, fontWeight:400, textDecoration:'none' }}>Pricing</a>
           <a href="/templates" style={{ color:'#94A3B8', fontSize:14, fontWeight:500, textDecoration:'none' }}>Templates</a>
+          <a href="/login" style={s.navLogin}>Log in</a>
           <a href="/signup" style={s.navCta}>Start free →</a>
         </div>
       </nav>

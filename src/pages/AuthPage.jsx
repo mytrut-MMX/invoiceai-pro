@@ -70,7 +70,7 @@ function recordFailure(email) {
 function clearAttempts(email) { loginAttempts.delete(email); }
 
 export default function AuthPage({ onAuth }) {
-  const [mode, setMode] = useState("login");
+  const [mode, setMode] = useState(() => window.location.pathname === "/signup" ? "register" : "login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
