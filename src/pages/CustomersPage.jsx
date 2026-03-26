@@ -6,10 +6,10 @@ import { Btn, Tag } from "../components/atoms";
 import { upsert, formatPhoneNumber } from "../utils/helpers";
 import CustomerForm from "../modals/CustomerModal";
 
-export default function CustomersPage() {
+export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   const { customers, setCustomers, orgSettings } = useContext(AppCtx);
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initialShowForm);
   const [search, setSearch] = useState("");
 
   const filtered = customers.filter(c =>
@@ -19,6 +19,7 @@ export default function CustomersPage() {
 
   const onSave = c => {
     setCustomers(p => upsert(p, c));
+    if (initialShowForm && onNavigate) { onNavigate("customers"); return; }
     setShowForm(false);
     setEditingCustomer(null);
   };
@@ -28,6 +29,7 @@ export default function CustomersPage() {
       <CustomerForm
         existing={editingCustomer}
         onClose={() => {
+          if (initialShowForm && onNavigate) { onNavigate("customers"); return; }
           setShowForm(false);
           setEditingCustomer(null);
         }}

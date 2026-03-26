@@ -5,7 +5,7 @@ import InvoiceSagaLogo from "../InvoiceSagaLogo";
 // ─── NAVIGATION DEFINITION ────────────────────────────────────────────────────
 export const NAV = [
   { id:"home",      label:"Home",             Icon:Icons.Home },
-  { id:"customers", label:"Customers",         Icon:Icons.Customers },
+  { id:"customers", label:"Customers",         Icon:Icons.Customers, addId:"customers:new" },
   { id:"items",     label:"Items",             Icon:Icons.Items },
   { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes },
   { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices },
@@ -75,8 +75,8 @@ export function Sidebar({
 
       {/* Nav */}
       <nav style={{ flex:1, padding: collapsed ? "8px 0" : "10px 8px", overflowY:"auto" }}>
-        {NAV.map(({ id, label, Icon }) => {
-          const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
+        {NAV.map(({ id, label, Icon, addId }) => {
+          const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id || activePage === addId;
           return collapsed ? (
             <button key={id} onClick={() => onNavigate(id)} title={label}
               style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
@@ -86,16 +86,28 @@ export function Sidebar({
               {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
             </button>
           ) : (
-            <button key={id} onClick={() => onNavigate(id)}
-              style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s", position:"relative" }}
-              onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="#f3f4f6"; }}
-              onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
-              <span style={on ? { background:"#e8f0fc", borderRadius:7, width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center" } : { width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <Icon />
-              </span>
-              {label}
-              {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
-            </button>
+            <div key={id} style={{ position:"relative", marginBottom:2 }}>
+              <button onClick={() => onNavigate(id)}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", paddingRight: addId ? 36 : 12, borderRadius:8, border:"none", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, textAlign:"left", transition:"all 0.15s", position:"relative" }}
+                onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="#f3f4f6"; }}
+                onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
+                <span style={on ? { background:"#e8f0fc", borderRadius:7, width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } : { width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon />
+                </span>
+                {label}
+                {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
+              </button>
+              {addId && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onNavigate(activePage === addId ? id : addId); }}
+                  title={activePage === addId ? label : `New ${label.replace(/s$/,"")}`}
+                  style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:"none", background: activePage === addId ? "#1e6be0" : on ? "#c7d9f9" : "#e8e8ec", color: activePage === addId ? "#fff" : on ? "#1e6be0" : "#6b7280", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, transition:"all 0.15s", flexShrink:0 }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background = activePage === addId ? "#1557c0" : "#1e6be0"; e.currentTarget.style.color="#fff"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background = activePage === addId ? "#1e6be0" : on ? "#c7d9f9" : "#e8e8ec"; e.currentTarget.style.color = activePage === addId ? "#fff" : on ? "#1e6be0" : "#6b7280"; }}>
+                  <Icons.Plus />
+                </button>
+              )}
+            </div>
           );
         })}
       </nav>
@@ -137,7 +149,7 @@ export function Sidebar({
 
 // ─── MOBILE TOP BAR ───────────────────────────────────────────────────────────
 export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick }) {
-  const page = NAV.find(n => n.id === activePage);
+  const page = NAV.find(n => n.id === activePage || n.addId === activePage);
   return (
     <div className="mobile-topbar" style={{
       display: "flex",
