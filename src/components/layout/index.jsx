@@ -99,12 +99,13 @@ export function Sidebar({
               </button>
               {addId && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onNavigate(activePage === addId ? id : addId); }}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onNavigate(activePage === addId ? id : addId); }}
                   title={activePage === addId ? label : `New ${label.replace(/s$/,"")}`}
-                  style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:"none", background: activePage === addId ? "#1e6be0" : on ? "#c7d9f9" : "#e8e8ec", color: activePage === addId ? "#fff" : on ? "#1e6be0" : "#6b7280", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, transition:"all 0.15s", flexShrink:0 }}
+                  style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:"none", background: activePage === addId ? "#1e6be0" : on ? "#c7d9f9" : "#e8e8ec", color: activePage === addId ? "#fff" : on ? "#1e6be0" : "#6b7280", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, transition:"all 0.15s", flexShrink:0, zIndex:2 }}
                   onMouseEnter={e=>{ e.currentTarget.style.background = activePage === addId ? "#1557c0" : "#1e6be0"; e.currentTarget.style.color="#fff"; }}
                   onMouseLeave={e=>{ e.currentTarget.style.background = activePage === addId ? "#1e6be0" : on ? "#c7d9f9" : "#e8e8ec"; e.currentTarget.style.color = activePage === addId ? "#fff" : on ? "#1e6be0" : "#6b7280"; }}>
-                  <Icons.Plus />
+                  <span style={{ pointerEvents:"none", display:"flex" }}><Icons.Plus /></span>
                 </button>
               )}
             </div>
