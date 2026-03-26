@@ -152,10 +152,10 @@ export default function SetupWizard({ onComplete }) {
     if (step === 4) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px', fontSize: 13, color: '#15803d' }}>
-          ✅ <strong>AI features</strong> are powered by the server-configured Anthropic key — no setup needed here.
+          — <strong>AI features</strong> are powered by the server-configured Anthropic key — no setup needed here.
         </div>
-        <div style={{ background: '#f8fafc', borderRadius: 10, padding: 14, border: '1px solid #e2e8f0' }}>
-          <div style={{ fontWeight: 600, fontSize: 13, color: '#334155', marginBottom: 10 }}>✉️ EmailJS (optional — for sending invoices by email)</div>
+        <div style={{ background: '#FAFAF7', borderRadius: 8, padding: 16, border: '1px solid #E8E6E0' }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: '#334155', marginBottom: 10 }}>EmailJS (optional — for sending invoices by email)</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <I k="emailjs_service" label="Service ID" placeholder="service_xxxxxx" />
             <I k="emailjs_template" label="Template ID" placeholder="template_xxxxxx" />
@@ -168,32 +168,31 @@ export default function SetupWizard({ onComplete }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#FAFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "system-ui, sans-serif" }}>
       <div style={{ width: '100%', maxWidth: 580 }}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ fontSize: 12, letterSpacing: '0.3em', color: '#e2b96a', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase' }}>Invoice AI Pro</div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>Set Up Your<br/>Company Profile</h1>
-          <p style={{ color: '#64748b', marginTop: 10, fontSize: 13 }}>Complete once — your data stays private in your browser</p>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, fontWeight: 400, color: '#111110', lineHeight: 1.2, margin: '0 0 8px' }}>Set up your company</h1>
+          <p style={{ color: '#6B6B6B', marginTop: 0, fontSize: 13 }}>Complete once — your data stays private in your browser</p>
         </div>
 
         {/* Step indicators */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 28, justifyContent: 'center' }}>
           {STEPS.map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, background: i < step ? '#e2b96a' : i === step ? '#fff' : '#ffffff22', color: i <= step ? '#1a1a2e' : '#ffffff55', fontWeight: 700, transition: 'all 0.3s' }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, background: i < step ? '#111110' : i === step ? '#111110' : '#E8E6E0', color: i <= step ? '#FAFAF7' : '#9A9A9A', fontWeight: 700, transition: 'all 0.3s' }}>
                 {i < step ? '✓' : i + 1}
               </div>
-              {i < STEPS.length - 1 && <div style={{ width: 28, height: 1, background: i < step ? '#e2b96a' : '#ffffff22' }} />}
+              {i < STEPS.length - 1 && <div style={{ width: 28, height: 1, background: i < step ? '#111110' : '#E8E6E0' }} />}
             </div>
           ))}
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 20, padding: 32, boxShadow: '0 32px 80px rgba(0,0,0,0.4)' }}>
+        <div style={{ background: '#FFFFFF', borderRadius: 12, padding: 32, border: '1px solid #E8E6E0', boxShadow: '0 2px 24px rgba(0,0,0,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-            <span style={{ fontSize: 24 }}>{STEPS[step].icon}</span>
+            <span style={{ fontSize: 20 }}>{STEPS[step].icon}</span>
             <div>
-              <div style={{ fontSize: 11, color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Step {step + 1} of {STEPS.length}</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', fontFamily: "'Playfair Display', serif" }}>{STEPS[step].title}</div>
+              <div style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>Step {step + 1} of {STEPS.length}</div>
+              <div style={{ fontSize: 17, fontWeight: 400, color: '#111110', fontFamily: 'Georgia, serif' }}>{STEPS[step].title}</div>
             </div>
           </div>
 
@@ -201,14 +200,14 @@ export default function SetupWizard({ onComplete }) {
 
           <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
             {step > 0 && (
-              <button onClick={back} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1.5px solid #e2e8f0', background: 'transparent', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>← Back</button>
+              <button onClick={back} style={{ flex: 1, padding: '11px', borderRadius: 8, border: '1.5px solid #E8E6E0', background: 'transparent', color: '#6B6B6B', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>← Back</button>
             )}
-            <button onClick={step === STEPS.length - 1 ? finish : next} style={{ flex: 2, padding: '11px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #1a1a2e, #0f3460)', color: '#e2b96a', fontWeight: 700, cursor: 'pointer', fontSize: 14, letterSpacing: '0.05em' }}>
-              {step === STEPS.length - 1 ? '🚀 Launch My Dashboard' : 'Continue →'}
+            <button onClick={step === STEPS.length - 1 ? finish : next} style={{ flex: 2, padding: '11px', borderRadius: 8, border: 'none', background: '#111110', color: '#FAFAF7', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
+              {step === STEPS.length - 1 ? 'Launch dashboard →' : 'Continue →'}
             </button>
           </div>
         </div>
-        <div style={{ textAlign: 'center', marginTop: 14, fontSize: 11, color: '#ffffff33' }}>All data stored locally — never sent to any server</div>
+        <div style={{ textAlign: 'center', marginTop: 14, fontSize: 11, color: '#9A9A9A' }}>All data stored locally — never sent to any server</div>
       </div>
     </div>
   )
