@@ -13,7 +13,7 @@ function Confetti() {
     id: i,
     left: Math.random() * 100,
     delay: Math.random() * 1.2,
-    color: ["#0EA5E9","#E86C4A","#16A34A","#D97706","#9333EA","#E11D48"][i % 6],
+    color: ["#111110","#D97706","#6B6B6B","#E8E6E0","#9A9A9A","#333330"][i % 6],
     size: 6 + Math.random() * 8,
   }));
   return (
@@ -42,7 +42,7 @@ function Progress({ step, total }) {
       {Array.from({ length: total }, (_, i) => (
         <div key={i} style={{
           flex:1, height:4, borderRadius:99,
-          background: i < step ? "#0EA5E9" : "#E2E8F0",
+          background: i < step ? "#111110" : "#E8E6E0",
           transition:"background 0.3s",
         }} />
       ))}
@@ -53,8 +53,8 @@ function Progress({ step, total }) {
 // ─── Card wrapper ─────────────────────────────────────────────────────────────
 function Card({ children, maxWidth = 520 }) {
   return (
-    <div style={{ minHeight:"100vh", background:"#F8FAFC", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
-      <div style={{ width:"100%", maxWidth, background:"#fff", borderRadius:16, boxShadow:"0 4px 40px rgba(0,0,0,0.08)", padding:"36px 40px" }}>
+    <div style={{ minHeight:"100vh", background:"#FAFAF7", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+      <div style={{ width:"100%", maxWidth, background:"#FFFFFF", borderRadius:12, border:"1px solid #E8E6E0", boxShadow:"0 2px 24px rgba(0,0,0,0.06)", padding:"36px 40px" }}>
         {children}
       </div>
     </div>
@@ -65,7 +65,7 @@ function Card({ children, maxWidth = 520 }) {
 function Input({ label, value, onChange, placeholder, type = "text", required }) {
   return (
     <div style={{ marginBottom:16 }}>
-      <label style={{ display:"block", fontSize:13, fontWeight:600, color:"#374151", marginBottom:5 }}>
+      <label style={{ display:"block", fontSize:13, fontWeight:600, color:"#6B6B6B", marginBottom:5 }}>
         {label}{required && <span style={{ color:"#E11D48" }}> *</span>}
       </label>
       <input
@@ -74,7 +74,7 @@ function Input({ label, value, onChange, placeholder, type = "text", required })
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         style={{ width:"100%", padding:"10px 12px", fontSize:14, border:"1.5px solid #E2E8F0", borderRadius:8, fontFamily:ff, outline:"none", boxSizing:"border-box", color:"#1a1a2e" }}
-        onFocus={e => e.target.style.borderColor = "#0EA5E9"}
+        onFocus={e => e.target.style.borderColor = "#111110"}
         onBlur={e => e.target.style.borderColor = "#E2E8F0"}
       />
     </div>
@@ -83,16 +83,13 @@ function Input({ label, value, onChange, placeholder, type = "text", required })
 
 function BtnPrimary({ onClick, disabled, children }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{
-      width:"100%", padding:"13px 0", fontSize:15, fontWeight:700,
-      background: disabled ? "#E2E8F0" : "#0EA5E9",
-      color: disabled ? "#94A3B8" : "#fff",
-      border:"none", borderRadius:10, cursor: disabled ? "not-allowed" : "pointer",
+    <button onClick={onClick} disabled={disabled} className="onb-btn-primary" style={{
+      width:"100%", padding:"13px 0", fontSize:15, fontWeight:500,
+      background: disabled ? "#E8E6E0" : "#111110",
+      color: disabled ? "#9A9A9A" : "#FAFAF7",
+      border:"none", borderRadius:8, cursor: disabled ? "not-allowed" : "pointer",
       fontFamily:ff, transition:"background 0.2s", marginTop:8,
-    }}
-    onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = "#0284c7"; }}
-    onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = "#0EA5E9"; }}
-    >
+    }}>
       {children}
     </button>
   );
@@ -102,7 +99,7 @@ function BtnSkip({ onClick }) {
   return (
     <button onClick={onClick} style={{
       width:"100%", padding:"10px 0", fontSize:13, fontWeight:600,
-      background:"transparent", color:"#94A3B8", border:"none",
+      background:"transparent", color:"#9A9A9A", border:"none",
       cursor:"pointer", fontFamily:ff, marginTop:4,
     }}>
       Skip for now →
@@ -115,17 +112,17 @@ function StepWelcome({ onNext, userName }) {
   return (
     <Card>
       <div style={{ textAlign:"center" }}>
-        <div style={{ width:56, height:56, background:"#0EA5E9", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", fontSize:26 }}>🧾</div>
-        <h1 style={{ fontSize:26, fontWeight:800, color:"#0F172A", margin:"0 0 10px", letterSpacing:-0.5 }}>
+        <div style={{ width:48, height:48, background:"#F5F4F0", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", fontSize:26 }}>🧾</div>
+        <h1 style={{ fontSize:24, fontWeight:400, fontFamily:"Georgia, serif", color:"#111110", margin:"0 0 10px", letterSpacing:-0.3 }}>
           Welcome{userName ? `, ${userName.split(" ")[0]}` : ""}!
         </h1>
         <p style={{ fontSize:15, color:"#64748B", lineHeight:1.6, margin:"0 0 32px" }}>
           Let's get you set up in under 2 minutes.<br />We'll configure your account and send your first invoice.
         </p>
-        <div style={{ display:"flex", flexDirection:"column", gap:10, textAlign:"left", background:"#F8FAFC", borderRadius:10, padding:"16px 20px", marginBottom:28 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:10, textAlign:"left", background:"#F5F4F0", border:"1px solid #E8E6E0", borderRadius:8, padding:"14px 18px", marginBottom:28 }}>
           {["Set up your organization", "Add your first client", "Create your first invoice"].map((s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, fontSize:14, color:"#374151" }}>
-              <div style={{ width:22, height:22, borderRadius:"50%", background:"#0EA5E9", color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{i + 1}</div>
+              <div style={{ width:20, height:20, borderRadius:"50%", background:"#111110", color:"#FAFAF7", fontSize:10, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{i + 1}</div>
               {s}
             </div>
           ))}
@@ -151,8 +148,8 @@ function StepClient({ onNext, onSkip }) {
     <Card>
       <Progress step={2} total={3} />
       <div style={{ marginBottom:24 }}>
-        <div style={{ fontSize:12, fontWeight:700, color:"#0EA5E9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Step 2 of 3</div>
-        <h2 style={{ fontSize:22, fontWeight:800, color:"#0F172A", margin:"0 0 6px" }}>Add your first client</h2>
+        <div style={{ fontSize:12, fontWeight:700, color:"#9A9A9A", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Step 2 of 3</div>
+        <h2 style={{ fontSize:22, fontWeight:400, fontFamily:"Georgia, serif", color:"#111110", margin:"0 0 6px" }}>Add your first client</h2>
         <p style={{ fontSize:14, color:"#64748B", margin:0 }}>Who do you send invoices to?</p>
       </div>
       <Input label="Client name" value={name} onChange={setName} placeholder="Jane Smith" required />
@@ -200,8 +197,8 @@ function StepInvoice({ onNext, onSkip, client, orgSettings, invoices, invoicePre
     <Card>
       <Progress step={3} total={3} />
       <div style={{ marginBottom:24 }}>
-        <div style={{ fontSize:12, fontWeight:700, color:"#0EA5E9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Step 3 of 3</div>
-        <h2 style={{ fontSize:22, fontWeight:800, color:"#0F172A", margin:"0 0 6px" }}>Create your first invoice</h2>
+        <div style={{ fontSize:12, fontWeight:700, color:"#9A9A9A", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Step 3 of 3</div>
+        <h2 style={{ fontSize:22, fontWeight:400, fontFamily:"Georgia, serif", color:"#111110", margin:"0 0 6px" }}>Create your first invoice</h2>
         <p style={{ fontSize:14, color:"#64748B", margin:0 }}>
           {client ? <>For <strong>{client.name}</strong> · </> : null}Invoice #{docNumber}
         </p>
@@ -221,8 +218,8 @@ function StepDone({ onFinish, invoiceCreated }) {
       <Confetti />
       <Card>
         <div style={{ textAlign:"center" }}>
-          <div style={{ fontSize:56, marginBottom:16 }}>🎉</div>
-          <h2 style={{ fontSize:26, fontWeight:800, color:"#0F172A", margin:"0 0 10px" }}>You're all set!</h2>
+          <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
+          <h2 style={{ fontSize:24, fontWeight:400, fontFamily:"Georgia, serif", color:"#111110", margin:"0 0 10px" }}>You're all set!</h2>
           <p style={{ fontSize:15, color:"#64748B", lineHeight:1.6, margin:"0 0 28px" }}>
             Your account is ready.{invoiceCreated ? " Your first invoice has been created as a draft." : ""}
           </p>
@@ -262,33 +259,14 @@ export default function OnboardingFlow({ user, orgSettings, onComplete, customer
 
   const handleFinish = () => onComplete({ done: true });
 
-  if (step === 0) return <StepWelcome onNext={() => setStep(1)} userName={user?.name} />;
-
-  if (step === 1) return (
-    <OrgSetupPage
-      onComplete={handleOrgComplete}
-      initialData={orgSettings}
-    />
+  return (
+    <>
+      <style>{`.onb-btn-primary:hover:not(:disabled){background:#333330!important}`}</style>
+      {step === 0 && <StepWelcome onNext={() => setStep(1)} userName={user?.name} />}
+      {step === 1 && <OrgSetupPage onComplete={handleOrgComplete} initialData={orgSettings} />}
+      {step === 2 && <StepClient onNext={handleClientNext} onSkip={handleClientSkip} />}
+      {step === 3 && <StepInvoice onNext={handleInvoiceNext} onSkip={handleInvoiceSkip} client={newClient} orgSettings={orgSettings} invoices={invoices} invoicePrefix={invoicePrefix} invoiceStartNum={invoiceStartNum} />}
+      {step === 4 && <StepDone onFinish={handleFinish} invoiceCreated={invoiceCreated} />}
+    </>
   );
-
-  if (step === 2) return (
-    <StepClient
-      onNext={handleClientNext}
-      onSkip={handleClientSkip}
-    />
-  );
-
-  if (step === 3) return (
-    <StepInvoice
-      onNext={handleInvoiceNext}
-      onSkip={handleInvoiceSkip}
-      client={newClient}
-      orgSettings={orgSettings}
-      invoices={invoices}
-      invoicePrefix={invoicePrefix}
-      invoiceStartNum={invoiceStartNum}
-    />
-  );
-
-  return <StepDone onFinish={handleFinish} invoiceCreated={invoiceCreated} />;
 }
