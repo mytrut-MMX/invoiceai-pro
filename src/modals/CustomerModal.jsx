@@ -12,8 +12,9 @@ const CIS_RATES = [
   { label: "0% — Gross payment", value: 0 },
 ];
 
-export default function CustomerForm({ existing, onClose, onSave, settings }) {
+export default function CustomerForm({ existing, onClose, onSave, settings, customers = [] }) {
   const [activeTab, setActiveTab] = useState("Other Details");
+  const [saved, setSaved] = useState(false);
   const { cisEnabled } = useCISSettings();
   const [custType, setCustType] = useState("Business");
   const [salutation, setSalutation] = useState("");
@@ -96,7 +97,8 @@ export default function CustomerForm({ existing, onClose, onSave, settings }) {
         country: shipCountry,
       },
     };
-    onSave(customer);
+    setSaved(true);
+    setTimeout(() => onSave(customer), 600);
   };
 
   return (
@@ -138,11 +140,9 @@ export default function CustomerForm({ existing, onClose, onSave, settings }) {
           </span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <Btn onClick={onClose} variant="outline">
-            Cancel
-          </Btn>
-          <Btn onClick={handleSave} variant="primary">
-            {existing ? "Save Changes" : "Save Customer"}
+          <Btn onClick={onClose} variant="outline">Cancel</Btn>
+          <Btn onClick={handleSave} variant="primary" disabled={saved}>
+            {saved ? "Saved ✓" : existing ? "Save Changes" : "Save Customer"}
           </Btn>
         </div>
       </div>
@@ -210,6 +210,11 @@ export default function CustomerForm({ existing, onClose, onSave, settings }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
             <Field label="Customer Display Name">
               <Input value={displayName} onChange={setDisplayName} />
+              {displayName && customers.some(c => c.id !== existing?.id && c.name?.toLowerCase() === displayName.toLowerCase()) && (
+                <div style={{ fontSize:11, color:"#d97706", marginTop:4, display:"flex", alignItems:"center", gap:4 }}>
+                  ⚠ A customer with this name already exists
+                </div>
+              )}
             </Field>
             <Field label="Email">
               <Input value={email} onChange={setEmail} type="email" />
