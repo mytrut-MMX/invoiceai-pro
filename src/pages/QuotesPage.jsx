@@ -431,9 +431,9 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
 }
 
 // ─── QUOTES PAGE ──────────────────────────────────────────────────────────────
-export default function QuotesPage({ onNavigate }) {
+export default function QuotesPage({ onNavigate, initialShowForm = false }) {
   const { quotes, setQuotes, invoices, setInvoices } = useContext(AppCtx);
-  const [panel, setPanel] = useState(null);
+  const [panel, setPanel] = useState(initialShowForm ? { mode:"new-page" } : null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const isNewQuotePage = panel?.mode === "new-page";
@@ -547,13 +547,13 @@ export default function QuotesPage({ onNavigate }) {
         <div style={{ marginBottom:14 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, gap:10, flexWrap:"wrap" }}>
             <div style={{ fontSize:20, fontWeight:800, color:"#1A1A1A" }}>New Quote</div>
-            <Btn onClick={()=>setPanel(null)} variant="outline" icon={<Icons.ChevDown />}>← Quotes</Btn>
+            <Btn onClick={()=>{ if(initialShowForm && onNavigate) onNavigate("quotes"); else setPanel(null); }} variant="outline" icon={<Icons.ChevDown />}>← Quotes</Btn>
           </div>
           <QuoteFormPanel
             asPage
             existing={null}
-            onClose={()=>setPanel(null)}
-            onSave={q=>{ onSave(q); setPanel(null); }}
+            onClose={()=>{ if(initialShowForm && onNavigate) onNavigate("quotes"); else setPanel(null); }}
+            onSave={q=>{ onSave(q); if(initialShowForm && onNavigate) onNavigate("quotes"); else setPanel(null); }}
             onConvertToInvoice={handleConvertToInvoice}
           />
         </div>

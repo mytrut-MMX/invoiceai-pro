@@ -308,12 +308,12 @@ function filterExpenses(expenses, key) {
 }
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
-export default function ExpensesPage() {
+export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
   const { expenses, setExpenses, orgSettings } = useContext(AppCtx);
   const isVat  = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
-  const [showForm,    setShowForm]    = useState(false);
+  const [showForm,    setShowForm]    = useState(initialShowForm);
   const [editingExp,  setEditingExp]  = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [search,      setSearch]      = useState("");
@@ -348,6 +348,7 @@ export default function ExpensesPage() {
       if (idx >= 0) { const u = [...prev]; u[idx] = item; return u; }
       return [item, ...prev];
     });
+    if (initialShowForm && onNavigate) { onNavigate("expenses"); return; }
     setShowForm(false);
     setEditingExp(null);
   };
@@ -360,7 +361,10 @@ export default function ExpensesPage() {
   if (showForm) return (
     <ExpenseForm
       existing={editingExp}
-      onClose={() => { setShowForm(false); setEditingExp(null); }}
+      onClose={() => {
+        if (initialShowForm && onNavigate) { onNavigate("expenses"); return; }
+        setShowForm(false); setEditingExp(null);
+      }}
       onSave={onSave}
     />
   );

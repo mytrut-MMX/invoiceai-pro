@@ -227,10 +227,10 @@ function PaymentModal({ existing, onClose, onSave }) {
 }
 
 // ─── Payments Page ────────────────────────────────────────────────────────────
-export default function PaymentsPage() {
+export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
   const { payments, setPayments, orgSettings } = useContext(AppCtx);
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initialShowForm);
   const [editingPayment, setEditingPayment] = useState(null);
   const [viewingPayment, setViewingPayment] = useState(null);
   const [search, setSearch] = useState("");
@@ -285,11 +285,18 @@ export default function PaymentsPage() {
   }
 
   // New payment form
-  if (showForm) return (
+  if (showForm && !viewingPayment) return (
     <PaymentModal
       existing={editingPayment}
-      onClose={() => { setShowForm(false); setEditingPayment(null); }}
-      onSave={pmt => { onSave(pmt); setShowForm(false); setEditingPayment(null); }}
+      onClose={() => {
+        if (initialShowForm && onNavigate) { onNavigate("payments"); return; }
+        setShowForm(false); setEditingPayment(null);
+      }}
+      onSave={pmt => {
+        onSave(pmt);
+        if (initialShowForm && onNavigate) { onNavigate("payments"); return; }
+        setShowForm(false); setEditingPayment(null);
+      }}
     />
   );
 
