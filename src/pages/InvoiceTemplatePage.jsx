@@ -66,20 +66,33 @@ export default function InvoiceTemplatesPage() {
           <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'20px 20px', marginBottom:12 }}>
             <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'#9A9A9A', marginBottom:16 }}>Template settings</div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16 }}>
-              <Field label="Template">
-                <Select value={pdfTemplate} onChange={setPdfTemplate} options={PDF_TEMPLATES.map(t=>({ value:t.id, label:t.name }))} />
-              </Field>
+              <div>
+                <div style={{ fontSize:12, fontWeight:500, color:'#6B6B6B', marginBottom:8 }}>Template</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {PDF_TEMPLATES.map(t => (
+                    <div key={t.id} onClick={() => setPdfTemplate(t.id)} style={{ padding:'10px 14px', borderRadius:8, border: pdfTemplate === t.id ? '1.5px solid #111110' : '1px solid #E8E6E0', background: pdfTemplate === t.id ? '#111110' : '#FAFAF7', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', transition:'all 0.15s' }}>
+                      <span style={{ fontSize:13, fontWeight:500, color: pdfTemplate === t.id ? '#FAFAF7' : '#111110' }}>{t.name}</span>
+                      {pdfTemplate === t.id && <span style={{ fontSize:10, fontWeight:600, color:'#D97706', letterSpacing:'0.06em' }}>ACTIVE</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
               <Field label="Logo Position">
                 <Select value={logoPosition} onChange={setLogoPosition} options={["left","center","right"]} />
               </Field>
               <Field label="Accent Color">
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)} style={{ width: 36, height: 36, border: "none", background: "none" }} />
+                <div style={{ display:'flex', alignItems:'center', gap:10, background:'#FAFAF7', border:'1px solid #E8E6E0', borderRadius:8, padding:'6px 10px' }}>
+                  <input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)} style={{ width:32, height:32, border:'none', background:'none', cursor:'pointer', padding:0, borderRadius:4 }} />
                   <Input value={accentColor} onChange={setAccentColor} />
                 </div>
               </Field>
               <Field label={`Logo Size: ${companyLogoSize || 52}px`}>
-                <input type="range" min={24} max={100} value={companyLogoSize || 52} onChange={e=>setCompanyLogoSize(Number(e.target.value))} style={{ width: "100%", accentColor: "#E86C4A" }} />
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  <input type="range" min={24} max={100} value={companyLogoSize || 52} onChange={e=>setCompanyLogoSize(Number(e.target.value))} style={{ width:'100%', accentColor:'#111110', cursor:'pointer' }} />
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'#9A9A9A' }}>
+                    <span>24px</span><span>100px</span>
+                  </div>
+                </div>
               </Field>
             </div>
           </div>
@@ -99,10 +112,13 @@ export default function InvoiceTemplatesPage() {
         </div>
 
         {/* RIGHT COLUMN — preview */}
-        <div style={{ background:"#fff", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:12, padding:16 }}>
-          <div style={{ fontSize:12, fontWeight:800, color:"#888", textTransform:"uppercase", marginBottom:8 }}>Live Preview</div>
-          <div style={{ border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", borderRadius:10, overflow:"auto", background:"#f3f4f6", padding:12 }}>
-            <div style={{ transform:"scale(0.78)", transformOrigin:"top center", marginBottom:"-180px" }}>
+        <div style={{ background:'#FFFFFF', border:'1px solid #E8E6E0', borderRadius:12, padding:'20px', position:'sticky', top:24 }}>
+          <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'#9A9A9A', marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            Live Preview
+            <span style={{ fontSize:10, fontWeight:500, background:'#F5F4F0', color:'#9A9A9A', border:'1px solid #E8E6E0', borderRadius:4, padding:'2px 8px', letterSpacing:'0.04em' }}>LIVE PREVIEW</span>
+          </div>
+          <div style={{ background:'#F5F4F0', border:'1px solid #E8E6E0', borderRadius:8, overflow:'auto', padding:'16px 12px', minHeight:400 }}>
+            <div style={{ transform:"scale(0.78)", transformOrigin:"top center", marginBottom:"-160px" }}>
               <A4InvoiceDoc data={previewData} currSymbol="£" isVat orgSettings={{ orgName:"Demo Company" }} accentColor={accentColor} template={pdfTemplate} footerText="" templateConfig={{ logoPosition, logoSize:Number(companyLogoSize||52), showNotesField, showPoField, customFieldLabel, accentColor }} />
             </div>
           </div>
