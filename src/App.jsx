@@ -229,6 +229,7 @@ export default function App() {
     switch(page) {
       case "home":      return <HomePage user={user} onNavigate={handleNavigate} />;
       case "customers": return <CustomersPage />;
+      case "customers:new": return <CustomersPage initialShowForm={true} onNavigate={handleNavigate} />;
       case "items":     return <ItemsPage />;
       case "quotes":    return <QuotesPage onNavigate={handleNavigate} />;
       case "invoices":  return <InvoicesPage />;
