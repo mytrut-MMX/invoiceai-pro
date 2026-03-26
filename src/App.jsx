@@ -176,7 +176,14 @@ export default function App() {
   if(path === '/admin')           return <AdminPage />;
   return (
     <AppCtx.Provider value={ctx}>
-      <AuthPage onAuth={(u)=>{ setUser(u); }} />
+      <AuthPage onAuth={(u)=>{
+        const prev = LS.get("ai_invoice_user", null);
+        if (prev?.email !== u.email) {
+          setOnboardingDoneState(false);
+          LS.set("ai_invoice_onboarding_done", false);
+        }
+        setUser(u);
+      }} />
     </AppCtx.Provider>
   );
 }
