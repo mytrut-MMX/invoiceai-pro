@@ -509,9 +509,9 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
 }
 
 // ─── INVOICES PAGE ────────────────────────────────────────────────────────────
-export default function InvoicesPage() {
+export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
   const { invoices, setInvoices, quotes, setQuotes } = useContext(AppCtx);
-  const [panel, setPanel] = useState(null);
+  const [panel, setPanel] = useState(initialShowForm ? { mode:"new" } : null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
 
@@ -574,11 +574,12 @@ export default function InvoicesPage() {
   }
 
   if (panel) {
+    const isInitialNew = initialShowForm && panel.mode === "new";
     return (
       <InvoiceFormPanel
         existing={panel.mode==="edit" ? panel.invoice : null}
-        onClose={()=>setPanel(null)}
-        onSave={inv=>{ onSave(inv); setPanel(null); }}
+        onClose={()=>{ if(isInitialNew && onNavigate) onNavigate("invoices"); else setPanel(null); }}
+        onSave={inv=>{ onSave(inv); if(isInitialNew && onNavigate) onNavigate("invoices"); else setPanel(null); }}
         onConvertFromQuote={handleConvertAcceptedQuote}
       />
     );

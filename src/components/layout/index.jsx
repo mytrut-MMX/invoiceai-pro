@@ -6,11 +6,11 @@ import InvoiceSagaLogo from "../InvoiceSagaLogo";
 export const NAV = [
   { id:"home",      label:"Home",             Icon:Icons.Home },
   { id:"customers", label:"Customers",         Icon:Icons.Customers, addId:"customers:new" },
-  { id:"items",     label:"Items",             Icon:Icons.Items },
-  { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes },
-  { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices },
-  { id:"payments",  label:"Payments Received", Icon:Icons.Payments },
-  { id:"expenses",  label:"Expenses",          Icon:Icons.Expenses },
+  { id:"items",     label:"Items",             Icon:Icons.Items,     addId:"items:new" },
+  { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes,    addId:"quotes:new" },
+  { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices,  addId:"invoices:new" },
+  { id:"payments",  label:"Payments Received", Icon:Icons.Payments,  addId:"payments:new" },
+  { id:"expenses",  label:"Expenses",          Icon:Icons.Expenses,  addId:"expenses:new" },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings },
   ];
 

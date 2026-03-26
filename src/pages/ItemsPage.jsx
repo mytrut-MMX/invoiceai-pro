@@ -6,11 +6,11 @@ import { Btn, Tag, Switch, InfoBox } from "../components/atoms";
 import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 
-export default function ItemsPage() {
+export default function ItemsPage({ initialShowForm = false, onNavigate }) {
   const { orgSettings, catalogItems, setCatalogItems } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
   const isCisOrg = orgSettings?.cisReg === "Yes";
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initialShowForm);
   const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -25,6 +25,7 @@ export default function ItemsPage() {
       if(i>=0){ const u=[...p]; u[i]=item; return u; }
       return [...p, item];
     });
+    if (initialShowForm && onNavigate) { onNavigate("items"); return; }
     setShowForm(false);
     setEditingItem(null);
   };
@@ -37,7 +38,10 @@ export default function ItemsPage() {
   if (showForm) return (
     <ItemForm
       existing={editingItem}
-      onClose={() => { setShowForm(false); setEditingItem(null); }}
+      onClose={() => {
+        if (initialShowForm && onNavigate) { onNavigate("items"); return; }
+        setShowForm(false); setEditingItem(null);
+      }}
       onSave={onSave}
       settings={{ cis: { enabled: orgSettings?.cisReg === "Yes" } }}
     />

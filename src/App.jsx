@@ -228,13 +228,18 @@ export default function App() {
 
     switch(page) {
       case "home":      return <HomePage user={user} onNavigate={handleNavigate} />;
-      case "customers": return <CustomersPage />;
+      case "customers":    return <CustomersPage />;
       case "customers:new": return <CustomersPage initialShowForm={true} onNavigate={handleNavigate} />;
-      case "items":     return <ItemsPage />;
-      case "quotes":    return <QuotesPage onNavigate={handleNavigate} />;
-      case "invoices":  return <InvoicesPage />;
-      case "payments":  return <PaymentsPage />;
-      case "expenses":  return <ExpensesPage />;
+      case "items":        return <ItemsPage />;
+      case "items:new":    return <ItemsPage initialShowForm={true} onNavigate={handleNavigate} />;
+      case "quotes":       return <QuotesPage onNavigate={handleNavigate} />;
+      case "quotes:new":   return <QuotesPage initialShowForm={true} onNavigate={handleNavigate} />;
+      case "invoices":     return <InvoicesPage />;
+      case "invoices:new": return <InvoicesPage initialShowForm={true} onNavigate={handleNavigate} />;
+      case "payments":     return <PaymentsPage />;
+      case "payments:new": return <PaymentsPage initialShowForm={true} onNavigate={handleNavigate} />;
+      case "expenses":     return <ExpensesPage />;
+      case "expenses:new": return <ExpensesPage initialShowForm={true} onNavigate={handleNavigate} />;
       default:          return <HomePage user={user} onNavigate={handleNavigate} />;
     }
   };
