@@ -5,7 +5,7 @@ export default function PrivacyPage() {
   return (
     <LegalLayout title="Privacy Policy" lastUpdated="1 January 2025">
 
-      <InfoCard color="#0EA5E9">
+      <InfoCard>
         <strong>Summary:</strong> InvoiceSaga collects only the data needed to provide our invoicing service. We do not sell your data. All data is stored securely and you can request deletion at any time.
       </InfoCard>
 
