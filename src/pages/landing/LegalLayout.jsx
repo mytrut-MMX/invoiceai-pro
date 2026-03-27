@@ -1,4 +1,5 @@
 import React from 'react';
+
 import SharedFooter from '../../components/SharedFooter';
 
 const nav = {
@@ -10,23 +11,15 @@ const nav = {
 
 export default function LegalLayout({ title, lastUpdated, children }) {
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin: 0, background: '#F8FAFC', minHeight: '100vh' }}>
+    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin: 0, background: '#FAFAF7', minHeight: '100vh' }}>
 
-      {/* Nav */}
-      <nav style={nav}>
-        <a href="/" style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: -0.5, textDecoration: 'none' }}>
-          Invoice<span style={{ color: '#0EA5E9' }}>Saga</span>
-        </a>
-        <a href="/signup" style={{ background: '#0EA5E9', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, fontSize: 14, cursor: 'pointer', textDecoration: 'none' }}>
-          Get started free
-        </a>
-      </nav>
+      <SharedNav />
 
       {/* Page header */}
-      <div style={{ background: '#0F172A', padding: '56px 2rem 48px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, color: '#fff', margin: '0 0 12px', letterSpacing: -0.5 }}>{title}</h1>
+      <div style={{ background: '#F5F4F0', padding: '56px 2rem 48px', textAlign: 'center', borderBottom: '1px solid #E8E6E0' }}>
+        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, color: '#111110', margin: '0 0 12px', letterSpacing: -0.5, fontFamily: 'Georgia, "Times New Roman", serif' }}>{title}</h1>
         {lastUpdated && (
-          <p style={{ fontSize: 14, color: '#94A3B8', margin: 0 }}>Last updated: {lastUpdated}</p>
+          <p style={{ fontSize: 14, color: '#6B6B6B', margin: 0 }}>Last updated: {lastUpdated}</p>
         )}
       </div>
 
@@ -35,8 +28,8 @@ export default function LegalLayout({ title, lastUpdated, children }) {
         {children}
       </main>
 
-      {/* Footer */}
-      <SharedFooter links="min" />
+      <SharedFooter />
+
     </div>
   );
 }
@@ -45,7 +38,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
 export function Section({ title, children }) {
   return (
     <section style={{ marginBottom: 40 }}>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>{title}</h2>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111110', margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>{title}</h2>
       <div style={{ fontSize: 15, color: '#374151', lineHeight: 1.75 }}>{children}</div>
     </section>
   );
@@ -63,7 +56,7 @@ export function UL({ items }) {
   );
 }
 
-export function InfoCard({ children, color = '#0EA5E9' }) {
+export function InfoCard({ children, color = '#D97706' }) {
   return (
     <div style={{ background: color + '10', border: `1px solid ${color}30`, borderRadius: 10, padding: '16px 20px', marginBottom: 14, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
       {children}
