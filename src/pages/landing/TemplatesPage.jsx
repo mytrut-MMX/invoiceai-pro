@@ -60,10 +60,10 @@ export default function TemplatesPage() {
       <nav className="tp-nav">
         <a href="/" className="tp-nav-logo">Invoice<span>Saga</span></a>
         <div className="tp-nav-links">
-          <a href="/#features"  className="tp-nav-link">Features</a>
-          <a href="/templates"  className="tp-nav-link tp-nav-active">Templates</a>
-          <a href="/#pricing"   className="tp-nav-link">Pricing</a>
-          <a href="/demo"       className="tp-nav-link tp-nav-cta">Try Demo →</a>
+          <a href="/#features"  className="tp-nav-link" style={{ color:'#6B6B6B' }}>Features</a>
+          <a href="/templates"  className="tp-nav-link tp-nav-active" style={{ color:'#111110' }}>Templates</a>
+          <a href="/#pricing"   className="tp-nav-link" style={{ color:'#6B6B6B' }}>Pricing</a>
+          <a href="/signup"     className="tp-nav-cta">Start free →</a>
         </div>
       </nav>
 
@@ -126,7 +126,7 @@ export default function TemplatesPage() {
               </div>
             </div>
             <div className="tp-card-body">
-              <div className="tp-card-tag tp-tag-general">📄 General Purpose</div>
+              <div className="tp-card-tag tp-tag-general">General Purpose</div>
               <h2>Invoice &amp; Quote Generator</h2>
               <p className="tp-card-desc">The all-purpose invoice and quote tool for freelancers, consultants, and any small business. Switch between Quote and Invoice mode, export PDF, and autosave your draft.</p>
               <div className="tp-feature-pills">
@@ -194,7 +194,7 @@ export default function TemplatesPage() {
               </div>
             </div>
             <div className="tp-card-body">
-              <div className="tp-card-tag tp-tag-construction">🏗️ UK Construction Industry</div>
+              <div className="tp-card-tag tp-tag-construction">UK Construction Industry</div>
               <h2>Construction Invoice Generator</h2>
               <p className="tp-card-desc">Purpose-built for UK subcontractors and contractors. Handles CIS deductions (NET/GROSS), Domestic Reverse Charge VAT, and CIS-exempt materials lines automatically.</p>
               <div className="tp-feature-pills">
@@ -256,15 +256,21 @@ export default function TemplatesPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="tp-footer">
-        <p>
-          <strong>InvoiceSaga</strong> &nbsp;·&nbsp;
-          <a href="/">Home</a> &nbsp;·&nbsp;
-          <a href="/templates">Templates</a> &nbsp;·&nbsp;
-          <a href="/demo">Try Demo</a> &nbsp;·&nbsp;
-          <a href="mailto:support@invoicesaga.com">Contact</a>
-        </p>
-        <p>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</p>
+      <footer style={{ background:'#0A0A09', padding:'32px 2rem', textAlign:'center', color:'#6B6B6B', fontSize:14, borderTop:'1px solid #1C1C1B' }}>
+        <div style={{ marginBottom:8 }}>
+          <span style={{ color:'#D97706', fontWeight:700 }}>InvoiceSaga</span>
+          {' · '}
+          <a href="/" style={{ color:'#475569', textDecoration:'none' }}>Home</a>
+          {' · '}
+          <a href="/templates" style={{ color:'#475569', textDecoration:'none' }}>Templates</a>
+          {' · '}
+          <a href="/contact" style={{ color:'#475569', textDecoration:'none' }}>Contact</a>
+          {' · '}
+          <a href="/privacy" style={{ color:'#475569', textDecoration:'none' }}>Privacy Policy</a>
+          {' · '}
+          <a href="/terms" style={{ color:'#475569', textDecoration:'none' }}>Terms of Service</a>
+        </div>
+        <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
       </footer>
 
       <script src="https://assets.lemonsqueezy.com/lemon.js" defer />
