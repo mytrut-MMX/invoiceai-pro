@@ -1,4 +1,5 @@
 import React from 'react';
+import SharedFooter from '../../components/SharedFooter';
 
 const nav = {
   position: 'sticky', top: 0, zIndex: 100,
@@ -35,20 +36,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
       </main>
 
       {/* Footer */}
-      <footer style={{ background: '#020617', padding: '32px 2rem', textAlign: 'center', color: '#475569', fontSize: 14 }}>
-        <div style={{ marginBottom: 8 }}>
-          <span style={{ color: '#0EA5E9', fontWeight: 700 }}>InvoiceSaga</span>
-          {' · '}
-          <a href="/privacy" style={{ color: '#475569' }}>Privacy Policy</a>
-          {' · '}
-          <a href="/terms" style={{ color: '#475569' }}>Terms of Service</a>
-          {' · '}
-          <a href="/cookies" style={{ color: '#475569' }}>Cookie Policy</a>
-          {' · '}
-          <a href="/gdpr" style={{ color: '#475569' }}>GDPR</a>
-        </div>
-        <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
-      </footer>
+      <SharedFooter links="min" />
     </div>
   );
 }
