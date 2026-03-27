@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { validateUkCrn } from '../utils/helpers'
 
 const STEPS = [
-  { title: 'Company Details', icon: '🏢' },
-  { title: 'Contact & Address', icon: '📍' },
-  { title: 'Industry & Tax', icon: '⚙️' },
-  { title: 'Bank & Payment', icon: '🏦' },
-  { title: 'API & Email', icon: '🔌' },
+  { title: 'Company Details' },
+  { title: 'Contact & Address' },
+  { title: 'Industry & Tax' },
+  { title: 'Bank & Payment' },
+  { title: 'Integrations' },
 ]
 
 export default function SetupWizard({ onComplete }) {
@@ -54,11 +54,11 @@ export default function SetupWizard({ onComplete }) {
     <div>
       <label style={{ fontSize: 11, fontWeight: 600, color: errors[k] ? '#dc2626' : '#64748b', display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}{required && ' *'}</label>
       {type === 'select'
-        ? <select value={data[k] || ''} onChange={e => set(k, e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${errors[k] ? '#dc2626' : '#e2e8f0'}`, background: '#f8fafc', fontSize: 14, outline: 'none' }}>
+        ? <select value={data[k] || ''} onChange={e => set(k, e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${errors[k] ? '#dc2626' : '#e2e8f0'}`, background: '#FFFFFF', fontSize: 14, outline: 'none' }}>
             {(options || []).map(o => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
           </select>
         : <input type={type} value={data[k] || ''} onChange={e => set(k, e.target.value)} placeholder={placeholder}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${errors[k] ? '#dc2626' : '#e2e8f0'}`, background: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${errors[k] ? '#dc2626' : '#e2e8f0'}`, background: '#FFFFFF', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />}
       {errors[k] && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>Required</div>}
     </div>
   )
@@ -69,10 +69,12 @@ export default function SetupWizard({ onComplete }) {
       <div style={{ display: 'flex', gap: 8 }}>
         {['yes', 'no'].map(v => (
           <button key={v} onClick={() => set(k, v)} style={{
-            flex: 1, padding: '9px', borderRadius: 8, border: `1.5px solid ${data[k] === v ? '#1a1a2e' : '#e2e8f0'}`,
-            background: data[k] === v ? '#1a1a2e' : '#f8fafc',
-            color: data[k] === v ? '#e2b96a' : '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 13,
-          }}>{v === 'yes' ? '✅ Yes' : '❌ No'}</button>
+            flex: 1, padding: '9px', borderRadius: 8,
+            background: data[k] === v ? '#111110' : '#FAFAF7',
+            color: data[k] === v ? '#FAFAF7' : '#6B6B6B',
+            border: `1.5px solid ${data[k] === v ? '#111110' : '#E8E6E0'}`,
+            fontWeight: 700, cursor: 'pointer', fontSize: 13,
+          }}>{v === 'yes' ? 'Yes' : 'No'}</button>
         ))}
       </div>
       {hint && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{hint}</div>}
@@ -86,7 +88,9 @@ export default function SetupWizard({ onComplete }) {
         <label style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', padding: '12px 14px', border: '2px dashed #e2e8f0', borderRadius: 10 }}>
           {logoPreview
             ? <img src={logoPreview} alt="logo" style={{ height: 44, objectFit: 'contain', borderRadius: 6 }} />
-            : <div style={{ width: 44, height: 44, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🖼️</div>}
+            : <div style={{ width: 44, height: 44, borderRadius: 8, background: '#F5F4F0', border: '1px solid #E8E6E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9A9A9A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>}
           <div>
             <div style={{ fontWeight: 600, fontSize: 14, color: '#334155' }}>{logoPreview ? 'Change logo' : 'Upload company logo'}</div>
             <div style={{ fontSize: 12, color: '#94a3b8' }}>Shown on all invoices & quotes</div>
@@ -189,7 +193,6 @@ export default function SetupWizard({ onComplete }) {
 
         <div style={{ background: '#FFFFFF', borderRadius: 12, padding: 32, border: '1px solid #E8E6E0', boxShadow: '0 2px 24px rgba(0,0,0,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-            <span style={{ fontSize: 20 }}>{STEPS[step].icon}</span>
             <div>
               <div style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>Step {step + 1} of {STEPS.length}</div>
               <div style={{ fontSize: 17, fontWeight: 400, color: '#111110', fontFamily: 'Georgia, serif' }}>{STEPS[step].title}</div>
