@@ -26,6 +26,18 @@ export const SIDEBAR_FULL = 220;
 export const SIDEBAR_ICON = 54;
 
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+function isDark(color = "") {
+  const rgb = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  let r, g, b;
+  if (rgb) { r = +rgb[1]; g = +rgb[2]; b = +rgb[3]; }
+  else {
+    const hex = color.replace("#", "");
+    if (hex.length >= 6) { r = parseInt(hex.slice(0,2),16); g = parseInt(hex.slice(2,4),16); b = parseInt(hex.slice(4,6),16); }
+    else { return false; }
+  }
+  return (0.299*r + 0.587*g + 0.114*b) / 255 < 0.5;
+}
+
 export function Sidebar({
   activePage, onNavigate,
   user, onUserClick, onLogout,
@@ -33,26 +45,35 @@ export function Sidebar({
   collapsed = false,
   onCollapsedChange,
   userAvatar,
+  sidebarBg = "rgb(33, 38, 60)",
 }) {
   const toggleCollapsed = () => onCollapsedChange?.(!collapsed);
+  const dark = isDark(sidebarBg);
+  const txt     = dark ? "rgba(255,255,255,0.82)" : "#374151";
+  const txtOn   = dark ? "#fff"                   : "#1e6be0";
+  const bgOn    = dark ? "rgba(255,255,255,0.12)" : "#e8f0fc";
+  const bgHover = dark ? "rgba(255,255,255,0.07)" : "#f3f4f6";
+  const border  = dark ? "rgba(255,255,255,0.10)" : "#e8e8ec";
+  const iconOn  = dark ? "rgba(255,255,255,0.12)" : "#e8f0fc";
+  const accentBar = accent;
 
   return (
     <div style={{
       width: collapsed ? SIDEBAR_ICON : SIDEBAR_FULL,
       height: "100vh",
-      background: "#fff",
+      background: sidebarBg,
       display: "flex",
       flexDirection: "column",
       fontFamily: ff,
       overflow: "hidden",
       transition: "width 0.22s cubic-bezier(.4,0,.2,1)",
       flexShrink: 0,
-      borderRight: "1px solid #e8e8ec",
+      borderRight: `1px solid ${border}`,
     }}>
       {/* Logo */}
       <div style={{
         padding: collapsed ? "16px 0" : "18px 14px 14px",
-        borderBottom: "1px solid #e8e8ec",
+        borderBottom: `1px solid ${border}`,
         display: "flex", alignItems: "center",
         justifyContent: collapsed ? "center" : "space-between",
         flexShrink: 0,
@@ -79,32 +100,32 @@ export function Sidebar({
           const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id || activePage === addId;
           return collapsed ? (
             <button key={id} onClick={() => onNavigate(id)} title={label}
-              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
-              onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="#f3f4f6"; }}
+              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?bgOn:"none", color:on?txtOn:txt, cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
+              onMouseEnter={e=>{ if(!on) e.currentTarget.style.background=bgHover; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
               <Icon />
-              {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
+              {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:accentBar }} />}
             </button>
           ) : (
             <div key={id} style={{ position:"relative", marginBottom:2 }}>
               <button onClick={() => onNavigate(id)}
-                style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", paddingRight: addId ? 36 : 12, borderRadius:8, border:"none", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, textAlign:"left", transition:"all 0.15s", position:"relative" }}
-                onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="#f3f4f6"; }}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", paddingRight: addId ? 36 : 12, borderRadius:8, border:"none", background:on?bgOn:"none", color:on?txtOn:txt, cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, textAlign:"left", transition:"all 0.15s", position:"relative" }}
+                onMouseEnter={e=>{ if(!on) e.currentTarget.style.background=bgHover; }}
                 onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
-                <span style={on ? { background:"#e8f0fc", borderRadius:7, width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } : { width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={on ? { background:iconOn, borderRadius:7, width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } : { width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <Icon />
                 </span>
                 {label}
-                {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:"#1e6be0" }} />}
+                {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:accentBar }} />}
               </button>
               {addId && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); onNavigate(activePage === addId ? id : addId); }}
                   title={activePage === addId ? label : `New ${label.replace(/s$/,"")}`}
-                  style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:"none", background: activePage === addId ? "#1e6be0" : on ? "#c7d9f9" : "#e8e8ec", color: activePage === addId ? "#fff" : on ? "#1e6be0" : "#6b7280", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, transition:"all 0.15s", flexShrink:0, zIndex:2 }}
-                  onMouseEnter={e=>{ e.currentTarget.style.background = activePage === addId ? "#1557c0" : "#1e6be0"; e.currentTarget.style.color="#fff"; }}
-                  onMouseLeave={e=>{ e.currentTarget.style.background = activePage === addId ? "#1e6be0" : on ? "#c7d9f9" : "#e8e8ec"; e.currentTarget.style.color = activePage === addId ? "#fff" : on ? "#1e6be0" : "#6b7280"; }}>
+                  style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:"none", background: activePage === addId ? accent : bgOn, color: activePage === addId ? "#fff" : txtOn, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, transition:"all 0.15s", flexShrink:0, zIndex:2 }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background=accent; e.currentTarget.style.color="#fff"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background = activePage === addId ? accent : bgOn; e.currentTarget.style.color = activePage === addId ? "#fff" : txtOn; }}>
                   <span style={{ pointerEvents:"none", display:"flex" }}><Icons.Plus /></span>
                 </button>
               )}
@@ -116,7 +137,7 @@ export function Sidebar({
       {/* User footer */}
       <div style={{
         padding: collapsed ? "10px 0 14px" : "10px 12px 14px",
-        borderTop: "1px solid #e8e8ec",
+        borderTop: `1px solid ${border}`,
         display: "flex", alignItems: "center",
         justifyContent: collapsed ? "center" : "unset",
         gap: 9, flexShrink: 0,
@@ -129,17 +150,17 @@ export function Sidebar({
         </button>
         {!collapsed && (<>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ color:"#1a1a2e", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user?.name}</div>
-            <div style={{ color:"#6b7280", fontSize:11 }}>{user?.role}</div>
+            <div style={{ color:txtOn, fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user?.name}</div>
+            <div style={{ color:txt, fontSize:11 }}>{user?.role}</div>
           </div>
           <button onClick={onUserClick} title="Edit profile"
-            style={{ background:"none", border:"none", cursor:"pointer", color:"#9ca3af", padding:2, display:"flex" }}
+            style={{ background:"none", border:"none", cursor:"pointer", color:txt, padding:2, display:"flex" }}
             onMouseEnter={e=>e.currentTarget.style.color=accent}
-            onMouseLeave={e=>e.currentTarget.style.color="#6b7280"}>
+            onMouseLeave={e=>e.currentTarget.style.color=txt}>
             <Icons.Pen />
           </button>
           <button onClick={onLogout}
-            style={{ border:"none", background:"#f3f4f6", color:"#374151", borderRadius:8, padding:"7px 10px", fontSize:12, cursor:"pointer", fontFamily:ff }}>
+            style={{ border:"none", background:bgHover, color:txtOn, borderRadius:8, padding:"7px 10px", fontSize:12, cursor:"pointer", fontFamily:ff }}>
             Log Out
           </button>
         </>)}
