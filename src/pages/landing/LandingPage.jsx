@@ -107,7 +107,7 @@ export default function LandingPage() {
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:24 }}>
           <a href="#pricing" style={{ color:'#6B6B6B', fontSize:14, fontWeight:400, textDecoration:'none' }}>Pricing</a>
-          <a href="/templates" style={{ color:'#94A3B8', fontSize:14, fontWeight:500, textDecoration:'none' }}>Templates</a>
+          <a href="/templates" style={{ color:'#6B6B6B', fontSize:14, fontWeight:400, textDecoration:'none' }}>Templates</a>
           <a href="/login" style={s.navLogin}>Log in</a>
           <a href="/signup" style={s.navCta}>Start free →</a>
         </div>
@@ -123,7 +123,7 @@ export default function LandingPage() {
             <p style={s.heroSub}>No bloat, no learning curve. InvoiceSaga is the simple invoicing tool freelancers actually enjoy using — because getting paid shouldn't be the hardest part of the job.</p>
             <div style={{ ...s.heroBtns, justifyContent:'flex-start' }}>
               <a href="/signup" style={s.btnPrimary}>Start for free →</a>
-              <a href="/signup" style={s.btnSecondary}>How it works →</a>
+              <a href="#how-it-works" style={s.btnSecondary}>How it works →</a>
             </div>
           </div>
           {/* Right column — invoice mockup */}
@@ -236,7 +236,7 @@ export default function LandingPage() {
       </div>
 
       {/* How it works */}
-      <div style={{ background:'#fff' }}>
+      <div id="how-it-works" style={{ background:'#fff' }}>
         <div style={s.section}>
           <h2 style={s.sectionTitle}>Three steps. Zero confusion.</h2>
           <p style={s.sectionSub}>You'll send your first invoice before finishing your coffee.</p>
@@ -259,7 +259,7 @@ export default function LandingPage() {
       </div>
 
       {/* Pricing */}
-      <div style={s.sectionLight}>
+      <div id="pricing" style={s.sectionLight}>
         <div style={s.section}>
           <h2 style={s.sectionTitle}>Simple, honest pricing</h2>
           <p style={s.sectionSub}>Start free, upgrade when you need more.</p>
@@ -335,7 +335,7 @@ export default function LandingPage() {
       <footer style={{ ...s.footer, borderTop:'1px solid #1C1C1B' }}>
         <div style={{ marginBottom:24, fontSize:16, fontWeight:600, color:'#FAFAF7' }}>Invoice<span style={{ color:'#D97706' }}>Saga</span></div>
         <div style={{ marginBottom:8 }}>
-          <span style={{ color:'#0EA5E9', fontWeight:700 }}>InvoiceSaga</span>
+          <span style={{ color:'#D97706', fontWeight:700 }}>InvoiceSaga</span>
           {' · '}
           <a href="/templates" style={{ color:'#475569' }}>Offline Generator</a>
           {' · '}
