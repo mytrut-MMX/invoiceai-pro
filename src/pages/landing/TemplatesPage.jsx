@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import './TemplatesPage.css';
+import SharedNav from '../../components/SharedNav';
 
 const compareRows = [
   { feature: 'Quote & Invoice modes',           general: true,  construction: true  },
@@ -56,16 +57,7 @@ export default function TemplatesPage() {
     <div style={{ minHeight:'100vh', background:'#FAFAF7', padding:'clamp(24px, 5vw, 48px) clamp(16px, 5vw, 40px)', fontFamily:"'Lato','DM Sans','Helvetica Neue',sans-serif", boxSizing:'border-box' }}>
       <div style={{ maxWidth:960, margin:'0 auto' }}>
 
-      {/* NAV */}
-      <nav className="tp-nav">
-        <a href="/" className="tp-nav-logo">Invoice<span>Saga</span></a>
-        <div className="tp-nav-links">
-          <a href="/#features"  className="tp-nav-link" style={{ color:'#6B6B6B' }}>Features</a>
-          <a href="/templates"  className="tp-nav-link tp-nav-active" style={{ color:'#111110' }}>Templates</a>
-          <a href="/#pricing"   className="tp-nav-link" style={{ color:'#6B6B6B' }}>Pricing</a>
-          <a href="/signup"     className="tp-nav-cta">Start free →</a>
-        </div>
-      </nav>
+      <SharedNav activePage="templates" />
 
       {/* PAGE HERO */}
       <section className="tp-page-hero">

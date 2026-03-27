@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SharedNav from '../../components/SharedNav';
 
 const s = {
   nav: { position:'sticky', top:0, zIndex:100, background:'#FAFAF7', borderBottom:'1px solid #E8E6E0', padding:'0 2rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:60 },
@@ -65,14 +66,7 @@ export default function ContactPage() {
 
   return (
     <div style={s.page}>
-      {/* Nav */}
-      <nav style={s.nav}>
-        <a href="/" style={{ ...s.logo, textDecoration:'none' }}>Invoice<span style={s.logoAccent}>Saga</span></a>
-        <div style={{ display:'flex', alignItems:'center', gap:24 }}>
-          <a href="/templates" style={{ color:'#94A3B8', fontSize:14, fontWeight:500, textDecoration:'none' }}>Offline Generator</a>
-          <a href="/signup" style={s.navCta}>Get started free</a>
-        </div>
-      </nav>
+      <SharedNav />
 
       {/* Hero */}
       <div style={s.hero}>
