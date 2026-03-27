@@ -102,7 +102,7 @@ function BtnSkip({ onClick }) {
       background:"transparent", color:"#9A9A9A", border:"none",
       cursor:"pointer", fontFamily:ff, marginTop:4,
     }}>
-      Skip for now →
+      I'll do this later
     </button>
   );
 }
@@ -112,12 +112,14 @@ function StepWelcome({ onNext, userName }) {
   return (
     <Card>
       <div style={{ textAlign:"center" }}>
-        <div style={{ width:48, height:48, background:"#F5F4F0", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", fontSize:26 }}>🧾</div>
+        <div style={{ width:48, height:48, background:"#111110", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
+          <span style={{ fontSize:18, fontWeight:700, color:"#D97706", letterSpacing:-0.5, fontFamily:"Georgia, serif" }}>IS</span>
+        </div>
         <h1 style={{ fontSize:24, fontWeight:400, fontFamily:"Georgia, serif", color:"#111110", margin:"0 0 10px", letterSpacing:-0.3 }}>
           Welcome{userName ? `, ${userName.split(" ")[0]}` : ""}!
         </h1>
         <p style={{ fontSize:15, color:"#64748B", lineHeight:1.6, margin:"0 0 32px" }}>
-          Let's get you set up in under 2 minutes.<br />We'll configure your account and send your first invoice.
+          You'll send your first invoice before you finish this setup.<br />Three quick steps and you're ready to get paid.
         </p>
         <div style={{ display:"flex", flexDirection:"column", gap:10, textAlign:"left", background:"#F5F4F0", border:"1px solid #E8E6E0", borderRadius:8, padding:"14px 18px", marginBottom:28 }}>
           {["Set up your organization", "Add your first client", "Create your first invoice"].map((s, i) => (
@@ -218,10 +220,12 @@ function StepDone({ onFinish, invoiceCreated }) {
       <Confetti />
       <Card>
         <div style={{ textAlign:"center" }}>
-          <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
-          <h2 style={{ fontSize:24, fontWeight:400, fontFamily:"Georgia, serif", color:"#111110", margin:"0 0 10px" }}>You're all set!</h2>
+          <div style={{ width:56, height:56, background:"#111110", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h2 style={{ fontSize:24, fontWeight:400, fontFamily:"Georgia, serif", color:"#111110", margin:"0 0 10px" }}>You're ready to get paid.</h2>
           <p style={{ fontSize:15, color:"#64748B", lineHeight:1.6, margin:"0 0 28px" }}>
-            Your account is ready.{invoiceCreated ? " Your first invoice has been created as a draft." : ""}
+            Your account is set up.{invoiceCreated ? " Your first invoice has been created as a draft." : ""}
           </p>
           <BtnPrimary onClick={onFinish}>Go to dashboard →</BtnPrimary>
         </div>
