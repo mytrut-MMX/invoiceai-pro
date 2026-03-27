@@ -3,7 +3,7 @@ import { useState } from 'react';
 const s = {
   nav: { position:'sticky', top:0, zIndex:100, background:'#0F172A', borderBottom:'1px solid #1E293B', padding:'0 2rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:64 },
   logo: { fontSize:20, fontWeight:700, color:'#fff', letterSpacing:-0.5 },
-  logoAccent: { color:'#0EA5E9' },
+  logoAccent: { color:'#D97706' },
   navCta: { background:'#0EA5E9', color:'#fff', border:'none', borderRadius:8, padding:'8px 20px', fontWeight:600, fontSize:14, cursor:'pointer', textDecoration:'none' },
   page: { background:'#F8FAFC', minHeight:'100vh', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   hero: { background:'#0F172A', padding:'64px 2rem 56px', textAlign:'center' },
@@ -170,7 +170,7 @@ export default function ContactPage() {
       {/* Footer */}
       <footer style={s.footer}>
         <div style={{ marginBottom:8 }}>
-          <span style={{ color:'#0EA5E9', fontWeight:700 }}>InvoiceSaga</span>
+          <span style={{ color:'#D97706', fontWeight:700 }}>InvoiceSaga</span>
           {' · '}
           <a href="/contact" style={{ color:'#475569' }}>Contact</a>
           {' · '}
