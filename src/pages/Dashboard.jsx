@@ -6,12 +6,12 @@ import TemplateDesigner from '../components/TemplateDesigner.jsx'
 import AIChat from '../components/AIChat.jsx'
 
 const NAV = [
-  { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
-  { id: 'invoices',  icon: '🧾', label: 'Invoices' },
-  { id: 'quotes',    icon: '📋', label: 'Quotes' },
-  { id: 'clients',   icon: '👥', label: 'Clients' },
-  { id: 'products',  icon: '📦', label: 'Products' },
-  { id: 'settings',  icon: '⚙️', label: 'Settings' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'invoices',  label: 'Invoices' },
+  { id: 'quotes',    label: 'Quotes' },
+  { id: 'clients',   label: 'Clients' },
+  { id: 'products',  label: 'Products' },
+  { id: 'settings',  label: 'Settings' },
 ]
 
 export default function Dashboard({ store }) {
@@ -111,30 +111,30 @@ export default function Dashboard({ store }) {
   })
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", background: '#f7f4ef' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: '#F5F4F0' }}>
 
       {/* Sidebar */}
       <div style={{ width: 220, background: '#1a1a2e', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100 }}>
         <div style={{ padding: '22px 20px 16px' }}>
           {company.logo
             ? <img src={company.logo} alt="" style={{ height: 34, objectFit: 'contain', marginBottom: 4 }} />
-            : <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, fontWeight: 900, color: '#e2b96a' }}>{company.name}</div>}
+            : <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 17, fontWeight: 900, color: '#D97706' }}>{company.name}</div>}
           <div style={{ fontSize: 10, color: '#334155', marginTop: 3 }}>Invoice Management</div>
         </div>
         <nav style={{ flex: 1, padding: '0 10px' }}>
           {NAV.map(n => {
             const activePage = page === 'quote-editor' ? 'quotes' : page
             return (
-            <button key={n.id} onClick={() => setPage(n.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', marginBottom: 2, textAlign: 'left', background: activePage === n.id ? '#e2b96a15' : 'transparent', color: activePage === n.id ? '#e2b96a' : '#94a3b8', fontWeight: activePage === n.id ? 700 : 400, fontSize: 14, borderLeft: activePage === n.id ? '3px solid #e2b96a' : '3px solid transparent' }}>
-              <span style={{ fontSize: 15 }}>{n.icon}</span>{n.label}
+            <button key={n.id} onClick={() => setPage(n.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', marginBottom: 2, textAlign: 'left', background: activePage === n.id ? '#D9770615' : 'transparent', color: activePage === n.id ? '#D97706' : '#94a3b8', fontWeight: activePage === n.id ? 700 : 400, fontSize: 14, borderLeft: activePage === n.id ? '3px solid #D97706' : '3px solid transparent' }}>
+              {n.label}
               {n.id === 'invoices' && allInvoicesList.filter(i => i.status === 'overdue').length > 0 && <span style={{ marginLeft: 'auto', background: '#dc2626', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: 10, fontWeight: 700 }}>{allInvoicesList.filter(i => i.status === 'overdue').length}</span>}
             </button>
             )
           })} 
         </nav>
         <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <button onClick={() => setShowTemplateDesigner(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e2b96a44', cursor: 'pointer', background: 'transparent', color: '#e2b96a', fontWeight: 700, fontSize: 12 }}>🎨 Template Designer</button>
-          <button onClick={() => setShowAI(!showAI)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #33415544', cursor: 'pointer', background: showAI ? '#e2b96a22' : 'transparent', color: '#94a3b8', fontWeight: 600, fontSize: 12 }}>✨ AI Assistant</button>
+          <button onClick={() => setShowTemplateDesigner(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #D9770644', cursor: 'pointer', background: 'transparent', color: '#D97706', fontWeight: 700, fontSize: 12 }}>Template Designer</button>
+          <button onClick={() => setShowAI(!showAI)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #33415544', cursor: 'pointer', background: showAI ? '#D9770622' : 'transparent', color: '#94a3b8', fontWeight: 600, fontSize: 12 }}>AI Assistant</button>
         </div>
       </div>
 
@@ -145,14 +145,14 @@ export default function Dashboard({ store }) {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 26 }}>
               <div>
-                <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 900, color: '#1a1a2e' }}>
-                  Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'} 👋
+                <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 30, fontWeight: 900, color: '#1a1a2e' }}>
+                  Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'},
                 </h1>
                 <div style={{ color: '#64748b', marginTop: 2 }}>{company.name} — Financial Overview</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => openNew('quote')} style={{ padding: '9px 16px', borderRadius: 10, border: '1.5px solid #1a1a2e', background: 'transparent', color: '#1a1a2e', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>+ New Quote</button>
-                <button onClick={() => openNew('invoice')} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#e2b96a', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>+ New Invoice</button>
+                <button onClick={() => openNew('invoice')} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#D97706', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>+ New Invoice</button>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
@@ -178,15 +178,15 @@ export default function Dashboard({ store }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 8, background: templateConfig.headerBg || '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🎨</div>
                 <div>
-                  <div style={{ fontWeight: 700, color: '#1a1a2e', fontSize: 13 }}>Active Template: <span style={{ color: templateConfig.accentColor || '#e2b96a' }}>{BUILT_IN_THEMES.find(t => t.id === templateConfig._themeId)?.name || 'Noir Executive'}</span></div>
+                  <div style={{ fontWeight: 700, color: '#1a1a2e', fontSize: 13 }}>Active Template: <span style={{ color: templateConfig.accentColor || '#D97706' }}>{BUILT_IN_THEMES.find(t => t.id === templateConfig._themeId)?.name || 'Noir Executive'}</span></div>
                   <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>Applied to all invoices & quotes</div>
                 </div>
               </div>
-              <button onClick={() => setShowTemplateDesigner(true)} style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e2b96a', background: 'transparent', color: '#1a1a2e', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>Edit Template →</button>
+              <button onClick={() => setShowTemplateDesigner(true)} style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid #D97706', background: 'transparent', color: '#1a1a2e', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>Edit Template →</button>
             </div>
             <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1px solid #f1f5f9' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', fontFamily: "'Playfair Display',serif" }}>Recent Invoices</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', fontFamily: "Georgia, 'Times New Roman', serif" }}>Recent Invoices</div>
                 <button onClick={() => setPage('invoices')} style={{ fontSize: 13, color: '#2563eb', background: 'transparent', border: 'none', cursor: 'pointer' }}>View all →</button>
               </div>
               <DocTable docs={allInvoicesList.slice(0, 6)} company={company} onEdit={openEdit} onPreview={setPreviewInvoice} onDelete={deleteDoc} onEmail={sendEmail} onStatusChange={(id, st) => setInvoices(p => p.map(i => i.id === id ? { ...i, status: st } : i))} />
@@ -206,7 +206,7 @@ export default function Dashboard({ store }) {
          {page === 'quote-editor' && showEditor && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: '#1a1a2e', margin: 0 }}>New Quote</h1>
+              <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 26, fontWeight: 900, color: '#1a1a2e', margin: 0 }}>New Quote</h1>
               <button
                 onClick={() => { setShowEditor(false); setEditingInvoice(null); setAiDraft(null); setEditorAsPage(false); setPage(editorReturnPage) }}
                 style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #33415533', background: '#fff', color: '#334155', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
@@ -235,7 +235,7 @@ export default function Dashboard({ store }) {
       {showAI && (
         <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 340, zIndex: 200, padding: 14, background: '#f7f4ef', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>✨ AI Assistant</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>AI Assistant</div>
             <button onClick={() => setShowAI(false)} style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8' }}>×</button>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -263,10 +263,10 @@ export default function Dashboard({ store }) {
       {previewInvoice && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,8,18,0.95)', zIndex: 1100, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #334155', background: '#1e1e2e', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>🖨️ Print</button>
-            <button onClick={() => exportWithConfig(previewInvoice, company, templateConfig)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#e2b96a', color: '#0f0f1a', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>📥 Save PDF</button>
-            <button onClick={() => sendEmail(previewInvoice)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>✉️ Send Email</button>
-            <button onClick={() => { setPreviewInvoice(null); setShowTemplateDesigner(true) }} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e2b96a55', background: 'transparent', color: '#e2b96a', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>🎨 Change Template</button>
+            <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #334155', background: '#1e1e2e', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Print</button>
+            <button onClick={() => exportWithConfig(previewInvoice, company, templateConfig)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#D97706', color: '#0f0f1a', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Save PDF</button>
+            <button onClick={() => sendEmail(previewInvoice)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Send Email</button>
+            <button onClick={() => { setPreviewInvoice(null); setShowTemplateDesigner(true) }} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #D9770655', background: 'transparent', color: '#D97706', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Change Template</button>
             <button onClick={() => setPreviewInvoice(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #334155', background: 'transparent', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>✕ Close</button>
           </div>
           <div style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.7)' }}>
@@ -297,8 +297,8 @@ function PageWithDocs({ title, docs, company, search, setSearch, filterStatus, s
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-        <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e' }}>{title}</h1>
-        <button onClick={onNew} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#e2b96a', fontWeight: 700, cursor: 'pointer' }}>+ New {newLabel}</button>
+        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e' }}>{title}</h1>
+        <button onClick={onNew} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#D97706', fontWeight: 700, cursor: 'pointer' }}>+ New {newLabel}</button>
       </div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${title.toLowerCase()}…`} style={{ flex: 1, padding: '9px 14px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: 13, outline: 'none' }} />
@@ -382,12 +382,12 @@ function ClientsPage({ clients, setClients, genId, invoices, company }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 22 }}>
-        <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e' }}>Clients</h1>
-        <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm({ name: '', contact: '', email: '', phone: '', address: '', vat: '' }) }} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#e2b96a', fontWeight: 700, cursor: 'pointer' }}>+ Add Client</button>
+        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e' }}>Clients</h1>
+        <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm({ name: '', contact: '', email: '', phone: '', address: '', vat: '' }) }} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#D97706', fontWeight: 700, cursor: 'pointer' }}>+ Add Client</button>
       </div>
       {showForm && (
         <div style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #e2e8f0', marginBottom: 18 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, fontFamily: "'Playfair Display',serif", color: '#1a1a2e' }}>{editing ? 'Edit' : 'New'} Client</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, fontFamily: "Georgia, 'Times New Roman', serif", color: '#1a1a2e' }}>{editing ? 'Edit' : 'New'} Client</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             {[['Company Name *', 'name'], ['Contact Person', 'contact'], ['Email', 'email'], ['Phone', 'phone'], ['VAT Number', 'vat']].map(([l, k]) => (
               <div key={k}>
@@ -402,7 +402,7 @@ function ClientsPage({ clients, setClients, genId, invoices, company }) {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'flex-end' }}>
             <button onClick={() => { setShowForm(false); setEditing(null) }} style={{ padding: '9px 18px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'transparent', color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-            <button onClick={save} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#1a1a2e', color: '#e2b96a', fontWeight: 700, cursor: 'pointer' }}>{editing ? 'Save' : 'Add Client'}</button>
+            <button onClick={save} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#1a1a2e', color: '#D97706', fontWeight: 700, cursor: 'pointer' }}>{editing ? 'Save' : 'Add Client'}</button>
           </div>
         </div>
       )}
@@ -451,8 +451,8 @@ function ProductsPage({ products, setProducts, genId, company }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 22 }}>
-        <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e' }}>Products & Services</h1>
-        <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm({ name: '', description: '', price: '', unit: 'hrs', category: '', sku: '' }) }} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#e2b96a', fontWeight: 700, cursor: 'pointer' }}>+ Add Product</button>
+        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e' }}>Products & Services</h1>
+        <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm({ name: '', description: '', price: '', unit: 'hrs', category: '', sku: '' }) }} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#1a1a2e', color: '#D97706', fontWeight: 700, cursor: 'pointer' }}>+ Add Product</button>
       </div>
       {showForm && (
         <div style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #e2e8f0', marginBottom: 18 }}>
@@ -470,7 +470,7 @@ function ProductsPage({ products, setProducts, genId, company }) {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'flex-end' }}>
             <button onClick={() => { setShowForm(false); setEditing(null) }} style={{ padding: '9px 18px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'transparent', color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-            <button onClick={save} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#1a1a2e', color: '#e2b96a', fontWeight: 700, cursor: 'pointer' }}>{editing ? 'Save' : 'Add'}</button>
+            <button onClick={save} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#1a1a2e', color: '#D97706', fontWeight: 700, cursor: 'pointer' }}>{editing ? 'Save' : 'Add'}</button>
           </div>
         </div>
       )}
@@ -514,16 +514,16 @@ function SettingsPage({ company, settings, setSettings, onOpenDesigner, template
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e', marginBottom: 24 }}>Settings</h1>
+      <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 28, fontWeight: 900, color: '#1a1a2e', marginBottom: 24 }}>Settings</h1>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
         <div style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #f1f5f9' }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, fontFamily: "'Playfair Display',serif", color: '#1a1a2e' }}>✉️ EmailJS</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, fontFamily: "Georgia, 'Times New Roman', serif", color: '#1a1a2e' }}>EmailJS</div>
           <F label="Service ID" k="emailjs_service" placeholder="service_xxxxxx" />
           <F label="Template ID" k="emailjs_template" placeholder="template_xxxxxx" />
           <F label="Public Key" k="emailjs_public" placeholder="xxxxxxxxxxxxxxxxxxx" type="password" />
         </div>
         <div style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #f1f5f9' }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, fontFamily: "'Playfair Display',serif", color: '#1a1a2e' }}>✨ AI (Anthropic)</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, fontFamily: "Georgia, 'Times New Roman', serif", color: '#1a1a2e' }}>AI (Anthropic)</div>
           {/* SEC-005: API key configured server-side via ANTHROPIC_API_KEY env var */}
           <div style={{ fontSize: 13, color: '#64748b', padding: '8px 0' }}>AI features use the server-configured Anthropic key. No client-side key required.</div>
         </div>
@@ -532,7 +532,7 @@ function SettingsPage({ company, settings, setSettings, onOpenDesigner, template
         <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 22, border: '1px solid #334155', gridColumn: '1/-1' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, fontFamily: "'Playfair Display',serif", color: '#e2b96a' }}>🎨 Invoice Template Designer</div>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, fontFamily: "Georgia, 'Times New Roman', serif", color: '#D97706' }}>Invoice Template Designer</div>
               <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
                 Choose from 5 professional themes · Customise colours, fonts, layout · Live preview · PDF export
               </div>
@@ -543,13 +543,13 @@ function SettingsPage({ company, settings, setSettings, onOpenDesigner, template
                 <span style={{ fontSize: 12, color: '#475569', marginLeft: 4, alignSelf: 'center' }}>Current palette</span>
               </div>
             </div>
-            <button onClick={onOpenDesigner} style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: '#e2b96a', color: '#1a1a2e', fontWeight: 700, cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>Open Designer →</button>
+            <button onClick={onOpenDesigner} style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: '#D97706', color: '#1a1a2e', fontWeight: 700, cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>Open Designer →</button>
           </div>
         </div>
       </div>
       <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={save} style={{ padding: '11px 28px', borderRadius: 10, border: 'none', background: saved ? '#16a34a' : '#1a1a2e', color: saved ? '#fff' : '#e2b96a', fontWeight: 700, cursor: 'pointer', fontSize: 14, transition: 'all 0.3s' }}>
-          {saved ? '✅ Saved!' : '💾 Save Settings'}
+        <button onClick={save} style={{ padding: '11px 28px', borderRadius: 10, border: 'none', background: saved ? '#16a34a' : '#1a1a2e', color: saved ? '#fff' : '#D97706', fontWeight: 700, cursor: 'pointer', fontSize: 14, transition: 'all 0.3s' }}>
+          {saved ? 'Saved' : 'Save Settings'}
         </button>
       </div>
     </div>

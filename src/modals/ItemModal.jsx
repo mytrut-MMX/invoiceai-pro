@@ -37,9 +37,9 @@ function UnitCombobox({ value, onChange, options }) {
         onClick={() => setOpen(o => !o)}
         style={{
           display: "flex", alignItems: "center",
-          border: `1px solid ${open ? "#1e6be0" : "#e8e8ec"}`,
+          border: `1px solid ${open ? "#D97706" : "#E8E6E0"}`,
           borderRadius: 5, background: "#fff", cursor: "text",
-          boxShadow: open ? "0 0 0 2px #1e6be022" : "none",
+          boxShadow: open ? "0 0 0 2px #D9770622" : "none",
           transition: "border-color 0.15s, box-shadow 0.15s",
         }}>
         <input
@@ -50,7 +50,7 @@ function UnitCombobox({ value, onChange, options }) {
           style={{
             flex: 1, padding: "9px 4px 9px 11px",
             border: "none", outline: "none",
-            fontSize: 14, fontFamily: ff, color: "#1a1a2e", background: "transparent",
+            fontSize: 14, fontFamily: ff, color: "#111110", background: "transparent",
           }}
         />
         <span style={{ padding: "0 10px", display: "flex", alignItems: "center", color: "#9ca3af", flexShrink: 0 }}>
@@ -63,15 +63,15 @@ function UnitCombobox({ value, onChange, options }) {
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 3px)", left: 0, right: 0,
-          background: "#fff", border: "1.5px solid #e8e8ec", borderRadius: 7,
+          background: "#fff", border: "1.5px solid #E8E6E0", borderRadius: 7,
           boxShadow: "0 6px 20px rgba(0,0,0,0.10)", zIndex: 500,
           maxHeight: 200, overflowY: "auto",
         }}>
           {filtered.length === 0 && search ? (
             <div
               onMouseDown={() => select(search)}
-              style={{ padding: "9px 13px", fontSize: 13, color: "#1e6be0", cursor: "pointer", fontFamily: ff }}
-              onMouseEnter={e => e.currentTarget.style.background = "#f0f5ff"}
+              style={{ padding: "9px 13px", fontSize: 13, color: "#D97706", cursor: "pointer", fontFamily: ff }}
+              onMouseEnter={e => e.currentTarget.style.background = "#FEF3C7"}
               onMouseLeave={e => e.currentTarget.style.background = ""}>
               Add "{search}"
             </div>
@@ -81,10 +81,10 @@ function UnitCombobox({ value, onChange, options }) {
               onMouseDown={() => select(opt)}
               style={{
                 padding: "9px 13px", fontSize: 13,
-                color: opt === value ? "#1e6be0" : "#1a1a2e",
+                color: opt === value ? "#D97706" : "#111110",
                 fontWeight: opt === value ? 600 : 400,
                 cursor: "pointer", fontFamily: ff,
-                background: opt === value ? "#f0f5ff" : "",
+                background: opt === value ? "#FEF3C7" : "",
               }}
               onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = "#f7f7f9"; }}
               onMouseLeave={e => { if (opt !== value) e.currentTarget.style.background = ""; }}>
@@ -122,15 +122,15 @@ function ImageUpload({ value, onChange }) {
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
       style={{
-        border: `2px dashed ${dragging ? "#1e6be0" : "#d1d5db"}`,
-        borderRadius: 10, background: dragging ? "#f0f5ff" : "#fafafa",
+        border: `2px dashed ${dragging ? "#D97706" : "#E8E6E0"}`,
+        borderRadius: 10, background: dragging ? "#FEF3C7" : "#fafafa",
         transition: "border-color 0.15s, background 0.15s",
         display: "flex", alignItems: "center", justifyContent: "center",
         minHeight: 130, padding: 16, gap: 20, flexWrap: "wrap",
       }}>
       {value ? (
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <img src={value} alt="item" style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 8, border: "1px solid #e8e8ec" }} />
+          <img src={value} alt="item" style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 8, border: "1px solid #E8E6E0" }} />
           <button onClick={() => onChange("")}
             style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 13, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: ff }}>
             ×
@@ -144,7 +144,7 @@ function ImageUpload({ value, onChange }) {
           </svg>
           <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>Drag image here or</div>
           <button onClick={() => inputRef.current?.click()}
-            style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "none", cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: 0 }}>
+            style={{ fontSize: 12, color: "#D97706", background: "none", border: "none", cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: 0 }}>
             Browse images
           </button>
           <div style={{ fontSize: 11, color: "#c4c4c4", marginTop: 4 }}>JPG, PNG, GIF — max 2 MB</div>
@@ -152,7 +152,7 @@ function ImageUpload({ value, onChange }) {
       )}
       {value && (
         <button onClick={() => inputRef.current?.click()}
-          style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "1px solid #1e6be0", borderRadius: 6, cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: "6px 12px" }}>
+          style={{ fontSize: 12, color: "#D97706", background: "none", border: "1px solid #D97706", borderRadius: 6, cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: "6px 12px" }}>
           Change image
         </button>
       )}
@@ -212,10 +212,10 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
   };
 
   return (
-    <div style={{ background: "#f4f5f7", minHeight: "100vh", fontFamily: ff }}>
+    <div style={{ background: "#FAFAF7", minHeight: "100vh", fontFamily: ff }}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 0 40px" }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #E8E6E0", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#111110" }}>
             {isEdit ? existing.name : "New Item"}
           </span>
           <div style={{ display: "flex", gap: 8 }}>
@@ -227,8 +227,8 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
         </div>
 
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", padding: "18px 22px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>Item Details</div>
+          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #E8E6E0", padding: "18px 22px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#111110", marginBottom: 16 }}>Item Details</div>
             <Field label="Photo">
               <ImageUpload value={photo} onChange={setPhoto} />
             </Field>
@@ -267,7 +267,7 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
           </div>
 
           {cisEnabled && (
-            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", padding: "18px 22px" }}>
+            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #E8E6E0", padding: "18px 22px" }}>
               <div
                 style={{
                   display: "flex",
@@ -277,7 +277,7 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#111110" }}>
                     CIS Details
                   </div>
                   <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
@@ -325,9 +325,9 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
                       style={{
                         marginTop: 12,
                         padding: "10px 14px",
-                        background: "#f0f7ff",
+                        background: "#FEF3C7",
                         borderRadius: 8,
-                        border: "1px solid #dbeafe",
+                        border: "1px solid #FDE68A",
                         fontSize: 12,
                         color: "#374151",
                         display: "grid",
@@ -345,7 +345,7 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
                           £{((Number(rate) * Number(cisMaterial)) / 100).toFixed(2)}
                         </strong>
                       </div>
-                      <div style={{ gridColumn: "1/-1", color: "#1e6be0", marginTop: 4 }}>
+                      <div style={{ gridColumn: "1/-1", color: "#D97706", marginTop: 4 }}>
                         Est. CIS deduction (20%): <strong>
                           £{((Number(rate) * Number(cisLabour) / 100) * 0.20).toFixed(2)}
                         </strong> per unit @ standard rate

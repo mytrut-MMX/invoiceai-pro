@@ -51,7 +51,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   }
 
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#FAFAF7", minHeight:"100vh", fontFamily:ff }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
         <div>
           <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 3px" }}>Customers</h1>
@@ -81,11 +81,11 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 18px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:30, height:30, borderRadius:"50%", background:"#e8f0fc", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:"#374151" }}>{c.name[0]}</div>
+                    <div style={{ width:30, height:30, borderRadius:"50%", background:"#FEF3C7", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:"#92400E" }}>{c.name[0]}</div>
                     <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>{c.name}</span>
                   </div>
                 </td>
-                <td style={{ padding:"12px 18px" }}><Tag color={c.type==="Business"?"#1e6be0":"#d97706"}>{c.type}</Tag></td>
+                <td style={{ padding:"12px 18px" }}><Tag color={c.type==="Business"?"#111110":"#D97706"}>{c.type}</Tag></td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#374151" }}>{c.email}</td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{formatPhoneNumber(c.phone)}</td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{c.currency}</td>

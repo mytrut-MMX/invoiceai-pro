@@ -102,14 +102,14 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   };
 
   return (
-    <div style={{ background: "#f4f5f7", minHeight: "100vh", fontFamily: ff }}>
+    <div style={{ background: "#FAFAF7", minHeight: "100vh", fontFamily: ff }}>
       <div
         style={{
           position: "sticky",
           top: 0,
           zIndex: 10,
           background: "#fff",
-          borderBottom: "1px solid #e8e8ec",
+          borderBottom: "1px solid #E8E6E0",
           padding: "12px 24px",
           display: "flex",
           alignItems: "center",
@@ -135,7 +135,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
             ← Customers
           </button>
           <span style={{ color: "#d1d5db" }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#111110" }}>
             {existing ? existing.name || "Edit Customer" : "New Customer"}
           </span>
         </div>
@@ -152,7 +152,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
           style={{
             background: "#fff",
             borderRadius: 10,
-            border: "1px solid #e8e8ec",
+            border: "1px solid #E8E6E0",
             padding: "18px 22px",
             marginBottom: 0,
           }}
@@ -175,7 +175,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                   name="custType"
                   checked={custType === t}
                   onChange={() => setCustType(t)}
-                  style={{ accentColor: "#1e6be0" }}
+                  style={{ accentColor: "#D97706" }}
                 />
                 {t}
               </label>
@@ -237,11 +237,11 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
           style={{
             background: "#fff",
             borderRadius: 10,
-            border: "1px solid #e8e8ec",
+            border: "1px solid #E8E6E0",
             overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", borderBottom: "1px solid #e8e8ec", padding: "0 4px" }}>
+          <div style={{ display: "flex", borderBottom: "1px solid #E8E6E0", padding: "0 4px" }}>
             {TABS.map((t) => (
               <button
                 key={t}
@@ -253,8 +253,8 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                   padding: "12px 16px 10px",
                   fontSize: 13,
                   fontWeight: activeTab === t ? 600 : 400,
-                  color: activeTab === t ? "#1e6be0" : "#6b7280",
-                  borderBottom: activeTab === t ? "2px solid #1e6be0" : "2px solid transparent",
+                  color: activeTab === t ? "#D97706" : "#6b7280",
+                  borderBottom: activeTab === t ? "2px solid #D97706" : "2px solid transparent",
                   fontFamily: "inherit",
                   transition: "all 0.15s",
                   marginBottom: "-1px",
@@ -367,7 +367,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                         background: "none",
                         border: "none",
                         cursor: "pointer",
-                        color: "#1e6be0",
+                        color: "#D97706",
                         fontSize: 11,
                         fontFamily: "inherit",
                         fontWeight: 400,
@@ -404,7 +404,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
               <div>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: "#f9fafb" }}>
+                    <tr style={{ background: "#F5F4F0" }}>
                       {["Salutation", "First Name", "Last Name", "Email", "Phone", "Mobile", ""].map((h) => (
                         <th
                           key={h}
@@ -414,7 +414,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                             fontWeight: 600,
                             color: "#6b7280",
                             fontSize: 12,
-                            borderBottom: "1px solid #e8e8ec",
+                            borderBottom: "1px solid #E8E6E0",
                           }}
                         >
                           {h}
@@ -474,7 +474,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "#1e6be0",
+                    color: "#D97706",
                     fontSize: 13,
                     fontFamily: "inherit",
                     display: "flex",

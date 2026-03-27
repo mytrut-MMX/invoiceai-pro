@@ -4,6 +4,7 @@ import { Icons } from "../components/icons";
 import { Field, Input, Select, Toggle, Switch, SlideToggle, Btn } from "../components/atoms";
 
 const PRESET_THEMES = [
+  { label:"Default",  type:"solid",    color:"#111110", color2:"#333330", accent:"#D97706" },
   { label:"Dark",     type:"solid",    color:"#1A1A1A", color2:"#333",    accent:"#E86C4A" },
   { label:"Ocean",    type:"gradient", color:"#1E3A8A", color2:"#0891B2", accent:"#38BDF8" },
   { label:"Forest",   type:"gradient", color:"#14532D", color2:"#166534", accent:"#4ADE80" },
@@ -64,7 +65,7 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
         </div>
 
         <div style={{ display:"flex", gap:0, padding:"0 22px", borderBottom:"1px solid #F0F0F0" }}>
-          {[["profile","👤 Profile"],["appearance","🎨 Appearance"]].map(([t,l])=>(
+          {[["profile","Profile"],["appearance","Appearance"]].map(([t,l])=>(
             <button key={t} onClick={()=>setTab(t)}
               style={{ padding:"10px 16px", border:"none", borderBottom:`2px solid ${tab===t?"#1A1A1A":"transparent"}`, background:"none", fontSize:13, fontWeight:tab===t?700:400, color:tab===t?"#1A1A1A":"#888", cursor:"pointer", fontFamily:ff }}>
               {l}
