@@ -96,7 +96,7 @@ export default function LandingPage() {
 
       {/* Announcement bar */}
       <div style={{ background:'#D97706', padding:'8px 2rem', textAlign:'center', fontSize:13, fontWeight:500, color:'#fff' }}>
-        🎉 Early access is open — <a href="/signup" style={{ color:'#fff', fontWeight:700, textDecoration:'underline' }}>Join free and lock in 40% off Pro →</a>
+        Early access is open — <a href="/signup" style={{ color:'#fff', fontWeight:700, textDecoration:'underline' }}>Join free and lock in 40% off Pro →</a>
       </div>
 
       {/* Nav */}
@@ -120,7 +120,7 @@ export default function LandingPage() {
           <div>
             <div style={s.heroTag}>✨ Invoicing built for freelancers</div>
             <h1 style={s.heroH1}>Professional invoices. Sent in minutes. Get paid faster.</h1>
-            <p style={s.heroSub}>No bloat, no learning curve. InvoiceSaga is the simple invoicing tool freelancers actually enjoy using — because getting paid shouldn't be the hardest part of the job.</p>
+            <p style={s.heroSub}>No learning curve, no bloat. Just clean invoices you can send in minutes — so you can get back to the work you actually love.</p>
             <div style={{ ...s.heroBtns, justifyContent:'flex-start' }}>
               <a href="/signup" style={s.btnPrimary}>Start for free →</a>
               <a href="#how-it-works" style={s.btnSecondary}>How it works →</a>
@@ -305,7 +305,7 @@ export default function LandingPage() {
           {/* Left */}
           <div>
             <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6B6B6B', marginBottom:16 }}>Ready when you are</div>
-            <h2 style={s.ctaH2}>Stop leaving money on the table.</h2>
+            <h2 style={s.ctaH2}>Your invoices should work as hard as you do.</h2>
             <p style={s.ctaSub}>Every day without a proper invoicing system is a day you're working harder than you need to. It takes 2 minutes to start.</p>
           </div>
           {/* Right */}
