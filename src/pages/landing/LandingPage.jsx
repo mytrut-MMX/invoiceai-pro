@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Icons } from '../../components/icons';
 
 const s = {
@@ -55,6 +55,40 @@ const features = [
   { icon: Icons.Bank,      color:'#D97706', bg:'#FEF3C7', title:'Analytics',          desc:'Get insights into your revenue, outstanding payments, and growth.' },
   { icon: Icons.Check,     color:'#D97706', bg:'#FEF3C7', title:'Fast & Simple',      desc:'No learning curve. Start invoicing in minutes, not hours.' },
 ];
+
+const faqs = [
+  { q: 'Is InvoiceSaga really free to start?', a: 'Yes — no credit card needed. The Free plan gives you everything you need to get started. Upgrade to Pro only when you need more.' },
+  { q: 'How long does it take to send my first invoice?', a: 'Most users send their first invoice in under 2 minutes. Set up your profile, add a client, create the invoice — done.' },
+  { q: 'Can I use InvoiceSaga as a sole trader or freelancer?', a: 'Absolutely. InvoiceSaga is built specifically for freelancers, sole traders, and solopreneurs. No accountant required.' },
+  { q: 'What happens to my data?', a: 'Your data belongs to you. We never sell it, never share it, and you can export or delete it anytime.' },
+];
+
+function FaqSection() {
+  const [open, setOpen] = useState(null);
+  return (
+    <div style={{ background:'#FAFAF7', padding:'64px 2rem' }}>
+      <div style={{ maxWidth:680, margin:'0 auto' }}>
+        <h2 style={{ fontSize:'clamp(1.5rem, 3vw, 2.25rem)', fontWeight:400, color:'#111110', textAlign:'center', marginBottom:48, letterSpacing:-0.5, fontFamily:'Georgia, "Times New Roman", serif' }}>Got questions?</h2>
+        <div>
+          {faqs.map((faq, i) => (
+            <div key={i} style={{ borderBottom:'1px solid #E8E6E0' }}>
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                style={{ width:'100%', background:'none', border:'none', padding:'20px 0', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', textAlign:'left', gap:16 }}
+              >
+                <span style={{ fontSize:15, fontWeight:600, color:'#111110', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>{faq.q}</span>
+                <span style={{ fontSize:18, color:'#9A9A9A', flexShrink:0, lineHeight:1 }}>{open === i ? '−' : '+'}</span>
+              </button>
+              {open === i && (
+                <div style={{ paddingBottom:20, fontSize:14, color:'#6B6B6B', lineHeight:1.7, fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>{faq.a}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   return (
@@ -215,7 +249,7 @@ export default function LandingPage() {
               { n:3, title:'Send & get paid', desc:'Create an invoice, send it, and watch the payments come in.' },
             ].map((step) => (
               <div key={step.n} style={{ position:'relative', zIndex:1, textAlign:'center', padding:'0 24px' }}>
-                <div style={{ width:38, height:38, borderRadius:'50%', background: step.n===3 ? '#111110' : '#FAFAF7', border: step.n===3 ? '2px solid #111110' : '2px solid #E8E6E0', color: step.n===3 ? '#FAFAF7' : '#111110', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:600, fontSize:15, margin:'0 auto 20px', position:'relative', zIndex:2 }}>{step.n}</div>
+                <div style={{ width:38, height:38, borderRadius:'50%', background: step.n===1 ? '#111110' : '#FAFAF7', border: step.n===1 ? '2px solid #111110' : '2px solid #E8E6E0', color: step.n===1 ? '#FAFAF7' : '#111110', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:600, fontSize:15, margin:'0 auto 20px', position:'relative', zIndex:2 }}>{step.n}</div>
                 <div style={{ textAlign:'center', fontSize:15, fontWeight:600, color:'#111110', marginBottom:8 }}>{step.title}</div>
                 <div style={{ textAlign:'center', fontSize:14, color:'#6B6B6B', lineHeight:1.6, maxWidth:200, margin:'0 auto' }}>{step.desc}</div>
               </div>
@@ -293,6 +327,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* FAQ */}
+      <FaqSection />
 
       {/* Footer */}
       <footer style={{ ...s.footer, borderTop:'1px solid #1C1C1B' }}>
