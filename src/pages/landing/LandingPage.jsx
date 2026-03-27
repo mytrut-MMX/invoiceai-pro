@@ -48,12 +48,12 @@ const s = {
 };
 
 const features = [
-  { icon: Icons.Invoices,  color:'#0EA5E9', bg:'#EFF6FF', title:'Create Invoices',    desc:'Professional invoices in seconds. Customize with your logo and branding.' },
-  { icon: Icons.Send,      color:'#8B5CF6', bg:'#F5F3FF', title:'Auto Email',         desc:'Send invoices automatically to clients the moment they\'re ready.' },
-  { icon: Icons.Payments,  color:'#10B981', bg:'#ECFDF5', title:'Track Payments',     desc:'Know exactly who has paid and who hasn\'t with real-time tracking.' },
-  { icon: Icons.Receipt,   color:'#F59E0B', bg:'#FFFBEB', title:'Recurring Invoices', desc:'Set up recurring billing and never forget to invoice a client again.' },
-  { icon: Icons.Bank,      color:'#EF4444', bg:'#FEF2F2', title:'Analytics',          desc:'Get insights into your revenue, outstanding payments, and growth.' },
-  { icon: Icons.Check,     color:'#0EA5E9', bg:'#EFF6FF', title:'Fast & Simple',      desc:'No learning curve. Start invoicing in minutes, not hours.' },
+  { icon: Icons.Invoices,  color:'#D97706', bg:'#FEF3C7', title:'Create Invoices',    desc:'Professional invoices in seconds. Customize with your logo and branding.' },
+  { icon: Icons.Send,      color:'#D97706', bg:'#FEF3C7', title:'Auto Email',         desc:'Send invoices automatically to clients the moment they\'re ready.' },
+  { icon: Icons.Payments,  color:'#D97706', bg:'#FEF3C7', title:'Track Payments',     desc:'Know exactly who has paid and who hasn\'t with real-time tracking.' },
+  { icon: Icons.Receipt,   color:'#D97706', bg:'#FEF3C7', title:'Recurring Invoices', desc:'Set up recurring billing and never forget to invoice a client again.' },
+  { icon: Icons.Bank,      color:'#D97706', bg:'#FEF3C7', title:'Analytics',          desc:'Get insights into your revenue, outstanding payments, and growth.' },
+  { icon: Icons.Check,     color:'#D97706', bg:'#FEF3C7', title:'Fast & Simple',      desc:'No learning curve. Start invoicing in minutes, not hours.' },
 ];
 
 export default function LandingPage() {
