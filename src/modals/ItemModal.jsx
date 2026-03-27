@@ -185,8 +185,6 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
   const [cisLabour, setCisLabour] = useState(existing?.cis?.labour ?? 100);
   const [cisMaterial, setCisMaterial] = useState(existing?.cis?.material ?? 0);
 
-  const typeColors = { Service: "#4F46E5", Labour: "#D97706", Material: "#059669", Equipment: "#2563EB", Other: "#6B7280" };
-
   const handleSave = () => {
     const item = {
       id: existing?.id || crypto.randomUUID(),
@@ -217,15 +215,9 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
     <div style={{ background: "#f4f5f7", minHeight: "100vh", fontFamily: ff }}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 0 40px" }}>
         <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, fontFamily: ff, display: "flex", alignItems: "center", gap: 4 }}>
-              ← Items
-            </button>
-            <span style={{ color: "#d1d5db" }}>/</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>
-              {isEdit ? existing.name : "New Item"}
-            </span>
-          </div>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>
+            {isEdit ? existing.name : "New Item"}
+          </span>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn onClick={onClose} variant="outline">Cancel</Btn>
             <Btn onClick={handleSave} variant="primary" disabled={!name || !rate || saved}>
@@ -241,15 +233,8 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
               <ImageUpload value={photo} onChange={setPhoto} />
             </Field>
             <Field label="Item Type" required>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {ITEM_TYPES.map(t => (
-                  <button key={t} onClick={() => setItemType(t)}
-                    style={{ padding: "7px 14px", borderRadius: 20, border: `1.5px solid ${itemType === t ? typeColors[t] : "#E0E0E0"}`, background: itemType === t ? typeColors[t] + "15" : "#FAFAFA", color: itemType === t ? typeColors[t] : "#888", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: ff, transition: "all 0.15s" }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-             </Field>
+              <Select value={itemType} onChange={setItemType} options={ITEM_TYPES.map(t => ({ value: t, label: t }))} />
+            </Field>
 
             <Field label="Item Name" required>
               <Input value={name} onChange={setName} placeholder="e.g. Web Design Package" />
