@@ -187,7 +187,7 @@ export default function AuthPage({ onAuth }) {
      <div className="auth-page-bg" style={{ minHeight:'100vh', background:'#FAFAF7', display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       <style>{`.auth-submit:hover:not(:disabled) { background: #333330 !important; }`}</style>
       {!supabaseReady && (
-        <div style={{ position:"fixed", top:0, left:0, right:0, background:"#fef3c7", borderBottom:"1px solid #f59e0b", padding:"8px 16px", display:"flex", alignItems:"center", gap:8, zIndex:999, fontSize:12, color:"#92400e" }}>
+        <div style={{ position:"fixed", top:0, left:0, right:0, background:"#FEF3C7", borderBottom:"1px solid #D97706", padding:"8px 16px", display:"flex", alignItems:"center", gap:8, zIndex:999, fontSize:12, color:"#92400e" }}>
           <span>⚠️</span>
           <span><strong>Supabase not configured</strong> — accounts are saved locally only. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</span>
         </div>
@@ -195,7 +195,13 @@ export default function AuthPage({ onAuth }) {
       <div style={{ width:"100%", maxWidth:460 }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <div style={{ margin:"0 auto 16px", display:"flex", justifyContent:"center" }}>
-            <img src="/Invoicesaga-logo.svg" alt="InvoiceSaga" height={36} style={{ objectFit:"contain" }} />
+            <img src="/Invoicesaga-logo.svg" alt="InvoiceSaga" height={36} style={{ objectFit:"contain" }} onError={e => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'block';
+              }} />
+            <span style={{ display:'none', fontSize:20, fontWeight:700, color:'#111110', letterSpacing:-0.5, fontFamily:'Georgia, serif' }}>
+              Invoice<span style={{ color:'#D97706' }}>Saga</span>
+            </span>
           </div>
           <h1 style={{ fontSize:24, fontWeight:400, fontFamily:'Georgia, serif', color:'#111110', lineHeight:1.25, margin:'0 0 6px', letterSpacing:-0.3 }}>
             Your invoicing is about to get a <span>whole lot easier</span>
