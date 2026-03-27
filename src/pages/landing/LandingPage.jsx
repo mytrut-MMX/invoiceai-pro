@@ -230,7 +230,7 @@ export default function LandingPage() {
           <h2 style={s.sectionTitle}>Simple, honest pricing</h2>
           <p style={s.sectionSub}>Start free, upgrade when you need more.</p>
           <div style={{ textAlign:'center', marginBottom:40, fontSize:14, color:'#9A9A9A' }}>
-            <span>Trusted by </span><span style={{ fontWeight:600, color:'#111110' }}>2,400+ freelancers</span><span> · No credit card required · Cancel anytime</span>
+            <span>Free during beta · No credit card required · Cancel anytime</span>
           </div>
           <div style={s.pricingGrid}>
             <div style={s.pricingCard}>
@@ -259,7 +259,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ textAlign:'center', marginTop:32, fontSize:13, color:'#9A9A9A' }}>
-            Early users get a permanent 40% discount at launch.{' '}
+            Join during beta and lock in your price forever — no increases, ever.{' '}
             <a href="/signup" style={{ textDecoration:'none', color:'#D97706' }}><span style={{ color:'#D97706', fontWeight:500 }}>Join the waitlist to lock it in →</span></a>
           </div>
         </div>
@@ -280,9 +280,9 @@ export default function LandingPage() {
             <div style={{ fontSize:13, color:'#6B6B6B' }}>Free to start · No credit card · Cancel anytime</div>
             <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:32 }}>
               {[
-                { n:'2,400+', label:'freelancers' },
-                { n:'£4.2M+', label:'invoiced' },
-                { n:'4.8★',   label:'avg rating' },
+                { n:'2 min',  label:'to first invoice' },
+                { n:'Free',   label:'to start, always' },
+                { n:'£9/mo',  label:'when you scale' },
               ].map(({ n, label }) => (
                 <div key={label} style={{ textAlign:'left' }}>
                   <div style={{ fontSize:20, fontWeight:300, fontFamily:'Georgia, "Times New Roman", serif', color:'#FAFAF7' }}>{n}</div>
