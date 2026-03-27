@@ -1,6 +1,13 @@
 import React from 'react';
-import SharedNav from '../../components/SharedNav';
+
 import SharedFooter from '../../components/SharedFooter';
+
+const nav = {
+  position: 'sticky', top: 0, zIndex: 100,
+  background: '#0F172A', borderBottom: '1px solid #1E293B',
+  padding: '0 2rem', display: 'flex', alignItems: 'center',
+  justifyContent: 'space-between', height: 64,
+};
 
 export default function LegalLayout({ title, lastUpdated, children }) {
   return (
@@ -22,6 +29,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
       </main>
 
       <SharedFooter />
+
     </div>
   );
 }

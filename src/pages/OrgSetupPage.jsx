@@ -54,15 +54,15 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f4f5f7", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
+    <div style={{ minHeight:"100vh", background:"#FAFAF7", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:ff }}>
       <div style={{ width:"100%", maxWidth:640, background:"#fff", borderRadius:16, boxShadow:"0 4px 40px rgba(0,0,0,0.08)", overflow:"hidden" }}>
-        <div style={{ background:"#1A1A1A", padding:"28px 40px 24px", color:"#fff" }}>
+        <div style={{ background:"F5F4F0", padding:"28px 40px 24px", borderBottom:"1px solid #E8E6E0" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-            <div style={{ width:32, height:32, background:"#E86C4A", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Building /></div>
-            <span style={{ fontSize:15, fontWeight:700, letterSpacing:"0.04em" }}>InvoiceSaga</span>
+            <div style={{ width:32, height:32, background:"#111110", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", color:"#FAFAF7" }}><Icons.Building /></div>
+            <span style={{ fontSize:15, fontWeight:700, letterSpacing:"0.04em", color:"#111110" }}>InvoiceSaga</span>
           </div>
-          <h1 style={{ fontSize:22, fontWeight:800, margin:"0 0 4px" }}>Organization Setup</h1>
-          <p style={{ fontSize:13, color:"#AAA", margin:0 }}>Welcome! Enter your details to get started.</p>
+          <h1 style={{ fontSize:22, fontWeight:800, margin:"0 0 4px", color:"#111110" }}>Organization Setup</h1>
+          <p style={{ fontSize:13, color:"#6B6B6B", margin:0 }}>Enter your details to get started.</p>
         </div>
 
         <div style={{ padding:"24px 40px 36px", overflowY:"auto", maxHeight:"75vh" }}>
@@ -186,7 +186,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           )}
 
           <button onClick={handleComplete} disabled={!canSubmit}
-            style={{ width:"100%", padding:"13px 0", background:canSubmit?"#1e6be0":"#d1d5db", color:"#fff", border:"none", borderRadius:9, fontSize:15, fontWeight:700, cursor:canSubmit?"pointer":"not-allowed", fontFamily:ff, marginTop:16, transition:"background 0.2s" }}
+           style={{ width:"100%", padding:"13px 0", background: canSubmit ? '#111110' : '#E8E6E0', color: canSubmit ? '#FAFAF7' : '#9A9A9A', border:"none", borderRadius:9, fontSize:15, fontWeight:700, cursor:canSubmit?"pointer":"not-allowed", fontFamily:ff, marginTop:16, transition:"background 0.2s" }}>
             onMouseEnter={e=>{ if(canSubmit) e.currentTarget.style.background="#1558c0"; }}
             onMouseLeave={e=>{ if(canSubmit) e.currentTarget.style.background="#1e6be0"; }}>
             Complete Setup →

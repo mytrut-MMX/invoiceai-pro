@@ -11,6 +11,7 @@ const footerStyle = {
 
 export default function SharedFooter({ links = 'full' }) {
   const fullLinks = [
+
     { href: '/',          label: 'Home' },
     { href: '/templates', label: 'Templates' },
     { href: '/contact',   label: 'Contact' },
@@ -18,10 +19,13 @@ export default function SharedFooter({ links = 'full' }) {
     { href: '/terms',     label: 'Terms of Service' },
     { href: '/cookies',   label: 'Cookie Policy' },
     { href: '/gdpr',      label: 'GDPR' },
+
+
   ];
 
   const minLinks = [
     { href: '/privacy', label: 'Privacy Policy' },
+
     { href: '/terms',   label: 'Terms of Service' },
     { href: '/contact', label: 'Contact' },
   ];
@@ -40,8 +44,15 @@ export default function SharedFooter({ links = 'full' }) {
             <a
               href={link.href}
               style={{ color: '#475569', textDecoration: 'none' }}
-              onMouseEnter={e => { e.target.style.color = '#6B6B6B'; }}
-              onMouseLeave={e => { e.target.style.color = '#475569'; }}
+
+   
+              onMouseEnter={(e) => {
+                e.target.style.color = '#6B6B6B';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = '#475569';
+              }}
+
             >
               {link.label}
             </a>

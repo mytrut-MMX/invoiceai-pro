@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import SharedNav from '../../components/SharedNav';
+import SharedFooter from '../../components/SharedFooter';
 
 const s = {
   nav: { position:'sticky', top:0, zIndex:100, background:'#FAFAF7', borderBottom:'1px solid #E8E6E0', padding:'0 2rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:60 },
@@ -162,22 +163,7 @@ export default function ContactPage() {
       </div>
 
       {/* Footer */}
-      <footer style={s.footer}>
-        <div style={{ marginBottom:8 }}>
-          <span style={{ color:'#D97706', fontWeight:700 }}>InvoiceSaga</span>
-          {' · '}
-          <a href="/contact" style={{ color:'#475569' }}>Contact</a>
-          {' · '}
-          <a href="/privacy" style={{ color:'#475569' }}>Privacy Policy</a>
-          {' · '}
-          <a href="/terms" style={{ color:'#475569' }}>Terms of Service</a>
-          {' · '}
-          <a href="/cookies" style={{ color:'#475569' }}>Cookie Policy</a>
-          {' · '}
-          <a href="/gdpr" style={{ color:'#475569' }}>GDPR</a>
-        </div>
-        <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }
