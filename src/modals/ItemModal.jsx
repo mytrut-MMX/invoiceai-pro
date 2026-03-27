@@ -162,7 +162,7 @@ function ImageUpload({ value, onChange }) {
   );
 }
 
-export default function ItemForm({ existing, onClose, onSave, settings }) {
+export default function ItemForm({ existing, onClose, onSave, settings, items = [] }) {
   const { orgSettings } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
   const isEdit = !!existing;
@@ -177,6 +177,8 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
   const [sku, setSku] = useState(existing?.sku || "");
   const [account, setAccount] = useState(existing?.account || "");
   const [photo, setPhoto] = useState(existing?.photo || "");
+
+  const [saved, setSaved] = useState(false);
 
   const { cisEnabled } = useCISSettings();
   const [isCIS, setIsCIS] = useState(existing?.cis?.enabled ?? false);
@@ -207,8 +209,8 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
         : { enabled: false },
     };
 
-    onSave(item);
-    onClose();
+    setSaved(true);
+    setTimeout(() => { onSave(item); onClose(); }, 600);
   };
 
   return (
@@ -226,8 +228,8 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn onClick={onClose} variant="outline">Cancel</Btn>
-            <Btn onClick={handleSave} variant="primary" disabled={!name || !rate}>
-              {isEdit ? "Save Changes" : "Save Item"}
+            <Btn onClick={handleSave} variant="primary" disabled={!name || !rate || saved}>
+              {saved ? "Saved ✓" : isEdit ? "Save Changes" : "Save Item"}
             </Btn>
           </div>
         </div>
@@ -249,7 +251,12 @@ export default function ItemForm({ existing, onClose, onSave, settings }) {
               </div>
              </Field>
 
-            <Field label="Item Name" required><Input value={name} onChange={setName} placeholder="e.g. Web Design Package" /></Field>
+            <Field label="Item Name" required>
+              <Input value={name} onChange={setName} placeholder="e.g. Web Design Package" />
+              {name && items.some(i => i.id !== existing?.id && i.name?.toLowerCase() === name.toLowerCase()) && (
+                <div style={{ fontSize:11, color:"#d97706", marginTop:4 }}>⚠ An item with this name already exists</div>
+              )}
+            </Field>
             <Field label="Description"><Textarea value={description} onChange={setDescription} placeholder="Brief description…" rows={2} /></Field>
 
             <div style={{ display: "grid", gridTemplateColumns: isVat ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>

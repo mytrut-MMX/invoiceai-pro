@@ -58,6 +58,16 @@ function exportCSV(rows) {
   setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 500);
 }
 
+// ─── Section card (defined at module level to prevent remount on every render) ─
+function ExpenseSection({ title, children }) {
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e8e8ec", borderRadius: 8, marginBottom: 12 }}>
+      <div style={{ padding: "10px 18px", borderBottom: "1px solid #f0f0f4", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em" }}>{title}</div>
+      <div style={{ padding: "16px 18px" }}>{children}</div>
+    </div>
+  );
+}
+
 // ─── Receipt upload ───────────────────────────────────────────────────────────
 function ReceiptUpload({ value, onChange }) {
   const ref = useRef(null);
@@ -153,15 +163,7 @@ function ExpenseForm({ existing, onClose, onSave }) {
   };
 
   const valid = expType === "mileage" ? Number(mileageKm) > 0 : Number(amount) > 0;
-
-  // ── section card ──
-  const S = ({ title, children }) => (
-    <div style={{ background: "#fff", border: "1px solid #e8e8ec", borderRadius: 8, marginBottom: 12 }}>
-      <div style={{ padding: "10px 18px", borderBottom: "1px solid #f0f0f4", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em" }}>{title}</div>
-      <div style={{ padding: "16px 18px" }}>{children}</div>
-    </div>
-  );
-
+  const S = ExpenseSection;
   const row2 = children => <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>{children}</div>;
   const row3 = children => <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>{children}</div>;
 
@@ -202,7 +204,7 @@ function ExpenseForm({ existing, onClose, onSave }) {
               </Field>
               <Field label="Category">
                 <Select value={category} onChange={setCategory}
-                  options={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))} placeholder="Select…" />
+                  options={EXPENSE_CATEGORIES.map(c => ({ value: c.name, label: `${c.code} · ${c.name}` }))} placeholder="Select…" />
               </Field>
             </>)}
             <Field label="Vendor / Merchant"><Input value={vendor} onChange={setVendor} placeholder="e.g. Amazon, Screwfix" /></Field>

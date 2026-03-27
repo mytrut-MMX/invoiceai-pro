@@ -7,10 +7,20 @@ import { upsert, formatPhoneNumber } from "../utils/helpers";
 import CustomerForm from "../modals/CustomerModal";
 
 export default function CustomersPage({ initialShowForm = false, onNavigate }) {
-  const { customers, setCustomers, orgSettings } = useContext(AppCtx);
+  const { customers, setCustomers, orgSettings, invoices, quotes } = useContext(AppCtx);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [showForm, setShowForm] = useState(initialShowForm);
   const [search, setSearch] = useState("");
+
+  const deleteCustomer = (c) => {
+    const invCount = (invoices||[]).filter(i => i.customer?.id === c.id).length;
+    const qCount   = (quotes||[]).filter(q => q.customer?.id === c.id).length;
+    const linked   = invCount + qCount;
+    const msg = linked > 0
+      ? `"${c.name}" is linked to ${linked} invoice/quote(s). Deleting will not remove those records, but the customer will no longer appear in lookups.\n\nDelete anyway?`
+      : `Delete "${c.name}"? This cannot be undone.`;
+    if (window.confirm(msg)) setCustomers(p => p.filter(x => x.id !== c.id));
+  };
 
   const filtered = customers.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -28,6 +38,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
     return (
       <CustomerForm
         existing={editingCustomer}
+        customers={customers}
         onClose={() => {
           if (initialShowForm && onNavigate) { onNavigate("customers"); return; }
           setShowForm(false);
@@ -58,7 +69,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead>
             <tr style={{ background:"#f9fafb" }}>
-              {["Name","Type","Email","Phone","Currency",""] .map(h=>(
+              {["Name","Type","Email","Phone","Currency","",""] .map(h=>(
                 <th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #f0f0f4" }}>{h}</th>
               ))}
             </tr>
@@ -80,6 +91,9 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{c.currency}</td>
                 <td style={{ padding:"12px 18px" }}>
                   <Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                </td>
+                <td style={{ padding:"12px 18px" }}>
+                  <Btn onClick={() => deleteCustomer(c)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn>
                 </td>
               </tr>
             ))}

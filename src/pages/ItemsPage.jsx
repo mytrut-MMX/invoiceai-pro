@@ -7,12 +7,22 @@ import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 
 export default function ItemsPage({ initialShowForm = false, onNavigate }) {
-  const { orgSettings, catalogItems, setCatalogItems } = useContext(AppCtx);
+  const { orgSettings, catalogItems, setCatalogItems, invoices, quotes } = useContext(AppCtx);
   const isVat = orgSettings?.vatReg === "Yes";
   const isCisOrg = orgSettings?.cisReg === "Yes";
   const [showForm, setShowForm] = useState(initialShowForm);
   const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
+
+  const deleteItem = (item) => {
+    const linked = [...(invoices||[]), ...(quotes||[])].filter(doc =>
+      (doc.line_items||doc.items||[]).some(li => li.itemId === item.id || li.name === item.name)
+    ).length;
+    const msg = linked > 0
+      ? `"${item.name}" is used in ${linked} invoice/quote(s). Deleting will not remove those records.\n\nDelete anyway?`
+      : `Delete "${item.name}"? This cannot be undone.`;
+    if (window.confirm(msg)) setCatalogItems(p => p.filter(x => x.id !== item.id));
+  };
 
   const filtered = catalogItems.filter(i =>
     i.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -38,6 +48,7 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
   if (showForm) return (
     <ItemForm
       existing={editingItem}
+      items={catalogItems}
       onClose={() => {
         if (initialShowForm && onNavigate) { onNavigate("items"); return; }
         setShowForm(false); setEditingItem(null);
@@ -72,7 +83,7 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead>
             <tr style={{ background:"#f9fafb" }}>
-              {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status",""].map(h=>(
+              {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status","",""].map(h=>(
                 <th key={h} style={{ padding:"8px 18px", textAlign:h==="Rate"?"right":"left", fontSize:10, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #e8e8ec" }}>{h}</th>
               ))}
             </tr>
@@ -113,6 +124,9 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
                 </td>
                 <td style={{ padding:"12px 18px" }} onClick={e=>e.stopPropagation()}>
                   <Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
+                </td>
+                <td style={{ padding:"12px 18px" }} onClick={e=>e.stopPropagation()}>
+                  <Btn onClick={() => deleteItem(item)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn>
                 </td>
               </tr>
             ))}

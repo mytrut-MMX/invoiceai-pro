@@ -48,11 +48,26 @@ export const PDF_TEMPLATES = [
 ];
 export const PAYMENT_METHODS = ["Bank Transfer","Card","Cash","Cheque","PayPal","Stripe","Direct Debit","Crypto","Other"];
 export const EXPENSE_CATEGORIES = [
-  "Advertising","Automobile","Bank Charges","Client Entertainment","Equipment",
-  "Fuel","Insurance","IT & Software","Meals & Subsistence","Office Supplies",
-  "Postage & Courier","Professional Services","Rent & Rates",
-  "Repairs & Maintenance","Stationery","Subscriptions","Travel","Utilities",
-  "Wages & Salaries","Other",
+  { code:"100", name:"Advertising" },
+  { code:"110", name:"Automobile" },
+  { code:"404", name:"Bank Charges" },
+  { code:"420", name:"Client Entertainment" },
+  { code:"300", name:"Equipment" },
+  { code:"430", name:"Fuel" },
+  { code:"440", name:"Insurance" },
+  { code:"460", name:"IT & Software" },
+  { code:"261", name:"Meals & Subsistence" },
+  { code:"480", name:"Office Supplies" },
+  { code:"490", name:"Postage & Courier" },
+  { code:"500", name:"Professional Services" },
+  { code:"510", name:"Rent & Rates" },
+  { code:"520", name:"Repairs & Maintenance" },
+  { code:"530", name:"Stationery" },
+  { code:"540", name:"Subscriptions" },
+  { code:"550", name:"Travel" },
+  { code:"560", name:"Utilities" },
+  { code:"570", name:"Wages & Salaries" },
+  { code:"999", name:"Other" },
 ];
 export const EXPENSE_STATUSES = ["Draft","Submitted","Approved","Reimbursed"];
 
