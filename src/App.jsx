@@ -164,15 +164,16 @@ export default function App() {
     : appTheme.color;
 
   // ─── gates ─────────────────────────────────────────────────────
-  if(!user) {
   const path = window.location.pathname;
-  if(path === '/' || path === '') return <LandingPage />;
   if(path === '/privacy')         return <PrivacyPage />;
   if(path === '/terms')           return <TermsPage />;
   if(path === '/cookies')         return <CookiePolicyPage />;
   if(path === '/gdpr')            return <GdprPage />;
-  if(path === '/templates')       return <TemplatesPage />;
   if(path === '/contact')         return <ContactPage />;
+
+  if(!user) {
+  if(path === '/' || path === '') return <LandingPage />;
+  if(path === '/templates')       return <TemplatesPage />;
   if(path === '/admin')           return <AdminPage />;
   return (
     <AppCtx.Provider value={ctx}>
