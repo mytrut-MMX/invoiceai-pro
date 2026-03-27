@@ -81,15 +81,15 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section style={{ ...s.hero, textAlign:'left' }}>
-        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:64, alignItems:'center' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:64, alignItems:'center' }}>
           {/* Left column */}
           <div>
-            <div style={s.heroTag}>✨ Free to start — no credit card required</div>
-            <h1 style={s.heroH1}>The quiet way to get paid.</h1>
-            <p style={s.heroSub}>Professional invoices, automatic reminders, and payment tracking — without the complexity. Built for freelancers who'd rather be working.</p>
+            <div style={s.heroTag}>✨ Invoicing built for freelancers</div>
+            <h1 style={s.heroH1}>Professional invoices. Sent in minutes. Get paid faster.</h1>
+            <p style={s.heroSub}>No bloat, no learning curve. InvoiceSaga is the simple invoicing tool freelancers actually enjoy using — because getting paid shouldn't be the hardest part of the job.</p>
             <div style={{ ...s.heroBtns, justifyContent:'flex-start' }}>
               <a href="/signup" style={s.btnPrimary}>Start for free →</a>
-              <a href="/signup" style={s.btnSecondary}>See how it works</a>
+              <a href="/signup" style={s.btnSecondary}>How it works →</a>
             </div>
           </div>
           {/* Right column — invoice mockup */}
@@ -267,7 +267,7 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section style={s.cta}>
-        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:64, alignItems:'center' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:64, alignItems:'center' }}>
           {/* Left */}
           <div>
             <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'#6B6B6B', marginBottom:16 }}>Ready when you are</div>
