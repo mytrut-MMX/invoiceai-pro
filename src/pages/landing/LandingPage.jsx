@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icons } from '../../components/icons';
+import SharedNav from '../../components/SharedNav';
 
 const s = {
   nav: { position:'sticky', top:0, zIndex:100, background:'#FAFAF7', borderBottom:'1px solid #E8E6E0', padding:'0 2rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:60 },
@@ -99,19 +100,7 @@ export default function LandingPage() {
         Early access is open — <a href="/signup" style={{ color:'#fff', fontWeight:700, textDecoration:'underline' }}>Join free and lock in 40% off Pro →</a>
       </div>
 
-      {/* Nav */}
-      <nav style={s.nav}>
-        <div style={{ display:'flex', alignItems:'center' }}>
-          <div style={s.logo}>Invoice<span style={s.logoAccent}>Saga</span></div>
-          <span style={{ display:'inline-block', width:1, height:16, background:'#E8E6E0', margin:'0 24px', verticalAlign:'middle' }} />
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:24 }}>
-          <a href="#pricing" style={{ color:'#6B6B6B', fontSize:14, fontWeight:400, textDecoration:'none' }}>Pricing</a>
-          <a href="/templates" style={{ color:'#6B6B6B', fontSize:14, fontWeight:400, textDecoration:'none' }}>Templates</a>
-          <a href="/login" style={s.navLogin}>Log in</a>
-          <a href="/signup" style={s.navCta}>Start free →</a>
-        </div>
-      </nav>
+      <SharedNav />
 
       {/* Hero */}
       <section style={{ ...s.hero, textAlign:'left' }}>
