@@ -23,3 +23,35 @@ export const supabase = isConfigured
 
 /** true when env vars are set and non-placeholder */
 export const supabaseReady = isConfigured;
+
+// ─── Auth helpers ──────────────────────────────────────────────────────────
+
+export async function signInWithGoogle() {
+  if (!supabase) return { error: 'Supabase not configured' };
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+      queryParams: { access_type: 'offline', prompt: 'consent' },
+    },
+  });
+}
+
+export async function signInWithGitHub() {
+  if (!supabase) return { error: 'Supabase not configured' };
+  return supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: { redirectTo: `${window.location.origin}/auth/callback` },
+  });
+}
+
+export async function signOut() {
+  if (!supabase) return;
+  return supabase.auth.signOut();
+}
+
+export async function getSession() {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data?.session ?? null;
+}
