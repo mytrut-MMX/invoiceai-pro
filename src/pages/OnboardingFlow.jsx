@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ff } from "../constants";
 import OrgSetupPage from "./OrgSetupPage";
+import { seedAccountsForUser } from "../utils/ledger/defaultAccounts";
+import { supabase } from "../lib/supabase";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const genId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase();
@@ -240,8 +242,15 @@ export default function OnboardingFlow({ user, orgSettings, onComplete, customer
   const [newClient, setNewClient] = useState(null);
   const [invoiceCreated, setInvoiceCreated] = useState(false);
 
-  const handleOrgComplete = (data) => {
+  const handleOrgComplete = async (data) => {
     onComplete({ orgSettings: data });
+    if (supabase && user?.id) {
+      try {
+        await seedAccountsForUser(user.id, supabase);
+      } catch (err) {
+        console.error("Failed to seed chart of accounts:", err);
+      }
+    }
     setStep(2);
   };
 
