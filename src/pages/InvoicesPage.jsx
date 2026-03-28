@@ -49,7 +49,7 @@ const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
 // ─── INVOICE FORM PANEL ───────────────────────────────────────────────────────
 function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
-  const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, quotes } = useContext(AppCtx);
+  const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, quotes, user } = useContext(AppCtx);
   const { cisEnabled, cisDefaultRate } = useCISSettings();
   const isVat = orgSettings?.vatReg==="Yes";
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
@@ -117,7 +117,8 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
     status: newStatus||status, template,
     recurring:recurringEnabled, recurring_frequency:recurFreq,
-    recurring_next_date: recurringEnabled ? recurringNextDate : ""
+    recurring_next_date: recurringEnabled ? recurringNextDate : "",
+    activity: inv.activity || []
   });
 
   const handleSave = (newStatus) => {
@@ -132,6 +133,8 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
       const previousStatus = inv.status || "Draft";
       const nextStatus = newStatus || status;
       const savedInvoice = buildInvoice(newStatus);
+      const action = !isEdit ? "Created" : nextStatus !== previousStatus ? `Status changed to ${nextStatus}` : "Updated";
+      savedInvoice.activity = [...(inv.activity || []), { action, timestamp: new Date().toISOString(), actor: user?.name || "Unknown" }];
       onSave(savedInvoice);
       if (nextStatus === "Paid" && previousStatus !== "Paid") {
         setPayments(p=>[{
@@ -146,6 +149,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
 
   const handlePaidConfirm = ({ date, method, reference }) => {
     const saved = buildInvoice("Paid");
+    saved.activity = [...(inv.activity || []), { action: "Marked Paid", timestamp: new Date().toISOString(), actor: user?.name || "Unknown" }];
     onSave(saved);
     setPayments(p=>[{
       id:crypto.randomUUID(), invoice_id:saved.id, invoice_number:saved.invoice_number,
@@ -485,6 +489,26 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
           ))}
         </div>
 
+        {/* Activity log */}
+        {(invoice.activity || []).length > 0 && (
+          <div style={{ background:"#fff", border:"1px solid #e8e8ec", borderRadius:10, marginBottom:20, overflow:"hidden" }}>
+            <div style={{ padding:"10px 18px", borderBottom:"1px solid #f0f0f0" }}>
+              <span style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em" }}>Activity</span>
+            </div>
+            <div style={{ padding:"4px 18px" }}>
+              {invoice.activity.map((entry, i) => (
+                <div key={i} style={{ display:"flex", gap:12, padding:"10px 0", borderBottom: i < invoice.activity.length - 1 ? "1px solid #f7f7f7" : "none" }}>
+                  <div style={{ width:2, minHeight:32, background:"#e8e8ec", borderRadius:2, flexShrink:0, marginTop:3 }} />
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>{entry.action}</div>
+                    <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{entry.actor} · {new Date(entry.timestamp).toLocaleString()}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* A4 document preview */}
         <div style={{ background: "#e8e8ec", padding: "28px 16px", borderRadius: 12, display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%", maxWidth: 794, position: "relative" }}>
@@ -513,7 +537,11 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
   const { invoices, setInvoices, quotes, setQuotes } = useContext(AppCtx);
   const [panel, setPanel] = useState(initialShowForm ? { mode:"new" } : null);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useState(() => {
+    const saved = sessionStorage.getItem("invoices_filter");
+    if (saved) { sessionStorage.removeItem("invoices_filter"); return saved; }
+    return "All";
+  });
 
   const filtered = invoices.filter(inv => {
     const matchSearch = !search ||
