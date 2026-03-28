@@ -7,14 +7,18 @@ export default function AuthCallbackPage({ onAuth }) {
 
   useEffect(() => {
     const handleSession = (session) => {
-      onAuth({
+      const u = {
         name: session.user.user_metadata?.full_name || session.user.email,
         email: session.user.email,
         role: "Admin",
         expiresAt: Date.now() + 8 * 60 * 60 * 1000,
         provider: session.user.app_metadata?.provider || "email",
-      });
-      // Navigation is handled by App.jsx re-rendering once user state is set
+      };
+      // Write directly to localStorage before navigating — don't rely on
+      // React state batching or App.jsx re-render timing
+      try { localStorage.setItem("ai_invoice_user", JSON.stringify(u)); } catch {}
+      onAuth(u);
+      window.location.replace("/");
     };
 
     // Subscribe to auth state changes — Supabase exchanges the token from the
