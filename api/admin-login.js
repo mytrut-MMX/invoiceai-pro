@@ -25,7 +25,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { password } = req.body || {};
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  // ADMIN_PASSWORD is used both as the password and as the HMAC secret
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim();
 
   if (!adminPassword) return res.status(503).json({ error: 'Not configured' });
   if (!password || typeof password !== 'string') {
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
   }
 
   // AUTH-001: Constant-time comparison to prevent timing attacks
-  const pwBuf = Buffer.from(password);
+  const pwBuf = Buffer.from(password.slice(0, 1000)); // cap input length
   const secretBuf = Buffer.from(adminPassword);
   const isValid = pwBuf.length === secretBuf.length &&
     timingSafeEqual(pwBuf, secretBuf);
