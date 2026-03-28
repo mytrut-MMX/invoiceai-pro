@@ -239,18 +239,25 @@ export default function App() {
 
   // Supabase Auth exchanges the OAuth token from the URL hash automatically
   // via the JS client; this page just waits for the session and calls onAuth.
-  if(path === '/auth/callback') return (
-    <AuthCallbackPage onAuth={(u) => {
-      const prev = LS.get("ai_invoice_user", null);
-      if (prev?.email !== u.email) {
-        setOnboardingDoneState(false);
-        LS.set("ai_invoice_onboarding_done", false);
-      }
-      // Write synchronously before window.location.replace() triggers a reload
-      LS.set("ai_invoice_user", u);
-      setUser(u);
-    }} />
-  );
+  if(path === '/auth/callback') {
+    // Once onAuth fires and setUser(u) triggers a re-render, user is set
+    // and we can safely navigate away from the callback URL
+    if (user) {
+      window.location.replace("/");
+      return null;
+    }
+    return (
+      <AuthCallbackPage onAuth={(u) => {
+        const prev = LS.get("ai_invoice_user", null);
+        if (prev?.email !== u.email) {
+          setOnboardingDoneState(false);
+          LS.set("ai_invoice_onboarding_done", false);
+        }
+        LS.set("ai_invoice_user", u);
+        setUser(u);
+      }} />
+    );
+  }
 
   if(!user) {
   if(path === '/' || path === '') return <LandingPage />;
