@@ -6,7 +6,7 @@ import { fmt, parseCisRate } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 
 export default function HomePage({ user, onNavigate }) {
-  const { invoices, orgSettings } = useContext(AppCtx);
+  const { invoices, expenses, payments, orgSettings } = useContext(AppCtx);
   const [reportPeriod, setReportPeriod] = useState("this_month");
   const [aiInput, setAiInput] = useState("");
   const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoiceSaga assistant. Ask me anything!` }]);
@@ -22,18 +22,18 @@ export default function HomePage({ user, onNavigate }) {
     setMessages(p=>[...p,{ role:"user", text:msg }]);
     setLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1000,
-          system:"You are an AI assistant for an invoicing platform called InvoiceSaga. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
-          messages:[{ role:"user", content:msg }]
+      const res = await fetch("/api/claude-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: "You are an AI assistant for an invoicing platform called InvoiceSaga. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
+          messages: [{ role: "user", content: msg }]
         })
       });
-      const d = await res.json();
-      setMessages(p=>[...p,{ role:"assistant", text:d.content?.map(i=>i.text||"").join("")||"Sorry, couldn't process that." }]);
+      const data = await res.json();
+      setMessages(p=>[...p,{ role:"assistant", text:data.content?.[0]?.text || "Sorry, couldn't process that." }]);
     } catch {
       setMessages(p=>[...p,{ role:"assistant", text:"Connection issue. Please try again." }]);
     }
@@ -86,6 +86,22 @@ export default function HomePage({ user, onNavigate }) {
   }, [invoices, orgSettings, currencySymbol]);
 
   const reportSummary = useMemo(() => {
+    const now = new Date();
+    const startOfMonth    = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfNextMonth= new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startOfLastMonth= new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startOfQuarter  = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const startOfYear     = new Date(now.getFullYear(), 0, 1);
+    const inRange = (dateStr) => {
+      const d = dateStr ? new Date(dateStr) : null;
+      if (!d || Number.isNaN(d.getTime())) return reportPeriod === "all_time";
+      if (reportPeriod === "this_month")    return d >= startOfMonth && d < startOfNextMonth;
+      if (reportPeriod === "last_month")    return d >= startOfLastMonth && d < startOfMonth;
+      if (reportPeriod === "this_quarter")  return d >= startOfQuarter && d < startOfNextMonth;
+      if (reportPeriod === "this_year")     return d >= startOfYear;
+      return true;
+    };
+
     const revenue = periodInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
     const vat = periodInvoices.reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0);
     const cis = periodInvoices.reduce((sum, inv)=>sum + Number(inv.cisDeduction || 0), 0);
@@ -96,8 +112,46 @@ export default function HomePage({ user, onNavigate }) {
       acc[key].amount += Number(inv.total || 0);
       return acc;
     }, {});
-    return { revenue, vat, cis, reportByStatus };
-  }, [periodInvoices]);
+
+    const totalExpenses = (expenses || [])
+      .filter(e => inRange(e.date))
+      .reduce((sum, e) => sum + Number(e.total || 0), 0);
+    const netProfit = revenue - totalExpenses;
+
+    const inputVAT = (expenses || [])
+      .filter(e => inRange(e.date) && Number(e.tax_amount || 0) > 0)
+      .reduce((sum, e) => sum + Number(e.tax_amount || 0), 0);
+    const netVAT = vat - inputVAT;
+
+    return { revenue, vat, cis, reportByStatus, totalExpenses, netProfit, inputVAT, netVAT };
+  }, [periodInvoices, expenses, reportPeriod]);
+
+  const cashFlow = useMemo(() => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d30   = new Date(today); d30.setDate(today.getDate() + 30);
+    const d60   = new Date(today); d60.setDate(today.getDate() + 60);
+    const d90   = new Date(today); d90.setDate(today.getDate() + 90);
+
+    const buckets = { overdue:0, next30:0, next60:0, next90:0 };
+
+    invoices
+      .filter(inv => (inv.status === "Sent" || inv.status === "Partial" || inv.status === "Overdue") && inv.due_date)
+      .forEach(inv => {
+        const due = new Date(inv.due_date); due.setHours(0,0,0,0);
+        const paid = (payments || [])
+          .filter(p => p.invoice_id === inv.id)
+          .reduce((s, p) => s + Number(p.amount || 0), 0);
+        const outstanding = Math.max(0, Number(inv.total || 0) - paid);
+        if (outstanding === 0) return;
+        if (due < today)      buckets.overdue += outstanding;
+        else if (due <= d30)  buckets.next30  += outstanding;
+        else if (due <= d60)  buckets.next60  += outstanding;
+        else if (due <= d90)  buckets.next90  += outstanding;
+      });
+
+    const total = buckets.overdue + buckets.next30 + buckets.next60 + buckets.next90;
+    return { ...buckets, total };
+  }, [invoices, payments]);
 
     return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff, background:"#f4f5f7", minHeight:"100vh" }}>
@@ -118,6 +172,24 @@ export default function HomePage({ user, onNavigate }) {
           </div>
         ))}
       </div>
+
+      {/* Overdue alert */}
+      {(() => {
+        const overdue = invoices.filter(i => i.status === "Overdue");
+        if (overdue.length === 0) return null;
+        const total = overdue.reduce((s, i) => s + Number(i.total || 0), 0);
+        return (
+          <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:10, padding:"12px 18px", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+            <span style={{ fontSize:13, fontWeight:600, color:"#DC2626" }}>
+              ⚠ You have {overdue.length} overdue invoice{overdue.length !== 1 ? "s" : ""} totalling {fmt(currencySymbol, total)}.
+            </span>
+            <button onClick={() => onNavigate("invoices")}
+              style={{ background:"#DC2626", color:"#fff", border:"none", borderRadius:7, padding:"6px 14px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+              Take action →
+            </button>
+          </div>
+        );
+      })()}
 
       {/* AI Chat */}
       <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflow:"hidden", marginBottom:24 }}>
@@ -187,6 +259,8 @@ export default function HomePage({ user, onNavigate }) {
             { label:"Revenue", value:fmt(currencySymbol, reportSummary.revenue), color:"#16A34A" },
             { label:"VAT", value:fmt(currencySymbol, reportSummary.vat), color:"#2563EB" },
             { label:"CIS", value:fmt(currencySymbol, reportSummary.cis), color:"#7C3AED" },
+            { label:"Expenses", value:fmt(currencySymbol, reportSummary.totalExpenses), color:"#DC2626" },
+            { label:"Net Profit", value:fmt(currencySymbol, reportSummary.netProfit), color:reportSummary.netProfit >= 0 ? "#16A34A" : "#DC2626" },
           ].map(card => (
             <div key={card.label} style={{ border:"1px solid #EFEFEF", borderRadius:10, padding:"10px 12px", background:"#FCFCFC" }}>
               <div style={{ fontSize:11, color:"#6b7280", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
@@ -209,6 +283,71 @@ export default function HomePage({ user, onNavigate }) {
             </div>
           ))}
         </div>
+
+        {orgSettings?.vatReg === "Yes" && (
+          <div style={{ marginTop:16 }}>
+            <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", flexWrap:"wrap", gap:6, marginBottom:10 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#111110" }}>VAT Return Estimate</div>
+              <div style={{ fontSize:11, color:"#9A9A9A", fontStyle:"italic" }}>Verify with your accountant before filing.</div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:10 }}>
+              {[
+                { label:"Output VAT", value:reportSummary.vat,      color:"#2563EB", bg:"#EFF6FF", border:"#BFDBFE" },
+                { label:"Input VAT",  value:reportSummary.inputVAT,  color:"#059669", bg:"#F0FDF4", border:"#BBF7D0" },
+                { label:"Net VAT Due",value:reportSummary.netVAT,    color:reportSummary.netVAT >= 0 ? "#DC2626" : "#059669", bg:reportSummary.netVAT >= 0 ? "#FEF2F2" : "#F0FDF4", border:reportSummary.netVAT >= 0 ? "#FECACA" : "#BBF7D0" },
+              ].map(card => (
+                <div key={card.label} style={{ border:`1px solid ${card.border}`, borderRadius:10, padding:"10px 12px", background:card.bg }}>
+                  <div style={{ fontSize:11, color:card.color, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
+                  <div style={{ fontSize:16, color:card.color, fontWeight:800, marginTop:5 }}>{fmt(currencySymbol, card.value)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Cash Flow Forecast */}
+      <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"14px 16px", marginTop:16 }}>
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:15, fontWeight:800, color:"#1A1A1A" }}>Cash Flow Forecast</div>
+          <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>Outstanding invoices by due date · net of payments received</div>
+        </div>
+
+        {cashFlow.total === 0 ? (
+          <div style={{ fontSize:13, color:"#AAA", textAlign:"center", padding:"20px 0" }}>No outstanding invoices.</div>
+        ) : (<>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:10, marginBottom:16 }}>
+            {[
+              { label:"Overdue",     value:cashFlow.overdue, color:"#DC2626", bg:"#FEF2F2", border:"#FECACA" },
+              { label:"Next 30 days",value:cashFlow.next30,  color:"#D97706", bg:"#FFFBEB", border:"#FDE68A" },
+              { label:"31–60 days",  value:cashFlow.next60,  color:"#2563EB", bg:"#EFF6FF", border:"#BFDBFE" },
+              { label:"61–90 days",  value:cashFlow.next90,  color:"#475569", bg:"#F8FAFC", border:"#E2E8F0" },
+            ].map(b => (
+              <div key={b.label} style={{ border:`1px solid ${b.border}`, borderRadius:10, padding:"12px 14px", background:b.bg }}>
+                <div style={{ fontSize:11, color:b.color, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em", marginBottom:6 }}>{b.label}</div>
+                <div style={{ fontSize:18, fontWeight:800, color:b.color }}>{fmt(currencySymbol, b.value)}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bar chart */}
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {[
+              { label:"Overdue",     value:cashFlow.overdue, color:"#DC2626" },
+              { label:"Next 30 days",value:cashFlow.next30,  color:"#D97706" },
+              { label:"31–60 days",  value:cashFlow.next60,  color:"#2563EB" },
+              { label:"61–90 days",  value:cashFlow.next90,  color:"#475569" },
+            ].filter(b => b.value > 0).map(b => (
+              <div key={b.label} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:90, fontSize:11, color:"#6b7280", fontWeight:600, flexShrink:0, textAlign:"right" }}>{b.label}</div>
+                <div style={{ flex:1, background:"#F1F5F9", borderRadius:4, height:10, overflow:"hidden" }}>
+                  <div style={{ width:`${Math.round((b.value / cashFlow.total) * 100)}%`, height:"100%", background:b.color, borderRadius:4, transition:"width 0.4s ease" }} />
+                </div>
+                <div style={{ width:80, fontSize:12, fontWeight:700, color:b.color, textAlign:"right", flexShrink:0 }}>{fmt(currencySymbol, b.value)}</div>
+              </div>
+            ))}
+          </div>
+        </>)}
       </div>
 
     </div>

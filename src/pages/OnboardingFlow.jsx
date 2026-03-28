@@ -3,7 +3,7 @@ import { ff } from "../constants";
 import OrgSetupPage from "./OrgSetupPage";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-const genId = () => Math.random().toString(36).slice(2, 10);
+const genId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase();
 const today = () => new Date().toISOString().slice(0, 10);
 const due30 = () => new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
 

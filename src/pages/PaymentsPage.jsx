@@ -133,20 +133,29 @@ function PaymentModal({ existing, onClose, onSave }) {
   const custSuggestions = customers.filter(c=>!customer||c.name.toLowerCase().includes(customer.toLowerCase()));
 
   const handleSave = () => {
-    onSave({
-      id: p.id||crypto.randomUUID(),
+    const newPmt = {
+      id: p.id || crypto.randomUUID(),
       payment_number: paymentNumber,
       customer_name: customer,
       invoice_id: invoiceId,
-      invoice_number: linkedInvoice?.invoice_number||invoiceId,
+      invoice_number: linkedInvoice?.invoice_number || invoiceId,
       quote_number: linkedInvoice?.converted_from_quote || "",
       amount: Number(amount),
       date, method, reference, notes, status
-    });
+    };
+    onSave(newPmt);
     onClose();
 
-    if (linkedInvoice && Number(amount) >= Number(linkedInvoice.total||0)) {
-      setInvoices(prev=>prev.map(inv=>inv.id===linkedInvoice.id?{...inv,status:"Paid"}:inv));
+    if (linkedInvoice) {
+      const prevPaid = payments
+        .filter(pmt => pmt.invoice_id === linkedInvoice.id && pmt.id !== newPmt.id)
+        .reduce((s, pmt) => s + Number(pmt.amount || 0), 0);
+      const totalPaid = prevPaid + Number(amount);
+      const invTotal  = Number(linkedInvoice.total || 0);
+      const newStatus = totalPaid >= invTotal ? "Paid" : totalPaid > 0 ? "Partial" : linkedInvoice.status;
+      setInvoices(prev => prev.map(inv =>
+        inv.id === linkedInvoice.id ? { ...inv, status: newStatus } : inv
+      ));
     }
   };
 
