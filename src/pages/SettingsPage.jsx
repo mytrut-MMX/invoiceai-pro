@@ -219,6 +219,17 @@ export default function SettingsPage({ onNavigate }) {
       return;
     }
     setOrgSettings(buildOrgSettings());
+    const existingSettings = JSON.parse(localStorage.getItem('invoicesaga_settings') || '{}');
+    localStorage.setItem('invoicesaga_settings', JSON.stringify({
+      ...existingSettings,
+      cis: {
+        enabled: cisEnabled,
+        contractorName: cisContractorName,
+        contractorUTR: cisContractorUTR,
+        employerRef: cisEmployerRef,
+        defaultRate: cisDefaultRate,
+      }
+    }));
     setVatNumberLocked(Boolean(vatNum));
     setPdfTemplate(selectedTpl);
     setCompanyLogoSize(logoSize);
