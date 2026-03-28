@@ -537,7 +537,11 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
   const { invoices, setInvoices, quotes, setQuotes } = useContext(AppCtx);
   const [panel, setPanel] = useState(initialShowForm ? { mode:"new" } : null);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useState(() => {
+    const saved = sessionStorage.getItem("invoices_filter");
+    if (saved) { sessionStorage.removeItem("invoices_filter"); return saved; }
+    return "All";
+  });
 
   const filtered = invoices.filter(inv => {
     const matchSearch = !search ||

@@ -11,7 +11,10 @@ export default function HomePage({ user, onNavigate }) {
   const [aiInput, setAiInput] = useState("");
   const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoiceSaga assistant. Ask me anything!` }]);
   const [loading, setLoading] = useState(false);
+  const [hoveredStat, setHoveredStat] = useState(null);
   const bottomRef = useRef(null);
+
+  const STAT_FILTERS = { "Outstanding": "Sent", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
 
   useEffect(()=>{ bottomRef.current?.scrollIntoView({ behavior:"smooth" }); },[messages]);
 
@@ -164,13 +167,21 @@ export default function HomePage({ user, onNavigate }) {
 
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:24 }}>
-        {stats.map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
-            <div style={{ fontSize:11, fontWeight:600, color:"#6b7280", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
-            <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
-            <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{s.sub}</div>
-          </div>
-        ))}
+        {stats.map(s => {
+          const filter = STAT_FILTERS[s.label];
+          const isClickable = !!filter;
+          return (
+            <div key={s.label}
+              onClick={isClickable ? () => { sessionStorage.setItem("invoices_filter", filter); onNavigate("invoices"); } : undefined}
+              onMouseEnter={isClickable ? () => setHoveredStat(s.label) : undefined}
+              onMouseLeave={isClickable ? () => setHoveredStat(null) : undefined}
+              style={{ background: hoveredStat === s.label ? "#f8faff" : "#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", cursor: isClickable ? "pointer" : "default", transition:"background 0.15s" }}>
+              <div style={{ fontSize:11, fontWeight:600, color:"#6b7280", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
+              <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
+              <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{s.sub}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Overdue alert */}
