@@ -242,14 +242,21 @@ export default function OnboardingFlow({ user, orgSettings, onComplete, customer
   const [newClient, setNewClient] = useState(null);
   const [invoiceCreated, setInvoiceCreated] = useState(false);
 
-  const handleOrgComplete = async (data) => {
+  const handleOrgComplete = (data) => {
     onComplete({ orgSettings: data });
-    if (supabase && user?.id) {
-      try {
-        await seedAccountsForUser(user.id, supabase);
-      } catch (err) {
-        console.error("Failed to seed chart of accounts:", err);
-      }
+    // Fire-and-forget — seed the chart of accounts without blocking the onboarding flow.
+    // Uses supabase.auth.getUser() to obtain the real auth UUID (the app's user object
+    // does not carry an id field).
+    if (supabase) {
+      (async () => {
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          const authUserId = authData?.user?.id;
+          if (authUserId) await seedAccountsForUser(authUserId, supabase);
+        } catch (err) {
+          console.error("Failed to seed chart of accounts:", err);
+        }
+      })();
     }
     setStep(2);
   };

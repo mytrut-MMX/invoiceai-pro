@@ -1,5 +1,7 @@
 import { useState, useContext, useMemo, useRef, useCallback } from "react";
 import { ff, CUR_SYM, TAX_RATES, EXPENSE_CATEGORIES, EXPENSE_STATUSES, PAYMENT_METHODS } from "../constants";
+import { postExpenseEntry } from "../utils/ledger/ledgerService";
+import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Switch } from "../components/atoms";
@@ -139,7 +141,7 @@ function ExpenseForm({ existing, onClose, onSave }) {
   const allPay = [...PAYMENT_METHODS, ...(customPayMethods || [])];
 
   const handleSave = () => {
-    onSave({
+    const expenseObj = {
       id: e.id || crypto.randomUUID(),
       expense_number: e.expense_number,
       expense_type: expType,
@@ -159,7 +161,18 @@ function ExpenseForm({ existing, onClose, onSave }) {
       mileage_rate: Number(mileageRate),
       vehicle,
       created_at: e.created_at || new Date().toISOString(),
-    });
+    };
+    onSave(expenseObj);
+    // Fire-and-forget — never blocks the UI save path
+    ;(async () => {
+      try {
+        const { accounts, userId } = await fetchUserAccounts();
+        if (!userId) return;
+        await postExpenseEntry(expenseObj, accounts, userId);
+      } catch (err) {
+        console.error('[Ledger] expense post failed:', err);
+      }
+    })();
   };
 
   const valid = expType === "mileage" ? Number(mileageKm) > 0 : Number(amount) > 0;

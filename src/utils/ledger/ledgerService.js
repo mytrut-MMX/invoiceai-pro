@@ -12,6 +12,25 @@ export function findAccount(accounts, code) {
   return accounts.find(a => a.code === code) ?? null;
 }
 
+/**
+ * Looks up an existing journal entry by its source document type and ID.
+ * Used before reversing an entry when an invoice is re-saved.
+ *
+ * @param {string} sourceType  e.g. 'invoice', 'payment', 'expense'
+ * @param {string} sourceId    the source document's id
+ * @returns {Promise<{ id: string }|null>}
+ */
+export async function findEntryBySource(sourceType, sourceId) {
+  if (!supabaseReady) return null;
+  const { data } = await supabase
+    .from('journal_entries')
+    .select('id')
+    .eq('source_type', sourceType)
+    .eq('source_id', sourceId)
+    .maybeSingle();
+  return data ?? null;
+}
+
 // ── Category → ledger account code ───────────────────────────────────────────
 // Maps EXPENSE_CATEGORIES names (from src/constants/index.js) to DEFAULT_ACCOUNTS codes.
 

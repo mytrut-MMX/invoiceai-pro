@@ -1,5 +1,7 @@
 import { useState, useContext, useMemo } from "react";
 import { ff, STATUS_COLORS, CUR_SYM, PAYMENT_METHODS } from "../constants";
+import { postPaymentEntry } from "../utils/ledger/ledgerService";
+import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag } from "../components/atoms";
@@ -145,6 +147,18 @@ function PaymentModal({ existing, onClose, onSave }) {
     };
     onSave(newPmt);
     onClose();
+
+    // Fire-and-forget — never blocks the UI save path
+    ;(async () => {
+      try {
+        if (!linkedInvoice) return;
+        const { accounts, userId } = await fetchUserAccounts();
+        if (!userId) return;
+        await postPaymentEntry(newPmt, linkedInvoice, accounts, userId);
+      } catch (err) {
+        console.error('[Ledger] payment post failed:', err);
+      }
+    })();
 
     if (linkedInvoice) {
       const isEdit = payments.some(p => p.id === newPmt.id);

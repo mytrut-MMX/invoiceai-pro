@@ -8,6 +8,8 @@ import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/help
 import { calcTotals } from "../utils/calcTotals";
 import ItemModal from "../modals/ItemModal";
 import { useCISSettings } from "../hooks/useCISSettings";
+import { postInvoiceEntry, reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
+import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
@@ -100,6 +102,20 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
       const action = !isEdit ? "Created" : nextStatus !== previousStatus ? `Status changed to ${nextStatus}` : "Updated";
       savedInvoice.activity = [...(inv.activity || []), { action, timestamp: new Date().toISOString(), actor: user?.name || "Unknown" }];
       onSave(savedInvoice);
+      // Fire-and-forget — never blocks the UI save path
+      ;(async () => {
+        try {
+          const { accounts, userId } = await fetchUserAccounts();
+          if (!userId) return;
+          if (isEdit) {
+            const oldEntry = await findEntryBySource('invoice', inv.id);
+            if (oldEntry) await reverseEntry(oldEntry.id, userId);
+          }
+          await postInvoiceEntry(savedInvoice, accounts, userId);
+        } catch (err) {
+          console.error('[Ledger] invoice post failed:', err);
+        }
+      })();
       if (nextStatus === "Paid" && previousStatus !== "Paid") {
         setPayments(p=>[{
           id:crypto.randomUUID(), invoice_id:savedInvoice.id, invoice_number:savedInvoice.invoice_number,
