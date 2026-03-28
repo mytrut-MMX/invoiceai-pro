@@ -13,7 +13,7 @@ const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
 // ─── INVOICE FORM PANEL ───────────────────────────────────────────────────────
 function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
-  const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, quotes, user } = useContext(AppCtx);
+  const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, payments, quotes, user } = useContext(AppCtx);
   const { cisEnabled, cisDefaultRate } = useCISSettings();
   const isVat = orgSettings?.vatReg==="Yes";
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
@@ -115,10 +115,16 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     const saved = buildInvoice("Paid");
     saved.activity = [...(inv.activity || []), { action: "Marked Paid", timestamp: new Date().toISOString(), actor: user?.name || "Unknown" }];
     onSave(saved);
-    setPayments(p=>[{
-      id:crypto.randomUUID(), invoice_id:saved.id, invoice_number:saved.invoice_number,
-      customer_name:customer?.name||"", amount:totals.total, date, method, reference, status:"Reconciled"
-    },...p]);
+    const existingPaid = (payments || [])
+      .filter(p => p.invoice_id === saved.id)
+      .reduce((s, p) => s + Number(p.amount || 0), 0);
+    if (existingPaid < totals.total) {
+      const paymentAmount = existingPaid > 0 ? totals.total - existingPaid : totals.total;
+      setPayments(p=>[{
+        id:crypto.randomUUID(), invoice_id:saved.id, invoice_number:saved.invoice_number,
+        customer_name:customer?.name||"", amount:paymentAmount, date, method, reference, status:"Reconciled"
+      },...p]);
+    }
     setShowPaidModal(false);
     onClose();
   };

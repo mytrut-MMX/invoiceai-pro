@@ -397,7 +397,8 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
 
 // ─── QUOTES PAGE ──────────────────────────────────────────────────────────────
 export default function QuotesPage({ onNavigate, initialShowForm = false }) {
-  const { quotes, setQuotes, invoices, setInvoices } = useContext(AppCtx);
+  const { quotes, setQuotes, invoices, setInvoices, orgSettings } = useContext(AppCtx);
+  const { cisEnabled, cisDefaultRate } = useCISSettings();
   const [panel, setPanel] = useState(initialShowForm ? { mode:"new-page" } : null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -426,7 +427,18 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
     }
     // save quote as Invoiced
     onSave({ ...quote, status:"Invoiced" });
-    // create invoice from quote
+    // create invoice from quote — recalculate totals fresh for invoice context
+    const freshTotals = calcTotals(
+      quote.line_items || [],
+      quote.discount_type || "percent",
+      quote.discount_value || "",
+      quote.shipping || "",
+      orgSettings?.vatReg === "Yes",
+      quote.customer,
+      cisEnabled,
+      cisDefaultRate,
+      false
+    );
     const inv = {
       id: crypto.randomUUID(),
       invoice_number: nextNum("INV", invoices),
@@ -438,13 +450,14 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
       discount_type: quote.discount_type,
       discount_value: quote.discount_value,
       shipping: quote.shipping,
-      subtotal: quote.subtotal,
-      discountAmount: quote.discountAmount,
-      taxBreakdown: quote.taxBreakdown,
-      cisDeduction: quote.cisEstimate || 0,
-      hasCISItems:  quote.hasCISItems  || false,
-      customerCIS:  quote.customerCIS  || null,
-      total: (quote.grossTotal ?? quote.total) - (quote.cisEstimate || 0),
+      subtotal: freshTotals.subtotal,
+      discountAmount: freshTotals.discountAmount,
+      taxBreakdown: freshTotals.taxBreakdown,
+      cisDeduction: freshTotals.cisDeduction,
+      hasCISItems: freshTotals.hasCISItems,
+      customerCIS: freshTotals.customerCIS,
+      total: freshTotals.total,
+      grossTotal: freshTotals.grossTotal,
       notes: quote.notes,
       terms: quote.terms,
       status: "Draft",

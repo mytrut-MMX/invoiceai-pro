@@ -34,7 +34,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  // ADMIN_PASSWORD is used both as the password and as the HMAC secret
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim();
   if (!adminPassword) return res.status(503).json({ error: 'Not configured' });
 
   // AUTH-001: Accept signed HMAC token — not raw password

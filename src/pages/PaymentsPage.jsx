@@ -147,15 +147,20 @@ function PaymentModal({ existing, onClose, onSave }) {
     onClose();
 
     if (linkedInvoice) {
+      const isEdit = payments.some(p => p.id === newPmt.id);
       const prevPaid = payments
         .filter(pmt => pmt.invoice_id === linkedInvoice.id && pmt.id !== newPmt.id)
         .reduce((s, pmt) => s + Number(pmt.amount || 0), 0);
       const totalPaid = prevPaid + Number(amount);
-      const invTotal  = Number(linkedInvoice.total || 0);
-      const newStatus = totalPaid >= invTotal ? "Paid" : totalPaid > 0 ? "Partial" : linkedInvoice.status;
-      const actEntry = { action: `Payment recorded: £${Number(amount).toFixed(2)}`, timestamp: new Date().toISOString(), actor: "System" };
+      const invTotal = Number(linkedInvoice.total || 0);
+      const newInvStatus = totalPaid >= invTotal
+        ? "Paid"
+        : totalPaid > 0
+          ? "Partial"
+          : linkedInvoice.status;
+      const actEntry = { action: `Payment ${isEdit ? "updated" : "recorded"}: £${Number(amount).toFixed(2)}`, timestamp: new Date().toISOString(), actor: "System" };
       setInvoices(prev => prev.map(inv =>
-        inv.id === linkedInvoice.id ? { ...inv, status: newStatus, activity: [...(inv.activity || []), actEntry] } : inv
+        inv.id === linkedInvoice.id ? { ...inv, status: newInvStatus, activity: [...(inv.activity || []), actEntry] } : inv
       ));
     }
   };

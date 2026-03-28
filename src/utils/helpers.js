@@ -6,18 +6,28 @@ export const addDays = (d, n) => { const dt=new Date(d); dt.setDate(dt.getDate()
 export const fmtDate = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : "—";
 export const newLine = (order=0) => ({ id:crypto.randomUUID(), description:"", quantity:1, rate:0, tax_rate:20, amount:0, cisApplicable:false, sort_order:order });
 export const nextNum = (prefix, existing) => {
-  const nums = (existing||[])
-    .map((entry) => {
-      if (typeof entry === "string") return entry;
-      if (typeof entry === "number") return String(entry);
-      if (entry && typeof entry === "object") {
-        return entry.invoice_number || entry.payment_number || entry.quote_number || entry.docNumber || "";
-      }
-      return "";
-    })
-    .map((value) => parseInt(String(value).replace(/\D/g, ""), 10))
-    .filter(Boolean);
-  return `${prefix}-${String(nums.length?Math.max(...nums)+1:1).padStart(4,"0")}`;
+  const extractNum = (entry) => {
+    let str = "";
+    if (typeof entry === "string") str = entry;
+    else if (typeof entry === "number") str = String(entry);
+    else if (entry && typeof entry === "object")
+      str = entry.invoice_number || entry.payment_number || entry.quote_number || entry.docNumber || "";
+    const match = str.match(/(\d+)(?=\D*$)/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+  const nums = (existing || []).map(extractNum).filter(Boolean);
+  let candidate = nums.length ? Math.max(...nums) + 1 : 1;
+  const existingStrings = new Set(
+    (existing || []).map(e =>
+      e?.invoice_number || e?.payment_number || e?.quote_number || e?.docNumber || String(e)
+    )
+  );
+  for (let i = 0; i < 100; i++) {
+    const s = `${prefix}-${String(candidate).padStart(4, "0")}`;
+    if (!existingStrings.has(s)) return s;
+    candidate++;
+  }
+  return `${prefix}-${String(candidate).padStart(4, "0")}`;
 };
 export const upsert = (arr, item) => {
   const i = arr.findIndex(x=>x.id===item.id);

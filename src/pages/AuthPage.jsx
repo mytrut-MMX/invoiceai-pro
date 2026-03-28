@@ -154,7 +154,7 @@ export default function AuthPage({ onAuth }) {
         const newUser = { name: name.trim(), email, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
         saveUsers([...users, newUser]);
         await saveProfileToSupabase(email, name.trim());
-        onAuth({ name: newUser.name, email: newUser.email, role:"Admin" });
+        onAuth({ name: newUser.name, email: newUser.email, role:"Admin", expiresAt: Date.now() + 8 * 60 * 60 * 1000 });
       } else {
         const found = users.find(u => u.email === email);
         if(!found || !(await verifyPassword(password, found.password))) {
