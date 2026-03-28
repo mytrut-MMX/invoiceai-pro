@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ff } from "../constants";
 import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
-import { supabase, supabaseReady, signInWithGoogle, signInWithGitHub, getSession } from "../lib/supabase";
+import { supabase, supabaseReady, signInWithGoogle, getSession } from "../lib/supabase";
 
 // AUTH-002: PBKDF2-SHA256 with random salt — NIST SP 800-132 compliant
 // Format stored: "pbkdf2:310000:<saltHex>:<hashHex>"
@@ -148,12 +148,6 @@ export default function AuthPage({ onAuth }) {
     // on success: browser redirects to OAuth provider, then back to /auth/callback
   };
 
-  const handleGitHubSignIn = async () => {
-    setLoading(true);
-    const { error } = await signInWithGitHub();
-    if (error) { setError(oauthErrorMessage("GitHub", error)); setLoading(false); }
-  };
-
   const saveProfileToSupabase = async (email, name) => {
     if (!supabaseReady || !supabase) return;
     try {
@@ -268,13 +262,6 @@ export default function AuthPage({ onAuth }) {
                 <path fill="#4285F4" d="M24 47c5.5 0 10.12-1.82 13.5-4.96l-7.1-5.52C28.54 37.9 26.37 38.5 24 38.5c-6.26 0-11.6-4.22-13.3-9.96l-7.12 5.52C7.03 41.51 14.82 47 24 47z"/>
               </svg>
               Continue with Google
-            </button>
-            <button onClick={handleGitHubSignIn} disabled={loading} style={{ width:"100%", height:44, display:"flex", alignItems:"center", justifyContent:"center", gap:10, background:"#24292e", color:"#FFFFFF", border:"none", borderRadius:8, fontSize:14, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:ff }}>
-              {/* GitHub octocat outline */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" clipRule="evenodd" d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.28-.01-1.04-.01-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.93.43.37.81 1.1.81 2.22 0 1.6-.01 2.9-.01 3.29 0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/>
-              </svg>
-              Continue with GitHub
             </button>
           </div>
 
