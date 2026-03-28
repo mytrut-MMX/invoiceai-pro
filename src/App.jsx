@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./responsive.css";
 import { ff, MOCK_CUSTOMERS, MOCK_ITEMS_INIT, MOCK_INV_LIST, MOCK_QUOTES_LIST, MOCK_PAYMENTS, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
 import { AppCtx } from "./context/AppContext";
 import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from "./components/layout";
 import { todayStr } from "./utils/helpers";
+import { saveAll } from "./utils/storage";
 
 // pages
 import AuthPage from "./pages/AuthPage";
@@ -93,12 +94,7 @@ export default function App() {
   const [emailProvider, setEmailProvider] = useState(()=>LS.get("ai_invoice_email_prov","SMTP"));
   const [emailFrom, setEmailFrom] = useState(()=>LS.get("ai_invoice_email_from",""));
 
-  // ─── persist to localStorage ──────────────────────────────────
-  useEffect(()=>LS.set("ai_invoice_user",user),[user]);
-  useEffect(()=>LS.set("ai_invoice_org",orgSettings),[orgSettings]);
-  useEffect(()=>LS.set("ai_invoice_customers",customers),[customers]);
-  useEffect(()=>LS.set("ai_invoice_items",catalogItems),[catalogItems]);
-  useEffect(()=>LS.set("ai_invoice_invoices",invoices),[invoices]);
+  // ─── auto-mark overdue invoices ───────────────────────────────
   useEffect(() => {
     const today = todayStr();
     setInvoices(prev => {
@@ -112,34 +108,67 @@ export default function App() {
       return updated.some((inv, i) => inv !== prev[i]) ? updated : prev;
     });
   }, [invoices]);
-  useEffect(()=>LS.set("ai_invoice_quotes",quotes),[quotes]);
-  useEffect(()=>LS.set("ai_invoice_payments",payments),[payments]);
-  useEffect(()=>LS.set("ai_invoice_pay_methods",customPayMethods),[customPayMethods]);
-  useEffect(()=>LS.set("ai_invoice_expenses",expenses),[expenses]);
-  useEffect(()=>LS.set("ai_invoice_sidebar_pinned",sidebarPinned),[sidebarPinned]);
-  useEffect(()=>LS.set("ai_invoice_theme",appTheme),[appTheme]);
-  useEffect(()=>LS.set("ai_invoice_avatar",userAvatar),[userAvatar]);
-  useEffect(()=>LS.set("ai_invoice_pdf_template",pdfTemplate),[pdfTemplate]);
-  useEffect(()=>LS.set("ai_invoice_logo",companyLogo),[companyLogo]);
-  useEffect(()=>LS.set("ai_invoice_logo_size",companyLogoSize),[companyLogoSize]);
-  useEffect(()=>LS.set("ai_invoice_inv_prefix",invoicePrefix),[invoicePrefix]);
-  useEffect(()=>LS.set("ai_invoice_quo_prefix",quotePrefix),[quotePrefix]);
-  useEffect(()=>LS.set("ai_invoice_inv_start",invoiceStartNum),[invoiceStartNum]);
-  useEffect(()=>LS.set("ai_invoice_quo_start",quoteStartNum),[quoteStartNum]);
-  useEffect(()=>LS.set("ai_invoice_inv_terms",defaultInvTerms),[defaultInvTerms]);
-  useEffect(()=>LS.set("ai_invoice_quo_terms",defaultQuoteTerms),[defaultQuoteTerms]);
-  useEffect(()=>LS.set("ai_invoice_pay_terms",defaultPaymentTerms),[defaultPaymentTerms]);
-  useEffect(()=>LS.set("ai_invoice_footer",footerText),[footerText]);
-  useEffect(()=>LS.set("ai_invoice_template_config",invoiceTemplateConfig),[invoiceTemplateConfig]);
-  useEffect(()=>LS.set("ai_invoice_sb_url",supabaseUrl),[supabaseUrl]);
-  useEffect(()=>LS.set("ai_invoice_sb_key",supabaseKey),[supabaseKey]);
-  useEffect(()=>LS.set("ai_invoice_gdrive",googleDriveEnabled),[googleDriveEnabled]);
-  useEffect(()=>LS.set("ai_invoice_email_en",emailEnabled),[emailEnabled]);
-  useEffect(()=>LS.set("ai_invoice_email_prov",emailProvider),[emailProvider]);
-  useEffect(()=>LS.set("ai_invoice_email_from",emailFrom),[emailFrom]);
-  useEffect(() => LS.set("ai_invoice_onboarding_done", onboardingDone), [onboardingDone]);
 
-  const setOrgSettings = (s) => { setOrgSettingsState(s); LS.set("ai_invoice_org",s); };
+  // ─── debounced persistence to localStorage ────────────────────
+  const [storageError, setStorageError] = useState(null);
+  const persistTimer = useRef(null);
+
+  useEffect(() => {
+    window.addEventListener("storage-error", (e) => {
+      setStorageError(`Storage full — data may not be saved (${e.detail.keys.length} key(s) failed).`);
+    });
+  }, []);
+
+  useEffect(() => {
+    clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      saveAll({
+        ai_invoice_user:           user,
+        ai_invoice_org:            orgSettings,
+        ai_invoice_onboarding_done:onboardingDone,
+        ai_invoice_customers:      customers,
+        ai_invoice_items:          catalogItems,
+        ai_invoice_invoices:       invoices,
+        ai_invoice_quotes:         quotes,
+        ai_invoice_payments:       payments,
+        ai_invoice_pay_methods:    customPayMethods,
+        ai_invoice_expenses:       expenses,
+        ai_invoice_sidebar_pinned: sidebarPinned,
+        ai_invoice_theme:          appTheme,
+        ai_invoice_avatar:         userAvatar,
+        ai_invoice_pdf_template:   pdfTemplate,
+        ai_invoice_logo:           companyLogo,
+        ai_invoice_logo_size:      companyLogoSize,
+        ai_invoice_inv_prefix:     invoicePrefix,
+        ai_invoice_quo_prefix:     quotePrefix,
+        ai_invoice_inv_start:      invoiceStartNum,
+        ai_invoice_quo_start:      quoteStartNum,
+        ai_invoice_inv_terms:      defaultInvTerms,
+        ai_invoice_quo_terms:      defaultQuoteTerms,
+        ai_invoice_pay_terms:      defaultPaymentTerms,
+        ai_invoice_footer:         footerText,
+        ai_invoice_template_config:invoiceTemplateConfig,
+        ai_invoice_sb_url:         supabaseUrl,
+        ai_invoice_sb_key:         supabaseKey,
+        ai_invoice_gdrive:         googleDriveEnabled,
+        ai_invoice_email_en:       emailEnabled,
+        ai_invoice_email_prov:     emailProvider,
+        ai_invoice_email_from:     emailFrom,
+      });
+    }, 300);
+    return () => clearTimeout(persistTimer.current);
+  }, [
+    user, orgSettings, onboardingDone, customers, catalogItems,
+    invoices, quotes, payments, customPayMethods, expenses,
+    sidebarPinned, appTheme, userAvatar, pdfTemplate,
+    companyLogo, companyLogoSize, invoicePrefix, quotePrefix,
+    invoiceStartNum, quoteStartNum, defaultInvTerms, defaultQuoteTerms,
+    defaultPaymentTerms, footerText, invoiceTemplateConfig,
+    supabaseUrl, supabaseKey, googleDriveEnabled,
+    emailEnabled, emailProvider, emailFrom,
+  ]);
+
+  const setOrgSettings = (s) => setOrgSettingsState(s);
 
   // ─── context value ─────────────────────────────────────────────
   const ctx = {
@@ -261,6 +290,12 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={ctx}>
+      {storageError && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:9999, background:"#7F1D1D", color:"#FEE2E2", fontSize:13, fontWeight:600, padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, fontFamily:ff }}>
+          <span>⚠ {storageError}</span>
+          <button onClick={() => setStorageError(null)} style={{ background:"none", border:"none", color:"#FCA5A5", cursor:"pointer", fontSize:18, lineHeight:1, padding:0 }}>×</button>
+        </div>
+      )}
       <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:ff, background:"#f4f5f7" }}>
 
         {/* Desktop sidebar — hidden on mobile via media query in index.css */}
