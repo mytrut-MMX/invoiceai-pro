@@ -66,6 +66,23 @@ export default function HomePage({ user, onNavigate }) {
   }, [invoices, reportPeriod]);
 
   const stats = useMemo(() => {
+    const now = new Date();
+    const startOfCurr = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfNext = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startOfPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const inCurr = inv => { const d = inv.issue_date ? new Date(inv.issue_date) : null; return !!d && d >= startOfCurr && d < startOfNext; };
+    const inPrev = inv => { const d = inv.issue_date ? new Date(inv.issue_date) : null; return !!d && d >= startOfPrev && d < startOfCurr; };
+    const sumAmt = (arr, pred) => arr.filter(pred).reduce((s, i) => s + Number(i.total || 0), 0);
+
+    const calcTrend = (curr, prev, positiveUp) => {
+      if (prev === 0) return null;
+      const pct = Math.round((curr - prev) / prev * 100);
+      if (pct === 0) return null;
+      const up = pct > 0;
+      const isGood = positiveUp ? up : !up;
+      return { text: `${up ? "↑" : "↓"} ${Math.abs(pct)}% vs last month`, color: isGood ? "#059669" : "#dc2626" };
+    };
+
     const outstanding = invoices.filter(i=>["Sent","Partial"].includes(i.status)).reduce((sum,i)=>sum+Number(i.total||0),0);
     const overdue = invoices.filter(i=>i.status==="Overdue").reduce((sum,i)=>sum+Number(i.total||0),0);
     const paid = invoices.filter(i=>i.status==="Paid").reduce((sum,i)=>sum+Number(i.total||0),0);
@@ -78,11 +95,18 @@ export default function HomePage({ user, onNavigate }) {
       ? invoices.reduce((sum, inv)=> sum + Number(inv.cisDeduction || (Number(inv.subtotal||0) * cisRate)), 0)
       : 0;
 
+    const currInv = invoices.filter(inCurr);
+    const prevInv = invoices.filter(inPrev);
+
     return [
-     { label:"Outstanding", value:fmt(currencySymbol, outstanding), sub:`${invoices.filter(i=>["Sent","Partial"].includes(i.status)).length} invoices`, color:"#1e6be0" },
-      { label:"Overdue", value:fmt(currencySymbol, overdue), sub:`${invoices.filter(i=>i.status==="Overdue").length} invoices`, color:"#dc2626" },
-      { label:"Paid", value:fmt(currencySymbol, paid), sub:"Received", color:"#059669" },
-      { label:"Draft", value:fmt(currencySymbol, draft), sub:"Needs action", color:"#6b7280" },
+     { label:"Outstanding", value:fmt(currencySymbol, outstanding), sub:`${invoices.filter(i=>["Sent","Partial"].includes(i.status)).length} invoices`, color:"#1e6be0",
+       trend: calcTrend(sumAmt(currInv, i=>["Sent","Partial"].includes(i.status)), sumAmt(prevInv, i=>["Sent","Partial"].includes(i.status)), false) },
+      { label:"Overdue", value:fmt(currencySymbol, overdue), sub:`${invoices.filter(i=>i.status==="Overdue").length} invoices`, color:"#dc2626",
+        trend: calcTrend(sumAmt(currInv, i=>i.status==="Overdue"), sumAmt(prevInv, i=>i.status==="Overdue"), false) },
+      { label:"Paid", value:fmt(currencySymbol, paid), sub:"Received", color:"#059669",
+        trend: calcTrend(sumAmt(currInv, i=>i.status==="Paid"), sumAmt(prevInv, i=>i.status==="Paid"), true) },
+      { label:"Draft", value:fmt(currencySymbol, draft), sub:"Needs action", color:"#6b7280",
+        trend: calcTrend(sumAmt(currInv, i=>i.status==="Draft"), sumAmt(prevInv, i=>i.status==="Draft"), false) },
       { label:"VAT Tracked", value: orgSettings?.vatReg === "Yes" ? fmt(currencySymbol, vatDue) : "Disabled", sub: orgSettings?.vatReg === "Yes" ? "Output VAT" : "Enable VAT in Settings", color:"#2563EB" },
       { label:"CIS Tracked", value: orgSettings?.cisReg === "Yes" ? fmt(currencySymbol, cisTracked) : "Disabled", sub: orgSettings?.cisReg === "Yes" ? "CIS deductions" : "Enable CIS in Settings", color:"#7C3AED" },
     ];
@@ -179,6 +203,7 @@ export default function HomePage({ user, onNavigate }) {
               <div style={{ fontSize:11, fontWeight:600, color:"#6b7280", letterSpacing:"0.06em", marginBottom:6 }}>{s.label}</div>
               <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
               <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{s.sub}</div>
+              {s.trend && <div style={{ fontSize:10, fontWeight:600, color:s.trend.color, marginTop:4 }}>{s.trend.text}</div>}
             </div>
           );
         })}
