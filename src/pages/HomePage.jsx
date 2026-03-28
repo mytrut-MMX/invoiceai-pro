@@ -6,7 +6,7 @@ import { fmt, parseCisRate } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 
 export default function HomePage({ user, onNavigate }) {
-  const { invoices, orgSettings } = useContext(AppCtx);
+  const { invoices, expenses, orgSettings } = useContext(AppCtx);
   const [reportPeriod, setReportPeriod] = useState("this_month");
   const [aiInput, setAiInput] = useState("");
   const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoiceSaga assistant. Ask me anything!` }]);
@@ -86,6 +86,22 @@ export default function HomePage({ user, onNavigate }) {
   }, [invoices, orgSettings, currencySymbol]);
 
   const reportSummary = useMemo(() => {
+    const now = new Date();
+    const startOfMonth    = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfNextMonth= new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startOfLastMonth= new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startOfQuarter  = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const startOfYear     = new Date(now.getFullYear(), 0, 1);
+    const inRange = (dateStr) => {
+      const d = dateStr ? new Date(dateStr) : null;
+      if (!d || Number.isNaN(d.getTime())) return reportPeriod === "all_time";
+      if (reportPeriod === "this_month")    return d >= startOfMonth && d < startOfNextMonth;
+      if (reportPeriod === "last_month")    return d >= startOfLastMonth && d < startOfMonth;
+      if (reportPeriod === "this_quarter")  return d >= startOfQuarter && d < startOfNextMonth;
+      if (reportPeriod === "this_year")     return d >= startOfYear;
+      return true;
+    };
+
     const revenue = periodInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
     const vat = periodInvoices.reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0);
     const cis = periodInvoices.reduce((sum, inv)=>sum + Number(inv.cisDeduction || 0), 0);
@@ -96,8 +112,14 @@ export default function HomePage({ user, onNavigate }) {
       acc[key].amount += Number(inv.total || 0);
       return acc;
     }, {});
-    return { revenue, vat, cis, reportByStatus };
-  }, [periodInvoices]);
+
+    const totalExpenses = (expenses || [])
+      .filter(e => inRange(e.date))
+      .reduce((sum, e) => sum + Number(e.total || 0), 0);
+    const netProfit = revenue - totalExpenses;
+
+    return { revenue, vat, cis, reportByStatus, totalExpenses, netProfit };
+  }, [periodInvoices, expenses, reportPeriod]);
 
     return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff, background:"#f4f5f7", minHeight:"100vh" }}>
@@ -187,6 +209,8 @@ export default function HomePage({ user, onNavigate }) {
             { label:"Revenue", value:fmt(currencySymbol, reportSummary.revenue), color:"#16A34A" },
             { label:"VAT", value:fmt(currencySymbol, reportSummary.vat), color:"#2563EB" },
             { label:"CIS", value:fmt(currencySymbol, reportSummary.cis), color:"#7C3AED" },
+            { label:"Expenses", value:fmt(currencySymbol, reportSummary.totalExpenses), color:"#DC2626" },
+            { label:"Net Profit", value:fmt(currencySymbol, reportSummary.netProfit), color:reportSummary.netProfit >= 0 ? "#16A34A" : "#DC2626" },
           ].map(card => (
             <div key={card.label} style={{ border:"1px solid #EFEFEF", borderRadius:10, padding:"10px 12px", background:"#FCFCFC" }}>
               <div style={{ fontSize:11, color:"#6b7280", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
