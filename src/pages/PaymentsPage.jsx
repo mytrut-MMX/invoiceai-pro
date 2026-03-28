@@ -152,7 +152,9 @@ function PaymentModal({ existing, onClose, onSave }) {
         .reduce((s, pmt) => s + Number(pmt.amount || 0), 0);
       const totalPaid = prevPaid + Number(amount);
       const invTotal  = Number(linkedInvoice.total || 0);
-      const newStatus = totalPaid >= invTotal ? "Paid" : totalPaid > 0 ? "Partial" : linkedInvoice.status;
+      const newStatus = totalPaid >= invTotal ? "Paid"
+        : totalPaid > 0 && totalPaid < invTotal ? "Partial"
+        : linkedInvoice.status;
       const actEntry = { action: `Payment recorded: £${Number(amount).toFixed(2)}`, timestamp: new Date().toISOString(), actor: "System" };
       setInvoices(prev => prev.map(inv =>
         inv.id === linkedInvoice.id ? { ...inv, status: newStatus, activity: [...(inv.activity || []), actEntry] } : inv
