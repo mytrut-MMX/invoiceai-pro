@@ -6,20 +6,24 @@ export default function AuthCallbackPage({ onAuth }) {
   const [status, setStatus] = useState("loading"); // "loading" | "error"
 
   useEffect(() => {
+    const handleSession = (session) => {
+      onAuth({
+        name: session.user.user_metadata?.full_name || session.user.email,
+        email: session.user.email,
+        role: "Admin",
+        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        provider: session.user.app_metadata?.provider || "email",
+      });
+      window.location.replace("/");
+    };
+
     // Subscribe to auth state changes — Supabase exchanges the token from the
     // URL hash automatically; this fires as soon as the session is ready.
     let unsubscribe = () => {};
     if (supabase) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          onAuth({
-            name: session.user.user_metadata?.full_name || session.user.email,
-            email: session.user.email,
-            role: "Admin",
-            expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-            provider: session.user.app_metadata?.provider || "email",
-          });
-          return;
+          handleSession(session);
         }
       });
       unsubscribe = () => subscription.unsubscribe();
@@ -30,13 +34,7 @@ export default function AuthCallbackPage({ onAuth }) {
     const poll = async () => {
       const session = await getSession();
       if (session?.user) {
-        onAuth({
-          name: session.user.user_metadata?.full_name || session.user.email,
-          email: session.user.email,
-          role: "Admin",
-          expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-          provider: session.user.app_metadata?.provider || "email",
-        });
+        handleSession(session);
         return;
       }
       attempts += 1;
