@@ -243,12 +243,6 @@ export default function App() {
   const _search = new URLSearchParams(window.location.search);
   const isOAuthCallback = path === '/auth/callback' || (_search.has('code') && _search.has('state'));
   if(isOAuthCallback) {
-    // Once onAuth fires and setUser(u) triggers a re-render, user is set
-    // and we can safely navigate away from the callback URL
-    if (user) {
-      window.location.replace("/");
-      return null;
-    }
     return (
       <AuthCallbackPage onAuth={(u) => {
         const prev = LS.get("ai_invoice_user", null);

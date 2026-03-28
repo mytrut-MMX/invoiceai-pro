@@ -14,11 +14,12 @@ export default function AuthCallbackPage({ onAuth }) {
         expiresAt: Date.now() + 8 * 60 * 60 * 1000,
         provider: session.user.app_metadata?.provider || "email",
       };
-      // Write directly to localStorage before navigating — don't rely on
-      // React state batching or App.jsx re-render timing
       try { localStorage.setItem("ai_invoice_user", JSON.stringify(u)); } catch {}
+      // Change URL to "/" before triggering re-render — no page reload needed.
+      // This avoids any localStorage/reload race condition: React state is already
+      // set in memory, and App.jsx re-renders with path="/" and user set.
+      window.history.replaceState({}, "", "/");
       onAuth(u);
-      window.location.replace("/");
     };
 
     // Subscribe to auth state changes — Supabase exchanges the token from the
