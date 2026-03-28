@@ -3,11 +3,13 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag } from "../components/atoms";
-import { upsert, formatPhoneNumber } from "../utils/helpers";
+import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
+import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
 
 export default function CustomersPage({ initialShowForm = false, onNavigate }) {
-  const { customers, setCustomers, orgSettings, invoices, quotes } = useContext(AppCtx);
+  const { customers, setCustomers, orgSettings, invoices, quotes, payments } = useContext(AppCtx);
+  const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [showForm, setShowForm] = useState(initialShowForm);
   const [search, setSearch] = useState("");
@@ -69,13 +71,19 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
           <thead>
             <tr style={{ background:"#f9fafb" }}>
-              {["Name","Type","Email","Phone","Currency","",""] .map(h=>(
+              {["Name","Type","Email","Phone","Currency","Invoiced","Collected","Outstanding","",""].map(h=>(
                 <th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #f0f0f4" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map(c=>(
+            {filtered.map(c=>{
+              const custInvoices = (invoices||[]).filter(i => i.customer?.id === c.id);
+              const custInvoiceIds = new Set(custInvoices.map(i => i.id));
+              const totalInvoiced   = custInvoices.reduce((s,i) => s + Number(i.total||0), 0);
+              const totalCollected  = (payments||[]).filter(p => custInvoiceIds.has(p.invoice_id)).reduce((s,p) => s + Number(p.amount||0), 0);
+              const totalOutstanding = Math.max(0, totalInvoiced - totalCollected);
+              return (
               <tr key={c.id} style={{ borderBottom:"1px solid #f3f4f6" }}
                 onMouseEnter={e=>e.currentTarget.style.background="#f9fafb"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
@@ -89,6 +97,9 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#374151" }}>{c.email}</td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{formatPhoneNumber(c.phone)}</td>
                 <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{c.currency}</td>
+                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:600, color:"#1a1a2e", textAlign:"right" }}>{fmt(currSym, totalInvoiced)}</td>
+                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:600, color:"#059669", textAlign:"right" }}>{fmt(currSym, totalCollected)}</td>
+                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:700, color:totalOutstanding > 0 ? "#DC2626" : "#059669", textAlign:"right" }}>{fmt(currSym, totalOutstanding)}</td>
                 <td style={{ padding:"12px 18px" }}>
                   <Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
                 </td>
@@ -96,9 +107,10 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
                   <Btn onClick={() => deleteCustomer(c)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {filtered.length===0 && (
-              <tr><td colSpan={6} style={{ padding:"40px 18px", textAlign:"center", color:"#CCC", fontSize:13 }}>No customers found</td></tr>
+              <tr><td colSpan={9} style={{ padding:"40px 18px", textAlign:"center", color:"#CCC", fontSize:13 }}>No customers found</td></tr>
             )}
           </tbody>
         </table>
