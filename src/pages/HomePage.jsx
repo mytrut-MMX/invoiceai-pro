@@ -186,7 +186,7 @@ export default function HomePage({ user, onNavigate }) {
         <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 3px" }}>
           Good morning, {user?.name?.split(" ")[0]||"there"} 👋
         </h1>
-        <p style={{ color:"#6b7280", fontSize:12, margin:0 }}>Sunday, 8 March 2026 · Financial overview</p>
+        <p style={{ color:"#6b7280", fontSize:12, margin:0 }}>{new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} · Financial overview</p>
       </div>
 
       {/* Stats */}
