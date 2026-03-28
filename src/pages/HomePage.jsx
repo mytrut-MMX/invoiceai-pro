@@ -129,7 +129,9 @@ export default function HomePage({ user, onNavigate }) {
       return true;
     };
 
-    const revenue = periodInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+    const revenue = periodInvoices
+      .filter(inv => ["Paid", "Sent", "Partial"].includes(inv.status))
+      .reduce((sum, inv) => sum + Number(inv.total || 0), 0);
     const vat = periodInvoices.reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0);
     const cis = periodInvoices.reduce((sum, inv)=>sum + Number(inv.cisDeduction || 0), 0);
     const reportByStatus = periodInvoices.reduce((acc, inv) => {
@@ -296,9 +298,9 @@ export default function HomePage({ user, onNavigate }) {
             { label:"VAT", value:fmt(currencySymbol, reportSummary.vat), color:"#2563EB" },
             { label:"CIS", value:fmt(currencySymbol, reportSummary.cis), color:"#7C3AED" },
             { label:"Expenses", value:fmt(currencySymbol, reportSummary.totalExpenses), color:"#DC2626" },
-            { label:"Net Profit", value:fmt(currencySymbol, reportSummary.netProfit), color:reportSummary.netProfit >= 0 ? "#16A34A" : "#DC2626" },
+            { label:"Est. Profit", value:fmt(currencySymbol, reportSummary.netProfit), color:reportSummary.netProfit >= 0 ? "#16A34A" : "#DC2626", title:"Estimated profit: invoiced revenue (Paid/Sent/Partial) minus expenses. Not all invoiced amounts may yet be collected." },
           ].map(card => (
-            <div key={card.label} style={{ border:"1px solid #EFEFEF", borderRadius:10, padding:"10px 12px", background:"#FCFCFC" }}>
+            <div key={card.label} title={card.title || undefined} style={{ border:"1px solid #EFEFEF", borderRadius:10, padding:"10px 12px", background:"#FCFCFC", cursor: card.title ? "help" : undefined }}>
               <div style={{ fontSize:11, color:"#6b7280", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
               <div style={{ fontSize:16, color:card.color, fontWeight:800, marginTop:5 }}>{card.value}</div>
             </div>
