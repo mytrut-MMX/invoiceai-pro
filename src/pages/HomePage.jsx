@@ -118,7 +118,12 @@ export default function HomePage({ user, onNavigate }) {
       .reduce((sum, e) => sum + Number(e.total || 0), 0);
     const netProfit = revenue - totalExpenses;
 
-    return { revenue, vat, cis, reportByStatus, totalExpenses, netProfit };
+    const inputVAT = (expenses || [])
+      .filter(e => inRange(e.date) && Number(e.tax_amount || 0) > 0)
+      .reduce((sum, e) => sum + Number(e.tax_amount || 0), 0);
+    const netVAT = vat - inputVAT;
+
+    return { revenue, vat, cis, reportByStatus, totalExpenses, netProfit, inputVAT, netVAT };
   }, [periodInvoices, expenses, reportPeriod]);
 
   const cashFlow = useMemo(() => {
@@ -278,6 +283,27 @@ export default function HomePage({ user, onNavigate }) {
             </div>
           ))}
         </div>
+
+        {orgSettings?.vatReg === "Yes" && (
+          <div style={{ marginTop:16 }}>
+            <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", flexWrap:"wrap", gap:6, marginBottom:10 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#111110" }}>VAT Return Estimate</div>
+              <div style={{ fontSize:11, color:"#9A9A9A", fontStyle:"italic" }}>Verify with your accountant before filing.</div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:10 }}>
+              {[
+                { label:"Output VAT", value:reportSummary.vat,      color:"#2563EB", bg:"#EFF6FF", border:"#BFDBFE" },
+                { label:"Input VAT",  value:reportSummary.inputVAT,  color:"#059669", bg:"#F0FDF4", border:"#BBF7D0" },
+                { label:"Net VAT Due",value:reportSummary.netVAT,    color:reportSummary.netVAT >= 0 ? "#DC2626" : "#059669", bg:reportSummary.netVAT >= 0 ? "#FEF2F2" : "#F0FDF4", border:reportSummary.netVAT >= 0 ? "#FECACA" : "#BBF7D0" },
+              ].map(card => (
+                <div key={card.label} style={{ border:`1px solid ${card.border}`, borderRadius:10, padding:"10px 12px", background:card.bg }}>
+                  <div style={{ fontSize:11, color:card.color, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
+                  <div style={{ fontSize:16, color:card.color, fontWeight:800, marginTop:5 }}>{fmt(currencySymbol, card.value)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Cash Flow Forecast */}
