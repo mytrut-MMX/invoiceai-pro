@@ -22,18 +22,18 @@ export default function HomePage({ user, onNavigate }) {
     setMessages(p=>[...p,{ role:"user", text:msg }]);
     setLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1000,
-          system:"You are an AI assistant for an invoicing platform called InvoiceSaga. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
-          messages:[{ role:"user", content:msg }]
+      const res = await fetch("/api/claude-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: "You are an AI assistant for an invoicing platform called InvoiceSaga. Help users with invoices, customers, VAT, CIS, payments. Be concise.",
+          messages: [{ role: "user", content: msg }]
         })
       });
-      const d = await res.json();
-      setMessages(p=>[...p,{ role:"assistant", text:d.content?.map(i=>i.text||"").join("")||"Sorry, couldn't process that." }]);
+      const data = await res.json();
+      setMessages(p=>[...p,{ role:"assistant", text:data.content?.[0]?.text || "Sorry, couldn't process that." }]);
     } catch {
       setMessages(p=>[...p,{ role:"assistant", text:"Connection issue. Please try again." }]);
     }
