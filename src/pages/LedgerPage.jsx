@@ -750,7 +750,7 @@ export default function LedgerPage() {
     setLoading(true);
     try {
       const { data: authData } = await supabase.auth.getUser();
-      const uid = authData?.user?.id ?? null;
+      const uid = authData?.user?.id ??user?.id ?? null;
       setUserId(uid);
       if (!uid) { setLoading(false); return; }
 
@@ -771,8 +771,8 @@ export default function LedgerPage() {
     }
   };
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
+  useEffect(() => { load(); }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  
   const handleSaved = () => {
     setShowManual(false);
     setShowAddAccount(false);
