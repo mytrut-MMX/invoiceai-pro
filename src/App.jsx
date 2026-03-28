@@ -239,7 +239,10 @@ export default function App() {
 
   // Supabase Auth exchanges the OAuth token from the URL hash automatically
   // via the JS client; this page just waits for the session and calls onAuth.
-  if(path === '/auth/callback') {
+  // Also handle ?code= landing on "/" if Supabase redirects to site root instead of /auth/callback
+  const _search = new URLSearchParams(window.location.search);
+  const isOAuthCallback = path === '/auth/callback' || (_search.has('code') && _search.has('state'));
+  if(isOAuthCallback) {
     // Once onAuth fires and setUser(u) triggers a re-render, user is set
     // and we can safely navigate away from the callback URL
     if (user) {
