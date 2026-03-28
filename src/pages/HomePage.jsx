@@ -168,6 +168,24 @@ export default function HomePage({ user, onNavigate }) {
         ))}
       </div>
 
+      {/* Overdue alert */}
+      {(() => {
+        const overdue = invoices.filter(i => i.status === "Overdue");
+        if (overdue.length === 0) return null;
+        const total = overdue.reduce((s, i) => s + Number(i.total || 0), 0);
+        return (
+          <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:10, padding:"12px 18px", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+            <span style={{ fontSize:13, fontWeight:600, color:"#DC2626" }}>
+              ⚠ You have {overdue.length} overdue invoice{overdue.length !== 1 ? "s" : ""} totalling {fmt(currencySymbol, total)}.
+            </span>
+            <button onClick={() => onNavigate("invoices")}
+              style={{ background:"#DC2626", color:"#fff", border:"none", borderRadius:7, padding:"6px 14px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+              Take action →
+            </button>
+          </div>
+        );
+      })()}
+
       {/* AI Chat */}
       <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflow:"hidden", marginBottom:24 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 18px", borderBottom:"1px solid #F0F0F0", background:"#f9fafb" }}>
