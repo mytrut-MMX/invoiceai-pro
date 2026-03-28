@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ff } from "../constants";
 import OrgSetupPage from "./OrgSetupPage";
+import { seedAccountsForUser } from "../utils/ledger/defaultAccounts";
+import { supabase } from "../lib/supabase";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const genId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase();
@@ -242,6 +244,20 @@ export default function OnboardingFlow({ user, orgSettings, onComplete, customer
 
   const handleOrgComplete = (data) => {
     onComplete({ orgSettings: data });
+    // Fire-and-forget — seed the chart of accounts without blocking the onboarding flow.
+    // Uses supabase.auth.getUser() to obtain the real auth UUID (the app's user object
+    // does not carry an id field).
+    if (supabase) {
+      (async () => {
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          const authUserId = authData?.user?.id;
+          if (authUserId) await seedAccountsForUser(authUserId, supabase);
+        } catch (err) {
+          console.error("Failed to seed chart of accounts:", err);
+        }
+      })();
+    }
     setStep(2);
   };
 

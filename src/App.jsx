@@ -27,6 +27,7 @@ import GdprPage from "./pages/landing/GdprPage";
 import TemplatesPage from "./pages/landing/TemplatesPage";
 import ContactPage from "./pages/landing/ContactPage";
 import AdminPage from "./pages/AdminPage";
+import LedgerPage from "./pages/LedgerPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 
 // modals
@@ -360,6 +361,7 @@ export default function App() {
       case "payments:new": return <PaymentsPage initialShowForm={true} onNavigate={handleNavigate} />;
       case "expenses":     return <ExpensesPage />;
       case "expenses:new": return <ExpensesPage initialShowForm={true} onNavigate={handleNavigate} />;
+      case "ledger":       return <LedgerPage />;
       default:          return <HomePage user={user} onNavigate={handleNavigate} />;
     }
   };
