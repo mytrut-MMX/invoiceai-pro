@@ -6,46 +6,10 @@ import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag, Ribbon } from "../components/atoms";
 import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { PDF_TEMPLATES } from "../constants";
-import { fmt, fmtDate, todayStr, addDays, nextNum, newLine, parseCisRate } from "../utils/helpers";
+import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
+import { calcTotals } from "../utils/calcTotals";
 import ItemModal from "../modals/ItemModal";
 import { useCISSettings } from "../hooks/useCISSettings";
-
-// ─── helpers ──────────────────────────────────────────────────────────────────
-function calcTotals(items, discType, discVal, shipping, isVat, customer, cisEnabled, cisDefaultRate) {
-  const subtotal = items.reduce((s,i)=>s+Number(i.amount||0), 0);
-  const discAmt = discType==="percent" ? subtotal*(Number(discVal)/100) : Math.min(Number(discVal)||0, subtotal);
-  const afterDisc = subtotal - discAmt;
-  const ship = Number(shipping)||0;
-  const taxBreakdown = isVat
-    ? Object.values(items.reduce((acc,it)=>{
-        const r=Number(it.tax_rate||0); if(!r) return acc;
-        if(!acc[r]) acc[r]={rate:r,amount:0};
-        const base = Number(it.amount||0) - (subtotal>0 ? discAmt*(Number(it.amount||0)/subtotal) : 0);
-        acc[r].amount += base*(r/100);
-        return acc;
-      },{}))
-    : [];
-  const vatTotal = taxBreakdown.reduce((s,t)=>s+t.amount,0);
-  const gross = afterDisc + ship + vatTotal;
-  const customerCIS = customer?.cis || {
-    registered: !!customer?.taxDetails?.cisRegistered,
-    rateValue: parseCisRate(customer?.taxDetails?.cisRate, cisDefaultRate),
-    rate: customer?.taxDetails?.cisRate,
-  };
-  const hasCISItems = cisEnabled && customerCIS?.registered && items.some(i => i?.cis?.enabled || i?.cisApplicable);
-  const cisEstimate = hasCISItems
-    ? items.reduce((sum, item) => {
-        if (!item?.cis?.enabled && !item?.cisApplicable) return sum;
-        const qty = Number(item.quantity ?? item.qty) || 1;
-        const lineTotal = Number(item.amount) || ((Number(item.rate) || 0) * qty);
-        const labourShare = item?.cis?.labour ?? (item?.cisApplicable ? 100 : 0);
-        const labourAmount = lineTotal * (labourShare / 100);
-        const rateValue = customerCIS?.rateValue ?? 20;
-        return sum + (labourAmount * rateValue / 100);
-      }, 0)
-    : 0;
-  return { subtotal, discountAmount:discAmt, shipping:ship, taxBreakdown, cisDeduction:0, cisEstimate, hasCISItems, customerCIS, total: gross, grossTotal: gross };
-}
 
 // ─── QUOTE FORM PANEL ─────────────────────────────────────────────────────────
 function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage = false }) {
@@ -76,7 +40,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
   const isLockedAcceptedQuote = isEdit && q.status === "Invoiced";
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,cisEnabled,cisDefaultRate),[items,discType,discVal,shipping,isVat,customer,showShipping,cisEnabled,cisDefaultRate]);
+  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,cisEnabled,cisDefaultRate,true),[items,discType,discVal,shipping,isVat,customer,showShipping,cisEnabled,cisDefaultRate]);
   const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
   const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
   const filteredCustomers = customers.filter(c=>
@@ -339,7 +303,8 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
     isVat,
     quote.customer,
     cisEnabled,
-    cisDefaultRate
+    cisDefaultRate,
+    true
   );
 
   const docData = {
