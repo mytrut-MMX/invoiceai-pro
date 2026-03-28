@@ -11,6 +11,7 @@ export const NAV = [
   { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices,  addId:"invoices:new" },
   { id:"payments",  label:"Payments Received", Icon:Icons.Payments,  addId:"payments:new" },
   { id:"expenses",  label:"Expenses",          Icon:Icons.Expenses,  addId:"expenses:new" },
+  { id:"ledger",    label:"Ledger",            Icon:Icons.Bank },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings },
   ];
 
