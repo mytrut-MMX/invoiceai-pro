@@ -26,6 +26,7 @@ import GdprPage from "./pages/landing/GdprPage";
 import TemplatesPage from "./pages/landing/TemplatesPage";
 import ContactPage from "./pages/landing/ContactPage";
 import AdminPage from "./pages/AdminPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -235,6 +236,19 @@ export default function App() {
   if(path === '/cookies')         return <CookiePolicyPage />;
   if(path === '/gdpr')            return <GdprPage />;
   if(path === '/contact')         return <ContactPage />;
+
+  // Supabase Auth exchanges the OAuth token from the URL hash automatically
+  // via the JS client; this page just waits for the session and calls onAuth.
+  if(path === '/auth/callback') return (
+    <AuthCallbackPage onAuth={(u) => {
+      const prev = LS.get("ai_invoice_user", null);
+      if (prev?.email !== u.email) {
+        setOnboardingDoneState(false);
+        LS.set("ai_invoice_onboarding_done", false);
+      }
+      setUser(u);
+    }} />
+  );
 
   if(!user) {
   if(path === '/' || path === '') return <LandingPage />;
