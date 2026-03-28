@@ -115,31 +115,21 @@ export default function App() {
   }, []);
 
   // ─── session expiry enforcement ──────────────────────────────
-  const [sessionWarning, setSessionWarning] = useState(null);
   useEffect(() => {
+    if (!user?.expiresAt) return;
     const check = () => {
-      if (!user?.expiresAt) return;
-      const remaining = user.expiresAt - Date.now();
-      if (remaining <= 0) {
+      if (Date.now() > user.expiresAt) {
         setUser(null);
         localStorage.removeItem("ai_invoice_user");
-        setSessionWarning(null);
-      } else if (remaining < 30 * 60 * 1000) {
-        setSessionWarning("expiring");
-      } else {
-        setSessionWarning(null);
+        alert("Your session has expired. Please log in again.");
       }
     };
     check();
-    const timer = setInterval(check, 5 * 60 * 1000);
-    return () => clearInterval(timer);
-  }, [user]);
-  const stayLoggedIn = () => {
-    const extended = { ...user, expiresAt: Date.now() + 8 * 60 * 60 * 1000 };
-    setUser(extended);
-    LS.set("ai_invoice_user", extended);
-    setSessionWarning(null);
-  };
+    const interval = setInterval(check, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user?.expiresAt]);
+
+  const sessionExpiringSoon = user?.expiresAt && (user.expiresAt - Date.now()) < 30 * 60 * 1000 && Date.now() < user.expiresAt;
 
   // ─── debounced persistence to localStorage ────────────────────
   const [storageError, setStorageError] = useState(null);
@@ -328,13 +318,10 @@ export default function App() {
           <button onClick={() => setStorageError(null)} style={{ background:"none", border:"none", color:"#FCA5A5", cursor:"pointer", fontSize:18, lineHeight:1, padding:0 }}>×</button>
         </div>
       )}
-      {sessionWarning === "expiring" && (
+      {sessionExpiringSoon && (
         <div style={{ position:"fixed", top:storageError ? 44 : 0, left:0, right:0, zIndex:9998, background:"#78350F", color:"#FEF3C7", fontSize:13, fontWeight:600, padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, fontFamily:ff }}>
           <span>⚠ Your session expires soon. Save your work.</span>
-          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-            <button onClick={stayLoggedIn} style={{ background:"#FEF3C7", color:"#78350F", border:"none", borderRadius:6, padding:"4px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff }}>Stay logged in</button>
-            <button onClick={() => setSessionWarning(null)} style={{ background:"none", border:"none", color:"#FDE68A", cursor:"pointer", fontSize:18, lineHeight:1, padding:0 }}>×</button>
-          </div>
+          <button onClick={() => setUser(prev => { const updated = { ...prev, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }; localStorage.setItem("ai_invoice_user", JSON.stringify(updated)); return updated; })} style={{ background:"#FEF3C7", color:"#78350F", border:"none", borderRadius:6, padding:"4px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff }}>Stay logged in</button>
         </div>
       )}
       <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:ff, background:"#f4f5f7" }}>
