@@ -133,8 +133,16 @@ export default function HomePage({ user, onNavigate }) {
       .filter(inv => ["Paid", "Sent", "Partial"].includes(inv.status))
       .reduce((sum, inv) => sum + Number(inv.total || 0), 0);
     const collected = (payments || [])
-      .filter(pmt => inRange(pmt.date))
-      .reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0);
+      .filter(p => {
+        const d = p.date ? new Date(p.date) : null;
+        if (!d || isNaN(d)) return false;
+        if (reportPeriod === 'this_month') return d >= startOfMonth && d < startOfNextMonth;
+        if (reportPeriod === 'last_month') return d >= startOfLastMonth && d < startOfMonth;
+        if (reportPeriod === 'this_quarter') return d >= startOfQuarter && d < startOfNextMonth;
+        if (reportPeriod === 'this_year') return d >= startOfYear;
+        return true;
+      })
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
     const vat = periodInvoices
       .filter(inv => ["Paid", "Partial"].includes(inv.status))
       .reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0);
