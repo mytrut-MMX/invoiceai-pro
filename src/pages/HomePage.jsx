@@ -132,7 +132,12 @@ export default function HomePage({ user, onNavigate }) {
     const revenue = periodInvoices
       .filter(inv => ["Paid", "Sent", "Partial"].includes(inv.status))
       .reduce((sum, inv) => sum + Number(inv.total || 0), 0);
-    const vat = periodInvoices.reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0);
+    const collected = (payments || [])
+      .filter(pmt => inRange(pmt.date))
+      .reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0);
+    const vat = periodInvoices
+      .filter(inv => ["Paid", "Partial"].includes(inv.status))
+      .reduce((sum, inv)=>sum + (inv.taxBreakdown||[]).reduce((t,tx)=>t+Number(tx.amount||0),0),0);
     const cis = periodInvoices.reduce((sum, inv)=>sum + Number(inv.cisDeduction || 0), 0);
     const reportByStatus = periodInvoices.reduce((acc, inv) => {
       const key = inv.status || "Draft";
@@ -145,15 +150,15 @@ export default function HomePage({ user, onNavigate }) {
     const totalExpenses = (expenses || [])
       .filter(e => inRange(e.date))
       .reduce((sum, e) => sum + Number(e.total || 0), 0);
-    const netProfit = revenue - totalExpenses;
+    const netProfit = collected - totalExpenses;
 
     const inputVAT = (expenses || [])
       .filter(e => inRange(e.date) && Number(e.tax_amount || 0) > 0)
       .reduce((sum, e) => sum + Number(e.tax_amount || 0), 0);
     const netVAT = vat - inputVAT;
 
-    return { revenue, vat, cis, reportByStatus, totalExpenses, netProfit, inputVAT, netVAT };
-  }, [periodInvoices, expenses, reportPeriod]);
+    return { revenue, collected, vat, cis, reportByStatus, totalExpenses, netProfit, inputVAT, netVAT };
+  }, [periodInvoices, expenses, payments, reportPeriod]);
 
   const cashFlow = useMemo(() => {
     const today = new Date(); today.setHours(0,0,0,0);
@@ -294,11 +299,12 @@ export default function HomePage({ user, onNavigate }) {
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:10, marginBottom:14 }}>
           {[
             { label:"Invoices", value:periodInvoices.length, color:"#059669" },
-            { label:"Revenue", value:fmt(currencySymbol, reportSummary.revenue), color:"#16A34A" },
+            { label:"Invoiced", value:fmt(currencySymbol, reportSummary.revenue), color:"#16A34A", title:"Total invoiced (Paid/Sent/Partial). Includes amounts not yet collected." },
+            { label:"Collected", value:fmt(currencySymbol, reportSummary.collected), color:"#059669", title:"Cash actually received: sum of payments recorded in this period." },
             { label:"VAT", value:fmt(currencySymbol, reportSummary.vat), color:"#2563EB" },
             { label:"CIS", value:fmt(currencySymbol, reportSummary.cis), color:"#7C3AED" },
             { label:"Expenses", value:fmt(currencySymbol, reportSummary.totalExpenses), color:"#DC2626" },
-            { label:"Est. Profit", value:fmt(currencySymbol, reportSummary.netProfit), color:reportSummary.netProfit >= 0 ? "#16A34A" : "#DC2626", title:"Estimated profit: invoiced revenue (Paid/Sent/Partial) minus expenses. Not all invoiced amounts may yet be collected." },
+            { label:"Est. Profit", value:fmt(currencySymbol, reportSummary.netProfit), color:reportSummary.netProfit >= 0 ? "#16A34A" : "#DC2626", title:"Collected payments minus expenses for this period." },
           ].map(card => (
             <div key={card.label} title={card.title || undefined} style={{ border:"1px solid #EFEFEF", borderRadius:10, padding:"10px 12px", background:"#FCFCFC", cursor: card.title ? "help" : undefined }}>
               <div style={{ fontSize:11, color:"#6b7280", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.05em" }}>{card.label}</div>
