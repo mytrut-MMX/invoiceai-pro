@@ -115,14 +115,14 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     const saved = buildInvoice("Paid");
     saved.activity = [...(inv.activity || []), { action: "Marked Paid", timestamp: new Date().toISOString(), actor: user?.name || "Unknown" }];
     onSave(saved);
-    const alreadyPaid = (payments || [])
-      .filter(pmt => pmt.invoice_id === inv.id)
-      .reduce((s, pmt) => s + Number(pmt.amount || 0), 0);
-    const remaining = Math.max(0, totals.total - alreadyPaid);
-    if (remaining > 0) {
+    const existingPaid = (payments || [])
+      .filter(p => p.invoice_id === saved.id)
+      .reduce((s, p) => s + Number(p.amount || 0), 0);
+    if (existingPaid < totals.total) {
+      const paymentAmount = existingPaid > 0 ? totals.total - existingPaid : totals.total;
       setPayments(p=>[{
         id:crypto.randomUUID(), invoice_id:saved.id, invoice_number:saved.invoice_number,
-        customer_name:customer?.name||"", amount:remaining, date, method, reference, status:"Reconciled"
+        customer_name:customer?.name||"", amount:paymentAmount, date, method, reference, status:"Reconciled"
       },...p]);
     }
     setShowPaidModal(false);
