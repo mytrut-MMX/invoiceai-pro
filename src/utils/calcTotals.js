@@ -24,14 +24,17 @@ export function calcTotals(items, discType, discVal, shipping, isVat, customer, 
     rate: customer?.taxDetails?.cisRate,
   };
   const hasCISItems = cisEnabled && customerCIS?.registered && items.some(i => i?.cis?.enabled || i?.cisApplicable);
+  // Guard: if subtotal is 0 there is no discount base to apportion
+  const cisDiscAmt = subtotal === 0 ? 0 : discAmt;
   const cisDed = hasCISItems
     ? items.reduce((sum, item) => {
         if (!item?.cis?.enabled && !item?.cisApplicable) return sum;
         const qty = Number(item.quantity ?? item.qty) || 1;
-        const lineTotal = Number(item.amount) || ((Number(item.rate) || 0) * qty);
-        const discountedLine = subtotal > 0 ? lineTotal * (1 - discAmt / subtotal) : lineTotal;
+        const lineGross = Number(item.amount) || ((Number(item.rate) || 0) * qty);
+        // Apply proportional discount to this line
+        const lineNet = subtotal > 0 ? lineGross * (1 - cisDiscAmt / subtotal) : lineGross;
         const labourShare = item?.cis?.labour ?? (item?.cisApplicable ? 100 : 0);
-        const labourAmount = discountedLine * (labourShare / 100);
+        const labourAmount = lineNet * (labourShare / 100);
         const rateValue = customerCIS?.rateValue ?? 20;
         return sum + (labourAmount * rateValue / 100);
       }, 0)
