@@ -5,6 +5,7 @@ import { Icons } from "../components/icons";
 import { Btn, Field, Input, Select } from "../components/atoms";
 import { supabase, supabaseReady } from "../lib/supabase";
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
+import { seedAccountsForUser } from "../utils/ledger/defaultAccounts";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
@@ -504,8 +505,23 @@ function computeBalances(accounts, allEntries) {
   });
 }
 
-export function AccountsTab({ accounts, allEntries, loading, onNewAccount }) {
-  const [search, setSearch] = useState("");
+export function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSeeded, userId }) {
+  const [search,   setSearch]   = useState("");
+  const [seeding,  setSeeding]  = useState(false);
+  const [seedErr,  setSeedErr]  = useState("");
+
+  const handleSeed = async () => {
+    if (!userId) return;
+    setSeeding(true); setSeedErr("");
+    try {
+      await seedAccountsForUser(userId, supabase);
+      onSeeded?.();
+    } catch (err) {
+      setSeedErr(err.message || "Failed to initialise accounts");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const withBalances = useMemo(
     () => computeBalances(accounts, allEntries),
@@ -535,6 +551,18 @@ export function AccountsTab({ accounts, allEntries, loading, onNewAccount }) {
 
       {loading ? (
         <div style={{ textAlign:"center", padding:40, color:"#9ca3af", fontSize:14 }}>Loading…</div>
+      ) : accounts.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"48px 24px", border:"1px dashed #e8e8ec", borderRadius:12, background:"#fafaf9" }}>
+          <div style={{ fontSize:36, marginBottom:12 }}>📂</div>
+          <div style={{ fontSize:15, fontWeight:700, color:"#1a1a2e", marginBottom:6 }}>No accounts yet</div>
+          <div style={{ fontSize:13, color:"#6b7280", marginBottom:20, maxWidth:360, margin:"0 auto 20px" }}>
+            Initialise your Chart of Accounts with 20 standard double-entry accounts to get started.
+          </div>
+          {seedErr && <div style={{ color:"#dc2626", fontSize:12, marginBottom:10 }}>{seedErr}</div>}
+          <Btn variant="primary" onClick={handleSeed} disabled={seeding || !userId}>
+            {seeding ? "Initialising…" : "Initialise Chart of Accounts"}
+          </Btn>
+        </div>
       ) : (
         ACCT_TYPES.map(type => {
           const group = filtered.filter(a => a.type === type);
@@ -799,6 +827,8 @@ export default function LedgerPage() {
           allEntries={entries}
           loading={loading}
           onNewAccount={() => setShowAddAccount(true)}
+          userId={userId}
+          onSeeded={load}
         />
       )}
       {tab === "pl" && (
