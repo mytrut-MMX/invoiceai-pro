@@ -1,6 +1,7 @@
 import React from 'react';
 
 import SharedFooter from '../../components/SharedFooter';
+import SharedNav from '../../components/SharedNav';
 
 const nav = {
   position: 'sticky', top: 0, zIndex: 100,
