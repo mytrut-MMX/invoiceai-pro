@@ -14,7 +14,7 @@ export default function AuthCallbackPage({ onAuth }) {
         expiresAt: Date.now() + 8 * 60 * 60 * 1000,
         provider: session.user.app_metadata?.provider || "email",
       });
-      window.location.replace("/");
+      // Navigation is handled by App.jsx re-rendering once user state is set
     };
 
     // Subscribe to auth state changes — Supabase exchanges the token from the
