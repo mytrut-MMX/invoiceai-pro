@@ -29,8 +29,9 @@ export function calcTotals(items, discType, discVal, shipping, isVat, customer, 
         if (!item?.cis?.enabled && !item?.cisApplicable) return sum;
         const qty = Number(item.quantity ?? item.qty) || 1;
         const lineTotal = Number(item.amount) || ((Number(item.rate) || 0) * qty);
+        const discountedLine = subtotal > 0 ? lineTotal * (1 - discAmt / subtotal) : lineTotal;
         const labourShare = item?.cis?.labour ?? (item?.cisApplicable ? 100 : 0);
-        const labourAmount = lineTotal * (labourShare / 100);
+        const labourAmount = discountedLine * (labourShare / 100);
         const rateValue = customerCIS?.rateValue ?? 20;
         return sum + (labourAmount * rateValue / 100);
       }, 0)
