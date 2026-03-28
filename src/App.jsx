@@ -246,6 +246,8 @@ export default function App() {
         setOnboardingDoneState(false);
         LS.set("ai_invoice_onboarding_done", false);
       }
+      // Write synchronously before window.location.replace() triggers a reload
+      LS.set("ai_invoice_user", u);
       setUser(u);
     }} />
   );
