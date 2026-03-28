@@ -133,17 +133,25 @@ export default function AuthPage({ onAuth }) {
   // Yahoo OAuth is not supported by Supabase Auth natively.
   // Users with Yahoo email addresses can register/login with email + password.
 
+  const oauthErrorMessage = (provider, error) => {
+    const msg = typeof error === "string" ? error : (error?.message || "");
+    if (msg.toLowerCase().includes("provider is not enabled") || error?.code === 400) {
+      return `${provider} sign-in is not enabled yet. Please use email and password, or contact support.`;
+    }
+    return msg || `${provider} sign-in failed. Please try again.`;
+  };
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     const { error } = await signInWithGoogle();
-    if (error) { setError(typeof error === "string" ? error : error.message); setLoading(false); }
+    if (error) { setError(oauthErrorMessage("Google", error)); setLoading(false); }
     // on success: browser redirects to OAuth provider, then back to /auth/callback
   };
 
   const handleGitHubSignIn = async () => {
     setLoading(true);
     const { error } = await signInWithGitHub();
-    if (error) { setError(typeof error === "string" ? error : error.message); setLoading(false); }
+    if (error) { setError(oauthErrorMessage("GitHub", error)); setLoading(false); }
   };
 
   const saveProfileToSupabase = async (email, name) => {
