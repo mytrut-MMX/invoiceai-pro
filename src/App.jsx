@@ -3,6 +3,7 @@ import "./responsive.css";
 import { ff, MOCK_CUSTOMERS, MOCK_ITEMS_INIT, MOCK_INV_LIST, MOCK_QUOTES_LIST, MOCK_PAYMENTS, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
 import { AppCtx } from "./context/AppContext";
 import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from "./components/layout";
+import { todayStr } from "./utils/helpers";
 
 // pages
 import AuthPage from "./pages/AuthPage";
@@ -98,6 +99,19 @@ export default function App() {
   useEffect(()=>LS.set("ai_invoice_customers",customers),[customers]);
   useEffect(()=>LS.set("ai_invoice_items",catalogItems),[catalogItems]);
   useEffect(()=>LS.set("ai_invoice_invoices",invoices),[invoices]);
+  useEffect(() => {
+    const today = todayStr();
+    setInvoices(prev => {
+      const updated = prev.map(inv => {
+        if (
+          (inv.status === "Sent" || inv.status === "Partial") &&
+          inv.due_date && inv.due_date < today
+        ) return { ...inv, status: "Overdue" };
+        return inv;
+      });
+      return updated.some((inv, i) => inv !== prev[i]) ? updated : prev;
+    });
+  }, [invoices]);
   useEffect(()=>LS.set("ai_invoice_quotes",quotes),[quotes]);
   useEffect(()=>LS.set("ai_invoice_payments",payments),[payments]);
   useEffect(()=>LS.set("ai_invoice_pay_methods",customPayMethods),[customPayMethods]);
