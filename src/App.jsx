@@ -96,18 +96,23 @@ export default function App() {
 
   // ─── auto-mark overdue invoices ───────────────────────────────
   useEffect(() => {
-    const today = todayStr();
-    setInvoices(prev => {
-      const updated = prev.map(inv => {
-        if (
-          (inv.status === "Sent" || inv.status === "Partial") &&
-          inv.due_date && inv.due_date < today
-        ) return { ...inv, status: "Overdue" };
-        return inv;
+    const markOverdue = () => {
+      const today = todayStr();
+      setInvoices(prev => {
+        const updated = prev.map(inv => {
+          if (
+            (inv.status === "Sent" || inv.status === "Partial") &&
+            inv.due_date && inv.due_date < today
+          ) return { ...inv, status: "Overdue" };
+          return inv;
+        });
+        return updated.some((inv, i) => inv !== prev[i]) ? updated : prev;
       });
-      return updated.some((inv, i) => inv !== prev[i]) ? updated : prev;
-    });
-  }, [invoices]);
+    };
+    markOverdue();
+    const timer = setInterval(markOverdue, 60 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // ─── debounced persistence to localStorage ────────────────────
   const [storageError, setStorageError] = useState(null);
