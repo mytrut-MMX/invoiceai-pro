@@ -3,7 +3,7 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag, Switch, InfoBox } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 
@@ -70,20 +70,22 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
   );
   
   return (
-    <div style={{ ...moduleUi.page, minHeight:"100vh", background:"#f8fafc", fontFamily:ff }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, fontFamily:ff }}>
+        <div style={moduleUi.sectionStack}>
       <ModuleHeader
         title="Items"
         helper="Manage products and services with rates, VAT, CIS and active status."
         right={<Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Item</Btn>}
       />
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12, marginTop:14, marginBottom:14 }}>
+      <div style={moduleUi.summaryGrid}>
         {[
           { label:"Total Items", value:catalogItems.length, color:"#0f172a" },
           { label:"Active Items", value:activeItems, color:"#059669" },
           { label:"Services", value:servicesCount, color:"#1d4ed8" },
           { label:"Materials", value:materialsCount, color:"#0f766e" },
         ].map(card => (
-          <div key={card.label} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"12px 14px" }}>
+          <div key={card.label} style={moduleUi.summaryCard}>
             <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
             <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
           </div>
@@ -116,7 +118,7 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
           </thead>
           <tbody>
             {filtered.map(item=>(
-             <tr key={item.id} onClick={() => { setEditingItem(item); setShowForm(true); }} style={{ borderBottom:"1px solid #f1f5f9", cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"} onMouseLeave={e=>e.currentTarget.style.background=""}>
+             <tr key={item.id} onClick={() => { setEditingItem(item); setShowForm(true); }} style={{ ...moduleUi.rowHover, cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={moduleUi.td}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     {item.photo
@@ -124,13 +126,13 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
                       : <div style={{ width:30, height:30, borderRadius:"50%", background:typeAvatars[item.type]||"#e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:typeColors[item.type]||"#6b7280", flexShrink:0 }}>{(item.type||"—")[0]}</div>
                     }
                     <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:"#0f172a" }}>{item.name}</div>
-                      <div style={{ fontSize:11, color:"#64748b", marginTop:1 }}>{item.description}</div>
+                      <div style={moduleUi.primaryText}>{item.name}</div>
+                      <div style={moduleUi.secondaryText}>{item.description}</div>
                     </div>
                   </div>
                 </td>
                 <td style={moduleUi.td}><Tag color={typeColors[item.type]||"#6b7280"}>{item.type||"—"}</Tag></td>
-                <td style={{ ...moduleUi.td, fontWeight:700, color:"#0f172a", textAlign:"right" }}>{fmt("£",item.rate)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell }}>{fmt("£",item.rate)}</td>
                 <td style={moduleUi.td}>{item.unit}</td>
                 {isVat && <td style={moduleUi.td}>{item.taxRate}%</td>}
                 <td style={moduleUi.td}>{isCisOrg && item.cis?.enabled ? <Tag color="#D97706">CIS {item.cis?.labour ?? 100}% labour</Tag> : <span style={{ fontSize:12, color:"#94a3b8" }}>—</span>}</td>
@@ -149,6 +151,8 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
             )}
           </tbody>
         </table>
+      </div>
+        </div>
       </div>
     </div>
   );
