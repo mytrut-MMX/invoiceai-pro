@@ -289,6 +289,9 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
   };
 
   const totalRef = filtered.reduce((s,p)=>s+(p.status==="Refunded"?Number(p.amount||0):0),0);
+  const totalReceived = payments.filter(p=>p.status!=="Refunded").reduce((s,p)=>s+Number(p.amount||0),0);
+  const unreconciledCount = payments.filter(p=>p.status!=="Reconciled").length;
+  const hasFilters = search || filterMethod !== "All" || filterStatus !== "All";
 
   // Detail view
   if (viewingPayment) {
@@ -328,13 +331,13 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
 
   return (
     <div style={{ ...moduleUi.page, fontFamily:ff, background:"#f8fafc" }}>
-      {/* Summary */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:12, marginBottom:22 }}>
         {[
-          { label:"Total Received", value:fmt(currSym,payments.filter(p=>p.status!=="Refunded").reduce((s,p)=>s+Number(p.amount||0),0)), color:"#16A34A" },
+          { label:"Total Received", value:fmt(currSym,totalReceived), color:"#16A34A" },
+          { label:"Unreconciled",   value:unreconciledCount, color: unreconciledCount ? "#d97706" : "#64748b" },
           { label:"This Month",     value:fmt(currSym,payments.filter(p=>p.status!=="Refunded"&&p.date?.startsWith(new Date().toISOString().slice(0,7))).reduce((s,p)=>s+Number(p.amount||0),0)), color:"#1A1A1A" },
           { label:"Refunded",       value:fmt(currSym,totalRef), color:"#DC2626" },
-          { label:"Transactions",   value:payments.length, color:"#888" },
+          { label:"Transactions",   value:payments.length, color:"#64748b" },
         ].map(s=>(
           <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
@@ -343,21 +346,22 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
         ))}
       </div>
 
-      <ModuleHeader title="Payments Received" helper={`${payments.length} transactions · searchable, auditable payment records.`} right={
+      <ModuleHeader title="Payments Received" helper={`${payments.length} records · searchable, auditable payment history.`} right={<Btn onClick={() => { setEditingPayment(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>Record Payment</Btn>} />
+
+      <div style={{ ...moduleUi.toolbar, marginTop:12 }}>
+        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search payments…" />
         <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
           <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-            style={{ padding:"6px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
+            style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
             {["All","Reconciled","Partial","Pending","Refunded"].map(s=><option key={s}>{s}</option>)}
           </select>
           <select value={filterMethod} onChange={e=>setFilterMethod(e.target.value)}
-            style={{ padding:"6px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
+            style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
             {methods.map(m=><option key={m}>{m}</option>)}
           </select>
-          <Btn onClick={() => { setEditingPayment(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>Record Payment</Btn>
+          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{setSearch(""); setFilterMethod("All"); setFilterStatus("All");}}>Clear filters</Btn>}
         </div>
-      } />
-
-      <div style={{ ...moduleUi.toolbar, marginTop:0 }}><SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search payments…" /></div>
+     </div>
       <div style={{ ...moduleUi.card, overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
           <thead>
@@ -394,7 +398,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
                   <div style={{ display:"flex", gap:4 }}>
                     <Btn onClick={() => { setEditingPayment(pmt); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} />
-                    <Btn onClick={()=>del(pmt.id)} variant="ghost" size="sm" icon={<Icons.Trash />} />
+                    <Btn onClick={()=>del(pmt.id)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#dc2626" }} />
                   </div>
                 </td>
               </tr>
