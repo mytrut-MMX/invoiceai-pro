@@ -640,7 +640,7 @@ export function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSee
 
 // ─── P&L TAB ──────────────────────────────────────────────────────────────────
 
-export function PLTab({ accounts, allEntries }) {
+export function PLTab({ accounts, allEntries, hasLedgerAccess }) {
   const currSym = useCurrSym();
   const [period,      setPeriod]      = useState("this_month");
   const [customStart, setCustomStart] = useState("");
@@ -692,11 +692,6 @@ export function PLTab({ accounts, allEntries }) {
 
   return (
     <div>
-      {!hasLedgerAccess && (
-        <div style={{ marginBottom:16, border:"1px solid #fde68a", background:"#fffbeb", borderRadius:8, padding:"12px 14px", color:"#92400e", fontSize:13 }}>
-          Connect with a Supabase-authenticated account to view and post General Ledger data.
-        </div>
-      )}
       {/* Period picker */}
       <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:24, alignItems:"center" }}>
         <Select value={period} onChange={setPeriod} options={PERIODS} style={{ minWidth:140 }} />
@@ -822,6 +817,17 @@ const requiresAuthMsg = "Please sign in with Supabase (Google/email auth) to use
           </div>
         </div>
       </div>
+      {!loading && !userId && (
+        <div style={{ marginBottom:20, border:"1px solid #fde68a", background:"#fffbeb", borderRadius:10, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:10 }}>
+          <span style={{ fontSize:18, lineHeight:1 }}>🔐</span>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#92400e", marginBottom:2 }}>Supabase sign-in required</div>
+            <div style={{ fontSize:12, color:"#78350f", lineHeight:1.5 }}>
+              The General Ledger uses Supabase for double-entry storage. Sign out and sign back in using <strong>Google</strong> or <strong>GitHub</strong> to activate journal posting, chart of accounts, and P&amp;L.
+            </div>
+          </div>
+        </div>
+      )}
       {actionError && (
         <div style={{ marginBottom:16, border:"1px solid #fecaca", background:"#fef2f2", borderRadius:8, padding:"10px 12px", color:"#991b1b", fontSize:12 }}>
           {actionError}
