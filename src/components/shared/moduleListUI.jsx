@@ -44,7 +44,7 @@ export const moduleUi = {
     padding: "10px 12px",
     borderRadius: 14,
     border: "1px solid #dbe4ee",
-    background: "#ffffff",jn 
+    background: "#ffffff",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
