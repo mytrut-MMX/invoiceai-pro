@@ -14,6 +14,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [showForm, setShowForm] = useState(initialShowForm);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
 
   const deleteCustomer = (c) => {
     const invCount = (invoices||[]).filter(i => i.customer?.id === c.id).length;
@@ -25,10 +26,17 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
     if (window.confirm(msg)) setCustomers(p => p.filter(x => x.id !== c.id));
   };
 
-  const filtered = customers.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = customers.filter(c => {
+    const matchSearch =
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.email.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === "All" || c.type === typeFilter;
+    return matchSearch && matchType;
+  });
+  const totalInvoicedAll = (invoices || []).reduce((s, i) => s + Number(i.total || 0), 0);
+  const totalCollectedAll = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+  const totalOutstandingAll = Math.max(0, totalInvoicedAll - totalCollectedAll);
+  const hasFilters = search || typeFilter !== "All";
 
   const onSave = c => {
     setCustomers(p => upsert(p, c));
@@ -57,12 +65,32 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
     <div style={{ ...moduleUi.page, minHeight:"100vh", background:"#f8fafc", fontFamily:ff }}>
       <ModuleHeader
         title="Customers"
-        helper={`${customers.length} customers · customer details, revenue, and collections at a glance.`}
+        helper="Track customer details, invoicing performance, and collections."
         right={<Btn onClick={()=> { setEditingCustomer(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>}
       />
 
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:12, marginTop:14, marginBottom:14 }}>
+        {[
+          { label:"Total Customers", value:customers.length, color:"#0f172a" },
+          { label:"Total Invoiced", value:fmt(currSym, totalInvoicedAll), color:"#1d4ed8" },
+          { label:"Collected", value:fmt(currSym, totalCollectedAll), color:"#059669" },
+          { label:"Outstanding", value:fmt(currSym, totalOutstandingAll), color: totalOutstandingAll > 0 ? "#dc2626" : "#059669" },
+        ].map(card => (
+          <div key={card.label} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"12px 14px" }}>
+            <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
+            <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
+          </div>
+        ))}
+      </div>
+      
       <div style={moduleUi.toolbar}>
         <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…" />
+      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+            {["All","Business","Individual"].map(v => <option key={v}>{v}</option>)}
+          </select>
+          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setTypeFilter("All"); }}>Clear filters</Btn>}
+        </div>
       </div>
 
       <div style={{ ...moduleUi.card, overflowX:"auto" }}>
@@ -98,13 +126,13 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
                 <td style={{ ...moduleUi.td, fontWeight:700, color:"#0f172a", textAlign:"right" }}>{fmt(currSym, totalInvoiced)}</td>
                 <td style={{ ...moduleUi.td, fontWeight:700, color:"#059669", textAlign:"right" }}>{fmt(currSym, totalCollected)}</td>
                 <td style={{ ...moduleUi.td, fontWeight:700, color:totalOutstanding > 0 ? "#DC2626" : "#059669", textAlign:"right" }}>{fmt(currSym, totalOutstanding)}</td>
-                <td style={moduleUi.td}><Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn></td>
-                <td style={moduleUi.td}><Btn onClick={() => deleteCustomer(c)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn></td>
+                <td style={moduleUi.td}><Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} /></td>
+                <td style={moduleUi.td}><Btn onClick={() => deleteCustomer(c)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#dc2626" }} /></td>
               </tr>
               );
             })}
             {filtered.length===0 && (
-              <tr><td colSpan={10}><EmptyState icon={<Icons.Customers />} text="No customers found for this search." cta={<Btn variant="outline" onClick={()=>setSearch("")}>Clear Search</Btn>} /></td></tr>
+              <tr><td colSpan={10}><EmptyState icon={<Icons.Customers />} text={customers.length===0 ? "No customers yet. Add your first customer to begin invoicing." : "No customers match your current search or filters."} cta={customers.length===0 ? <Btn variant="primary" onClick={()=> { setEditingCustomer(null); setShowForm(true); }}>New Customer</Btn> : <Btn variant="outline" onClick={()=>{setSearch(""); setTypeFilter("All");}}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
