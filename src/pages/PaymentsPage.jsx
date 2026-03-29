@@ -1,35 +1,17 @@
 import { useState, useContext, useMemo } from "react";
-import { ff, STATUS_COLORS, CUR_SYM, PAYMENT_METHODS } from "../constants";
+import { ff, CUR_SYM, PAYMENT_METHODS } from "../constants";
 import { postPaymentEntry } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Field, Input, Select, Textarea, Btn, Tag } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
+import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
-
-// ─── Status config ─────────────────────────────────────────────────────────────
-const STATUS_STYLE = {
-  Reconciled: { color: "#16A34A", bg: "#F0FDF4", dot: "#16A34A" },
-  Partial:    { color: "#D97706", bg: "#FFFBEB", dot: "#D97706" },
-  Pending:    { color: "#6B7280", bg: "#F9FAFB", dot: "#6B7280" },
-  Refunded:   { color: "#DC2626", bg: "#FEF2F2", dot: "#DC2626" },
-};
 
 const METHOD_ICON = {
   "Bank Transfer": "🏦", "Credit Card": "💳", "Cash": "💵",
   "Cheque": "📝", "PayPal": "🔵", "Stripe": "🟣", "Direct Debit": "🔄",
 };
-
-function StatusBadge({ status }) {
-  const s = STATUS_STYLE[status] || { color: "#888", bg: "#f3f4f6", dot: "#888" };
-  return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:20, background:s.bg, fontSize:12, fontWeight:600, color:s.color }}>
-      <span style={{ width:6, height:6, borderRadius:"50%", background:s.dot, flexShrink:0 }} />
-      {status}
-    </span>
-  );
-}
 
 // ─── Payment Detail View ───────────────────────────────────────────────────────
 function PaymentDetailView({ payment, onClose, onEdit, onDelete }) {
@@ -330,8 +312,10 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
   );
 
   return (
-    <div style={{ ...moduleUi.page, fontFamily:ff, background:"#f8fafc" }}>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:12, marginBottom:22 }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, fontFamily:ff }}>
+        <div style={moduleUi.sectionStack}>
+      <div style={moduleUi.summaryGrid}>
         {[
           { label:"Total Received", value:fmt(currSym,totalReceived), color:"#16A34A" },
           { label:"Unreconciled",   value:unreconciledCount, color: unreconciledCount ? "#d97706" : "#64748b" },
@@ -339,7 +323,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
           { label:"Refunded",       value:fmt(currSym,totalRef), color:"#DC2626" },
           { label:"Transactions",   value:payments.length, color:"#64748b" },
         ].map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div key={s.label} style={moduleUi.summaryCard}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
             <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
           </div>
@@ -375,7 +359,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
             {filtered.map(pmt=>(
               <tr key={pmt.id}
                 onClick={() => setViewingPayment(pmt)}
-                style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
+                style={{ ...moduleUi.rowHover, cursor:"pointer" }}
                 onMouseEnter={e=>e.currentTarget.style.background="#F5F8FF"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{ padding:"12px 16px", fontSize:12, color:"#1A1A1A", fontWeight:700, whiteSpace:"nowrap" }}>{pmt.payment_number||"—"}</td>
@@ -383,7 +367,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
                 <td style={{ padding:"12px 16px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:7 }}>
                     <div style={{ width:26, height:26, borderRadius:"50%", background:"#16A34A22", color:"#16A34A", fontWeight:800, fontSize:11, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{(pmt.customer_name||"?")[0]}</div>
-                    <span style={{ fontSize:13, color:"#444" }}>{pmt.customer_name||"—"}</span>
+                    <span style={moduleUi.primaryText}>{pmt.customer_name||"—"}</span>
                   </div>
                 </td>
                 <td style={{ padding:"12px 16px", fontSize:13, color:"#4F46E5", fontWeight:600 }}>{pmt.invoice_number||"—"}</td>
@@ -391,7 +375,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
                   <span>{METHOD_ICON[pmt.method]||"💰"} {pmt.method}</span>
                 </td>
                 <td style={{ padding:"12px 16px", fontSize:12, color:"#AAA", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pmt.reference||"—"}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:pmt.status==="Refunded"?"#DC2626":"#16A34A", textAlign:"right", whiteSpace:"nowrap" }}>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell, color:pmt.status==="Refunded"?"#DC2626":"#16A34A" }}>
                   {pmt.status==="Refunded"?"-":""}{fmt(currSym,pmt.amount||0)}
                 </td>
                 <td style={{ padding:"12px 16px" }}><StatusBadge status={pmt.status} /></td>
@@ -408,6 +392,8 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
             )}
           </tbody>
         </table>
+      </div>
+        </div>
       </div>
     </div>
   );
