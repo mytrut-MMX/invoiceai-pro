@@ -2,8 +2,8 @@ import { useState, useContext } from "react";
 import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Btn, Tag } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
+import { Btn } from "../components/atoms";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
@@ -62,21 +62,23 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   }
 
   return (
-    <div style={{ ...moduleUi.page, minHeight:"100vh", background:"#f8fafc", fontFamily:ff }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, fontFamily:ff }}>
+        <div style={moduleUi.sectionStack}>
       <ModuleHeader
         title="Customers"
         helper="Track customer details, invoicing performance, and collections."
         right={<Btn onClick={()=> { setEditingCustomer(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>}
       />
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:12, marginTop:14, marginBottom:14 }}>
+      <div style={moduleUi.summaryGrid}>
         {[
           { label:"Total Customers", value:customers.length, color:"#0f172a" },
           { label:"Total Invoiced", value:fmt(currSym, totalInvoicedAll), color:"#1d4ed8" },
           { label:"Collected", value:fmt(currSym, totalCollectedAll), color:"#059669" },
           { label:"Outstanding", value:fmt(currSym, totalOutstandingAll), color: totalOutstandingAll > 0 ? "#dc2626" : "#059669" },
         ].map(card => (
-          <div key={card.label} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"12px 14px" }}>
+          <div key={card.label} style={moduleUi.summaryCard}>
             <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
             <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
           </div>
@@ -97,7 +99,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:620 }}>
           <thead>
             <tr style={moduleUi.tableHead}>
-              {["Name","Type","Email","Phone","Currency","Invoiced","Collected","Outstanding","",""] .map(h=>(
+              {["Name","Customer Type","Phone","Currency","Invoiced","Collected","Outstanding","",""] .map(h=>(
                 <th key={h} style={{ ...moduleUi.th, textAlign:"left" }}>{h}</th>
               ))}
             </tr>
@@ -110,32 +112,36 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
               const totalCollected  = (payments||[]).filter(p => custInvoiceIds.has(p.invoice_id)).reduce((s,p) => s + Number(p.amount||0), 0);
               const totalOutstanding = Math.max(0, totalInvoiced - totalCollected);
               return (
-              <tr key={c.id} style={{ borderBottom:"1px solid #f1f5f9" }}
+              <tr key={c.id} style={moduleUi.rowHover}
                 onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={moduleUi.td}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:30, height:30, borderRadius:"50%", background:"#FEF3C7", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:"#92400E" }}>{c.name[0]}</div>
-                    <span style={{ fontSize:13, fontWeight:600, color:"#0f172a" }}>{c.name}</span>
+                     <div>
+                      <div style={moduleUi.primaryText}>{c.name}</div>
+                      <div style={moduleUi.secondaryText}>{c.email || "No email on file"}</div>
+                    </div>
                   </div>
                 </td>
-                 <td style={moduleUi.td}><Tag color={c.type==="Business"?"#334155":"#b45309"}>{c.type}</Tag></td>
-                <td style={moduleUi.td}>{c.email}</td>
-                <td style={moduleUi.td}>{formatPhoneNumber(c.phone)}</td>
-                <td style={moduleUi.td}>{c.currency}</td>
-                <td style={{ ...moduleUi.td, fontWeight:700, color:"#0f172a", textAlign:"right" }}>{fmt(currSym, totalInvoiced)}</td>
-                <td style={{ ...moduleUi.td, fontWeight:700, color:"#059669", textAlign:"right" }}>{fmt(currSym, totalCollected)}</td>
-                <td style={{ ...moduleUi.td, fontWeight:700, color:totalOutstanding > 0 ? "#DC2626" : "#059669", textAlign:"right" }}>{fmt(currSym, totalOutstanding)}</td>
+                 <td style={moduleUi.td}><StatusBadge status={c.type || "Individual"} /></td>
+                <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12 }}>{formatPhoneNumber(c.phone) || "—"}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12 }}>{c.currency || "—"}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell }}>{fmt(currSym, totalInvoiced)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell, color:"#059669" }}>{fmt(currSym, totalCollected)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell, color:totalOutstanding > 0 ? "#DC2626" : "#059669" }}>{fmt(currSym, totalOutstanding)}</td>
                 <td style={moduleUi.td}><Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} /></td>
                 <td style={moduleUi.td}><Btn onClick={() => deleteCustomer(c)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#dc2626" }} /></td>
               </tr>
               );
             })}
             {filtered.length===0 && (
-              <tr><td colSpan={10}><EmptyState icon={<Icons.Customers />} text={customers.length===0 ? "No customers yet. Add your first customer to begin invoicing." : "No customers match your current search or filters."} cta={customers.length===0 ? <Btn variant="primary" onClick={()=> { setEditingCustomer(null); setShowForm(true); }}>New Customer</Btn> : <Btn variant="outline" onClick={()=>{setSearch(""); setTypeFilter("All");}}>Clear filters</Btn>} /></td></tr>
+              <tr><td colSpan={9}><EmptyState icon={<Icons.Customers />} text={customers.length===0 ? "No customers yet. Add your first customer to begin invoicing." : "No customers match your current search or filters."} cta={customers.length===0 ? <Btn variant="primary" onClick={()=> { setEditingCustomer(null); setShowForm(true); }}>New Customer</Btn> : <Btn variant="outline" onClick={()=>{setSearch(""); setTypeFilter("All");}}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
+      </div>
+        </div>
       </div>
     </div>
   );
