@@ -4,7 +4,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from 
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag, Ribbon } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { PDF_TEMPLATES } from "../constants";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
@@ -481,7 +481,9 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
   }
 
   return (
-    <div style={{ ...moduleUi.page, fontFamily:ff, background:"#f8fafc" }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, fontFamily:ff }}>
+        <div style={moduleUi.sectionStack}>
       {/* Summary cards */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:16 }}>
         {[
@@ -491,9 +493,9 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
           { label:"Accepted", value:String(summary.accepted), color:"#16A34A" },
           { label:"Invoiced", value:String(summary.invoiced), color:"#7c3aed" },
         ].map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div key={s.label} style={moduleUi.summaryCard}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
-            <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
+            <div style={moduleUi.summaryGrid}>
           </div>
         ))}
       </div>
@@ -543,7 +545,7 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
           </thead>
           <tbody>
             {filtered.map(q=>(
-              <tr key={q.id} style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
+              <tr key={q.id} style={{ ...moduleUi.rowHover, cursor:"pointer" }}
                 onClick={()=>setPanel({ mode:"view", quote:q })}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
@@ -551,13 +553,13 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
                 <td style={{ padding:"12px 16px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <div style={{ width:26, height:26, borderRadius:"50%", background:"#4F46E522", color:"#4F46E5", fontWeight:800, fontSize:11, display:"flex", alignItems:"center", justifyContent:"center" }}>{q.customer?.name?.[0]||"?"}</div>
-                    <span style={{ fontSize:13, color:"#444" }}>{q.customer?.name||"—"}</span>
+                    <span style={moduleUi.primaryText}>{q.customer?.name||"—"}</span>
                   </div>
                 </td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:"#888" }}>{fmtDate(q.issue_date)}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:q.status==="Expired"?"#C0392B":"#888" }}>{fmtDate(q.expiry_date)}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt("£",q.total||0)}</td>
-                <td style={{ padding:"12px 16px" }}><Tag color={STATUS_COLORS[q.status]||"#888"}>{q.status||"Draft"}</Tag></td>
+                <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12 }}>{fmtDate(q.issue_date)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12, color:q.status==="Expired"?"#C0392B":"#888" }}>{fmtDate(q.expiry_date)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell }}>{fmt("£",q.total||0)}</td>
+                <td style={{ padding:"12px 16px" }}><StatusBadge status={q.status||"Draft"} /></td>
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
                   <Btn onClick={()=>q.status==="Invoiced"?window.alert("You are not allowed to edit an accepted quote."):setPanel({ mode:"edit", quote:q })} variant="ghost" size="sm" disabled={q.status==="Invoiced"} icon={<Icons.Edit />} />
                   <Btn onClick={()=>window.confirm(`Delete ${q.quote_number}?`) && setQuotes(prev=>prev.filter(x=>x.id!==q.id))} variant="ghost" size="sm" icon={<Icons.Trash />} />
@@ -581,6 +583,8 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
           onConvertToInvoice={handleConvertToInvoice}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 }
