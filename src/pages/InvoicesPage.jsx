@@ -3,7 +3,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS, PDF_TEMPLATES } from "..
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag, Ribbon, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
-import { moduleUi, SearchInput, EmptyState } from "../components/shared/moduleListUI";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
 import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
 import { calcTotals } from "../utils/calcTotals";
@@ -561,11 +561,12 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
   };
 
   const summary = {
-    outstanding: invoices.filter(i=>["Sent","Partial"].includes(i.status)).reduce((s,i)=>s+(i.total||0),0),
-    overdue:     invoices.filter(i=>i.status==="Overdue").reduce((s,i)=>s+(i.total||0),0),
-    paid:        invoices.filter(i=>i.status==="Paid").reduce((s,i)=>s+(i.total||0),0),
-    draft:       invoices.filter(i=>i.status==="Draft").reduce((s,i)=>s+(i.total||0),0),
+    total: invoices.length,
+    unpaid: invoices.filter(i=>["Draft","Sent","Partial","Overdue"].includes(i.status)).length,
+    overdue: invoices.filter(i=>i.status==="Overdue").length,
+    paidAmount: invoices.filter(i=>i.status==="Paid").reduce((s,i)=>s+(i.total||0),0),
   };
+  const hasFilters = search || filterStatus !== "All";
 
   if (panel?.mode === "view") {
     return (
@@ -594,10 +595,10 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
     <div style={{ ...moduleUi.page, fontFamily:ff, background:"#f8fafc" }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:22 }}>
         {[
-          { label:"Outstanding", value:fmt("£",summary.outstanding), color:"#E86C4A" },
-          { label:"Overdue",     value:fmt("£",summary.overdue),     color:"#C0392B" },
-          { label:"Paid (all)",  value:fmt("£",summary.paid),        color:"#16A34A" },
-          { label:"Draft",       value:fmt("£",summary.draft),       color:"#888" },
+          { label:"Total Invoices", value:summary.total, color:"#0f172a" },
+          { label:"Unpaid", value:summary.unpaid, color:"#d97706" },
+          { label:"Overdue", value:summary.overdue, color:"#dc2626" },
+          { label:"Paid Amount", value:fmt("£",summary.paidAmount), color:"#16A34A" },
         ].map(s=>(
           <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
@@ -606,25 +607,21 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
         ))}
       </div>
 
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, gap:10, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <h1 style={{ fontSize:24, fontWeight:800, color:"#0f172a", margin:0 }}>Invoices</h1>
-          <span style={{ fontSize:13, color:"#64748b" }}>{invoices.length} total invoices in receivables</span>
-        </div>
+      <ModuleHeader
+        title="Invoices"
+        helper={`${invoices.length} records · monitor cash collection and due dates at a glance.`}
+        right={<Btn onClick={()=>setPanel({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Invoice</Btn>}
+      />
+
+      <div style={{ ...moduleUi.toolbar, marginTop:12 }}>
+        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search invoices…" />
         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          <div style={{ display:"flex", background:"#f3f4f6", border:"1px solid #e8e8ec", borderRadius:8, padding:3, overflow:"hidden" }}>
-            {["All",...STATUSES].map(s=>(
-              <button key={s} onClick={()=>setFilterStatus(s)}
-                style={{ padding:"6px 12px", border:"none", background:filterStatus===s?"#fff":"transparent", color:filterStatus===s?"#1a1a2e":"#6b7280", boxShadow:filterStatus===s?"0 1px 3px rgba(0,0,0,0.08)":"none", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
-                {s}
-              </button>
-            ))}
-          </div>
-          <Btn onClick={()=>setPanel({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Invoice</Btn>
+          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+            {["All",...STATUSES].map(s => <option key={s}>{s}</option>)}
+          </select>
+          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setFilterStatus("All"); }}>Clear filters</Btn>}
         </div>
       </div>
-
-      <div style={{ ...moduleUi.toolbar, marginTop:0 }}><SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search invoices…" /></div>
       <div style={{ ...moduleUi.card, overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
           <thead>
@@ -652,8 +649,8 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
                 <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt("£",inv.total||0)}</td>
                 <td style={{ padding:"12px 16px" }}><Tag color={STATUS_COLORS[inv.status]||"#888"}>{inv.status||"Draft"}</Tag></td>
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
-                  <Btn onClick={()=>setPanel({ mode:"edit", invoice:inv })} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
-                  <Btn onClick={()=>window.confirm(`Delete ${inv.invoice_number}?`) && setInvoices(prev=>prev.filter(x=>x.id!==inv.id))} variant="ghost" size="sm" icon={<Icons.Trash />}>Delete</Btn>
+                  <Btn onClick={()=>setPanel({ mode:"edit", invoice:inv })} variant="ghost" size="sm" icon={<Icons.Edit />} />
+                  <Btn onClick={()=>window.confirm(`Delete ${inv.invoice_number}?`) && setInvoices(prev=>prev.filter(x=>x.id!==inv.id))} variant="ghost" size="sm" icon={<Icons.Trash />} />
                 </td>
               </tr>
             ))}
