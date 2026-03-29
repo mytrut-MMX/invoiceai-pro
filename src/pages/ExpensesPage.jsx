@@ -331,6 +331,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
   const [editingExp,  setEditingExp]  = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [search,      setSearch]      = useState("");
+  const [billableFilter, setBillableFilter] = useState("All");
 
   const panelFiltered = useMemo(() => filterExpenses(expenses, activeFilter), [expenses, activeFilter]);
 
@@ -347,11 +348,22 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
     );
   }, [panelFiltered, search]);
 
+  const filteredByBillable = useMemo(() => {
+    if (billableFilter === "All") return filtered;
+    if (billableFilter === "Billable") return filtered.filter(e => !!e.billable);
+    if (billableFilter === "With Receipt") return filtered.filter(e => !!e.receipt_url || !!e.receipt);
+    return filtered;
+  }, [filtered, billableFilter]);
+  
   const sortedFiltered = useMemo(
-    () => [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date)),
-    [filtered]
+    () => [...filteredByBillable].sort((a, b) => new Date(b.date) - new Date(a.date)),
+    [filteredByBillable]
   );
-
+  const hasFilters = search || activeFilter !== "all" || billableFilter !== "All";
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.total || 0), 0);
+  const billableCount = expenses.filter(e => e.billable).length;
+  const withReceiptCount = expenses.filter(e => !!e.receipt_url || !!e.receipt).length;
+  
   const countFor = key => filterExpenses(expenses, key).length;
 
   const onSave = exp => {
@@ -419,14 +431,30 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc", padding: "14px" }}>
 
         {/* header */}
-       <div style={{ padding: "16px 20px 10px", border: "1px solid #e2e8f0", borderRadius: 12, background:"#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", margin: 0 }}>Expenses</h1>
+       <div style={{ padding: "16px 20px 10px", border: "1px solid #e2e8f0", borderRadius: 12, background:"#fff", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexShrink: 0, gap:12, flexWrap:"wrap" }}>
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", margin: 0 }}>Expenses</h1>
+            <p style={{ fontSize:13, color:"#64748b", margin:"6px 0 0" }}>{expenses.length} records · monitor spend, billables, and documentation.</p>
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn>
             <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn>
           </div>
         </div>
 
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginTop:12, marginBottom:10 }}>
+          {[
+            { label:"Total Expenses", value:fmt(currSym, totalExpenses), color:"#0f172a" },
+            { label:"Billable", value:billableCount, color:"#1d4ed8" },
+            { label:"With Receipt", value:withReceiptCount, color:"#0f766e" },
+          ].map(card => (
+            <div key={card.label} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"12px 14px" }}>
+              <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
+              <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
+            </div>
+          ))}
+        </div>
+        
         {/* search toolbar */}
         <div style={{ ...moduleUi.toolbar, marginTop: 10, marginBottom: 10 }}>
           <div style={{ ...moduleUi.searchWrap, maxWidth: 380 }}>
@@ -438,7 +466,13 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
               <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0, fontSize: 14, lineHeight: 1, fontFamily: ff }}>×</button>
             )}
           </div>
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>{sortedFiltered.length} record{sortedFiltered.length !== 1 ? "s" : ""}</span>
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+            <select value={billableFilter} onChange={e=>setBillableFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+              {["All","Billable","With Receipt"].map(v => <option key={v}>{v}</option>)}
+            </select>
+            {hasFilters && <Btn variant="ghost" size="sm" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>}
+            <span style={{ fontSize: 12, color: "#9ca3af" }}>{sortedFiltered.length} record{sortedFiltered.length !== 1 ? "s" : ""}</span>
+          </div>
         </div>
 
         {/* table */}
@@ -513,6 +547,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
                     <div style={{ display: "flex", gap: 2, opacity: 0 }} className="row-actions"
                       onMouseEnter={e => e.currentTarget.style.opacity = 1}
                       onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                      <Btn size="sm" variant="ghost" icon={<Icons.Edit />} onClick={() => { setEditingExp(exp); setShowForm(true); }} />
                       <Btn size="sm" variant="ghost" icon={<Icons.Trash />} onClick={() => onDelete(exp.id)} />
                     </div>
                   </td>
@@ -520,7 +555,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
               ))}
 
               {sortedFiltered.length === 0 && (
-                  <tr><td colSpan={8}><EmptyState icon={<Icons.Expenses />} text={expenses.length === 0 ? "No expenses yet." : "No expenses match your filter or search."} cta={<Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); }}>Clear filters</Btn>} /></td></tr>
+                  <tr><td colSpan={8}><EmptyState icon={<Icons.Expenses />} text={expenses.length === 0 ? "No expenses yet. Record your first expense to start tracking spend." : "No expenses match your current search or filters."} cta={expenses.length===0 ? <Btn variant="primary" onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn> : <Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>} /></td></tr>
               )}
             </tbody>
           </table>
