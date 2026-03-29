@@ -5,6 +5,7 @@ import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag } from "../components/atoms";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 
 // ─── Status config ─────────────────────────────────────────────────────────────
@@ -326,7 +327,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
   );
 
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ ...moduleUi.page, fontFamily:ff, background:"#f8fafc" }}>
       {/* Summary */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:12, marginBottom:22 }}>
         {[
@@ -342,11 +343,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
         ))}
       </div>
 
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, gap:10, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:0 }}>Payments</h1>
-          <span style={{ fontSize:13, color:"#AAA" }}>{payments.length} total</span>
-        </div>
+      <ModuleHeader title="Payments Received" helper={`${payments.length} transactions · searchable, auditable payment records.`} right={
         <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
           <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
             style={{ padding:"6px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
@@ -358,19 +355,15 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
           </select>
           <Btn onClick={() => { setEditingPayment(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>Record Payment</Btn>
         </div>
-      </div>
+      } />
 
-      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
-        <div style={{ padding:"10px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
-          <Icons.Search />
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search payments…"
-            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1A1A1A", background:"transparent", fontFamily:ff }} />
-        </div>
+      <div style={{ ...moduleUi.toolbar, marginTop:0 }}><SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search payments…" /></div>
+      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
           <thead>
-            <tr style={{ background:"#f9fafb" }}>
+            <tr style={moduleUi.tableHead}>
               {["Payment #","Date","Customer","Invoice","Method","Reference","Amount","Status",""].map(h=>(
-                <th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
+                <th key={h} style={{ ...moduleUi.th, textAlign:h==="Amount"?"right":"left" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -407,9 +400,7 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
               </tr>
             ))}
             {filtered.length===0 && (
-              <tr><td colSpan={9} style={{ padding:"40px", textAlign:"center", color:"#CCC", fontSize:13 }}>
-                {payments.length===0?"No payments recorded yet.":"No payments match your filters."}
-              </td></tr>
+              <tr><td colSpan={9}><EmptyState icon={<Icons.Payments />} text={payments.length===0?"No payments recorded yet.":"No payments match your filters."} cta={<Btn variant="outline" onClick={()=>{setSearch(""); setFilterMethod("All"); setFilterStatus("All");}}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
