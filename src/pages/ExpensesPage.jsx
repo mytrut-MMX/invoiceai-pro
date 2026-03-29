@@ -5,7 +5,7 @@ import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Switch } from "../components/atoms";
-import { moduleUi, EmptyState } from "../components/shared/moduleListUI";
+import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
 import { CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 
@@ -19,21 +19,6 @@ const STATUS_STYLE = {
 
 function expNextNum(expenses) {
   return nextNum("EXP", expenses.map(e => ({ invoice_number: e.expense_number })));
-}
-
-function StatusBadge({ status }) {
-  const s = STATUS_STYLE[status] || { color: "#6b7280", bg: "#f3f4f6" };
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "3px 9px", borderRadius: 20,
-      background: s.bg, color: s.color,
-      fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-      {status}
-    </span>
-  );
 }
 
 // ─── CSV Export ───────────────────────────────────────────────────────────────
@@ -399,7 +384,9 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
   const cols = ["Date","Expense Account","Reference #","Paid Through","Customer","Status","Amount",""];
 
   return (
-    <div style={{ display: "flex", height: "100%", fontFamily: ff, background: "#f8fafc" }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, maxWidth: 1320, fontFamily: ff }}>
+        <div style={{ display: "flex", height: "100%" }}>
 
       {/* ── LEFT FILTER PANEL ── */}
       <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid #e8e8ec", background: "#fff", padding: "14px 0", overflowY: "auto" }}>
@@ -428,19 +415,13 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
       </div>
 
       {/* ── MAIN CONTENT ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc", padding: "14px" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "0 0 0 14px", gap:12 }}>
 
-        {/* header */}
-       <div style={{ padding: "16px 20px 10px", border: "1px solid #e2e8f0", borderRadius: 12, background:"#fff", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexShrink: 0, gap:12, flexWrap:"wrap" }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", margin: 0 }}>Expenses</h1>
-            <p style={{ fontSize:13, color:"#64748b", margin:"6px 0 0" }}>{expenses.length} records · monitor spend, billables, and documentation.</p>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn>
-            <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn>
-          </div>
-        </div>
+        <ModuleHeader
+          title="Expenses"
+          helper={`${expenses.length} records · monitor spend, billables, and documentation.`}
+          right={<div style={{ display: "flex", gap: 8 }}><Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn><Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn></div>}
+        />
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginTop:12, marginBottom:10 }}>
           {[
@@ -448,7 +429,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
             { label:"Billable", value:billableCount, color:"#1d4ed8" },
             { label:"With Receipt", value:withReceiptCount, color:"#0f766e" },
           ].map(card => (
-            <div key={card.label} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"12px 14px" }}>
+            <div key={card.label} style={moduleUi.summaryCard}>
               <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
               <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
             </div>
@@ -457,15 +438,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
         
         {/* search toolbar */}
         <div style={{ ...moduleUi.toolbar, marginTop: 10, marginBottom: 10 }}>
-          <div style={{ ...moduleUi.searchWrap, maxWidth: 380 }}>
-            <Icons.Search />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search expenses…"
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: "#1a1a2e", background: "transparent", fontFamily: ff }} />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0, fontSize: 14, lineHeight: 1, fontFamily: ff }}>×</button>
-            )}
-          </div>
+          <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search expenses…" />
           <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
             <select value={billableFilter} onChange={e=>setBillableFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
               {["All","Billable","With Receipt"].map(v => <option key={v}>{v}</option>)}
@@ -566,6 +539,8 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
       <style>{`
         tr:hover .row-actions { opacity: 1 !important; }
       `}</style>
+        </div>
+      </div>
     </div>
   );
 }
