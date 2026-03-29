@@ -392,7 +392,7 @@ function EntryRow({ entry, accounts, currSym }) {
   );
 }
 
-export function JournalTab({ entries, accounts, loading, onNewEntry }) {
+export function JournalTab({ entries, accounts, loading, onNewEntry, canCreateManual }) {
   const currSym = useCurrSym();
   const [search,      setSearch]      = useState("");
   const [sourceFilter,setSourceFilter]= useState("all");
