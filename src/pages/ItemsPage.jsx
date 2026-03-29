@@ -14,6 +14,8 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
   const [showForm, setShowForm] = useState(initialShowForm);
   const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const deleteItem = (item) => {
     const linked = [...(invoices||[]), ...(quotes||[])].filter(doc =>
@@ -25,10 +27,14 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
     if (window.confirm(msg)) setCatalogItems(p => p.filter(x => x.id !== item.id));
   };
 
-  const filtered = catalogItems.filter(i =>
-    i.name.toLowerCase().includes(search.toLowerCase()) ||
-    i.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = catalogItems.filter(i => {
+    const matchSearch =
+      i.name.toLowerCase().includes(search.toLowerCase()) ||
+      i.description.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === "All" || i.type === typeFilter;
+    const matchStatus = statusFilter === "All" || (statusFilter === "Active" ? !!i.active : !i.active);
+    return matchSearch && matchType && matchStatus;
+  });
 
   const onSave = item => {
     setCatalogItems(p => {
@@ -45,6 +51,10 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
 
   const typeColors = { Service:"#1e6be0", Labour:"#d97706", Material:"#059669", Equipment:"#0891b2", Other:"#6b7280" };
   const typeAvatars = { Service:"#e8f0fc", Labour:"#fef3c7", Material:"#d1fae5", Equipment:"#cffafe", Other:"#e5e7eb" };
+  const activeItems = catalogItems.filter(i => i.active).length;
+  const servicesCount = catalogItems.filter(i => i.type === "Service").length;
+  const materialsCount = catalogItems.filter(i => i.type === "Material").length;
+  const hasFilters = search || typeFilter !== "All" || statusFilter !== "All";
 
   if (showForm) return (
     <ItemForm
@@ -63,18 +73,40 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
     <div style={{ ...moduleUi.page, minHeight:"100vh", background:"#f8fafc", fontFamily:ff }}>
       <ModuleHeader
         title="Items"
-        helper={`${catalogItems.length} items · products and services with rates, VAT, CIS and active status.`}
+        helper="Manage products and services with rates, VAT, CIS and active status."
         right={<Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Item</Btn>}
       />
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12, marginTop:14, marginBottom:14 }}>
+        {[
+          { label:"Total Items", value:catalogItems.length, color:"#0f172a" },
+          { label:"Active Items", value:activeItems, color:"#059669" },
+          { label:"Services", value:servicesCount, color:"#1d4ed8" },
+          { label:"Materials", value:materialsCount, color:"#0f766e" },
+        ].map(card => (
+          <div key={card.label} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"12px 14px" }}>
+            <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
+            <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
+          </div>
+        ))}
+      </div>
 
       {!isVat && <div style={{ marginTop:12 }}><InfoBox color="#D97706">Your organisation is not VAT registered. VAT rates are hidden on all items.</InfoBox></div>}
 
       <div style={moduleUi.toolbar}>
         <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items…" />
+      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+            {["All",...Object.keys(typeColors)].map(v => <option key={v}>{v}</option>)}
+          </select>
+          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+            {["All","Active","Inactive"].map(v => <option key={v}>{v}</option>)}
+          </select>
+          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>}
+        </div>
       </div>
 
       <div style={{ ...moduleUi.card, overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:680 }}>cv
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:680 }}>
           <thead>
             <tr style={moduleUi.tableHead}>
               {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status","",""] .map(h=>(
@@ -108,12 +140,12 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
                     <span style={{ fontSize:12, color:item.active?"#16A34A":"#94a3b8" }}>{item.active?"Active":"Inactive"}</span>
                   </div>
                 </td>
-                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn></td>
-                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => deleteItem(item)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn></td>
+                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} /></td>
+                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => deleteItem(item)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#dc2626" }} /></td>
               </tr>
             ))}
             {filtered.length===0 && (
-              <tr><td colSpan={9}><EmptyState icon={<Icons.Items />} text="No items found. Create one to add pricing to invoices and quotes." cta={<Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary">New Item</Btn>} /></td></tr>
+              <tr><td colSpan={9}><EmptyState icon={<Icons.Items />} text={catalogItems.length===0 ? "No items yet. Create one to start pricing invoices and quotes." : "No items match your current search or filters."} cta={catalogItems.length===0 ? <Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary">New Item</Btn> : <Btn variant="outline" onClick={()=>{ setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
