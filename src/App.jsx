@@ -348,21 +348,21 @@ export default function App() {
     if (page.startsWith("settings")) return <SettingsPage activeSubPage={page} onNavigate={handleNavigate} />;
 
     switch(page) {
-      case "home":      return <HomePage user={user} onNavigate={handleNavigate} />;
-      case "customers":    return <CustomersPage />;
-      case "customers:new": return <CustomersPage initialShowForm={true} onNavigate={handleNavigate} />;
-      case "items":        return <ItemsPage />;
-      case "items:new":    return <ItemsPage initialShowForm={true} onNavigate={handleNavigate} />;
-      case "quotes":       return <QuotesPage onNavigate={handleNavigate} />;
-      case "quotes:new":   return <QuotesPage initialShowForm={true} onNavigate={handleNavigate} />;
-      case "invoices":     return <InvoicesPage />;
-      case "invoices:new": return <InvoicesPage initialShowForm={true} onNavigate={handleNavigate} />;
-      case "payments":     return <PaymentsPage />;
-      case "payments:new": return <PaymentsPage initialShowForm={true} onNavigate={handleNavigate} />;
-      case "expenses":     return <ExpensesPage />;
-      case "expenses:new": return <ExpensesPage initialShowForm={true} onNavigate={handleNavigate} />;
-      case "ledger":       return <LedgerPage />;
-      default:          return <HomePage user={user} onNavigate={handleNavigate} />;
+       case "home":         return <HomePage key={page} user={user} onNavigate={handleNavigate} />;
+      case "customers":    return <CustomersPage key={page} />;
+      case "customers:new": return <CustomersPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "items":        return <ItemsPage key={page} />;
+      case "items:new":    return <ItemsPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "quotes":       return <QuotesPage key={page} onNavigate={handleNavigate} />;
+      case "quotes:new":   return <QuotesPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "invoices":     return <InvoicesPage key={page} />;
+      case "invoices:new": return <InvoicesPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "payments":     return <PaymentsPage key={page} />;
+      case "payments:new": return <PaymentsPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "expenses":     return <ExpensesPage key={page} />;
+      case "expenses:new": return <ExpensesPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "ledger":       return <LedgerPage key={page} />;
+      default:             return <HomePage key={page} user={user} onNavigate={handleNavigate} />;
     }
   };
 
