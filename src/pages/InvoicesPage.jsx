@@ -3,7 +3,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS, PDF_TEMPLATES } from "..
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag, Ribbon, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
 import { calcTotals } from "../utils/calcTotals";
@@ -592,15 +592,17 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
   }
   
   return (
-    <div style={{ ...moduleUi.page, fontFamily:ff, background:"#f8fafc" }}>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:22 }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, fontFamily:ff }}>
+        <div style={moduleUi.sectionStack}>
+      <div style={moduleUi.summaryGrid}>
         {[
           { label:"Total Invoices", value:summary.total, color:"#0f172a" },
           { label:"Unpaid", value:summary.unpaid, color:"#d97706" },
           { label:"Overdue", value:summary.overdue, color:"#dc2626" },
           { label:"Paid Amount", value:fmt("£",summary.paidAmount), color:"#16A34A" },
         ].map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div key={s.label} style={moduleUi.summaryCard}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
             <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
           </div>
@@ -633,7 +635,7 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
           </thead>
           <tbody>
             {filtered.map(inv=>(
-              <tr key={inv.id} style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
+              <tr key={inv.id} style={{ ...moduleUi.rowHover, cursor:"pointer" }}
                 onClick={()=>setPanel({ mode:"view", invoice:inv })}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
@@ -641,13 +643,16 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
                 <td style={{ padding:"12px 16px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <div style={{ width:26, height:26, borderRadius:"50%", background:"#E86C4A22", color:"#E86C4A", fontWeight:800, fontSize:11, display:"flex", alignItems:"center", justifyContent:"center" }}>{inv.customer?.name?.[0]||"?"}</div>
-                    <span style={{ fontSize:13, color:"#444" }}>{inv.customer?.name||"—"}</span>
+                    <div>
+                      <div style={moduleUi.primaryText}>{inv.customer?.name||"—"}</div>
+                      <div style={moduleUi.secondaryText}>{inv.status==="Overdue" ? "Attention needed" : "Customer account"}</div>
+                    </div>
                   </div>
                 </td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:"#888" }}>{fmtDate(inv.issue_date)}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:inv.status==="Overdue"?"#C0392B":"#888" }}>{fmtDate(inv.due_date)}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt("£",inv.total||0)}</td>
-                <td style={{ padding:"12px 16px" }}><Tag color={STATUS_COLORS[inv.status]||"#888"}>{inv.status||"Draft"}</Tag></td>
+               <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12 }}>{fmtDate(inv.issue_date)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12, color:inv.status==="Overdue"?"#C0392B":"#888", fontWeight:inv.status==="Overdue" ? 700 : 500 }}>{fmtDate(inv.due_date)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell }}>{fmt("£",inv.total||0)}</td>
+                <td style={{ padding:"12px 16px" }}><StatusBadge status={inv.status||"Draft"} /></td>
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
                   <Btn onClick={()=>setPanel({ mode:"edit", invoice:inv })} variant="ghost" size="sm" icon={<Icons.Edit />} />
                   <Btn onClick={()=>window.confirm(`Delete ${inv.invoice_number}?`) && setInvoices(prev=>prev.filter(x=>x.id!==inv.id))} variant="ghost" size="sm" icon={<Icons.Trash />} />
@@ -659,6 +664,8 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
             )}
           </tbody>
         </table>
+      </div>
+        </div>
       </div>
     </div>
   );
