@@ -186,8 +186,6 @@ function ExpenseForm({ existing, onClose, onSave }) {
       <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "11px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, fontFamily: ff }}>← Expenses</button>
-          <span style={{ color: "#d1d5db" }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>{existing ? e.expense_number : "New Expense"}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn onClick={onClose} variant="outline">Cancel</Btn>
