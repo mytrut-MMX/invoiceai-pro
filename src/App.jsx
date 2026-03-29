@@ -58,7 +58,7 @@ export default function App() {
   // Google/GitHub redirects back to "/" with tokens in the URL hash instead of /auth/callback)
   const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
-    ggetSession()
+    getSession()
       .then((session) => {
         if (session?.user) {
           const u = {
