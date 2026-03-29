@@ -7,6 +7,13 @@ import { supabase, supabaseReady } from "../lib/supabase";
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
 import { seedAccountsForUser } from "../utils/ledger/defaultAccounts";
 
+// ─── CURRENCY HELPER ─────────────────────────────────────────────────────────
+// Returns the resolved symbol string (e.g. "£") for the current org currency.
+const useCurrSym = () => {
+  const { orgSettings } = useContext(AppCtx);
+  return CUR_SYM[orgSettings?.currency || "GBP"] || "£";
+};
+
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
 const PERIODS = [
@@ -308,7 +315,7 @@ export function AddAccountForm({ userId, onClose, onSaved }) {
 
 // ─── JOURNAL TAB ──────────────────────────────────────────────────────────────
 
-function EntryRow({ entry, accounts }) {
+function EntryRow({ entry, accounts, currSym }) {
   const [open, setOpen] = useState(false);
   const lines = entry.journal_lines || [];
   const totalDebit = lines.reduce((s, l) => s + (l.debit || 0), 0);
@@ -341,7 +348,7 @@ function EntryRow({ entry, accounts }) {
           </span>
         </td>
         <td style={{ padding:"10px 12px", fontSize:13, color:"#1a1a2e", textAlign:"right", fontVariantNumeric:"tabular-nums" }}>
-          {fmt(totalDebit)}
+          {fmt(currSym, totalDebit)}
         </td>
         <td style={{ padding:"10px 12px", textAlign:"center", color:"#9ca3af", fontSize:11 }}>
           {open ? "▲" : "▼"}
@@ -368,10 +375,10 @@ function EntryRow({ entry, accounts }) {
                       </td>
                       <td style={{ padding:"5px 8px", color:"#6b7280" }}>{line.description || "—"}</td>
                       <td style={{ padding:"5px 8px", textAlign:"right", color: line.debit > 0 ? "#1a1a2e" : "#d1d5db", fontVariantNumeric:"tabular-nums" }}>
-                        {line.debit > 0 ? fmt(line.debit) : "—"}
+                        {line.debit > 0 ? fmt(currSym, line.debit) : "—"}
                       </td>
                       <td style={{ padding:"5px 8px", textAlign:"right", color: line.credit > 0 ? "#1a1a2e" : "#d1d5db", fontVariantNumeric:"tabular-nums" }}>
-                        {line.credit > 0 ? fmt(line.credit) : "—"}
+                        {line.credit > 0 ? fmt(currSym, line.credit) : "—"}
                       </td>
                     </tr>
                   );
@@ -386,6 +393,7 @@ function EntryRow({ entry, accounts }) {
 }
 
 export function JournalTab({ entries, accounts, loading, onNewEntry }) {
+  const currSym = useCurrSym();
   const [search,      setSearch]      = useState("");
   const [sourceFilter,setSourceFilter]= useState("all");
   const [period,      setPeriod]      = useState("this_month");
@@ -467,7 +475,7 @@ export function JournalTab({ entries, accounts, loading, onNewEntry }) {
             </thead>
             <tbody>
               {filtered.map(entry => (
-                <EntryRow key={entry.id} entry={entry} accounts={accounts} />
+                <EntryRow key={entry.id} entry={entry} accounts={accounts} currSym={currSym} />
               ))}
             </tbody>
           </table>
@@ -506,6 +514,7 @@ function computeBalances(accounts, allEntries) {
 }
 
 export function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSeeded, userId }) {
+  const currSym = useCurrSym();
   const [search,   setSearch]   = useState("");
   const [seeding,  setSeeding]  = useState(false);
   const [seedErr,  setSeedErr]  = useState("");
@@ -580,7 +589,7 @@ export function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSee
                   <span style={{ fontSize:11, color:"#9ca3af" }}>({group.length})</span>
                 </div>
                 <span style={{ fontSize:12, fontWeight:700, color:"#374151", fontVariantNumeric:"tabular-nums" }}>
-                  {CUR_SYM}{fmt(Math.abs(typeTotal))}
+                  {fmt(currSym, Math.abs(typeTotal))}
                 </span>
               </div>
 
@@ -607,14 +616,14 @@ export function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSee
                           {a.is_system && <span style={{ marginLeft:6, fontSize:10, color:"#9ca3af", border:"1px solid #e8e8ec", borderRadius:4, padding:"1px 4px" }}>system</span>}
                         </td>
                         <td style={{ padding:"9px 12px", fontSize:12, textAlign:"right", color:"#374151", fontVariantNumeric:"tabular-nums" }}>
-                          {a.totalDebit > 0 ? fmt(a.totalDebit) : "—"}
+                          {a.totalDebit > 0 ? fmt(currSym, a.totalDebit) : "—"}
                         </td>
                         <td style={{ padding:"9px 12px", fontSize:12, textAlign:"right", color:"#374151", fontVariantNumeric:"tabular-nums" }}>
-                          {a.totalCredit > 0 ? fmt(a.totalCredit) : "—"}
+                          {a.totalCredit > 0 ? fmt(currSym, a.totalCredit) : "—"}
                         </td>
                         <td style={{ padding:"9px 12px", fontSize:13, textAlign:"right", fontWeight:600, fontVariantNumeric:"tabular-nums",
                           color: a.balance >= 0 ? "#1a1a2e" : "#dc2626" }}>
-                          {CUR_SYM}{fmt(Math.abs(a.balance))}
+                          {fmt(currSym, Math.abs(a.balance))}
                         </td>
                       </tr>
                     ))}
@@ -632,6 +641,7 @@ export function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSee
 // ─── P&L TAB ──────────────────────────────────────────────────────────────────
 
 export function PLTab({ accounts, allEntries }) {
+  const currSym = useCurrSym();
   const [period,      setPeriod]      = useState("this_month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd,   setCustomEnd]   = useState("");
@@ -663,7 +673,7 @@ export function PLTab({ accounts, allEntries }) {
     <div style={{ marginBottom:24 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, paddingBottom:6, borderBottom:"2px solid #e8e8ec" }}>
         <span style={{ fontSize:13, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em" }}>{title}</span>
-        <span style={{ fontSize:13, fontWeight:700, color, fontVariantNumeric:"tabular-nums" }}>{CUR_SYM}{fmt(total)}</span>
+        <span style={{ fontSize:13, fontWeight:700, color, fontVariantNumeric:"tabular-nums" }}>{fmt(currSym, total)}</span>
       </div>
       {rows.length === 0 ? (
         <div style={{ fontSize:13, color:"#9ca3af", padding:"8px 0" }}>No activity in period</div>
@@ -673,7 +683,7 @@ export function PLTab({ accounts, allEntries }) {
             <span style={{ fontSize:13, color:"#374151" }}>
               <span style={{ color:"#9ca3af", fontSize:11, marginRight:6 }}>{a.code}</span>{a.name}
             </span>
-            <span style={{ fontSize:13, color:"#1a1a2e", fontVariantNumeric:"tabular-nums" }}>{CUR_SYM}{fmt(a.balance)}</span>
+            <span style={{ fontSize:13, color:"#1a1a2e", fontVariantNumeric:"tabular-nums" }}>{fmt(currSym, a.balance)}</span>
           </div>
         ))
       )}
@@ -703,7 +713,7 @@ export function PLTab({ accounts, allEntries }) {
         <div>
           <div style={{ fontSize:12, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4 }}>Net Profit</div>
           <div style={{ fontSize:28, fontWeight:700, color: netProfit >= 0 ? "#15803d" : "#dc2626", fontVariantNumeric:"tabular-nums", letterSpacing:-0.5 }}>
-            {netProfit < 0 ? "−" : ""}{CUR_SYM}{fmt(Math.abs(netProfit))}
+            {netProfit < 0 ? "−" : ""}{fmt(currSym, Math.abs(netProfit))}
           </div>
           <div style={{ fontSize:12, color:"#9ca3af", marginTop:2 }}>
             {fmtDate(start)} – {fmtDate(end)}
@@ -719,7 +729,7 @@ export function PLTab({ accounts, allEntries }) {
       <div style={{ display:"flex", justifyContent:"space-between", padding:"12px 0", borderTop:"2px solid #1a1a2e", marginTop:4 }}>
         <span style={{ fontSize:14, fontWeight:700, color:"#1a1a2e" }}>Net Profit / Loss</span>
         <span style={{ fontSize:14, fontWeight:700, color: netProfit >= 0 ? "#15803d" : "#dc2626", fontVariantNumeric:"tabular-nums" }}>
-          {netProfit < 0 ? "−" : ""}{CUR_SYM}{fmt(Math.abs(netProfit))}
+          {netProfit < 0 ? "−" : ""}{fmt(currSym, Math.abs(netProfit))}
         </span>
       </div>
     </div>
@@ -836,7 +846,7 @@ export default function LedgerPage() {
       )}
 
       {/* Modals */}
-      {showManual && userId && (
+      {showManual && (
         <ManualEntryForm
           accounts={accounts}
           userId={userId}
@@ -844,7 +854,7 @@ export default function LedgerPage() {
           onSaved={handleSaved}
         />
       )}
-      {showAddAccount && userId && (
+      {showAddAccount && (
         <AddAccountForm
           userId={userId}
           onClose={() => setShowAddAccount(false)}
