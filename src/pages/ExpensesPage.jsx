@@ -5,6 +5,7 @@ import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Switch } from "../components/atoms";
+import { moduleUi, EmptyState } from "../components/shared/moduleListUI";
 import { CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 
@@ -386,7 +387,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
   const cols = ["Date","Expense Account","Reference #","Paid Through","Customer","Status","Amount",""];
 
   return (
-    <div style={{ display: "flex", height: "100%", fontFamily: ff, background: "#fff" }}>
+    <div style={{ display: "flex", height: "100%", fontFamily: ff, background: "#f8fafc" }}>
 
       {/* ── LEFT FILTER PANEL ── */}
       <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid #e8e8ec", background: "#fff", padding: "14px 0", overflowY: "auto" }}>
@@ -415,11 +416,11 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
       </div>
 
       {/* ── MAIN CONTENT ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc", padding: "14px" }}>
 
         {/* header */}
-        <div style={{ padding: "16px 22px 12px", borderBottom: "1px solid #e8e8ec", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: "#1a1a2e", margin: 0 }}>Expenses</h1>
+       <div style={{ padding: "16px 20px 10px", border: "1px solid #e2e8f0", borderRadius: 12, background:"#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", margin: 0 }}>Expenses</h1>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn>
             <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn>
@@ -427,8 +428,8 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
         </div>
 
         {/* search toolbar */}
-        <div style={{ padding: "10px 22px", borderBottom: "1px solid #f0f0f4", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, maxWidth: 340, background: "#f9fafb", border: "1px solid #e8e8ec", borderRadius: 6, padding: "7px 12px" }}>
+        <div style={{ ...moduleUi.toolbar, marginTop: 10, marginBottom: 10 }}>
+          <div style={{ ...moduleUi.searchWrap, maxWidth: 380 }}>
             <Icons.Search />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search expenses…"
@@ -441,18 +442,12 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
         </div>
 
         {/* table */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ ...moduleUi.card, flex: 1, overflowY: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
             <thead>
-              <tr style={{ background: "#f9fafb", position: "sticky", top: 0, zIndex: 1 }}>
+              <tr style={{ ...moduleUi.tableHead, position: "sticky", top: 0, zIndex: 1 }}>
                 {cols.map(h => (
-                  <th key={h} style={{
-                    padding: "8px 16px",
-                    textAlign: ["Amount"].includes(h) ? "right" : "left",
-                    fontSize: 11, fontWeight: 700, color: "#9ca3af",
-                    textTransform: "uppercase", letterSpacing: "0.06em",
-                    borderBottom: "1px solid #e8e8ec", whiteSpace: "nowrap",
-                  }}>{h}</th>
+                  <th key={h} style={{ ...moduleUi.th, textAlign: ["Amount"].includes(h) ? "right" : "left" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -525,14 +520,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
               ))}
 
               {sortedFiltered.length === 0 && (
-                <tr>
-                  <td colSpan={8} style={{ padding: "60px 20px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
-                    {expenses.length === 0 ? (
-                      <>No expenses yet. <button onClick={() => { setEditingExp(null); setShowForm(true); }}
-                        style={{ color: "#1e6be0", background: "none", border: "none", cursor: "pointer", fontSize: 13, fontFamily: ff, fontWeight: 600 }}>Add your first expense</button></>
-                    ) : "No expenses match your filter or search."}
-                  </td>
-                </tr>
+                  <tr><td colSpan={8}><EmptyState icon={<Icons.Expenses />} text={expenses.length === 0 ? "No expenses yet." : "No expenses match your filter or search."} cta={<Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); }}>Clear filters</Btn>} /></td></tr>
               )}
             </tbody>
           </table>
