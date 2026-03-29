@@ -3,6 +3,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS, PDF_TEMPLATES } from "..
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag, Ribbon, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
+import { moduleUi, ModulePageHeader, ModuleToolbar, ModuleStatsRow, ModuleTableCard, SearchInput, EmptyStatePanel, StatusBadge } from "../components/shared/moduleListUI";
 import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
 import { calcTotals } from "../utils/calcTotals";
@@ -180,17 +181,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, display:"flex", alignItems:"center", gap:4 }}>
             ← Invoices
           </button>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
-                ← Invoices
-              </button>
-              <span style={{ color:"#d1d5db" }}>/</span>
-              <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
-                {isEdit ? inv.invoice_number : "New Invoice"}
-              </span>
-            </div>
-          </div>
+           <div style={{ flex:1, minWidth:0 }} />
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
             {isEdit && status!=="Paid" && (
               <Btn onClick={()=>setShowPaidModal(true)} variant="success" icon={<Icons.Check />}>Mark Paid</Btn>

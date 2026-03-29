@@ -5,6 +5,7 @@ import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Switch } from "../components/atoms";
+import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
 import { CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 
@@ -18,21 +19,6 @@ const STATUS_STYLE = {
 
 function expNextNum(expenses) {
   return nextNum("EXP", expenses.map(e => ({ invoice_number: e.expense_number })));
-}
-
-function StatusBadge({ status }) {
-  const s = STATUS_STYLE[status] || { color: "#6b7280", bg: "#f3f4f6" };
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "3px 9px", borderRadius: 20,
-      background: s.bg, color: s.color,
-      fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-      {status}
-    </span>
-  );
 }
 
 // ─── CSV Export ───────────────────────────────────────────────────────────────
@@ -186,8 +172,6 @@ function ExpenseForm({ existing, onClose, onSave }) {
       <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "11px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, fontFamily: ff }}>← Expenses</button>
-          <span style={{ color: "#d1d5db" }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>{existing ? e.expense_number : "New Expense"}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn onClick={onClose} variant="outline">Cancel</Btn>
@@ -332,6 +316,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
   const [editingExp,  setEditingExp]  = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [search,      setSearch]      = useState("");
+  const [billableFilter, setBillableFilter] = useState("All");
 
   const panelFiltered = useMemo(() => filterExpenses(expenses, activeFilter), [expenses, activeFilter]);
 
@@ -348,11 +333,22 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
     );
   }, [panelFiltered, search]);
 
+  const filteredByBillable = useMemo(() => {
+    if (billableFilter === "All") return filtered;
+    if (billableFilter === "Billable") return filtered.filter(e => !!e.billable);
+    if (billableFilter === "With Receipt") return filtered.filter(e => !!e.receipt_url || !!e.receipt);
+    return filtered;
+  }, [filtered, billableFilter]);
+  
   const sortedFiltered = useMemo(
-    () => [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date)),
-    [filtered]
+    () => [...filteredByBillable].sort((a, b) => new Date(b.date) - new Date(a.date)),
+    [filteredByBillable]
   );
-
+  const hasFilters = search || activeFilter !== "all" || billableFilter !== "All";
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.total || 0), 0);
+  const billableCount = expenses.filter(e => e.billable).length;
+  const withReceiptCount = expenses.filter(e => !!e.receipt_url || !!e.receipt).length;
+  
   const countFor = key => filterExpenses(expenses, key).length;
 
   const onSave = exp => {
@@ -388,7 +384,9 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
   const cols = ["Date","Expense Account","Reference #","Paid Through","Customer","Status","Amount",""];
 
   return (
-    <div style={{ display: "flex", height: "100%", fontFamily: ff, background: "#fff" }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, maxWidth: 1320, fontFamily: ff }}>
+        <div style={{ display: "flex", height: "100%" }}>
 
       {/* ── LEFT FILTER PANEL ── */}
       <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid #e8e8ec", background: "#fff", padding: "14px 0", overflowY: "auto" }}>
@@ -417,44 +415,46 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
       </div>
 
       {/* ── MAIN CONTENT ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "0 0 0 14px", gap:12 }}>
 
-        {/* header */}
-        <div style={{ padding: "16px 22px 12px", borderBottom: "1px solid #e8e8ec", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: "#1a1a2e", margin: 0 }}>Expenses</h1>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn>
-            <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn>
-          </div>
+        <ModuleHeader
+          title="Expenses"
+          helper={`${expenses.length} records · monitor spend, billables, and documentation.`}
+          right={<div style={{ display: "flex", gap: 8 }}><Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn><Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn></div>}
+        />
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginTop:12, marginBottom:10 }}>
+          {[
+            { label:"Total Expenses", value:fmt(currSym, totalExpenses), color:"#0f172a" },
+            { label:"Billable", value:billableCount, color:"#1d4ed8" },
+            { label:"With Receipt", value:withReceiptCount, color:"#0f766e" },
+          ].map(card => (
+            <div key={card.label} style={moduleUi.summaryCard}>
+              <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
+              <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
+            </div>
+          ))}
         </div>
-
+        
         {/* search toolbar */}
-        <div style={{ padding: "10px 22px", borderBottom: "1px solid #f0f0f4", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, maxWidth: 340, background: "#f9fafb", border: "1px solid #e8e8ec", borderRadius: 6, padding: "7px 12px" }}>
-            <Icons.Search />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search expenses…"
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: "#1a1a2e", background: "transparent", fontFamily: ff }} />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0, fontSize: 14, lineHeight: 1, fontFamily: ff }}>×</button>
-            )}
+        <div style={{ ...moduleUi.toolbar, marginTop: 10, marginBottom: 10 }}>
+          <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search expenses…" />
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+            <select value={billableFilter} onChange={e=>setBillableFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+              {["All","Billable","With Receipt"].map(v => <option key={v}>{v}</option>)}
+            </select>
+            {hasFilters && <Btn variant="ghost" size="sm" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>}
+            <span style={{ fontSize: 12, color: "#9ca3af" }}>{sortedFiltered.length} record{sortedFiltered.length !== 1 ? "s" : ""}</span>
           </div>
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>{sortedFiltered.length} record{sortedFiltered.length !== 1 ? "s" : ""}</span>
         </div>
 
         {/* table */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ ...moduleUi.card, flex: 1, overflowY: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
             <thead>
-              <tr style={{ background: "#f9fafb", position: "sticky", top: 0, zIndex: 1 }}>
+              <tr style={{ ...moduleUi.tableHead, position: "sticky", top: 0, zIndex: 1 }}>
                 {cols.map(h => (
-                  <th key={h} style={{
-                    padding: "8px 16px",
-                    textAlign: ["Amount"].includes(h) ? "right" : "left",
-                    fontSize: 11, fontWeight: 700, color: "#9ca3af",
-                    textTransform: "uppercase", letterSpacing: "0.06em",
-                    borderBottom: "1px solid #e8e8ec", whiteSpace: "nowrap",
-                  }}>{h}</th>
+                  <th key={h} style={{ ...moduleUi.th, textAlign: ["Amount"].includes(h) ? "right" : "left" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -520,6 +520,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
                     <div style={{ display: "flex", gap: 2, opacity: 0 }} className="row-actions"
                       onMouseEnter={e => e.currentTarget.style.opacity = 1}
                       onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                      <Btn size="sm" variant="ghost" icon={<Icons.Edit />} onClick={() => { setEditingExp(exp); setShowForm(true); }} />
                       <Btn size="sm" variant="ghost" icon={<Icons.Trash />} onClick={() => onDelete(exp.id)} />
                     </div>
                   </td>
@@ -527,14 +528,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
               ))}
 
               {sortedFiltered.length === 0 && (
-                <tr>
-                  <td colSpan={8} style={{ padding: "60px 20px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
-                    {expenses.length === 0 ? (
-                      <>No expenses yet. <button onClick={() => { setEditingExp(null); setShowForm(true); }}
-                        style={{ color: "#1e6be0", background: "none", border: "none", cursor: "pointer", fontSize: 13, fontFamily: ff, fontWeight: 600 }}>Add your first expense</button></>
-                    ) : "No expenses match your filter or search."}
-                  </td>
-                </tr>
+                  <tr><td colSpan={8}><EmptyState icon={<Icons.Expenses />} text={expenses.length === 0 ? "No expenses yet. Record your first expense to start tracking spend." : "No expenses match your current search or filters."} cta={expenses.length===0 ? <Btn variant="primary" onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn> : <Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>} /></td></tr>
               )}
             </tbody>
           </table>
@@ -545,6 +539,8 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
       <style>{`
         tr:hover .row-actions { opacity: 1 !important; }
       `}</style>
+        </div>
+      </div>
     </div>
   );
 }

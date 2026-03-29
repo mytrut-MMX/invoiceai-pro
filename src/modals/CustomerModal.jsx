@@ -134,10 +134,6 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
           >
             ← Customers
           </button>
-          <span style={{ color: "#d1d5db" }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#111110" }}>
-            {existing ? existing.name || "Edit Customer" : "New Customer"}
-          </span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn onClick={onClose} variant="outline">Cancel</Btn>

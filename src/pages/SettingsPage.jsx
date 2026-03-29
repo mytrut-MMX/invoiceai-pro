@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../constants";
+import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS, normalizeCurrencyCode } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Btn, SlideToggle } from "../components/atoms";
@@ -121,7 +121,7 @@ export default function SettingsPage({ onNavigate }) {
   const [city,         setCity]         = useState(org.city||"");
   const [postcode,     setPostcode]     = useState(org.postcode||"");
   const [country,      setCountry]      = useState(org.country||"United Kingdom");
-  const [currency,     setCurrency]     = useState(org.currency||"GBP");
+  const [currency,     setCurrency]     = useState(normalizeCurrencyCode(org.currency||"GBP"));
   const [timezone,     setTimezone]     = useState(org.timezone||"(UTC+00:00) London");
   const [industry,     setIndustry]     = useState(org.industry||"");
   const [vatReg,       setVatReg]       = useState(org.vatReg||"No");
@@ -173,7 +173,7 @@ export default function SettingsPage({ onNavigate }) {
   const buildOrgSettings = () => ({
     orgName, email, phone, website,
     street, city, postcode, country,
-    currency, timezone, industry,
+    currency: normalizeCurrencyCode(currency), timezone, industry,
     vatReg, vatNum,
     cisReg: cisEnabled ? "Yes" : "No",
     cisRole, cisRate: cisDefaultRate, cisUtrNo: cisContractorUTR, cisRegistrationStatus, crn,
@@ -187,37 +187,17 @@ export default function SettingsPage({ onNavigate }) {
     },
   });
 
-  const saveCIS = () => {
+  const handleSaveOrg = () => {
+    if (crn && !validateUkCrn(crn)) {
+      window.alert("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
+      return;
+    }
     if (cisEnabled) {
       const utr = cisContractorUTR.replace(/\D/g, "");
       if (utr.length > 0 && utr.length !== 10) {
         window.alert("Please enter a valid UTR number (10 digits).");
         return;
       }
-    }
-    const cisData = {
-      enabled: cisEnabled,
-      contractorName: cisContractorName,
-      contractorUTR: cisContractorUTR,
-      employerRef: cisEmployerRef,
-      defaultRate: cisDefaultRate,
-      role: cisRole,
-      registrationStatus: cisRegistrationStatus,
-    };
-    const existing = JSON.parse(localStorage.getItem("invoicesaga_settings") || "{}");
-    localStorage.setItem("invoicesaga_settings", JSON.stringify({
-      ...existing,
-      cis: cisData,
-    }));
-    setOrgSettings(buildOrgSettings());
-    setSaved(true);
-    setTimeout(()=>setSaved(false), 2500);
-  };
-  
-  const handleSaveOrg = () => {
-    if (crn && !validateUkCrn(crn)) {
-      window.alert("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
-      return;
     }
     setOrgSettings(buildOrgSettings());
     const existingSettings = JSON.parse(localStorage.getItem('invoicesaga_settings') || '{}');
@@ -264,6 +244,19 @@ export default function SettingsPage({ onNavigate }) {
   };
 
   const removePayMethod = (m) => setCustomPayMethods(p=>p.filter(x=>x!==m));
+
+  const SaveActions = ({ label = "Save settings" }) => (
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:16 }}>
+      {saved && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
+          <Icons.Check /> Settings saved!
+        </div>
+      )}
+      <Btn onClick={handleSaveOrg} variant="primary" icon={<Icons.Save />} style={{ background:saved?"#059669":"#1e6be0", color:"#fff" }}>
+        {label}
+      </Btn>
+    </div>
+  );
 
   const requestTaxNumberEdit = (unlockField) => {
     const shouldUnlock = window.confirm("Are you sure this is the correct number?");
@@ -338,7 +331,7 @@ export default function SettingsPage({ onNavigate }) {
             <Select value={country} onChange={setCountry} options={COUNTRIES} />
           </Field>
           <Field label="Currency">
-            <Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST} />
+            <Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST.map(c => ({ value: normalizeCurrencyCode(c), label: c }))} />
           </Field>
           <Field label="Timezone">
             <Select value={timezone} onChange={setTimezone} options={TIMEZONES} />
@@ -360,6 +353,7 @@ export default function SettingsPage({ onNavigate }) {
 </div>
         </div>
       </Section>)}
+      {activeTab === "org" && <SaveActions label="Save organisation settings" />}
 
       {/* Tax */}
      {activeTab === "tax" && (<Section title="Tax Registration">
@@ -422,13 +416,11 @@ export default function SettingsPage({ onNavigate }) {
                 />
               </Field>
 
-              <div style={{ gridColumn:"1/-1" }}>
-                <Btn variant="primary" onClick={saveCIS}>Save CIS Settings</Btn>
-              </div>
             </div>
           )}
         </div>
        </Section>)}
+      {activeTab === "tax" && <SaveActions label="Save tax settings" />}
       
       {/* Bank */}
       {activeTab === "bank" && (<Section title="Bank Details (shown on invoices)">
@@ -440,6 +432,7 @@ export default function SettingsPage({ onNavigate }) {
           <Field label="SWIFT / BIC (optional)"><Input value={bankSwift} onChange={setBankSwift} /></Field>
         </div>
       </Section>)}
+      {activeTab === "bank" && <SaveActions label="Save bank settings" />}
 
       {/* PDF Templates */}
       {activeTab === "templates" && (<Section title="PDF Invoice Templates">
@@ -511,6 +504,7 @@ export default function SettingsPage({ onNavigate }) {
             style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", resize:"vertical", boxSizing:"border-box" }} />
         </Field>
       </Section>)}
+      {activeTab === "templates" && <SaveActions label="Save template settings" />}
 
       {/* Sidebar theme */}
       {activeTab === "appearance" && (<Section title="Sidebar Appearance">
@@ -573,6 +567,7 @@ export default function SettingsPage({ onNavigate }) {
           <div style={{ marginLeft:"auto", width:20, height:20, borderRadius:"50%", background:accentColor }} />
         </div>
       </Section>)}
+      {activeTab === "appearance" && <SaveActions label="Save appearance settings" />}
 
       {/* Payment Methods */}
       {activeTab === "payments" && (<Section title="Custom Payment Methods">
@@ -592,6 +587,7 @@ export default function SettingsPage({ onNavigate }) {
           <Btn onClick={addPayMethod} variant="outline" icon={<Icons.Plus />}>Add</Btn>
         </div>
       </Section>)}
+      {activeTab === "payments" && <SaveActions label="Save payment settings" />}
 
       {/* General Ledger */}
       {activeTab === "ledger" && (<Section title="General Ledger">
@@ -616,16 +612,6 @@ export default function SettingsPage({ onNavigate }) {
           </div>
         </div>
       </Section>)}
-
-      {/* Save */}
-      <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-        {saved && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
-            <Icons.Check /> Settings saved!
-          </div>
-        )}
-        <Btn onClick={handleSaveOrg} variant="primary" icon={<Icons.Save />} style={{ background:saved?"#059669":"#1e6be0", color:"#fff" }}>Save Settings</Btn>
-      </div>
 
       {/* Template Preview Modal */}
       {previewTpl && (

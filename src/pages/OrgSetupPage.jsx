@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ff, INDUSTRIES, COUNTRIES, CURRENCIES_LIST, TIMEZONES, UK_COUNTIES, CIS_RATES } from "../constants";
+import { ff, INDUSTRIES, COUNTRIES, CURRENCIES_LIST, TIMEZONES, UK_COUNTIES, CIS_RATES, normalizeCurrencyCode } from "../constants";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Toggle, Switch, SlideToggle, Checkbox, InfoBox } from "../components/atoms";
 import { validateVatNumber, formatPhoneNumber, validateUkCrn } from "../utils/helpers";
@@ -15,7 +15,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const [street, setStreet] = useState(initialData?.street||"");
   const [city, setCity] = useState(initialData?.city||"");
   const [postcode, setPostcode] = useState(initialData?.postcode||"");
-  const [currency, setCurrency] = useState(initialData?.currency||"GBP - British Pound Sterling");
+  const [currency, setCurrency] = useState(normalizeCurrencyCode(initialData?.currency)||"GBP");
   const [timezone, setTimezone] = useState(initialData?.timezone||"(UTC+00:00) London");
   const [vatReg, setVatReg] = useState(initialData?.vatReg==="Yes"||false);
   const [vatNum, setVatNum] = useState(initialData?.vatNum||"");
@@ -47,7 +47,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const handleComplete = () => {
     if(!canSubmit){ setVatNumTouched(true); return; }
     onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode,
-      currency, timezone, email:orgEmail, phone:formatPhoneNumber(orgPhone),
+      currency: normalizeCurrencyCode(currency), timezone, email:orgEmail, phone:formatPhoneNumber(orgPhone),
       deliversItems,
       vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
       cisReg: cisReg ? "Yes" : "No", cisContractor, cisSub, cisRate, cisUtr });
@@ -115,7 +115,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           )}
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <Field label="Currency" required><Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST} /></Field>
+            <Field label="Currency" required><Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST.map(c => ({ value: normalizeCurrencyCode(c), label: c }))} /></Field>
             <Field label="Time Zone"><Select value={timezone} onChange={setTimezone} options={TIMEZONES} /></Field>
           </div>
 

@@ -2,7 +2,8 @@ import { useState, useMemo, useContext } from "react";
 import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Btn, Tag } from "../components/atoms";
+import { Btn } from "../components/atoms";
+import { moduleUi, ModulePageHeader, ModuleToolbar, ModuleStatsRow, ModuleTableCard, SearchInput, EmptyStatePanel, StatusBadge } from "../components/shared/moduleListUI";
 import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
@@ -84,8 +85,12 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
   const [editingCustomer, setEditingCustomer] = useState(null);
+
   const [showForm,        setShowForm]        = useState(initialShowForm);
   const [search,          setSearch]          = useState("");
+  const [showForm, setShowForm] = useState(initialShowForm);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
 
   // ─── handlers ─────────────────────────────────────────────────────────────
   const deleteCustomer = (c) => {
@@ -99,6 +104,19 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   };
 
   const onSave = (c) => {
+  const filtered = customers.filter(c => {
+    const matchSearch =
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.email.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === "All" || c.type === typeFilter;
+    return matchSearch && matchType;
+  });
+  const totalInvoicedAll = (invoices || []).reduce((s, i) => s + Number(i.total || 0), 0);
+  const totalCollectedAll = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+  const totalOutstandingAll = Math.max(0, totalInvoicedAll - totalCollectedAll);
+  const hasFilters = search || typeFilter !== "All";
+
+  const onSave = c => {
     setCustomers(p => upsert(p, c));
     if (initialShowForm && onNavigate) { onNavigate("customers"); return; }
     setShowForm(false);

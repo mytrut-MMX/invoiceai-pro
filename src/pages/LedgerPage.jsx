@@ -445,7 +445,7 @@ export function JournalTab({ entries, accounts, loading, onNewEntry }) {
           placeholder="Search entries…"
           style={{ flex:1, minWidth:160, padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }}
         />
-        <Btn variant="primary" onClick={onNewEntry} style={{ whiteSpace:"nowrap" }}>
+        <Btn variant="primary" onClick={onNewEntry} style={{ whiteSpace:"nowrap" }} disabled={!canCreateManual}>
           + Manual Entry
         </Btn>
       </div>
@@ -555,7 +555,7 @@ export function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSee
           placeholder="Search accounts…"
           style={{ flex:1, padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }}
         />
-        <Btn variant="primary" onClick={onNewAccount}>+ Add Account</Btn>
+        <Btn variant="primary" onClick={onNewAccount} disabled={!userId}>+ Add Account</Btn>
       </div>
 
       {loading ? (
@@ -692,6 +692,11 @@ export function PLTab({ accounts, allEntries }) {
 
   return (
     <div>
+      {!hasLedgerAccess && (
+        <div style={{ marginBottom:16, border:"1px solid #fde68a", background:"#fffbeb", borderRadius:8, padding:"12px 14px", color:"#92400e", fontSize:13 }}>
+          Connect with a Supabase-authenticated account to view and post General Ledger data.
+        </div>
+      )}
       {/* Period picker */}
       <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:24, alignItems:"center" }}>
         <Select value={period} onChange={setPeriod} options={PERIODS} style={{ minWidth:140 }} />
@@ -754,6 +759,7 @@ export default function LedgerPage() {
   const [userId,         setUserId]         = useState(null);
   const [showManual,     setShowManual]     = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
+  const [actionError,    setActionError]    = useState("");
 
   // Fetch auth user id + accounts + journal entries
   const load = async () => {
@@ -788,6 +794,18 @@ export default function LedgerPage() {
     setShowAddAccount(false);
     load();
   };
+  
+const requiresAuthMsg = "Please sign in with Supabase (Google/email auth) to use ledger posting features.";
+  const openManualModal = () => {
+    if (!userId) { setActionError(requiresAuthMsg); return; }
+    setActionError("");
+    setShowManual(true);
+  };
+  const openAddAccountModal = () => {
+    if (!userId) { setActionError(requiresAuthMsg); return; }
+    setActionError("");
+    setShowAddAccount(true);
+  };
 
   return (
     <div style={{ maxWidth:960, margin:"0 auto", padding:"28px 20px", fontFamily:ff }}>
@@ -804,6 +822,11 @@ export default function LedgerPage() {
           </div>
         </div>
       </div>
+      {actionError && (
+        <div style={{ marginBottom:16, border:"1px solid #fecaca", background:"#fef2f2", borderRadius:8, padding:"10px 12px", color:"#991b1b", fontSize:12 }}>
+          {actionError}
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display:"flex", gap:2, borderBottom:"2px solid #e8e8ec", marginBottom:24 }}>
@@ -828,7 +851,8 @@ export default function LedgerPage() {
           entries={entries}
           accounts={accounts}
           loading={loading}
-          onNewEntry={() => setShowManual(true)}
+          onNewEntry={openManualModal}
+          canCreateManual={Boolean(userId)}
         />
       )}
       {tab === "accounts" && (
@@ -836,13 +860,13 @@ export default function LedgerPage() {
           accounts={accounts}
           allEntries={entries}
           loading={loading}
-          onNewAccount={() => setShowAddAccount(true)}
+          onNewAccount={openAddAccountModal}
           userId={userId}
           onSeeded={load}
         />
       )}
       {tab === "pl" && (
-        <PLTab accounts={accounts} allEntries={entries} />
+        <PLTab accounts={accounts} allEntries={entries} hasLedgerAccess={Boolean(userId)} />
       )}
 
       {/* Modals */}

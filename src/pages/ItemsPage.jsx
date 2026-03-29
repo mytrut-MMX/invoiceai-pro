@@ -3,6 +3,7 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag, Switch, InfoBox } from "../components/atoms";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 
@@ -13,6 +14,8 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
   const [showForm, setShowForm] = useState(initialShowForm);
   const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const deleteItem = (item) => {
     const linked = [...(invoices||[]), ...(quotes||[])].filter(doc =>
@@ -24,10 +27,14 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
     if (window.confirm(msg)) setCatalogItems(p => p.filter(x => x.id !== item.id));
   };
 
-  const filtered = catalogItems.filter(i =>
-    i.name.toLowerCase().includes(search.toLowerCase()) ||
-    i.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = catalogItems.filter(i => {
+    const matchSearch =
+      i.name.toLowerCase().includes(search.toLowerCase()) ||
+      i.description.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === "All" || i.type === typeFilter;
+    const matchStatus = statusFilter === "All" || (statusFilter === "Active" ? !!i.active : !i.active);
+    return matchSearch && matchType && matchStatus;
+  });
 
   const onSave = item => {
     setCatalogItems(p => {
@@ -44,6 +51,10 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
 
   const typeColors = { Service:"#1e6be0", Labour:"#d97706", Material:"#059669", Equipment:"#0891b2", Other:"#6b7280" };
   const typeAvatars = { Service:"#e8f0fc", Labour:"#fef3c7", Material:"#d1fae5", Equipment:"#cffafe", Other:"#e5e7eb" };
+  const activeItems = catalogItems.filter(i => i.active).length;
+  const servicesCount = catalogItems.filter(i => i.type === "Service").length;
+  const materialsCount = catalogItems.filter(i => i.type === "Material").length;
+  const hasFilters = search || typeFilter !== "All" || statusFilter !== "All";
 
   if (showForm) return (
     <ItemForm
@@ -59,84 +70,90 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
   );
   
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-        <div>
-          <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 3px" }}>Items</h1>
-          <p style={{ color:"#6b7280", fontSize:13, margin:0 }}>Products and services you sell</p>
-        </div>
-        <Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Item</Btn>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, fontFamily:ff }}>
+        <div style={moduleUi.sectionStack}>
+      <ModuleHeader
+        title="Items"
+        helper="Manage products and services with rates, VAT, CIS and active status."
+        right={<Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Item</Btn>}
+      />
+      <div style={moduleUi.summaryGrid}>
+        {[
+          { label:"Total Items", value:catalogItems.length, color:"#0f172a" },
+          { label:"Active Items", value:activeItems, color:"#059669" },
+          { label:"Services", value:servicesCount, color:"#1d4ed8" },
+          { label:"Materials", value:materialsCount, color:"#0f766e" },
+        ].map(card => (
+          <div key={card.label} style={moduleUi.summaryCard}>
+            <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
+            <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
+          </div>
+        ))}
       </div>
 
-      {!isVat && (
-        <div style={{ marginBottom:14 }}>
-          <InfoBox color="#D97706">Your organisation is not VAT registered. VAT rates are hidden on all items.</InfoBox>
-        </div>
-      )}
+      {!isVat && <div style={{ marginTop:12 }}><InfoBox color="#D97706">Your organisation is not VAT registered. VAT rates are hidden on all items.</InfoBox></div>}
 
-      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
-        <div style={{ padding:"11px 16px", borderBottom:"1px solid #e8e8ec", display:"flex", alignItems:"center", gap:9 }}>
-          <Icons.Search />
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items…"
-            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1a1a2e", background:"transparent", fontFamily:ff }} />
+      <div style={moduleUi.toolbar}>
+        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items…" />
+      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+            {["All",...Object.keys(typeColors)].map(v => <option key={v}>{v}</option>)}
+          </select>
+          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+            {["All","Active","Inactive"].map(v => <option key={v}>{v}</option>)}
+          </select>
+          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>}
         </div>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
+      </div>
+
+      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:680 }}>
           <thead>
-            <tr style={{ background:"#f9fafb" }}>
-              {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status","",""].map(h=>(
-                <th key={h} style={{ padding:"8px 18px", textAlign:h==="Rate"?"right":"left", fontSize:10, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #e8e8ec" }}>{h}</th>
+            <tr style={moduleUi.tableHead}>
+              {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status","",""] .map(h=>(
+                <th key={h} style={{ ...moduleUi.th, textAlign:h==="Rate"?"right":"left" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map(item=>(
-             <tr key={item.id}
-                onClick={() => { setEditingItem(item); setShowForm(true); }}
-                style={{ borderBottom:"1px solid #f3f4f6", cursor:"pointer" }}
-                onMouseEnter={e=>e.currentTarget.style.background="#f9fafb"}
-                onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <td style={{ padding:"12px 18px" }}>
+             <tr key={item.id} onClick={() => { setEditingItem(item); setShowForm(true); }} style={{ ...moduleUi.rowHover, cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                <td style={moduleUi.td}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     {item.photo
                       ? <img src={item.photo} alt="" style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
                       : <div style={{ width:30, height:30, borderRadius:"50%", background:typeAvatars[item.type]||"#e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:typeColors[item.type]||"#6b7280", flexShrink:0 }}>{(item.type||"—")[0]}</div>
                     }
                     <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e" }}>{item.name}</div>
-                      <div style={{ fontSize:11, color:"#6b7280", marginTop:1 }}>{item.description}</div>
+                      <div style={moduleUi.primaryText}>{item.name}</div>
+                      <div style={moduleUi.secondaryText}>{item.description}</div>
                     </div>
                   </div>
                 </td>
-                <td style={{ padding:"12px 18px" }}><Tag color={typeColors[item.type]||"#6b7280"}>{item.type||"—"}</Tag></td>
-                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:700, color:"#1a1a2e", textAlign:"right" }}>{fmt("£",item.rate)}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.unit}</td>
-                {isVat && <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{item.taxRate}%</td>}
-                <td style={{ padding:"12px 18px" }}>
-                 {isCisOrg && item.cis?.enabled
-                    ? <Tag color="#D97706">CIS {item.cis?.labour ?? 100}% labour</Tag>
-                    : <span style={{ fontSize:12, color:"#CCC" }}>—</span>}
-                </td>
-                <td style={{ padding:"12px 18px" }} onClick={e=>e.stopPropagation()}>
+                <td style={moduleUi.td}><Tag color={typeColors[item.type]||"#6b7280"}>{item.type||"—"}</Tag></td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell }}>{fmt("£",item.rate)}</td>
+                <td style={moduleUi.td}>{item.unit}</td>
+                {isVat && <td style={moduleUi.td}>{item.taxRate}%</td>}
+                <td style={moduleUi.td}>{isCisOrg && item.cis?.enabled ? <Tag color="#D97706">CIS {item.cis?.labour ?? 100}% labour</Tag> : <span style={{ fontSize:12, color:"#94a3b8" }}>—</span>}</td>
+                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}>
                   <div style={{ display:"flex", alignItems:"center", gap:7 }}>
                     <Switch checked={item.active} onChange={()=>toggleActive(item.id)} />
-                    <span style={{ fontSize:12, color:item.active?"#16A34A":"#9CA3AF" }}>{item.active?"Active":"Inactive"}</span>
+                    <span style={{ fontSize:12, color:item.active?"#16A34A":"#94a3b8" }}>{item.active?"Active":"Inactive"}</span>
                   </div>
                 </td>
-                <td style={{ padding:"12px 18px" }} onClick={e=>e.stopPropagation()}>
-                  <Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
-                </td>
-                <td style={{ padding:"12px 18px" }} onClick={e=>e.stopPropagation()}>
-                  <Btn onClick={() => deleteItem(item)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn>
-                </td>
+                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} /></td>
+                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => deleteItem(item)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#dc2626" }} /></td>
               </tr>
             ))}
             {filtered.length===0 && (
-              <tr><td colSpan={8} style={{ padding:"40px 18px", textAlign:"center", color:"#CCC", fontSize:13 }}>No items. Click "New Item" to add one.</td></tr>
+              <tr><td colSpan={9}><EmptyState icon={<Icons.Items />} text={catalogItems.length===0 ? "No items yet. Create one to start pricing invoices and quotes." : "No items match your current search or filters."} cta={catalogItems.length===0 ? <Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary">New Item</Btn> : <Btn variant="outline" onClick={()=>{ setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
       </div>
-      
+        </div>
+      </div>
     </div>
   );
 }

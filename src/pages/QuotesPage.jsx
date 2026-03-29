@@ -4,6 +4,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from 
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag, Ribbon } from "../components/atoms";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { PDF_TEMPLATES } from "../constants";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
@@ -113,17 +114,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
             ← Quotes
           </button>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
-                ← Quotes
-              </button>
-              <span style={{ color:"#d1d5db" }}>/</span>
-              <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
-                {isEdit ? q.quote_number : "New Quote"}
-              </span>
-            </div>
-          </div>
+           <div style={{ flex:1, minWidth:0 }} />
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
             {isEdit && (
               <Btn onClick={()=>onConvertToInvoice(buildQuote("Invoiced"))} disabled={isLockedAcceptedQuote} variant="outline" icon={<Icons.Receipt />}>
@@ -469,11 +460,13 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
   };
 
   const summary = {
-    total:    quotes.length,
+    total: quotes.length,
+    draft: quotes.filter(q=>q.status==="Draft").length,
+    sent: quotes.filter(q=>q.status==="Sent").length,
     accepted: quotes.filter(q=>q.status==="Accepted").length,
-    pending:  quotes.filter(q=>["Draft","Sent"].includes(q.status)).length,
-    value:    quotes.filter(q=>q.status==="Accepted").reduce((s,q)=>s+(q.total||0),0),
+    invoiced: quotes.filter(q=>q.status==="Invoiced").length,
   };
+  const hasFilters = search || filterStatus !== "All";
 
   if (isViewPage) {
     return (
@@ -488,40 +481,30 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
   }
 
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
+    <div style={moduleUi.pageCanvas}>
+      <div style={{ ...moduleUi.page, fontFamily:ff }}>
+        <div style={moduleUi.sectionStack}>
       {/* Summary cards */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:22 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:16 }}>
         {[
-          { label:"Total Quotes",   value:String(summary.total),       color:"#1A1A1A" },
-          { label:"Accepted",       value:String(summary.accepted),     color:"#16A34A" },
-          { label:"Pending",        value:String(summary.pending),      color:"#E86C4A" },
-          { label:"Accepted Value", value:fmt("£",summary.value),       color:"#2563EB" },
+          { label:"Total Quotes", value:String(summary.total), color:"#1A1A1A" },
+          { label:"Draft", value:String(summary.draft), color:"#64748b" },
+          { label:"Sent", value:String(summary.sent), color:"#1d4ed8" },
+          { label:"Accepted", value:String(summary.accepted), color:"#16A34A" },
+          { label:"Invoiced", value:String(summary.invoiced), color:"#7c3aed" },
         ].map(s=>(
-          <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"14px 16px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div key={s.label} style={moduleUi.summaryCard}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
             <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
 
-      {/* Header row */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, gap:10, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:0 }}>Quotes</h1>
-          <span style={{ fontSize:13, color:"#AAA" }}>{quotes.length} total</span>
-        </div>
-        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          <div style={{ display:"flex", background:"#f3f4f6", border:"1px solid #e8e8ec", borderRadius:8, padding:3, overflow:"hidden" }}>
-            {["All",...QUOTE_STATUSES].map(s=>(
-              <button key={s} onClick={()=>setFilterStatus(s)}
-                style={{ padding:"6px 12px", border:"none", background:filterStatus===s?"#fff":"transparent", color:filterStatus===s?"#1a1a2e":"#6b7280", boxShadow:filterStatus===s?"0 1px 3px rgba(0,0,0,0.08)":"none", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:ff }}>
-                {s}
-              </button>
-            ))}
-          </div>
-          <Btn onClick={()=>setPanel({ mode:"new-page" })} variant="primary" icon={<Icons.Plus />}>New Quote</Btn>
-        </div>
-      </div>
+      <ModuleHeader
+        title="Quotes"
+        helper={`${quotes.length} records · monitor draft-to-invoice conversion for your sales pipeline.`}
+        right={<Btn onClick={()=>setPanel({ mode:"new-page" })} variant="primary" icon={<Icons.Plus />}>New Quote</Btn>}
+      />
 
       {isNewQuotePage && (
         <div style={{ marginBottom:14 }}>
@@ -541,23 +524,28 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
 
       {/* Table */}
       {!isNewQuotePage && (
-      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
-        <div style={{ padding:"10px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
-          <Icons.Search />
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search quotes…"
-            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1A1A1A", background:"transparent", fontFamily:ff }} />
+      <>
+      <div style={{ ...moduleUi.toolbar, marginTop:12 }}>
+        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search quotes…" />
+        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+            {["All",...QUOTE_STATUSES].map(s => <option key={s}>{s}</option>)}
+          </select>
+          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setFilterStatus("All"); }}>Clear filters</Btn>}
         </div>
+      </div>
+      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:540 }}>
           <thead>
-            <tr style={{ background:"#f9fafb" }}>
+            <tr style={moduleUi.tableHead}>
               {["Quote #","Customer","Issue Date","Expires","Amount","Status",""].map(h=>(
-                <th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
+                <th key={h} style={{ ...moduleUi.th, textAlign:h==="Amount"?"right":"left" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map(q=>(
-              <tr key={q.id} style={{ borderBottom:"1px solid #F7F7F7", cursor:"pointer" }}
+              <tr key={q.id} style={{ ...moduleUi.rowHover, cursor:"pointer" }}
                 onClick={()=>setPanel({ mode:"view", quote:q })}
                 onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
@@ -565,27 +553,26 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
                 <td style={{ padding:"12px 16px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <div style={{ width:26, height:26, borderRadius:"50%", background:"#4F46E522", color:"#4F46E5", fontWeight:800, fontSize:11, display:"flex", alignItems:"center", justifyContent:"center" }}>{q.customer?.name?.[0]||"?"}</div>
-                    <span style={{ fontSize:13, color:"#444" }}>{q.customer?.name||"—"}</span>
+                    <span style={moduleUi.primaryText}>{q.customer?.name||"—"}</span>
                   </div>
                 </td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:"#888" }}>{fmtDate(q.issue_date)}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:q.status==="Expired"?"#C0392B":"#888" }}>{fmtDate(q.expiry_date)}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, fontWeight:700, color:"#1A1A1A", textAlign:"right" }}>{fmt("£",q.total||0)}</td>
-                <td style={{ padding:"12px 16px" }}><Tag color={STATUS_COLORS[q.status]||"#888"}>{q.status||"Draft"}</Tag></td>
+                <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12 }}>{fmtDate(q.issue_date)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.secondaryText, fontSize:12, color:q.status==="Expired"?"#C0392B":"#888" }}>{fmtDate(q.expiry_date)}</td>
+                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell }}>{fmt("£",q.total||0)}</td>
+                <td style={{ padding:"12px 16px" }}><StatusBadge status={q.status||"Draft"} /></td>
                 <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
-                  <Btn onClick={()=>q.status==="Invoiced"?window.alert("You are not allowed to edit an accepted quote."):setPanel({ mode:"edit", quote:q })} variant="ghost" size="sm" disabled={q.status==="Invoiced"} icon={<Icons.Edit />}>{q.status==="Invoiced"?"Locked":"Edit"}</Btn>
-                  <Btn onClick={()=>window.confirm(`Delete ${q.quote_number}?`) && setQuotes(prev=>prev.filter(x=>x.id!==q.id))} variant="ghost" size="sm" icon={<Icons.Trash />}>Delete</Btn>
+                  <Btn onClick={()=>q.status==="Invoiced"?window.alert("You are not allowed to edit an accepted quote."):setPanel({ mode:"edit", quote:q })} variant="ghost" size="sm" disabled={q.status==="Invoiced"} icon={<Icons.Edit />} />
+                  <Btn onClick={()=>window.confirm(`Delete ${q.quote_number}?`) && setQuotes(prev=>prev.filter(x=>x.id!==q.id))} variant="ghost" size="sm" icon={<Icons.Trash />} />
                 </td>
               </tr>
             ))}
             {filtered.length===0 && (
-              <tr><td colSpan={7} style={{ padding:"40px", textAlign:"center", color:"#CCC", fontSize:13 }}>
-                {quotes.length===0 ? "No quotes yet. Click 'New Quote' to create your first." : "No quotes match your filters."}
-              </td></tr>
+              <tr><td colSpan={7}><EmptyState icon={<Icons.Quotes />} text={quotes.length===0 ? "No quotes yet. Create your first quote." : "No quotes match your filters."} cta={<Btn variant="outline" onClick={()=>{setSearch(""); setFilterStatus("All");}}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
       </div>
+      </>
       )}
 
       {panel && panel.mode !== "new-page" && (
@@ -596,6 +583,8 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
           onConvertToInvoice={handleConvertToInvoice}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 }

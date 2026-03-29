@@ -1,5 +1,6 @@
 // generateAlerts — pure function, no Supabase needed.
 // Runs entirely on localStorage data passed in from context.
+import { normalizeCurrencyCode } from "../../constants";
 
 const todayMidnight = () => {
   const d = new Date();
@@ -21,6 +22,7 @@ const uid = (prefix) => `${prefix}_${++_uid}`;
 export function generateAlerts(invoices = [], payments = [], expenses = [], orgSettings = {}) {
   const alerts = [];
   const today = todayMidnight();
+  const currencyCode = normalizeCurrencyCode(orgSettings?.currency, "GBP");
 
   // ─── 1. OVERDUE TIERS ──────────────────────────────────────────────────────
   for (const inv of invoices) {
@@ -37,7 +39,7 @@ export function generateAlerts(invoices = [], payments = [], expenses = [], orgS
         severity: "critical",
         category: "overdue",
         title: `Invoice ${num} is ${daysOverdue} days overdue`,
-        description: `${Number(amt).toLocaleString("en-GB", { style:"currency", currency: orgSettings?.currency || "GBP" })} at risk`,
+        description: `${Number(amt).toLocaleString("en-GB", { style:"currency", currency: currencyCode })} at risk`,
         actionPage: "invoices",
         dismissable: false,
       });
@@ -99,7 +101,7 @@ export function generateAlerts(invoices = [], payments = [], expenses = [], orgS
       severity: "warning",
       category: "cash_flow",
       title: "Cash inflow below average monthly expenses",
-      description: `Received ${Number(cashReceived).toLocaleString("en-GB", { style:"currency", currency: orgSettings?.currency || "GBP" })} this month vs avg ${Number(avgMonthlyExpenses).toLocaleString("en-GB", { style:"currency", currency: orgSettings?.currency || "GBP" })}/mo`,
+      description: `Received ${Number(cashReceived).toLocaleString("en-GB", { style:"currency", currency: currencyCode })} this month vs avg ${Number(avgMonthlyExpenses).toLocaleString("en-GB", { style:"currency", currency: currencyCode })}/mo`,
       actionPage: "payments",
       dismissable: true,
     });
@@ -146,7 +148,7 @@ export function generateAlerts(invoices = [], payments = [], expenses = [], orgS
     p => Number(p.amount || 0) > 5000 && p.status === "Pending"
   );
   for (const p of largeUnreconciled) {
-    const amt = Number(p.amount).toLocaleString("en-GB", { style:"currency", currency: orgSettings?.currency || "GBP" });
+    const amt = Number(p.amount).toLocaleString("en-GB", { style:"currency", currency: currencyCode });
     const who = p.customer_name || p.customer || "unknown customer";
     alerts.push({
       id: uid("large_unreconciled"),
