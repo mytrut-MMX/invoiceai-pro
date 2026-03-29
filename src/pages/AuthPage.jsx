@@ -120,6 +120,7 @@ export default function AuthPage({ onAuth }) {
     getSession().then(session => {
       if (session?.user) {
         onAuth({
+          id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email,
           email: session.user.email,
           role: "Admin",
