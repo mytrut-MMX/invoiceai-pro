@@ -113,17 +113,7 @@ function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage 
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
             ← Quotes
           </button>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
-                ← Quotes
-              </button>
-              <span style={{ color:"#d1d5db" }}>/</span>
-              <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
-                {isEdit ? q.quote_number : "New Quote"}
-              </span>
-            </div>
-          </div>
+           <div style={{ flex:1, minWidth:0 }} />
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
             {isEdit && (
               <Btn onClick={()=>onConvertToInvoice(buildQuote("Invoiced"))} disabled={isLockedAcceptedQuote} variant="outline" icon={<Icons.Receipt />}>
