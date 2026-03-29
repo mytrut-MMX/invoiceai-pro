@@ -495,7 +495,7 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
         ].map(s=>(
           <div key={s.label} style={moduleUi.summaryCard}>
             <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
-            <div style={moduleUi.summaryGrid}>
+            <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
