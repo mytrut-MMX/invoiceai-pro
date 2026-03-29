@@ -3,7 +3,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS, PDF_TEMPLATES } from "..
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, Tag, Ribbon, SlideToggle, InfoBox, PaymentTermsField } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
+import { moduleUi, ModulePageHeader, ModuleToolbar, ModuleStatsRow, ModuleTableCard, SearchInput, EmptyStatePanel, StatusBadge } from "../components/shared/moduleListUI";
 import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
 import { calcTotals } from "../utils/calcTotals";
@@ -595,39 +595,33 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
     <div style={moduleUi.pageCanvas}>
       <div style={{ ...moduleUi.page, fontFamily:ff }}>
         <div style={moduleUi.sectionStack}>
-      <div style={moduleUi.summaryGrid}>
-        {[
+      <ModulePageHeader
+        title="Invoices"
+        subtitle="Monitor cash collection, due dates, and invoice status from one place."
+        count={invoices.length}
+        right={<Btn onClick={()=>setPanel({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Invoice</Btn>}
+      />
+      <ModuleStatsRow
+        items={[
           { label:"Total Invoices", value:summary.total, color:"#0f172a" },
           { label:"Unpaid", value:summary.unpaid, color:"#d97706" },
           { label:"Overdue", value:summary.overdue, color:"#dc2626" },
           { label:"Paid Amount", value:fmt("£",summary.paidAmount), color:"#16A34A" },
-        ].map(s=>(
-          <div key={s.label} style={moduleUi.summaryCard}>
-            <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
-            <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
-
-      <ModuleHeader
-        title="Invoices"
-        helper={`${invoices.length} records · monitor cash collection and due dates at a glance.`}
-        right={<Btn onClick={()=>setPanel({ mode:"new" })} variant="primary" icon={<Icons.Plus />}>New Invoice</Btn>}
+        ]}
       />
 
-      <div style={{ ...moduleUi.toolbar, marginTop:12 }}>
-        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search invoices…" />
-        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+      <ModuleToolbar
+        search={<SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search invoices…" ariaLabel="Search invoices" />}
+        filters={<div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
           <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
             {["All",...STATUSES].map(s => <option key={s}>{s}</option>)}
           </select>
           {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setFilterStatus("All"); }}>Clear filters</Btn>}
-        </div>
-      </div>
-      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
+        </div>}
+      />
+      <ModuleTableCard minWidth={560} stickyHeader>
           <thead>
-            <tr style={moduleUi.tableHead}>
+            <tr style={{ ...moduleUi.tableHead, ...moduleUi.stickyHead }}>
               {["Invoice #","Customer","Issue Date","Due Date","Amount","Status",""].map(h=>(
                 <th key={h} style={{ ...moduleUi.th, textAlign:h==="Amount"?"right":"left" }}>{h}</th>
               ))}
@@ -660,11 +654,11 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
               </tr>
             ))}
             {filtered.length===0 && (
-              <tr><td colSpan={7}><EmptyState icon={<Icons.Invoices />} text={invoices.length===0 ? "No invoices yet. Create one to start tracking receivables." : "No invoices match your search or status filter."} cta={<Btn variant="outline" onClick={()=>{setSearch(""); setFilterStatus("All");}}>Clear filters</Btn>} /></td></tr>
+              <tr><td colSpan={7}><EmptyStatePanel icon={<Icons.Invoices />} title={invoices.length===0 ? "No invoices yet" : "No matching invoices"} message={invoices.length===0 ? "Create one to start tracking receivables." : "No invoices match your search or status filter."} cta={<Btn variant="outline" onClick={()=>{setSearch(""); setFilterStatus("All");}}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
-        </table>
-      </div>
+      </ModuleTableCard>
+        </div>
         </div>
       </div>
     </div>
