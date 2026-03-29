@@ -86,8 +86,6 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
 
   const [editingCustomer, setEditingCustomer] = useState(null);
 
-  const [showForm,        setShowForm]        = useState(initialShowForm);
-  const [search,          setSearch]          = useState("");
   const [showForm, setShowForm] = useState(initialShowForm);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -102,19 +100,6 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
       : `Delete "${c.name}"? This cannot be undone.`;
     if (window.confirm(msg)) setCustomers(p => p.filter(x => x.id !== c.id));
   };
-
-  const onSave = (c) => {
-  const filtered = customers.filter(c => {
-    const matchSearch =
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === "All" || c.type === typeFilter;
-    return matchSearch && matchType;
-  });
-  const totalInvoicedAll = (invoices || []).reduce((s, i) => s + Number(i.total || 0), 0);
-  const totalCollectedAll = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
-  const totalOutstandingAll = Math.max(0, totalInvoicedAll - totalCollectedAll);
-  const hasFilters = search || typeFilter !== "All";
 
   const onSave = c => {
     setCustomers(p => upsert(p, c));
