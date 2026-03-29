@@ -3,7 +3,7 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
+import { moduleUi, ModulePageHeader, ModuleToolbar, ModuleStatsRow, ModuleTableCard, SearchInput, EmptyStatePanel, StatusBadge } from "../components/shared/moduleListUI";
 import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
@@ -65,42 +65,37 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
     <div style={moduleUi.pageCanvas}>
       <div style={{ ...moduleUi.page, fontFamily:ff }}>
         <div style={moduleUi.sectionStack}>
-      <ModuleHeader
+      <ModulePageHeader
         title="Customers"
-        helper="Track customer details, invoicing performance, and collections."
+        subtitle="Track customer details, invoicing performance, and collections."
+        count={customers.length}
         right={<Btn onClick={()=> { setEditingCustomer(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>}
       />
 
-      <div style={moduleUi.summaryGrid}>
-        {[
+      <ModuleStatsRow
+        items={[
           { label:"Total Customers", value:customers.length, color:"#0f172a" },
           { label:"Total Invoiced", value:fmt(currSym, totalInvoicedAll), color:"#1d4ed8" },
           { label:"Collected", value:fmt(currSym, totalCollectedAll), color:"#059669" },
           { label:"Outstanding", value:fmt(currSym, totalOutstandingAll), color: totalOutstandingAll > 0 ? "#dc2626" : "#059669" },
-        ].map(card => (
-          <div key={card.label} style={moduleUi.summaryCard}>
-            <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
-            <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
-          </div>
-        ))}
-      </div>
+        ]}
+      />
       
-      <div style={moduleUi.toolbar}>
-        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…" />
-      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+      <ModuleToolbar
+        search={<SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…" ariaLabel="Search customers" />}
+        filters={<div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
           <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
             {["All","Business","Individual"].map(v => <option key={v}>{v}</option>)}
           </select>
           {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setTypeFilter("All"); }}>Clear filters</Btn>}
-        </div>
-      </div>
+        </div>}
+      />
 
-      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:620 }}>
+      <<ModuleTableCard minWidth={620} stickyHeader>
           <thead>
-            <tr style={moduleUi.tableHead}>
+             <tr style={{ ...moduleUi.tableHead, ...moduleUi.stickyHead }}>
               {["Name","Customer Type","Phone","Currency","Invoiced","Collected","Outstanding","",""] .map(h=>(
-                <th key={h} style={{ ...moduleUi.th, textAlign:"left" }}>{h}</th>
+                <th key={h} style={{ ...moduleUi.th, textAlign:["Invoiced","Collected","Outstanding"].includes(h) ? "right" : "left" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -136,11 +131,10 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
               );
             })}
             {filtered.length===0 && (
-              <tr><td colSpan={9}><EmptyState icon={<Icons.Customers />} text={customers.length===0 ? "No customers yet. Add your first customer to begin invoicing." : "No customers match your current search or filters."} cta={customers.length===0 ? <Btn variant="primary" onClick={()=> { setEditingCustomer(null); setShowForm(true); }}>New Customer</Btn> : <Btn variant="outline" onClick={()=>{setSearch(""); setTypeFilter("All");}}>Clear filters</Btn>} /></td></tr>
+              <tr><td colSpan={9}><EmptyStatePanel icon={<Icons.Customers />} title={customers.length===0 ? "No customers yet" : "No matching customers"} message={customers.length===0 ? "Add your first customer to begin invoicing." : "No customers match your current search or filters."} cta={customers.length===0 ? <Btn variant="primary" onClick={()=> { setEditingCustomer(null); setShowForm(true); }}>New Customer</Btn> : <Btn variant="outline" onClick={()=>{setSearch(""); setTypeFilter("All");}}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
-        </table>
-      </div>
+      </ModuleTableCard>
         </div>
       </div>
     </div>
