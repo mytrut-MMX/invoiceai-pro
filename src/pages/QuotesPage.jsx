@@ -4,6 +4,7 @@ import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from 
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Textarea, Btn, Tag, Ribbon } from "../components/atoms";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
 import { LineItemsTable, SaveSplitBtn, A4PrintModal, A4InvoiceDoc, CustomerPicker } from "../components/shared";
 import { PDF_TEMPLATES } from "../constants";
 import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/helpers";
@@ -478,7 +479,7 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
   }
 
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, fontFamily:ff }}>
+    <div style={{ ...moduleUi.page, fontFamily:ff, background:"#f8fafc" }}>
       {/* Summary cards */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:12, marginBottom:22 }}>
         {[
@@ -497,8 +498,8 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
       {/* Header row */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, gap:10, flexWrap:"wrap" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <h1 style={{ fontSize:22, fontWeight:800, color:"#1A1A1A", margin:0 }}>Quotes</h1>
-          <span style={{ fontSize:13, color:"#AAA" }}>{quotes.length} total</span>
+          <h1 style={{ fontSize:24, fontWeight:800, color:"#0f172a", margin:0 }}>Quotes</h1>
+          <span style={{ fontSize:13, color:"#64748b" }}>{quotes.length} total quotes in your sales pipeline</span>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
           <div style={{ display:"flex", background:"#f3f4f6", border:"1px solid #e8e8ec", borderRadius:8, padding:3, overflow:"hidden" }}>
@@ -531,17 +532,14 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
 
       {/* Table */}
       {!isNewQuotePage && (
-      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
-        <div style={{ padding:"10px 16px", borderBottom:"1px solid #F0F0F0", display:"flex", alignItems:"center", gap:9 }}>
-          <Icons.Search />
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search quotes…"
-            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1A1A1A", background:"transparent", fontFamily:ff }} />
-        </div>
+      <>
+      <div style={{ ...moduleUi.toolbar, marginTop:0 }}><SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search quotes…" /></div>
+      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:540 }}>
           <thead>
-            <tr style={{ background:"#f9fafb" }}>
+            <tr style={moduleUi.tableHead}>
               {["Quote #","Customer","Issue Date","Expires","Amount","Status",""].map(h=>(
-                <th key={h} style={{ padding:"8px 16px", textAlign:h==="Amount"?"right":"left", fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #F0F0F0" }}>{h}</th>
+                <th key={h} style={{ ...moduleUi.th, textAlign:h==="Amount"?"right":"left" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -569,13 +567,12 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
               </tr>
             ))}
             {filtered.length===0 && (
-              <tr><td colSpan={7} style={{ padding:"40px", textAlign:"center", color:"#CCC", fontSize:13 }}>
-                {quotes.length===0 ? "No quotes yet. Click 'New Quote' to create your first." : "No quotes match your filters."}
-              </td></tr>
+              <tr><td colSpan={7}><EmptyState icon={<Icons.Quotes />} text={quotes.length===0 ? "No quotes yet. Create your first quote." : "No quotes match your filters."} cta={<Btn variant="outline" onClick={()=>{setSearch(""); setFilterStatus("All");}}>Clear filters</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
       </div>
+      </>
       )}
 
       {panel && panel.mode !== "new-page" && (
