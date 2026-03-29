@@ -3,6 +3,7 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag } from "../components/atoms";
+import { moduleUi, ModuleHeader, SearchInput, EmptyState } from "../components/shared/moduleListUI";
 import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
@@ -53,26 +54,23 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   }
 
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#FAFAF7", minHeight:"100vh", fontFamily:ff }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-        <div>
-          <h1 style={{ fontSize:20, fontWeight:700, color:"#1a1a2e", margin:"0 0 3px" }}>Customers</h1>
-          <p style={{ color:"#6b7280", fontSize:12, margin:0 }}>{customers.length} total</p>
-        </div>
-        <Btn onClick={()=> { setEditingCustomer(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>
+    <div style={{ ...moduleUi.page, minHeight:"100vh", background:"#f8fafc", fontFamily:ff }}>
+      <ModuleHeader
+        title="Customers"
+        helper={`${customers.length} customers · customer details, revenue, and collections at a glance.`}
+        right={<Btn onClick={()=> { setEditingCustomer(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Customer</Btn>}
+      />
+
+      <div style={moduleUi.toolbar}>
+        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…" />
       </div>
 
-      <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", overflowX:"auto" }}>
-        <div style={{ padding:"11px 16px", borderBottom:"1px solid #f0f0f4", display:"flex", alignItems:"center", gap:9 }}>
-          <Icons.Search />
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…"
-            style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#1a1a2e", background:"transparent", fontFamily:ff }} />
-        </div>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
+      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:620 }}>
           <thead>
-            <tr style={{ background:"#f9fafb" }}>
-              {["Name","Type","Email","Phone","Currency","Invoiced","Collected","Outstanding","",""].map(h=>(
-                <th key={h} style={{ padding:"8px 18px", textAlign:"left", fontSize:10, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #f0f0f4" }}>{h}</th>
+            <tr style={moduleUi.tableHead}>
+              {["Name","Type","Email","Phone","Currency","Invoiced","Collected","Outstanding","",""] .map(h=>(
+                <th key={h} style={{ ...moduleUi.th, textAlign:"left" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -84,33 +82,29 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
               const totalCollected  = (payments||[]).filter(p => custInvoiceIds.has(p.invoice_id)).reduce((s,p) => s + Number(p.amount||0), 0);
               const totalOutstanding = Math.max(0, totalInvoiced - totalCollected);
               return (
-              <tr key={c.id} style={{ borderBottom:"1px solid #f3f4f6" }}
-                onMouseEnter={e=>e.currentTarget.style.background="#f9fafb"}
+              <tr key={c.id} style={{ borderBottom:"1px solid #f1f5f9" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <td style={{ padding:"12px 18px" }}>
+                <td style={moduleUi.td}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:30, height:30, borderRadius:"50%", background:"#FEF3C7", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:"#92400E" }}>{c.name[0]}</div>
-                    <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>{c.name}</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#0f172a" }}>{c.name}</span>
                   </div>
                 </td>
-                <td style={{ padding:"12px 18px" }}><Tag color={c.type==="Business"?"#111110":"#D97706"}>{c.type}</Tag></td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#374151" }}>{c.email}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{formatPhoneNumber(c.phone)}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, color:"#6b7280" }}>{c.currency}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:600, color:"#1a1a2e", textAlign:"right" }}>{fmt(currSym, totalInvoiced)}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:600, color:"#059669", textAlign:"right" }}>{fmt(currSym, totalCollected)}</td>
-                <td style={{ padding:"12px 18px", fontSize:13, fontWeight:700, color:totalOutstanding > 0 ? "#DC2626" : "#059669", textAlign:"right" }}>{fmt(currSym, totalOutstanding)}</td>
-                <td style={{ padding:"12px 18px" }}>
-                  <Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn>
-                </td>
-                <td style={{ padding:"12px 18px" }}>
-                  <Btn onClick={() => deleteCustomer(c)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn>
-                </td>
+                 <td style={moduleUi.td}><Tag color={c.type==="Business"?"#334155":"#b45309"}>{c.type}</Tag></td>
+                <td style={moduleUi.td}>{c.email}</td>
+                <td style={moduleUi.td}>{formatPhoneNumber(c.phone)}</td>
+                <td style={moduleUi.td}>{c.currency}</td>
+                <td style={{ ...moduleUi.td, fontWeight:700, color:"#0f172a", textAlign:"right" }}>{fmt(currSym, totalInvoiced)}</td>
+                <td style={{ ...moduleUi.td, fontWeight:700, color:"#059669", textAlign:"right" }}>{fmt(currSym, totalCollected)}</td>
+                <td style={{ ...moduleUi.td, fontWeight:700, color:totalOutstanding > 0 ? "#DC2626" : "#059669", textAlign:"right" }}>{fmt(currSym, totalOutstanding)}</td>
+                <td style={moduleUi.td}><Btn onClick={() => { setEditingCustomer(c); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />}>Edit</Btn></td>
+                <td style={moduleUi.td}><Btn onClick={() => deleteCustomer(c)} variant="ghost" size="sm" style={{ color:"#dc2626" }}>Delete</Btn></td>
               </tr>
               );
             })}
             {filtered.length===0 && (
-              <tr><td colSpan={9} style={{ padding:"40px 18px", textAlign:"center", color:"#CCC", fontSize:13 }}>No customers found</td></tr>
+              <tr><td colSpan={10}><EmptyState icon={<Icons.Customers />} text="No customers found for this search." cta={<Btn variant="outline" onClick={()=>setSearch("")}>Clear Search</Btn>} /></td></tr>
             )}
           </tbody>
         </table>
