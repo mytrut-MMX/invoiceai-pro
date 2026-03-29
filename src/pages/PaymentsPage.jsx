@@ -187,10 +187,6 @@ function PaymentModal({ existing, onClose, onSave }) {
             <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
               ← Payments
             </button>
-            <span style={{ color:"#d1d5db" }}>/</span>
-            <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
-              {isEdit ? "Edit Payment" : "New Payment"}
-            </span>
           </div>
           <div style={{ display:"flex", gap:8 }}>
             <Btn onClick={onClose} variant="outline">Cancel</Btn>
