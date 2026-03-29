@@ -118,7 +118,6 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
           </tbody>
         </table>
       </div>
-      
     </div>
   );
 }
