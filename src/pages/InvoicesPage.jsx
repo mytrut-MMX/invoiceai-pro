@@ -535,7 +535,7 @@ function StatusBadge({ status }) {
   return (
     <span style={{
       display:"inline-flex", alignItems:"center", gap:5,
-      padding:"3px 8px", borderRadius:20,
+      padding:"2px 8px", borderRadius:20,
       background:s.bg, color:s.color,
       fontSize:11, fontWeight:700, whiteSpace:"nowrap",
     }}>
@@ -564,7 +564,7 @@ function DueDateCell({ dueDate, status }) {
   }
   return (
     <div>
-      <div style={{ fontSize:13, color:"#374151" }}>{fmtDate(dueDate)}</div>
+      <div style={{ fontSize:13, color:"#6b7280" }}>{fmtDate(dueDate)}</div>
       {hint && <div style={{ fontSize:10, fontWeight:700, color:hint.color, marginTop:1, letterSpacing:"0.02em" }}>{hint.text}</div>}
     </div>
   );
@@ -696,16 +696,16 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
       {invoices.length > 0 && (
         <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap" }}>
           {[
-            { label:"Total Invoices",  value:metrics.total,                    isCount:true,  color:"#374151" },
+            { label:"Total Invoices",  value:metrics.total,                    color:"#374151" },
             { label:"Unpaid",          value:fmt(currSym, metrics.unpaid),                    color:"#1d4ed8" },
             { label:"Overdue",         value:fmt(currSym, metrics.overdueAmt), sub: metrics.overdueCount > 0 ? `${metrics.overdueCount} invoice${metrics.overdueCount>1?"s":""}` : null, color: metrics.overdueCount > 0 ? "#b91c1c" : "#374151" },
             { label:"Collected",       value:fmt(currSym, metrics.paid),                      color:"#166534" },
             { label:"Outstanding",     value:fmt(currSym, metrics.outstanding),                color: metrics.outstanding > 0 ? "#92400e" : "#374151" },
           ].map(m => (
-            <div key={m.label} style={{ background:"#fff", border:"1px solid #e8e8ec", borderRadius:10, padding:"13px 16px", flex:"1 1 130px", minWidth:0 }}>
+            <div key={m.label} style={{ background:"#fff", border:"1px solid #e8e8ec", borderRadius:10, padding:"14px 18px", flex:"1 1 130px", minWidth:0 }}>
               <div style={{ fontSize:10, fontWeight:700, color:"#9ca3af", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5 }}>{m.label}</div>
-              <div style={{ fontSize:m.isCount ? 22 : 16, fontWeight:800, color:m.color, fontVariantNumeric:"tabular-nums", lineHeight:1.2 }}>
-                {m.isCount ? m.value : m.value}
+              <div style={{ fontSize:18, fontWeight:800, color:m.color, fontVariantNumeric:"tabular-nums", lineHeight:1.2 }}>
+                {m.value}
               </div>
               {m.sub && <div style={{ fontSize:10, color:"#b91c1c", fontWeight:600, marginTop:2 }}>{m.sub}</div>}
             </div>
@@ -717,7 +717,7 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
       <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e8ec", boxShadow:"0 1px 4px rgba(0,0,0,0.05)", overflow:"hidden" }}>
 
         {/* Toolbar */}
-        <div style={{ padding:"11px 14px", borderBottom:"1px solid #f0f0f4", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <div style={{ padding:"10px 16px", borderBottom:"1px solid #f0f0f4", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
           {/* Search */}
           <div style={{ display:"flex", alignItems:"center", gap:7, flex:"1 1 200px", minWidth:160, background:"#f9fafb", border:"1px solid #e8e8ec", borderRadius:7, padding:"6px 10px" }}>
             <span style={{ color:"#9ca3af", display:"flex", flexShrink:0 }}><Icons.Search /></span>
@@ -780,7 +780,7 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
                   { label:"",             align:"right" },
                 ].map(({ label, align }) => (
                   <th key={label} style={{
-                    padding:"8px 14px",
+                    padding:"8px 16px",
                     textAlign:align,
                     fontSize:10, fontWeight:700,
                     color:"#9ca3af",
@@ -796,8 +796,8 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
                   <td colSpan={7} style={{ padding:"60px 24px", textAlign:"center" }}>
                     {invoices.length === 0 ? (
                       <>
-                        <div style={{ fontSize:32, marginBottom:10 }}>📄</div>
-                        <div style={{ fontSize:14, fontWeight:700, color:"#1a1a2e", marginBottom:6 }}>No invoices yet</div>
+                        <div style={{ fontSize:36, marginBottom:10 }}>📄</div>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#1a1a2e", marginBottom:6 }}>No invoices yet</div>
                         <div style={{ fontSize:13, color:"#6b7280", marginBottom:18 }}>Create your first invoice to start getting paid</div>
                         <Btn variant="primary" icon={<Icons.Plus />} onClick={() => setPanel({ mode:"new" })}>New Invoice</Btn>
                       </>
@@ -826,50 +826,50 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
                     onMouseLeave={e => e.currentTarget.style.background = ""}
                   >
                     {/* Invoice # */}
-                    <td style={{ padding:"12px 14px", whiteSpace:"nowrap" }}>
+                    <td style={{ padding:"11px 16px", whiteSpace:"nowrap" }}>
                       <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e", letterSpacing:"0.01em" }}>{inv.invoice_number}</div>
-                      {inv.po_number && <div style={{ fontSize:10, color:"#9ca3af", marginTop:1 }}>PO: {inv.po_number}</div>}
+                      {inv.po_number && <div style={{ fontSize:11, color:"#6b7280", marginTop:1 }}>PO: {inv.po_number}</div>}
                     </td>
 
                     {/* Customer */}
-                    <td style={{ padding:"12px 14px", minWidth:160 }}>
+                    <td style={{ padding:"11px 16px", minWidth:160 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <div style={{ width:28, height:28, borderRadius:"50%", background:av.bg, color:av.fg, fontWeight:700, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <div style={{ width:30, height:30, borderRadius:"50%", background:av.bg, color:av.fg, fontWeight:700, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           {(inv.customer?.name || "?")[0].toUpperCase()}
                         </div>
                         <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:13, color:"#374151", fontWeight:500, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:180 }}>
+                          <div style={{ fontSize:13, color:"#1a1a2e", fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:180 }}>
                             {inv.customer?.name || "—"}
                           </div>
-                          {inv.customer?.type && <div style={{ fontSize:10, color:"#9ca3af", marginTop:1 }}>{inv.customer.type}</div>}
+                          {inv.customer?.type && <div style={{ fontSize:11, color:"#6b7280", marginTop:1 }}>{inv.customer.type}</div>}
                         </div>
                       </div>
                     </td>
 
                     {/* Issue date */}
-                    <td style={{ padding:"12px 14px", fontSize:13, color:"#6b7280", whiteSpace:"nowrap" }}>
+                    <td style={{ padding:"11px 16px", fontSize:13, color:"#6b7280", whiteSpace:"nowrap" }}>
                       {fmtDate(inv.issue_date)}
                     </td>
 
                     {/* Due date */}
-                    <td style={{ padding:"12px 14px", whiteSpace:"nowrap" }}>
+                    <td style={{ padding:"11px 16px", whiteSpace:"nowrap" }}>
                       <DueDateCell dueDate={inv.due_date} status={inv.status} />
                     </td>
 
                     {/* Amount */}
-                    <td style={{ padding:"12px 14px", textAlign:"right", whiteSpace:"nowrap" }}>
+                    <td style={{ padding:"11px 16px", textAlign:"right", whiteSpace:"nowrap" }}>
                       <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e", fontVariantNumeric:"tabular-nums" }}>
                         {fmt(currSym, inv.total || 0)}
                       </div>
                     </td>
 
                     {/* Status */}
-                    <td style={{ padding:"12px 14px", whiteSpace:"nowrap" }}>
+                    <td style={{ padding:"11px 16px", whiteSpace:"nowrap" }}>
                       <StatusBadge status={inv.status || "Draft"} />
                     </td>
 
                     {/* Actions */}
-                    <td style={{ padding:"12px 14px", textAlign:"right", whiteSpace:"nowrap" }} onClick={e => e.stopPropagation()}>
+                    <td style={{ padding:"11px 16px", textAlign:"right", whiteSpace:"nowrap" }} onClick={e => e.stopPropagation()}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4 }}>
                         <button
                           onClick={() => setPanel({ mode:"edit", invoice:inv })}
@@ -896,7 +896,7 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
 
         {/* Footer */}
         {filtered.length > 0 && (
-          <div style={{ padding:"8px 14px", borderTop:"1px solid #f0f0f4", fontSize:11, color:"#9ca3af", textAlign:"right" }}>
+          <div style={{ padding:"8px 16px", borderTop:"1px solid #f0f0f4", fontSize:11, color:"#9ca3af", textAlign:"right" }}>
             {hasFilters ? `${filtered.length} of ${invoices.length}` : invoices.length} invoice{invoices.length !== 1 ? "s" : ""}
           </div>
         )}
