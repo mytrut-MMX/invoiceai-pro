@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../constants";
+import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS, normalizeCurrencyCode } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Btn, SlideToggle } from "../components/atoms";
@@ -121,7 +121,7 @@ export default function SettingsPage({ onNavigate }) {
   const [city,         setCity]         = useState(org.city||"");
   const [postcode,     setPostcode]     = useState(org.postcode||"");
   const [country,      setCountry]      = useState(org.country||"United Kingdom");
-  const [currency,     setCurrency]     = useState(org.currency||"GBP");
+  const [currency,     setCurrency]     = useState(normalizeCurrencyCode(org.currency||"GBP"));
   const [timezone,     setTimezone]     = useState(org.timezone||"(UTC+00:00) London");
   const [industry,     setIndustry]     = useState(org.industry||"");
   const [vatReg,       setVatReg]       = useState(org.vatReg||"No");
@@ -173,7 +173,7 @@ export default function SettingsPage({ onNavigate }) {
   const buildOrgSettings = () => ({
     orgName, email, phone, website,
     street, city, postcode, country,
-    currency, timezone, industry,
+    currency: normalizeCurrencyCode(currency), timezone, industry,
     vatReg, vatNum,
     cisReg: cisEnabled ? "Yes" : "No",
     cisRole, cisRate: cisDefaultRate, cisUtrNo: cisContractorUTR, cisRegistrationStatus, crn,
@@ -331,7 +331,7 @@ export default function SettingsPage({ onNavigate }) {
             <Select value={country} onChange={setCountry} options={COUNTRIES} />
           </Field>
           <Field label="Currency">
-            <Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST} />
+            <Select value={currency} onChange={setCurrency} options={CURRENCIES_LIST.map(c => ({ value: normalizeCurrencyCode(c), label: c }))} />
           </Field>
           <Field label="Timezone">
             <Select value={timezone} onChange={setTimezone} options={TIMEZONES} />
