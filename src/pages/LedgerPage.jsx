@@ -1,11 +1,8 @@
-import { useState, useEffect, useMemo, useContext } from "react";
-import { ff, CUR_SYM } from "../constants";
+import { useState, useEffect, useContext, lazy, Suspense } from "react";
+import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Btn, Field, Input, Select } from "../components/atoms";
-import { supabase, supabaseReady } from "../lib/supabase";
-import { fmt, fmtDate, todayStr } from "../utils/helpers";
-import { seedAccountsForUser } from "../utils/ledger/defaultAccounts";
+import { supabase } from "../lib/supabase";
 
 // ─── CURRENCY HELPER ─────────────────────────────────────────────────────────
 // Returns the resolved symbol string (e.g. "£") for the current org currency.
@@ -744,6 +741,10 @@ const TABS = [
   { id: "pl",       label: "P&L" },
 ];
 
+const TabFallback = () => (
+  <div style={{ textAlign:"center", padding:40, color:"#9ca3af", fontSize:14 }}>Loading...</div>
+);
+
 export default function LedgerPage() {
   const { user } = useContext(AppCtx);
 
@@ -756,12 +757,11 @@ export default function LedgerPage() {
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [actionError,    setActionError]    = useState("");
 
-  // Fetch auth user id + accounts + journal entries
   const load = async () => {
     setLoading(true);
     try {
       const { data: authData } = await supabase.auth.getUser();
-      const uid = authData?.user?.id ??user?.id ?? null;
+      const uid = authData?.user?.id ?? user?.id ?? null;
       setUserId(uid);
       if (!uid) { setLoading(false); return; }
 
@@ -783,14 +783,14 @@ export default function LedgerPage() {
   };
 
   useEffect(() => { load(); }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  
+
   const handleSaved = () => {
     setShowManual(false);
     setShowAddAccount(false);
     load();
   };
-  
-const requiresAuthMsg = "Please sign in with Supabase (Google/email auth) to use ledger posting features.";
+
+  const requiresAuthMsg = "Please sign in with Supabase (Google/email auth) to use ledger posting features.";
   const openManualModal = () => {
     if (!userId) { setActionError(requiresAuthMsg); return; }
     setActionError("");
@@ -805,7 +805,6 @@ const requiresAuthMsg = "Please sign in with Supabase (Google/email auth) to use
   return (
     <div style={{ maxWidth:960, margin:"0 auto", padding:"28px 20px", fontFamily:ff }}>
 
-      {/* Page header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <div style={{ width:36, height:36, background:"#1a1a2e", borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}>
@@ -834,7 +833,6 @@ const requiresAuthMsg = "Please sign in with Supabase (Google/email auth) to use
         </div>
       )}
 
-      {/* Tabs */}
       <div style={{ display:"flex", gap:2, borderBottom:"2px solid #e8e8ec", marginBottom:24 }}>
         {TABS.map(t => (
           <button
@@ -851,45 +849,49 @@ const requiresAuthMsg = "Please sign in with Supabase (Google/email auth) to use
         ))}
       </div>
 
-      {/* Tab content */}
-      {tab === "journal" && (
-        <JournalTab
-          entries={entries}
-          accounts={accounts}
-          loading={loading}
-          onNewEntry={openManualModal}
-          canCreateManual={Boolean(userId)}
-        />
-      )}
-      {tab === "accounts" && (
-        <AccountsTab
-          accounts={accounts}
-          allEntries={entries}
-          loading={loading}
-          onNewAccount={openAddAccountModal}
-          userId={userId}
-          onSeeded={load}
-        />
-      )}
-      {tab === "pl" && (
-        <PLTab accounts={accounts} allEntries={entries} hasLedgerAccess={Boolean(userId)} />
-      )}
+      <Suspense fallback={<TabFallback />}>
+        {tab === "journal" && (
+          <JournalTab
+            entries={entries}
+            accounts={accounts}
+            loading={loading}
+            onNewEntry={openManualModal}
+            canCreateManual={Boolean(userId)}
+          />
+        )}
+        {tab === "accounts" && (
+          <AccountsTab
+            accounts={accounts}
+            allEntries={entries}
+            loading={loading}
+            onNewAccount={openAddAccountModal}
+            userId={userId}
+            onSeeded={load}
+          />
+        )}
+        {tab === "pl" && (
+          <PLTab accounts={accounts} allEntries={entries} hasLedgerAccess={Boolean(userId)} />
+        )}
+      </Suspense>
 
-      {/* Modals */}
       {showManual && (
-        <ManualEntryForm
-          accounts={accounts}
-          userId={userId}
-          onClose={() => setShowManual(false)}
-          onSaved={handleSaved}
-        />
+        <Suspense fallback={null}>
+          <ManualEntryForm
+            accounts={accounts}
+            userId={userId}
+            onClose={() => setShowManual(false)}
+            onSaved={handleSaved}
+          />
+        </Suspense>
       )}
       {showAddAccount && (
-        <AddAccountForm
-          userId={userId}
-          onClose={() => setShowAddAccount(false)}
-          onSaved={handleSaved}
-        />
+        <Suspense fallback={null}>
+          <AddAccountForm
+            userId={userId}
+            onClose={() => setShowAddAccount(false)}
+            onSaved={handleSaved}
+          />
+        </Suspense>
       )}
     </div>
   );
