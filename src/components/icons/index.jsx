@@ -4,12 +4,15 @@ import React from "react";
 // elements before injecting via dangerouslySetInnerHTML.
 // This prevents XSS if the `d` prop is ever accidentally passed user-controlled content.
 const SAFE_SVG_RE = /^(<(path|circle|rect|polyline|polygon|line|ellipse|g)\b[^>]*\/?>(\s*<\/(path|circle|rect|polyline|polygon|line|ellipse|g)>)?)+$/;
+const _svgCache = new Map();
 function sanitizeSvgContent(d) {
   if (typeof d !== 'string') return '';
+  if (_svgCache.has(d)) return _svgCache.get(d);
   const stripped = d.replace(/\s+/g, ' ').trim();
   // Block any tag that isn't a known safe SVG shape element
-  if (/<script|<iframe|javascript:|on[a-z]+=|<!\[CDATA/i.test(stripped)) return '';
-  return stripped;
+  const result = /<script|<iframe|javascript:|on[a-z]+=|<!\[CDATA/i.test(stripped) ? '' : stripped;
+  _svgCache.set(d, result);
+  return result;
 }
 
 export const Ic = ({ d, size = 18 }) => (
