@@ -80,9 +80,21 @@ ${JSON.stringify(context || {})}
       });
     }
 
+    const text = data?.output?.find(x => x.type === "message")?.content?.[0]?.text || "";
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return res.status(500).json({
+        error: "Model did not return valid JSON",
+        raw: text
+      });
+    }
+
     return res.status(200).json({
       ok: true,
-      openai_raw: data
+      result: parsed
     });
 
   } catch (err) {
