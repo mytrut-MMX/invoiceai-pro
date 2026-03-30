@@ -1,4 +1,9 @@
-// SEC-006: Whitelist of permitted request fields — no arbitrary passthrough
+/**
+ * Claude AI proxy — forwards validated requests to the Anthropic Messages API.
+ * Only whitelisted models are accepted; request fields are strictly validated
+ * and unknown fields are dropped before forwarding.
+ */
+
 const ALLOWED_MODELS = [
   'claude-sonnet-4-6',
   'claude-haiku-4-5-20251001',
@@ -18,7 +23,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // HDR-004: Prevent caching of API responses
   res.setHeader('Cache-Control', 'no-store');
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -27,12 +31,11 @@ export default async function handler(req, res) {
 
   const raw = req.body || {};
 
-  // SEC-006: Validate messages array
   if (!Array.isArray(raw.messages) || raw.messages.length === 0) {
     return res.status(400).json({ error: 'messages array is required' });
   }
 
-  // SEC-006: Whitelist only permitted fields; ignore everything else
+  // Only forward whitelisted fields
   const body = {
     model: ALLOWED_MODELS.includes(raw.model) ? raw.model : DEFAULT_MODEL,
     max_tokens: Math.min(Math.max(Number(raw.max_tokens) || 1024, 256), MAX_TOKENS_LIMIT),
@@ -55,7 +58,6 @@ export default async function handler(req, res) {
     const data = await response.json();
     res.status(response.status).json(data);
   } catch {
-    // SEC-015: Do not expose internal error details
     res.status(500).json({ error: 'Internal server error' });
   }
 }

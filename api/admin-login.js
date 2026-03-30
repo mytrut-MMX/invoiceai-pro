@@ -1,5 +1,9 @@
-// AUTH-001: Admin login endpoint — validates password, issues a signed HMAC-SHA256 session token.
-// Subsequent requests to /api/admin-data use the token, not the raw password.
+/**
+ * Admin login endpoint — validates the admin password and issues a signed
+ * HMAC-SHA256 session token (1 hour TTL). Subsequent requests to /api/admin-data
+ * use the token; the raw password is never re-transmitted after this call.
+ * Password comparison is constant-time to prevent timing attacks.
+ */
 import { createHmac, timingSafeEqual } from 'crypto';
 
 const TOKEN_TTL_SECONDS = 3600; // 1 hour
@@ -33,7 +37,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Password required' });
   }
 
-  // AUTH-001: Constant-time comparison to prevent timing attacks
+  // Constant-time comparison to prevent timing attacks
   const pwBuf = Buffer.from(password.slice(0, 1000)); // cap input length
   const secretBuf = Buffer.from(adminPassword);
   const isValid = pwBuf.length === secretBuf.length &&
