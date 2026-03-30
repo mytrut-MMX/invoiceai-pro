@@ -121,7 +121,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
     const q = search.toLowerCase();
     if (!q) return customers;
     return customers.filter(c =>
-      c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+      (c.name || "").toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q)
     );
   }, [customers, search]);
 
@@ -288,7 +288,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
 
                     {/* Type */}
                     <td style={{ padding:T.cellPad, whiteSpace:"nowrap" }}>
-                      <Tag color={c.type === "Business" ? "#111110" : "#D97706"}>{c.type || "Individual"}</Tag>
+                      <StatusBadge status={c.type || "Individual"} />
                     </td>
 
                     {/* Contact */}
