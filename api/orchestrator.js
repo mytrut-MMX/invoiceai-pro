@@ -3,8 +3,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const { title, objective, context } = req.body || {};
+
+  if (!objective || typeof objective !== "string") {
+    return res.status(400).json({ error: "objective is required" });
+  }
+
   return res.status(200).json({
     ok: true,
-    message: "orchestrator endpoint ready"
+    received: {
+      title: title || null,
+      objective,
+      context: context || {}
+    }
   });
 }
