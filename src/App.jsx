@@ -5,7 +5,7 @@ import { AppCtx } from "./context/AppContext";
 import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from "./components/layout";
 import { todayStr } from "./utils/helpers";
 import { saveAll } from "./utils/storage";
-import { getSession } from "./lib/supabase";
+import { getSession, supabase } from "./lib/supabase";
 
 // pages
 import AuthPage from "./pages/AuthPage";
@@ -58,29 +58,42 @@ export default function App() {
   // Google/GitHub redirects back to "/" with tokens in the URL hash instead of /auth/callback)
   const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
+    const applySession = (session) => {
+      if (!session?.user) return;
+      const u = {
+        id: session.user.id,
+        name: session.user.user_metadata?.full_name || session.user.email,
+        email: session.user.email,
+        role: "Admin",
+        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        provider: session.user.app_metadata?.provider || "email",
+      };
+      const prev = LS.get("ai_invoice_user", null);
+      if (prev?.email !== u.email) {
+        setOnboardingDoneState(false);
+        LS.set("ai_invoice_onboarding_done", false);
+      }
+      LS.set("ai_invoice_user", u);
+      setUser(u);
+      // Clean up any OAuth params from the URL without causing a reload
+      if (window.location.search || window.location.hash) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    };
+
+    let unsubscribe = () => {};
+    if (supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          applySession(session);
+        }
+      });
+      unsubscribe = () => subscription.unsubscribe();
+    }
+    
     getSession()
       .then((session) => {
-        if (session?.user) {
-          const u = {
-            id: session.user.id,
-            name: session.user.user_metadata?.full_name || session.user.email,
-            email: session.user.email,
-            role: "Admin",
-            expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-            provider: session.user.app_metadata?.provider || "email",
-          };
-          const prev = LS.get("ai_invoice_user", null);
-          if (prev?.email !== u.email) {
-            setOnboardingDoneState(false);
-            LS.set("ai_invoice_onboarding_done", false);
-          }
-          LS.set("ai_invoice_user", u);
-          setUser(u);
-          // Clean up any OAuth params from the URL without causing a reload
-          if (window.location.search || window.location.hash) {
-            window.history.replaceState({}, "", window.location.pathname);
-          }
-        }
+        applySession(session);
       })
       .catch((err) => {
         console.warn("[Auth] Session check failed. Rendering app without Supabase session.", err);
@@ -88,6 +101,8 @@ export default function App() {
       .finally(() => {
         setAuthChecked(true);
       });
+
+    return unsubscribe;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [orgSettings, setOrgSettingsState] = useState(()=>LS.get("ai_invoice_org",null));
