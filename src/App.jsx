@@ -173,6 +173,7 @@ export default function App() {
   // ─── debounced persistence to localStorage ────────────────────
   const [storageError, setStorageError] = useState(null);
   const persistTimer = useRef(null);
+  const lastSavedLogo = useRef(companyLogo);
 
   useEffect(() => {
     window.addEventListener("storage-error", (e) => {
@@ -198,7 +199,7 @@ export default function App() {
         ai_invoice_theme:          appTheme,
         ai_invoice_avatar:         userAvatar,
         ai_invoice_pdf_template:   pdfTemplate,
-        ai_invoice_logo:           companyLogo,
+        ai_invoice_logo:           companyLogo !== lastSavedLogo.current ? companyLogo : undefined,
         ai_invoice_logo_size:      companyLogoSize,
         ai_invoice_inv_prefix:     invoicePrefix,
         ai_invoice_quo_prefix:     quotePrefix,
@@ -216,7 +217,8 @@ export default function App() {
         ai_invoice_email_prov:     emailProvider,
         ai_invoice_email_from:     emailFrom,
       });
-    }, 300);
+      lastSavedLogo.current = companyLogo;
+    }, 800);
     return () => clearTimeout(persistTimer.current);
   }, [
     user, orgSettings, onboardingDone, customers, catalogItems,
