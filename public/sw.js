@@ -5,7 +5,7 @@
    - Supabase API → Network-only (never cache auth/data)
    ─────────────────────────────────────────────────────────────────────────── */
 
-const CACHE = 'invoicesaga-v1';
+const CACHE = 'invoicesaga-v2025-1';
 const OFFLINE_URL = '/';
 
 const PRECACHE = [
@@ -27,11 +27,11 @@ self.addEventListener('install', (event) => {
 // ── ACTIVATE ─────────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))
-      )
-    )
+    caches.keys().then((keys) => {
+      const deleted = keys.filter((k) => k !== CACHE);
+      console.log(`[SW] Activating cache ${CACHE}. Deleting: ${deleted.join(', ') || 'none'}`);
+      return Promise.all(deleted.map((k) => caches.delete(k)));
+    })
   );
   self.clients.claim();
 });
@@ -46,6 +46,12 @@ self.addEventListener('fetch', (event) => {
 
   // Never intercept Supabase or external API calls
   if (!url.origin.includes(self.location.hostname)) return;
+
+  // Demo pages are large (~400 KB) — serve network-only, fallback to offline shell
+  if (url.pathname === '/demo.html' || url.pathname === '/demo-construction.html') {
+    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
+    return;
+  }
 
   // HTML navigation → network-first, fallback to cached shell
   if (request.mode === 'navigate') {
