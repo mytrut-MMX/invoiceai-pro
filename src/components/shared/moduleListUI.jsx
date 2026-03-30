@@ -228,7 +228,8 @@ export function StatusBadge({ status }) {
 export function EmptyStatePanel({ icon, title = "Nothing to show", message, text, cta }) {
   const content = message || text;
   return (
-    <div style={moduleUi.emptyIcon}>{icon || <Icons.Info />}</div>
+    <div style={moduleUi.empty}>
+      <div style={moduleUi.emptyIcon}>{icon || <Icons.Info />}</div>
       {title ? <div style={{ fontSize: 14, color: "#0f172a", fontWeight: 700, marginBottom: 4 }}>{title}</div> : null}
       {content ? <div style={{ fontSize: 13 }}>{content}</div> : null}
       {cta ? <div style={{ marginTop: 12 }}>{cta}</div> : null}

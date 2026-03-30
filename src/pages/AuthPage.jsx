@@ -184,6 +184,8 @@ export default function AuthPage({ onAuth }) {
         if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
         if(users.find(u=>u.email===email)) { setError("An account with this email already exists."); setLoading(false); return; }
         // AUTH-002: Hash new passwords with PBKDF2 (not SHA-256)
+        // Yield a frame so the loading spinner renders before the expensive PBKDF2 starts
+        await new Promise(resolve => setTimeout(resolve, 0));
         const pwHash = await hashPassword(password);
         const newUser = { name: name.trim(), email, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
         saveUsers([...users, newUser]);
@@ -191,6 +193,8 @@ export default function AuthPage({ onAuth }) {
         onAuth({ name: newUser.name, email: newUser.email, role:"Admin", expiresAt: Date.now() + 8 * 60 * 60 * 1000 });
       } else {
         const found = users.find(u => u.email === email);
+        // Yield a frame before PBKDF2 verify so spinner is visible on mobile
+        await new Promise(resolve => setTimeout(resolve, 0));
         if(!found || !(await verifyPassword(password, found.password))) {
           // AUTH-008: Record failure for lockout tracking
           recordFailure(email);

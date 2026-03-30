@@ -6,6 +6,7 @@
 export function saveAll(stateMap) {
   const failed = [];
   for (const [key, value] of Object.entries(stateMap)) {
+    if (value === undefined) continue;
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch {
