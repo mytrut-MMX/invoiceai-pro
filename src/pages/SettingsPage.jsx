@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS, normalizeCurrencyCode } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -159,6 +159,30 @@ export default function SettingsPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState("org");
   const [vatNumberLocked, setVatNumberLocked] = useState(Boolean(org.vatNum));
   const crnError = crn && !validateUkCrn(crn) ? "CRN must be 8 digits or 2 letters followed by 6 digits (e.g. 12345678, SC123456)." : "";
+
+  useEffect(() => {
+    if (!orgSettings) return;
+    const org = orgSettings;
+    setOrgName(org.orgName || "");
+    setEmail(org.email || "");
+    setPhone(org.phone || "");
+    setWebsite(org.website || "");
+    setStreet(org.street || "");
+    setCity(org.city || "");
+    setPostcode(org.postcode || "");
+    setCountry(org.country || "United Kingdom");
+    setCurrency(normalizeCurrencyCode(org.currency || "GBP"));
+    setTimezone(org.timezone || "(UTC+00:00) London");
+    setIndustry(org.industry || "");
+    setVatReg(org.vatReg || "No");
+    setVatNum(org.vatNum || "");
+    setCrn(org.crn || "");
+    setBankName(org.bankName || "");
+    setBankSort(org.bankSort || "");
+    setBankAcc(org.bankAcc || "");
+    setBankIban(org.bankIban || "");
+    setBankSwift(org.bankSwift || "");
+  }, [orgSettings]);
 
   const settingTabs = [
     { id:"org", label:"Organization Details" },
