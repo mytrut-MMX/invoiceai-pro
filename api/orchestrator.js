@@ -96,5 +96,6 @@ ${JSON.stringify(context || {})}
   error: "OpenAI call failed",
   details: err?.message || String(err)
 });
+    const response = await fetch("https://api.openai.com/v1/responses", {
   }
 }
