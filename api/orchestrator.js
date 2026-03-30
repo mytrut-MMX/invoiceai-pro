@@ -70,32 +70,25 @@ ${JSON.stringify(context || {})}
       })
     });
 
-    return res.status(200).json({
-  ok: true,
-  openai_raw: data
-});
-    const text = data.output?.[0]?.content?.[0]?.text || "";
+    const data = await response.json();
 
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
+    if (!response.ok) {
       return res.status(500).json({
-        error: "Model did not return valid JSON",
-        raw: text
+        error: "OpenAI HTTP error",
+        status: response.status,
+        openai_raw: data
       });
     }
 
     return res.status(200).json({
       ok: true,
-      result: parsed
+      openai_raw: data
     });
 
   } catch (err) {
     return res.status(500).json({
-  error: "OpenAI call failed",
-  details: err?.message || String(err)
-});
-    const response = await fetch("https://api.openai.com/v1/responses", {
+      error: "OpenAI call failed",
+      details: err?.message || String(err)
+    });
   }
 }
