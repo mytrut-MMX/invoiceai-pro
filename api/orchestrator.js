@@ -10,21 +10,51 @@ export default async function handler(req, res) {
   }
 
   const prompt = `
-You are the Executive Orchestrator Agent.
+You are the Executive Orchestrator Agent for InvoiceSaga.
 
-Break the objective into tasks.
+Return STRICT JSON ONLY.
+Do not include markdown.
+Do not include explanations.
 
-Return JSON with:
-- initiatives
-- tasks
-- risks
-- status
+Use exactly this shape:
+{
+  "initiatives": [
+    { "id": "INIT-1", "title": "..." }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-1",
+      "title": "...",
+      "agent": "...",
+      "priority": "high",
+      "depends_on": []
+    }
+  ],
+  "risks": ["..."],
+  "status": {
+    "overall_status": "pending",
+    "blockers": [],
+    "next_focus": "TASK-1"
+  }
+}
+
+Allowed agents:
+- Product Workflow Lead
+- Frontend Architecture Lead
+- Backend & Integrations Lead
+- Data & Ledger Lead
+- Security & Trust Lead
+- QA Regression Agent
+- Release Gate Agent
+
+Title:
+${title || ""}
 
 Objective:
 ${objective}
 
 Context:
-${JSON.stringify(context)}
+${JSON.stringify(context || {})}
 `;
 
   try {
@@ -41,18 +71,26 @@ ${JSON.stringify(context)}
     });
 
     const data = await response.json();
-
     const text = data.output?.[0]?.content?.[0]?.text || "";
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return res.status(500).json({
+        error: "Model did not return valid JSON",
+        raw: text
+      });
+    }
 
     return res.status(200).json({
       ok: true,
-      raw: text
+      result: parsed
     });
 
   } catch (err) {
     return res.status(500).json({
-      error: "OpenAI call failed",
-      details: err.message
+      error: "OpenAI call failed"
     });
   }
 }
