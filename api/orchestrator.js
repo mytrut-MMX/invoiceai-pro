@@ -93,7 +93,8 @@ ${JSON.stringify(context || {})}
 
   } catch (err) {
     return res.status(500).json({
-      error: "OpenAI call failed"
-    });
+  error: "OpenAI call failed",
+  details: err?.message || String(err)
+});
   }
 }
