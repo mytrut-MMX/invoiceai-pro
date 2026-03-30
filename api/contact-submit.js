@@ -1,20 +1,36 @@
 // SEC-009: In-memory rate limiter (per IP, max 5 requests per 10 minutes)
+// Note: resets on cold start and is not cross-instance safe on serverless —
+// acceptable fallback when a distributed store (e.g. Upstash) is not configured.
 const rateLimitMap = new Map();
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 function isRateLimited(ip) {
   const now = Date.now();
-  const entry = rateLimitMap.get(ip) || { count: 0, reset: now + RATE_LIMIT_WINDOW_MS };
-  if (now > entry.reset) {
-    entry.count = 1;
-    entry.reset = now + RATE_LIMIT_WINDOW_MS;
-  } else {
-    entry.count += 1;
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(ip, { count: 1, reset: now + RATE_LIMIT_WINDOW_MS });
+    return false;
   }
+
+  entry.count += 1;
   rateLimitMap.set(ip, entry);
-  return entry.count > RATE_LIMIT_MAX;
+
+  if (entry.count > RATE_LIMIT_MAX) {
+    console.warn(`[RateLimit] IP ${ip.substring(0, 8)}*** exceeded limit: ${entry.count} requests`);
+    return true;
+  }
+  return false;
 }
+
+// Periodically evict expired entries to prevent unbounded Map growth.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (now > entry.reset) rateLimitMap.delete(ip);
+  }
+}, 5 * 60 * 1000);
 
 // SEC-013: Allowed subject values (enum)
 const ALLOWED_SUBJECTS = ['Feedback', 'Bug Report', 'Complaint', 'Billing', 'General Inquiry', 'Other', 'General'];
@@ -39,7 +55,12 @@ export default async function handler(req, res) {
   // SEC-009: Rate limiting by IP
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
   if (isRateLimited(clientIp)) {
+    res.setHeader('X-RateLimit-Remaining', '0');
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+  const currentEntry = rateLimitMap.get(clientIp);
+  if (currentEntry) {
+    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, RATE_LIMIT_MAX - currentEntry.count)));
   }
 
   const { name, email, subject, message } = req.body || {};
