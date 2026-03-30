@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ff } from "../constants";
 import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
-import { supabase, supabaseReady, signInWithGoogle, getSession } from "../lib/supabase";
+import { supabase, supabaseReady, signInWithGoogle, getSession, supabaseConfigError } from "../lib/supabase";
 
 // AUTH-002: PBKDF2-SHA256 with random salt — NIST SP 800-132 compliant
 // Format stored: "pbkdf2:310000:<saltHex>:<hashHex>"
@@ -136,6 +136,9 @@ export default function AuthPage({ onAuth }) {
 
   const oauthErrorMessage = (provider, error) => {
     const msg = typeof error === "string" ? error : (error?.message || "");
+    if (msg.toLowerCase().includes("forbidden use of secret api key in browser")) {
+      return "Auth is misconfigured: browser is using a secret Supabase key. Replace it with VITE_SUPABASE_ANON_KEY.";
+    }
     if (msg.toLowerCase().includes("provider is not enabled") || error?.code === 400) {
       return `${provider} sign-in is not enabled yet. Please use email and password, or contact support.`;
     }
@@ -191,7 +194,7 @@ export default function AuthPage({ onAuth }) {
             options: { data: { full_name: name.trim() } },
           });
           if (error) {
-            setError(error.message || "Could not create account.");
+            setError(oauthErrorMessage("Email", error));
             setLoading(false);
             return;
           }
@@ -230,7 +233,7 @@ export default function AuthPage({ onAuth }) {
           });
           if (error || !data?.user) {
             recordFailure(normalizedEmail);
-            setError(error?.message || "Incorrect email or password.");
+            setError(oauthErrorMessage("Email", error || "Incorrect email or password."));
             setLoading(false);
             return;
           }
@@ -283,7 +286,7 @@ export default function AuthPage({ onAuth }) {
       {!supabaseReady && (
         <div style={{ position:"fixed", top:0, left:0, right:0, background:"#FEF3C7", borderBottom:"1px solid #D97706", padding:"8px 16px", display:"flex", alignItems:"center", gap:8, zIndex:999, fontSize:12, color:"#92400e" }}>
           <span>⚠️</span>
-          <span><strong>Supabase not configured</strong> — accounts are saved locally only. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</span>
+          <span><strong>Supabase not configured</strong> — {supabaseConfigError || "accounts are saved locally only. Set"} {!supabaseConfigError && <><code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</>}</span>
         </div>
       )}
       <div style={{ width:"100%", maxWidth:460 }}>
