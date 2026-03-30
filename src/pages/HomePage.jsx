@@ -27,7 +27,7 @@ export default function HomePage({ user, onNavigate }) {
     if(!aiInput.trim()||loading) return;
     const msg = aiInput.trim();
     setAiInput("");
-    setMessages(p=>[...p,{ role:"user", text:msg }]);
+    setMessages(p=>[...p.slice(-99),{ role:"user", text:msg }]);
     setLoading(true);
     try {
       const res = await fetch("/api/claude-proxy", {
@@ -41,9 +41,9 @@ export default function HomePage({ user, onNavigate }) {
         })
       });
       const data = await res.json();
-      setMessages(p=>[...p,{ role:"assistant", text:data.content?.[0]?.text || "Sorry, couldn't process that." }]);
+      setMessages(p=>[...p.slice(-99),{ role:"assistant", text:data.content?.[0]?.text || "Sorry, couldn't process that." }]);
     } catch {
-      setMessages(p=>[...p,{ role:"assistant", text:"Connection issue. Please try again." }]);
+      setMessages(p=>[...p.slice(-99),{ role:"assistant", text:"Connection issue. Please try again." }]);
     }
     setLoading(false);
   };
