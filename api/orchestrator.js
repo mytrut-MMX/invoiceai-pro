@@ -70,7 +70,10 @@ ${JSON.stringify(context || {})}
       })
     });
 
-    const data = await response.json();
+    return res.status(200).json({
+  ok: true,
+  openai_raw: data
+});
     const text = data.output?.[0]?.content?.[0]?.text || "";
 
     let parsed;
