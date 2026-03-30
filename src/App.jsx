@@ -296,7 +296,12 @@ export default function App() {
   // via the JS client; this page just waits for the session and calls onAuth.
   // Also handle ?code= landing on "/" if Supabase redirects to site root instead of /auth/callback
   const _search = new URLSearchParams(window.location.search);
-  const isOAuthCallback = path === '/auth/callback' || (_search.has('code') && _search.has('state'));
+  const _hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const isOAuthCallback =
+    path === '/auth/callback' ||
+    _search.has('code') ||
+    _hash.has('access_token') ||
+    _hash.has('refresh_token');
   if(isOAuthCallback) {
     return (
       <AuthCallbackPage onAuth={(u) => {
