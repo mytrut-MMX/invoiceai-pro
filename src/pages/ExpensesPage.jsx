@@ -318,32 +318,26 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
   const [search,      setSearch]      = useState("");
   const [billableFilter, setBillableFilter] = useState("All");
 
-  const panelFiltered = useMemo(() => filterExpenses(expenses, activeFilter), [expenses, activeFilter]);
+  const sortedFiltered = useMemo(() => {
+    let result = filterExpenses(expenses, activeFilter);
 
-  const filtered = useMemo(() => {
-    if (!search) return panelFiltered;
-    const q = search.toLowerCase();
-    return panelFiltered.filter(e =>
-      (e.expense_number || "").toLowerCase().includes(q) ||
-      (e.category || "").toLowerCase().includes(q) ||
-      (e.vendor || "").toLowerCase().includes(q) ||
-      (e.description || "").toLowerCase().includes(q) ||
-      (e.customer?.name || "").toLowerCase().includes(q) ||
-      (e.paid_through || "").toLowerCase().includes(q)
-    );
-  }, [panelFiltered, search]);
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(e =>
+        (e.expense_number || "").toLowerCase().includes(q) ||
+        (e.category || "").toLowerCase().includes(q) ||
+        (e.vendor || "").toLowerCase().includes(q) ||
+        (e.description || "").toLowerCase().includes(q) ||
+        (e.customer?.name || "").toLowerCase().includes(q) ||
+        (e.paid_through || "").toLowerCase().includes(q)
+      );
+    }
 
-  const filteredByBillable = useMemo(() => {
-    if (billableFilter === "All") return filtered;
-    if (billableFilter === "Billable") return filtered.filter(e => !!e.billable);
-    if (billableFilter === "With Receipt") return filtered.filter(e => !!e.receipt_url || !!e.receipt);
-    return filtered;
-  }, [filtered, billableFilter]);
-  
-  const sortedFiltered = useMemo(
-    () => [...filteredByBillable].sort((a, b) => new Date(b.date) - new Date(a.date)),
-    [filteredByBillable]
-  );
+    if (billableFilter === "Billable") result = result.filter(e => !!e.billable);
+    if (billableFilter === "With Receipt") result = result.filter(e => !!e.receipt_url || !!e.receipt);
+
+    return [...result].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [expenses, activeFilter, search, billableFilter]);
   const hasFilters = search || activeFilter !== "all" || billableFilter !== "All";
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.total || 0), 0);
   const billableCount = expenses.filter(e => e.billable).length;
