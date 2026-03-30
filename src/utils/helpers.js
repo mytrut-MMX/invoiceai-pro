@@ -89,18 +89,3 @@ export const formatPhoneNumber = (phone) => {
 
   return [countryCode, mobileCode, localGrouped].filter(Boolean).join(" ").trim();
 };
-
-// Supabase fetch helper
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
-export async function sbFetch(method, path, body) {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      method,
-      headers: { "Content-Type":"application/json", "apikey":SUPABASE_ANON_KEY, "Authorization":`Bearer ${SUPABASE_ANON_KEY}`, "Prefer":method==="POST"?"return=representation":"" },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    if(!res.ok) throw new Error(await res.text());
-    return res.status===204 ? null : res.json();
-  } catch(e) { throw e; }
-}
