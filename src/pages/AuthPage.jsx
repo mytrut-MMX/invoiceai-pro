@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ff } from "../constants";
 import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
-import { supabase, supabaseReady, signInWithGoogle, getSession } from "../lib/supabase";
+import { supabase, supabaseReady, signInWithGoogle, getSession, supabaseConfigError } from "../lib/supabase";
 
 // AUTH-002: PBKDF2-SHA256 with random salt — NIST SP 800-132 compliant
 // Format stored: "pbkdf2:310000:<saltHex>:<hashHex>"
@@ -136,6 +136,9 @@ export default function AuthPage({ onAuth }) {
 
   const oauthErrorMessage = (provider, error) => {
     const msg = typeof error === "string" ? error : (error?.message || "");
+    if (msg.toLowerCase().includes("forbidden use of secret api key in browser")) {
+      return "Auth is misconfigured: browser is using a secret Supabase key. Replace it with VITE_SUPABASE_ANON_KEY.";
+    }
     if (msg.toLowerCase().includes("provider is not enabled") || error?.code === 400) {
       return `${provider} sign-in is not enabled yet. Please use email and password, or contact support.`;
     }
@@ -166,12 +169,13 @@ export default function AuthPage({ onAuth }) {
 
   const handleSubmit = () => {
     setError("");
-    if(!email || !password) { setError("Email and password are required."); return; }
-    if(!/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email address."); return; }
+    const normalizedEmail = email.trim().toLowerCase();
+    if(!normalizedEmail || !password) { setError("Email and password are required."); return; }
+    if(!/\S+@\S+\.\S+/.test(normalizedEmail)) { setError("Please enter a valid email address."); return; }
     if(password.length < 8) { setError("Password must be at least 8 characters."); return; }
 
     // AUTH-008: Check lockout before attempting
-    if(checkLockout(email)) {
+    if(checkLockout(normalizedEmail)) {
       setError("Too many failed attempts. Try again in 15 minutes.");
       return;
     }
@@ -182,31 +186,86 @@ export default function AuthPage({ onAuth }) {
       if(mode==="register") {
         if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
         if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
-        if(users.find(u=>u.email===email)) { setError("An account with this email already exists."); setLoading(false); return; }
+        
+        if (supabaseReady && supabase) {
+          const { data, error } = await supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+            options: { data: { full_name: name.trim() } },
+          });
+          if (error) {
+            setError(oauthErrorMessage("Email", error));
+            setLoading(false);
+            return;
+          }
+          await saveProfileToSupabase(normalizedEmail, name.trim());
+          if (data?.user && data?.session) {
+            clearAttempts(normalizedEmail);
+            onAuth({
+              id: data.user.id,
+              name: data.user.user_metadata?.full_name || name.trim(),
+              email: data.user.email,
+              role: "Admin",
+              expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+              provider: data.user.app_metadata?.provider || "email",
+            });
+          } else {
+            setError("Account created. Please confirm your email, then sign in.");
+          }
+          setLoading(false);
+          return;
+        }
+
+        if(users.find(u=>u.email===normalizedEmail)) { setError("An account with this email already exists."); setLoading(false); return; }
         // AUTH-002: Hash new passwords with PBKDF2 (not SHA-256)
         // Yield a frame so the loading spinner renders before the expensive PBKDF2 starts
         await new Promise(resolve => setTimeout(resolve, 0));
         const pwHash = await hashPassword(password);
-        const newUser = { name: name.trim(), email, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
+        const newUser = { name: name.trim(), email: normalizedEmail, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
         saveUsers([...users, newUser]);
-        await saveProfileToSupabase(email, name.trim());
+        await saveProfileToSupabase(normalizedEmail, name.trim());
         onAuth({ name: newUser.name, email: newUser.email, role:"Admin", expiresAt: Date.now() + 8 * 60 * 60 * 1000 });
       } else {
-        const found = users.find(u => u.email === email);
+        if (supabaseReady && supabase) {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password,
+          });
+          if (error || !data?.user) {
+            recordFailure(normalizedEmail);
+            setError(oauthErrorMessage("Email", error || "Incorrect email or password."));
+            setLoading(false);
+            return;
+          }
+          clearAttempts(normalizedEmail);
+          const sbName = await fetchNameFromSupabase(normalizedEmail);
+          onAuth({
+            id: data.user.id,
+            name: sbName || data.user.user_metadata?.full_name || data.user.email,
+            email: data.user.email,
+            role: "Admin",
+            expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+            provider: data.user.app_metadata?.provider || "email",
+          });
+          setLoading(false);
+          return;
+        }
+
+        const found = users.find(u => u.email === normalizedEmail);
         // Yield a frame before PBKDF2 verify so spinner is visible on mobile
         await new Promise(resolve => setTimeout(resolve, 0));
         if(!found || !(await verifyPassword(password, found.password))) {
           // AUTH-008: Record failure for lockout tracking
-          recordFailure(email);
+          recordFailure(normalizedEmail);
           setError("Incorrect email or password."); setLoading(false); return;
         }
         // AUTH-002: Upgrade SHA-256 hash to PBKDF2 on successful login
         if(found.password && !found.password.startsWith('pbkdf2:')) {
           const upgraded = await hashPassword(password);
-          saveUsers(users.map(u => u.email === email ? { ...u, password: upgraded } : u));
+          saveUsers(users.map(u => u.email === normalizedEmail ? { ...u, password: upgraded } : u));
         }
-        clearAttempts(email);
-        const sbName = await fetchNameFromSupabase(email);
+        clearAttempts(normalizedEmail);
+        const sbName = await fetchNameFromSupabase(normalizedEmail);
         // AUTH-003: Add session expiry (8 hours from now)
         onAuth({
           name: sbName || found.name,
@@ -227,7 +286,7 @@ export default function AuthPage({ onAuth }) {
       {!supabaseReady && (
         <div style={{ position:"fixed", top:0, left:0, right:0, background:"#FEF3C7", borderBottom:"1px solid #D97706", padding:"8px 16px", display:"flex", alignItems:"center", gap:8, zIndex:999, fontSize:12, color:"#92400e" }}>
           <span>⚠️</span>
-          <span><strong>Supabase not configured</strong> — accounts are saved locally only. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</span>
+          <span><strong>Supabase not configured</strong> — {supabaseConfigError || "accounts are saved locally only. Set"} {!supabaseConfigError && <><code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</>}</span>
         </div>
       )}
       <div style={{ width:"100%", maxWidth:460 }}>
