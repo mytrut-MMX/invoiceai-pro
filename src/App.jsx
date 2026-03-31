@@ -286,6 +286,7 @@ export default function App() {
 
   // ─── gates ─────────────────────────────────────────────────────
   const path = window.location.pathname;
+  if(path === '/' || path === '') return <LandingPage />;
   if(path === '/privacy')         return <PrivacyPage />;
   if(path === '/terms')           return <TermsPage />;
   if(path === '/cookies')         return <CookiePolicyPage />;
@@ -321,7 +322,6 @@ export default function App() {
   if (!user && !authChecked) return null;
 
   if(!user) {
-  if(path === '/' || path === '') return <LandingPage />;
   if(path === '/templates')       return <TemplatesPage />;
   if(path === '/admin')           return <AdminPage />;
   return (
