@@ -69,7 +69,7 @@ export default function App() {
         provider: session.user.app_metadata?.provider || "email",
       };
       const prev = LS.get("ai_invoice_user", null);
-      if (prev?.email !== u.email) {
+      if (prev && prev.email !== u.email) {
         setOnboardingDoneState(false);
         LS.set("ai_invoice_onboarding_done", false);
       }
@@ -90,7 +90,7 @@ export default function App() {
       });
       unsubscribe = () => subscription.unsubscribe();
     }
-    
+
     getSession()
       .then((session) => {
         applySession(session);
@@ -306,7 +306,7 @@ export default function App() {
     return (
       <AuthCallbackPage onAuth={(u) => {
         const prev = LS.get("ai_invoice_user", null);
-        if (prev?.email !== u.email) {
+        if (prev && prev.email !== u.email) {
           setOnboardingDoneState(false);
           LS.set("ai_invoice_onboarding_done", false);
         }
@@ -328,7 +328,7 @@ export default function App() {
     <AppCtx.Provider value={ctx}>
       <AuthPage onAuth={(u)=>{
         const prev = LS.get("ai_invoice_user", null);
-        if (prev?.email !== u.email) {
+        if (prev && prev.email !== u.email) {
           setOnboardingDoneState(false);
           LS.set("ai_invoice_onboarding_done", false);
         }
