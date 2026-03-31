@@ -125,12 +125,47 @@ ${JSON.stringify(context || {})}
         supabase_raw: inserted
       });
     }
+    const objectiveId = inserted[0]?.id;
+
+const tasksToInsert = (parsed.tasks || []).map(task => ({
+  objective_id: objectiveId,
+  title: task.title,
+  agent: task.agent,
+  priority: task.priority,
+  depends_on: task.depends_on || [],
+  status: "pending"
+}));
+
+let insertedTasks = [];
+
+if (tasksToInsert.length > 0) {
+  const taskInsertResponse = await fetch(`${supabaseUrl}/rest/v1/agent_tasks`, {
+    method: "POST",
+    headers: {
+      "apikey": serviceRoleKey,
+      "Authorization": `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify(tasksToInsert)
+  });
+
+  insertedTasks = await taskInsertResponse.json();
+
+  if (!taskInsertResponse.ok) {
+    return res.status(500).json({
+      error: "Objective saved but failed to save tasks",
+      supabase_raw: insertedTasks
+    });
+  }
+}
 
     return res.status(200).json({
-      ok: true,
-      objective_saved: inserted[0],
-      result: parsed
-    });
+  ok: true,
+  objective_saved: inserted[0],
+  tasks_saved: insertedTasks,
+  result: parsed
+});
 
   } catch (err) {
     return res.status(500).json({
