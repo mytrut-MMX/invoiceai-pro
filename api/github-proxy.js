@@ -1,6 +1,11 @@
-// SEC-004: Restrict CORS to allowed origin only (not wildcard)
+/**
+ * GitHub API proxy — forwards requests to api.github.com on behalf of the client.
+ * Path must start with a whitelisted prefix; HTTP method is restricted to GET/POST.
+ * The caller supplies their own GitHub token; it is forwarded as a Bearer credential
+ * and never stored server-side.
+ */
+
 const ALLOWED_METHODS = ['GET', 'POST'];
-// SEC-003: Whitelist of permitted GitHub API path prefixes
 const ALLOWED_PATH_PREFIXES = [
   '/repos/',
   '/user',
@@ -18,7 +23,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // HDR-004: Prevent caching of proxied API responses
   res.setHeader('Cache-Control', 'no-store');
 
   let body;
@@ -32,18 +36,15 @@ export default async function handler(req, res) {
 
   const { path, method, data, token } = body;
 
-  // SEC-003: Validate path is a string starting with /
   if (!path || typeof path !== 'string' || !path.startsWith('/')) {
     return res.status(400).json({ error: 'Invalid path' });
   }
 
-  // SEC-003: Enforce path whitelist
   const pathAllowed = ALLOWED_PATH_PREFIXES.some(prefix => path.startsWith(prefix));
   if (!pathAllowed) {
     return res.status(403).json({ error: 'Path not permitted' });
   }
 
-  // SEC-003: Validate HTTP method
   const httpMethod = (method || 'GET').toUpperCase();
   if (!ALLOWED_METHODS.includes(httpMethod)) {
     return res.status(405).json({ error: 'Method not permitted' });
@@ -68,7 +69,6 @@ export default async function handler(req, res) {
     try { result = JSON.parse(text); } catch { result = { message: text }; }
     res.status(response.status).json(result);
   } catch {
-    // SEC-015: Do not expose internal error details
     res.status(500).json({ error: 'Internal server error' });
   }
 }

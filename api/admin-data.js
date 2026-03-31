@@ -1,5 +1,9 @@
-// AUTH-001: Validates a signed HMAC-SHA256 token (issued by /api/admin-login).
-// The raw admin password is never re-transmitted after login.
+/**
+ * Admin data endpoint — requires a valid session token from /api/admin-login.
+ * Fetches profiles and contact submissions from Supabase using the service role key.
+ * Token is verified with constant-time HMAC-SHA256 comparison; SUPABASE_URL is
+ * validated to be a legitimate supabase.co HTTPS endpoint before any fetch.
+ */
 import { createHmac, timingSafeEqual } from 'crypto';
 
 function verifyAdminToken(token, secret) {
@@ -38,7 +42,6 @@ export default async function handler(req, res) {
   const adminPassword = process.env.ADMIN_PASSWORD?.trim();
   if (!adminPassword) return res.status(503).json({ error: 'Not configured' });
 
-  // AUTH-001: Accept signed HMAC token — not raw password
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
@@ -53,8 +56,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Supabase not configured on server' });
   }
 
-  // SSRF-001: Validate SUPABASE_URL is a legitimate supabase.co HTTPS endpoint
-  // Prevents SSRF if env var is misconfigured or set to internal network address
+  // Validate SUPABASE_URL before use
   try {
     const parsed = new URL(supabaseUrl);
     if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.supabase.co')) {
@@ -70,7 +72,6 @@ export default async function handler(req, res) {
     'Content-Type': 'application/json',
   };
 
-  // HDR-004: Prevent caching of sensitive admin data
   res.setHeader('Cache-Control', 'no-store');
 
   try {

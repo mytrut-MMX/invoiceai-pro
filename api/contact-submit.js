@@ -1,6 +1,10 @@
-// SEC-009: In-memory rate limiter (per IP, max 5 requests per 10 minutes)
-// Note: resets on cold start and is not cross-instance safe on serverless —
-// acceptable fallback when a distributed store (e.g. Upstash) is not configured.
+/**
+ * Contact form submission endpoint — validates input, applies per-IP rate limiting
+ * (5 requests per 10 minutes), and persists to Supabase contact_submissions.
+ * Rate limiter is in-memory; resets on cold start (acceptable serverless trade-off).
+ * SUPABASE_URL is validated to be a legitimate supabase.co HTTPS endpoint before use.
+ */
+
 const rateLimitMap = new Map();
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -32,10 +36,8 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-// SEC-013: Allowed subject values (enum)
 const ALLOWED_SUBJECTS = ['Feedback', 'Bug Report', 'Complaint', 'Billing', 'General Inquiry', 'Other', 'General'];
 
-// SEC-013: Simple email format validation
 function isValidEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) && email.length <= 254;
 }
@@ -49,10 +51,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // HDR-004: Prevent caching of API responses
   res.setHeader('Cache-Control', 'no-store');
 
-  // SEC-009: Rate limiting by IP
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
   if (isRateLimited(clientIp)) {
     res.setHeader('X-RateLimit-Remaining', '0');
@@ -65,7 +65,6 @@ export default async function handler(req, res) {
 
   const { name, email, subject, message } = req.body || {};
 
-  // SEC-013: Server-side input validation
   if (!email || !message) {
     return res.status(400).json({ error: 'Email and message are required.' });
   }
@@ -79,7 +78,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Name must be 100 characters or fewer.' });
   }
 
-  // SEC-013: Enforce subject enum
   const safeSubject = ALLOWED_SUBJECTS.includes(subject) ? subject : 'General';
 
   const supabaseUrl = process.env.SUPABASE_URL || 'https://oecvlkllkpyfpgczqwii.supabase.co';
@@ -89,7 +87,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Server not configured.' });
   }
 
-  // SSRF-001: Validate SUPABASE_URL is a legitimate supabase.co HTTPS endpoint
+  // Validate SUPABASE_URL before use
   try {
     const parsed = new URL(supabaseUrl);
     if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.supabase.co')) {
@@ -122,7 +120,6 @@ export default async function handler(req, res) {
 
     res.status(200).json({ success: true });
   } catch {
-    // SEC-015: Do not expose internal error details
     res.status(500).json({ error: 'Internal server error' });
   }
 }
