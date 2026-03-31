@@ -5,7 +5,7 @@ import { AppCtx } from "./context/AppContext";
 import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from "./components/layout";
 import { todayStr } from "./utils/helpers";
 import { saveAll } from "./utils/storage";
-import { getSession, supabase } from "./lib/supabase";
+import { getSession, signOut, supabase } from "./lib/supabase";
 
 // pages
 import AuthPage from "./pages/AuthPage";
@@ -286,7 +286,6 @@ export default function App() {
 
   // ─── gates ─────────────────────────────────────────────────────
   const path = window.location.pathname;
-  if(path === '/' || path === '') return <LandingPage />;
   if(path === '/privacy')         return <PrivacyPage />;
   if(path === '/terms')           return <TermsPage />;
   if(path === '/cookies')         return <CookiePolicyPage />;
@@ -322,6 +321,7 @@ export default function App() {
   if (!user && !authChecked) return null;
 
   if(!user) {
+  if(path === '/' || path === '') return <LandingPage />;
   if(path === '/templates')       return <TemplatesPage />;
   if(path === '/admin')           return <AdminPage />;
   return (
@@ -358,10 +358,10 @@ export default function App() {
 );
 
   // ─── page renderer ─────────────────────────────────────────────
-  const doLogout = () => {
-    setUser(null);
-    setMobileDrawerOpen(false);
-    setShowUserModal(false);
+  const doLogout = async () => {
+    try { await signOut(); } catch {}
+    localStorage.removeItem("ai_invoice_user");
+    window.location.href = '/';
   };
 
   const handleNavigate = (nextPage) => {
