@@ -58,7 +58,7 @@ ${JSON.stringify(context || {})}
 `;
 
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const aiResponse = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -70,17 +70,17 @@ ${JSON.stringify(context || {})}
       })
     });
 
-    const data = await response.json();
+    const aiData = await aiResponse.json();
 
-    if (!response.ok) {
+    if (!aiResponse.ok) {
       return res.status(500).json({
         error: "OpenAI HTTP error",
-        status: response.status,
-        openai_raw: data
+        status: aiResponse.status,
+        openai_raw: aiData
       });
     }
 
-    const text = data?.output?.find(x => x.type === "message")?.content?.[0]?.text || "";
+    const text = aiData?.output?.find(x => x.type === "message")?.content?.[0]?.text || "";
 
     let parsed;
     try {
@@ -92,14 +92,49 @@ ${JSON.stringify(context || {})}
       });
     }
 
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return res.status(500).json({
+        error: "Supabase env vars missing"
+      });
+    }
+
+    const insertResponse = await fetch(`${supabaseUrl}/rest/v1/agent_objectives`, {
+      method: "POST",
+      headers: {
+        "apikey": serviceRoleKey,
+        "Authorization": `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify([{
+        title: title || "Untitled objective",
+        objective,
+        context: context || {},
+        status: parsed?.status?.overall_status || "pending"
+      }])
+    });
+
+    const inserted = await insertResponse.json();
+
+    if (!insertResponse.ok) {
+      return res.status(500).json({
+        error: "Failed to save objective",
+        supabase_raw: inserted
+      });
+    }
+
     return res.status(200).json({
       ok: true,
+      objective_saved: inserted[0],
       result: parsed
     });
 
   } catch (err) {
     return res.status(500).json({
-      error: "OpenAI call failed",
+      error: "Orchestrator failed",
       details: err?.message || String(err)
     });
   }
