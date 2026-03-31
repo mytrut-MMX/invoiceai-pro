@@ -159,11 +159,41 @@ if (tasksToInsert.length > 0) {
     });
   }
 }
+    
+const logResponse = await fetch(`${supabaseUrl}/rest/v1/agent_logs`, {
+  method: "POST",
+  headers: {
+    "apikey": serviceRoleKey,
+    "Authorization": `Bearer ${serviceRoleKey}`,
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
+  },
+  body: JSON.stringify([{
+    agent_name: "Executive Orchestrator Agent",
+    objective_id: objectiveId,
+    input_payload: {
+      title: title || null,
+      objective,
+      context: context || {}
+    },
+    output_payload: parsed
+  }])
+});
+
+const insertedLogs = await logResponse.json();
+
+if (!logResponse.ok) {
+  return res.status(500).json({
+    error: "Objective and tasks saved, but failed to save logs",
+    supabase_raw: insertedLogs
+  });
+}
 
     return res.status(200).json({
   ok: true,
   objective_saved: inserted[0],
   tasks_saved: insertedTasks,
+  log_saved: insertedLogs[0],
   result: parsed
 });
 
