@@ -110,7 +110,8 @@ export default function SettingsPage({ onNavigate }) {
   } = useContext(AppCtx);
 
   const org = orgSettings||{};
-  const storedSettings = JSON.parse(localStorage.getItem("invoicesaga_settings") || "{}");
+  let storedSettings = {};
+  try { storedSettings = JSON.parse(localStorage.getItem("invoicesaga_settings") || "{}"); } catch {}
 
   // Organisation form state
   const [orgName,      setOrgName]      = useState(org.orgName||"");
@@ -224,7 +225,8 @@ export default function SettingsPage({ onNavigate }) {
       }
     }
     setOrgSettings(buildOrgSettings());
-    const existingSettings = JSON.parse(localStorage.getItem('invoicesaga_settings') || '{}');
+    let existingSettings = {};
+    try { existingSettings = JSON.parse(localStorage.getItem('invoicesaga_settings') || '{}'); } catch {}
     localStorage.setItem('invoicesaga_settings', JSON.stringify({
       ...existingSettings,
       cis: {
