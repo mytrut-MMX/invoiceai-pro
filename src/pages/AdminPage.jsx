@@ -196,14 +196,70 @@ function AdminDashboard({ onLogout, token }) {
     {orchRunning ? 'Running…' : 'Run Orchestrator'}
   </button>
 
-  {orchResult && (
-    <div style={{ marginTop:16 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', marginBottom:8 }}>Result</div>
-      <div style={s.msgBox}>
-        {JSON.stringify(orchResult.result, null, 2)}
+  {orchResult?.result && (
+  <div style={{ marginTop:16 }}>
+    <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', marginBottom:12 }}>Orchestrator Result</div>
+
+    <div style={{ marginBottom:16 }}>
+      <div style={{ fontSize:12, fontWeight:700, color:'#475569', marginBottom:8 }}>Initiatives</div>
+      <div style={{ display:'grid', gap:8 }}>
+        {(orchResult.result.initiatives || []).map((item, i) => (
+          <div key={item.id || i} style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:8, padding:'10px 12px' }}>
+            <div style={{ fontSize:11, fontWeight:700, color:'#64748B', marginBottom:4 }}>{item.id}</div>
+            <div style={{ fontSize:13, color:'#0F172A' }}>{item.title}</div>
+          </div>
+        ))}
       </div>
     </div>
-  )}
+
+    <div style={{ marginBottom:16 }}>
+      <div style={{ fontSize:12, fontWeight:700, color:'#475569', marginBottom:8 }}>Tasks</div>
+      <div style={{ display:'grid', gap:8 }}>
+        {(orchResult.result.tasks || []).map((task, i) => (
+          <div key={task.id || i} style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:8, padding:'12px 14px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', gap:12, marginBottom:6, flexWrap:'wrap' }}>
+              <span style={{ fontSize:11, fontWeight:700, color:'#64748B' }}>{task.id}</span>
+              <span style={{ fontSize:11, fontWeight:700, color:'#0EA5E9' }}>{task.agent}</span>
+              <span style={{ fontSize:11, fontWeight:700, color: task.priority === 'high' ? '#DC2626' : task.priority === 'medium' ? '#D97706' : '#475569' }}>
+                {task.priority}
+              </span>
+            </div>
+            <div style={{ fontSize:13, color:'#0F172A', marginBottom:6 }}>{task.title}</div>
+            <div style={{ fontSize:11, color:'#64748B' }}>
+              Depends on: {task.depends_on?.length ? task.depends_on.join(', ') : 'None'}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div style={{ marginBottom:16 }}>
+      <div style={{ fontSize:12, fontWeight:700, color:'#475569', marginBottom:8 }}>Risks</div>
+      <div style={{ display:'grid', gap:8 }}>
+        {(orchResult.result.risks || []).map((risk, i) => (
+          <div key={i} style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, padding:'10px 12px', fontSize:13, color:'#991B1B' }}>
+            {risk}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div>
+      <div style={{ fontSize:12, fontWeight:700, color:'#475569', marginBottom:8 }}>Status</div>
+      <div style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:8, padding:'12px 14px' }}>
+        <div style={{ fontSize:13, color:'#0F172A', marginBottom:6 }}>
+          <strong>Overall:</strong> {orchResult.result.status?.overall_status || '—'}
+        </div>
+        <div style={{ fontSize:13, color:'#0F172A', marginBottom:6 }}>
+          <strong>Next focus:</strong> {orchResult.result.status?.next_focus || '—'}
+        </div>
+        <div style={{ fontSize:13, color:'#0F172A' }}>
+          <strong>Blockers:</strong> {orchResult.result.status?.blockers?.length ? orchResult.result.status.blockers.join(', ') : 'None'}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 </div>
         {/* Stats */}
         <div style={s.statsGrid}>
