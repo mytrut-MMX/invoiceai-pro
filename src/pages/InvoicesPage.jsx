@@ -11,6 +11,7 @@ import ItemModal from "../modals/ItemModal";
 import { useCISSettings } from "../hooks/useCISSettings";
 import { postInvoiceEntry, reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
+import { getDefaultTemplate, getTemplateById } from "../utils/InvoiceTemplateSchema";
 
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
@@ -40,6 +41,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const [status, setStatus] = useState(inv.status||"Draft");
   const [template, setTemplate] = useState(inv.template||"classic");
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [templateId] = useState(inv.templateId || null);
   const [showPaidModal, setShowPaidModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -73,7 +75,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
   );
 
-  const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status, poNumber, docType:"invoice" };
+  const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status, poNumber, docType:"invoice", templateId };
 
   const buildInvoice = (newStatus) => ({
     id: inv.id||crypto.randomUUID(),
@@ -82,7 +84,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
     payment_terms:payTerms, custom_payment_days:customDays,
     line_items:items, discount_type:discType, discount_value:discVal,
     shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
-    status: newStatus||status, template,
+    status: newStatus||status, template, templateId,
     recurring:recurringEnabled, recurring_frequency:recurFreq,
     recurring_next_date: recurringEnabled ? recurringNextDate : "",
     activity: inv.activity || []
@@ -410,10 +412,12 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
     status: invoice.status,
     poNumber: invoice.po_number || "",
     docType: "invoice",
+    templateId: invoice.templateId || null,
   };
 
   const activeTemplate = invoice.template || pdfTemplate || "classic";
   const tplDef = PDF_TEMPLATES.find(t => t.id === activeTemplate) || PDF_TEMPLATES[0];
+  const activeInvoiceTemplate = getTemplateById(invoice.templateId) || getDefaultTemplate();
 
   return (
     <>
@@ -500,6 +504,7 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
               template={activeTemplate}
               footerText={footerText || ""}
               templateConfig={invoiceTemplateConfig || {}}
+              invoiceTemplate={activeInvoiceTemplate}
             />
             </div>
           </div>
