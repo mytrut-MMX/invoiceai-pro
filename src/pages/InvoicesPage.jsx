@@ -76,6 +76,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   );
 
   const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status, poNumber, docType:"invoice", templateId };
+  const activeInvoiceTemplate = getTemplateById(templateId) || getDefaultTemplate();
 
   const buildInvoice = (newStatus) => ({
     id: inv.id||crypto.randomUUID(),
@@ -174,7 +175,7 @@ function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   return (
     <>
       {showPaidModal && <PaidConfirmModal invoice={{ ...docData, invoice_number:docData.docNumber, currency:orgSettings?.currency||"GBP" }} onConfirm={handlePaidConfirm} onCancel={()=>setShowPaidModal(false)} />}
-      {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} />}
+      {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} invoiceTemplate={activeInvoiceTemplate} />}
       {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: cisEnabled } }} />}
 
       <div style={{ width:"100%", maxWidth:1100, margin:"0 auto", background:"#f4f5f7", display:"flex", flexDirection:"column", fontFamily:ff, padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
@@ -427,6 +428,7 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
           currSymbol={currSym}
           isVat={isVat}
           onClose={() => setShowPrintModal(false)}
+          invoiceTemplate={activeInvoiceTemplate}
         />
       )}
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", fontFamily: ff, padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
