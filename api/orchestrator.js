@@ -1,8 +1,46 @@
+import { createHmac, timingSafeEqual } from "crypto";
+
+function verifyAdminToken(token, secret) {
+  if (!token || typeof token !== "string") return false;
+
+  const dot = token.indexOf(".");
+  if (dot === -1) return false;
+
+  const payloadB64 = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+
+  const expected = createHmac("sha256", secret).update(payloadB64).digest("base64url");
+  const expectedBuf = Buffer.from(expected);
+  const sigBuf = Buffer.from(sig);
+
+  if (expectedBuf.length !== sigBuf.length) return false;
+  if (!timingSafeEqual(expectedBuf, sigBuf)) return false;
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
+    return payload.admin === true && payload.exp > Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+  
+const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+if (!adminPassword) {
+  return res.status(503).json({ error: "Admin auth not configured" });
+}
 
+const authHeader = req.headers["authorization"] || "";
+const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+if (!verifyAdminToken(token, adminPassword)) {
+  return res.status(401).json({ error: "Unauthorized" });
+}
+  
   const { title, objective, context } = req.body || {};
 
   if (!objective || typeof objective !== "string") {
