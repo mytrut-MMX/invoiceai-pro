@@ -30,6 +30,7 @@ import AdminPage from "./pages/AdminPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import LedgerPage from "./pages/LedgerPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import InvoiceTemplatesPage from "./pages/InvoiceTemplatesPage";
 
 // modals
 import UserEditModal from "./modals/UserEditModal";
@@ -110,7 +111,7 @@ export default function App() {
   const [onboardingDone, setOnboardingDoneState] = useState(() => LS.get("ai_invoice_onboarding_done", false));
 
   // App state
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(() => (window.location.pathname === "/settings/invoice-templates" ? "settings/invoice-templates" : "home"));
   const [customers, setCustomers] = useState(()=>LS.getArray("ai_invoice_customers", MOCK_CUSTOMERS));
   const [catalogItems, setCatalogItems] = useState(()=>LS.getArray("ai_invoice_items", MOCK_ITEMS_INIT));
   const [invoices, setInvoices] = useState(()=>LS.getArray("ai_invoice_invoices", MOCK_INV_LIST));
@@ -387,7 +388,7 @@ export default function App() {
   };
 
   const renderPage = () => {
-    if (page.startsWith("settings")) return <SettingsPage activeSubPage={page} onNavigate={handleNavigate} />;
+    if (page === "settings/invoice-templates" || page === "settings/templates") return <InvoiceTemplatesPage />;
 
     switch(page) {
        case "home":         return <HomePage key={page} user={user} onNavigate={handleNavigate} />;
