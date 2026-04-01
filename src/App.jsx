@@ -404,6 +404,7 @@ export default function App() {
       case "payments:new": return <PaymentsPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
       case "expenses":     return <ExpensesPage key={page} />;
       case "expenses:new": return <ExpensesPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "settings":     return <SettingsPage key={page} onNavigate={handleNavigate} />;
       case "ledger":       return <LedgerPage key={page} />;
       default:             return <HomePage key={page} user={user} onNavigate={handleNavigate} />;
     }
