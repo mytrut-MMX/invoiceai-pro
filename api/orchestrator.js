@@ -9,6 +9,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "objective is required" });
   }
 
+  if (title && typeof title !== "string") {
+    return res.status(400).json({ error: "title must be a string" });
+  }
+
+  if (context && (typeof context !== "object" || Array.isArray(context))) {
+    return res.status(400).json({ error: "context must be an object" });
+  }
+
+  const safeTitle = (title || "").trim().slice(0, 200);
+  const safeObjective = objective.trim().slice(0, 4000);
+  const safeContext = context || {};
+
   const prompt = `
 You are the Executive Orchestrator Agent for InvoiceSaga.
 
@@ -48,13 +60,13 @@ Allowed agents:
 - Release Gate Agent
 
 Title:
-${title || ""}
+${safeTitle}
 
 Objective:
-${objective}
+${safeObjective}
 
 Context:
-${JSON.stringify(context || {})}
+${JSON.stringify(safeContext)}
 `;
 
   try {
@@ -75,8 +87,7 @@ ${JSON.stringify(context || {})}
     if (!aiResponse.ok) {
       return res.status(500).json({
         error: "OpenAI HTTP error",
-        status: aiResponse.status,
-        openai_raw: aiData
+        status: aiResponse.status
       });
     }
 
@@ -87,8 +98,7 @@ ${JSON.stringify(context || {})}
       parsed = JSON.parse(text);
     } catch {
       return res.status(500).json({
-        error: "Model did not return valid JSON",
-        raw: text
+        error: "Model did not return valid JSON"
       });
     }
 
@@ -110,9 +120,9 @@ ${JSON.stringify(context || {})}
         "Prefer": "return=representation"
       },
       body: JSON.stringify([{
-        title: title || "Untitled objective",
-        objective,
-        context: context || {},
+        title: safeTitle || "Untitled objective",
+        objective: safeObjective,
+        context: safeContext,
         status: parsed?.status?.overall_status || "pending"
       }])
     });
@@ -121,81 +131,79 @@ ${JSON.stringify(context || {})}
 
     if (!insertResponse.ok) {
       return res.status(500).json({
-        error: "Failed to save objective",
-        supabase_raw: inserted
+        error: "Failed to save objective"
       });
     }
+
     const objectiveId = inserted[0]?.id;
 
-const tasksToInsert = (parsed.tasks || []).map(task => ({
-  objective_id: objectiveId,
-  title: task.title,
-  agent: task.agent,
-  priority: task.priority,
-  depends_on: task.depends_on || [],
-  status: "pending"
-}));
+    const tasksToInsert = (parsed.tasks || []).map(task => ({
+      objective_id: objectiveId,
+      title: String(task.title || "").slice(0, 500),
+      agent: String(task.agent || "").slice(0, 200),
+      priority: String(task.priority || "medium").slice(0, 20),
+      depends_on: Array.isArray(task.depends_on) ? task.depends_on : [],
+      status: "pending"
+    }));
 
-let insertedTasks = [];
+    let insertedTasks = [];
 
-if (tasksToInsert.length > 0) {
-  const taskInsertResponse = await fetch(`${supabaseUrl}/rest/v1/agent_tasks`, {
-    method: "POST",
-    headers: {
-      "apikey": serviceRoleKey,
-      "Authorization": `Bearer ${serviceRoleKey}`,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation"
-    },
-    body: JSON.stringify(tasksToInsert)
-  });
+    if (tasksToInsert.length > 0) {
+      const taskInsertResponse = await fetch(`${supabaseUrl}/rest/v1/agent_tasks`, {
+        method: "POST",
+        headers: {
+          "apikey": serviceRoleKey,
+          "Authorization": `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify(tasksToInsert)
+      });
 
-  insertedTasks = await taskInsertResponse.json();
+      insertedTasks = await taskInsertResponse.json();
 
-  if (!taskInsertResponse.ok) {
-    return res.status(500).json({
-      error: "Objective saved but failed to save tasks",
-      supabase_raw: insertedTasks
+      if (!taskInsertResponse.ok) {
+        return res.status(500).json({
+          error: "Objective saved but failed to save tasks"
+        });
+      }
+    }
+
+    const logResponse = await fetch(`${supabaseUrl}/rest/v1/agent_logs`, {
+      method: "POST",
+      headers: {
+        "apikey": serviceRoleKey,
+        "Authorization": `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify([{
+        agent_name: "Executive Orchestrator Agent",
+        objective_id: objectiveId,
+        input_payload: {
+          title: safeTitle || null,
+          objective: safeObjective,
+          context: safeContext
+        },
+        output_payload: parsed
+      }])
     });
-  }
-}
-    
-const logResponse = await fetch(`${supabaseUrl}/rest/v1/agent_logs`, {
-  method: "POST",
-  headers: {
-    "apikey": serviceRoleKey,
-    "Authorization": `Bearer ${serviceRoleKey}`,
-    "Content-Type": "application/json",
-    "Prefer": "return=representation"
-  },
-  body: JSON.stringify([{
-    agent_name: "Executive Orchestrator Agent",
-    objective_id: objectiveId,
-    input_payload: {
-      title: title || null,
-      objective,
-      context: context || {}
-    },
-    output_payload: parsed
-  }])
-});
 
-const insertedLogs = await logResponse.json();
+    const insertedLogs = await logResponse.json();
 
-if (!logResponse.ok) {
-  return res.status(500).json({
-    error: "Objective and tasks saved, but failed to save logs",
-    supabase_raw: insertedLogs
-  });
-}
+    if (!logResponse.ok) {
+      return res.status(500).json({
+        error: "Objective and tasks saved, but failed to save logs"
+      });
+    }
 
     return res.status(200).json({
-  ok: true,
-  objective_saved: inserted[0],
-  tasks_saved: insertedTasks,
-  log_saved: insertedLogs[0],
-  result: parsed
-});
+      ok: true,
+      objective_saved: inserted[0],
+      tasks_saved_count: insertedTasks.length,
+      log_saved: insertedLogs[0]?.id || null,
+      result: parsed
+    });
 
   } catch (err) {
     return res.status(500).json({
