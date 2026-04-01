@@ -16,7 +16,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [activeTab, setActiveTab] = useState("Other Details");
   const [saved, setSaved] = useState(false);
   const { cisEnabled } = useCISSettings();
-  const [custType, setCustType] = useState("Business");
+  const [custType, setCustType] = useState(existing?.type || "Business");
   const [salutation, setSalutation] = useState("");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
   const [lastName, setLastName] = useState(existing?.lastName || "");
@@ -61,6 +61,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const handleSave = () => {
     const customer = {
       id: existing?.id || Date.now(),
+      type: custType,
       name: displayName || `${firstName} ${lastName}`.trim(),
       firstName,
       lastName,
