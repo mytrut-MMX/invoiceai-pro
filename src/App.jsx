@@ -27,6 +27,7 @@ import GdprPage from "./pages/landing/GdprPage";
 import TemplatesPage from "./pages/landing/TemplatesPage";
 import ContactPage from "./pages/landing/ContactPage";
 import AdminPage from "./pages/AdminPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import LedgerPage from "./pages/LedgerPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 
@@ -291,6 +292,18 @@ export default function App() {
   if(path === '/cookies')         return <CookiePolicyPage />;
   if(path === '/gdpr')            return <GdprPage />;
   if(path === '/contact')         return <ContactPage />;
+
+  if (path === '/reset-password') {
+  return (
+    <ResetPasswordPage
+      onPasswordReset={() => {}}
+      onBackToLogin={() => {
+        window.history.replaceState({}, "", "/login");
+        window.location.reload();
+      }}
+    />
+  );
+}
 
   // Supabase Auth exchanges the OAuth token from the URL hash automatically
   // via the JS client; this page just waits for the session and calls onAuth.
