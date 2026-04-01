@@ -4,6 +4,51 @@ import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { Field, Input, Select, Btn, Tag } from "../atoms";
 import { fmt, fmtDate, newLine, todayStr, formatPhoneNumber } from "../../utils/helpers";
+import { DEFAULT_TEMPLATE, getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
+
+const FONT_MAP = {
+  inter: "'Inter', 'Lato', 'DM Sans', 'Helvetica Neue', sans-serif",
+  mono: "'Courier New', monospace",
+  serif: "'Georgia', serif",
+};
+
+const FIELD_LABELS = {
+  companyName: "Company",
+  contactName: "Contact",
+  address: "Address",
+  city: "City",
+  country: "Country",
+  phone: "Phone",
+  email: "Email",
+  vatNumber: "VAT",
+  registrationNumber: "Reg. No.",
+  website: "Website",
+  accountName: "Account Name",
+  bankName: "Bank",
+  accountNumber: "Account",
+  sortCode: "Sort Code",
+  iban: "IBAN",
+  swift: "SWIFT",
+  routingNumber: "Routing",
+};
+
+const sortVisibleEntries = (fields = {}) =>
+  Object.entries(fields)
+    .filter(([, cfg]) => cfg?.visible !== false)
+    .sort((a, b) => (a?.[1]?.order ?? 999) - (b?.[1]?.order ?? 999));
+
+const buildActiveTemplate = (templateInput) => ({
+  ...DEFAULT_TEMPLATE,
+  ...(templateInput || {}),
+  layout: { ...DEFAULT_TEMPLATE.layout, ...(templateInput?.layout || {}) },
+  sections: { ...DEFAULT_TEMPLATE.sections, ...(templateInput?.sections || {}) },
+  fromFields: { ...DEFAULT_TEMPLATE.fromFields, ...(templateInput?.fromFields || {}) },
+  toFields: { ...DEFAULT_TEMPLATE.toFields, ...(templateInput?.toFields || {}) },
+  lineItemColumns: { ...DEFAULT_TEMPLATE.lineItemColumns, ...(templateInput?.lineItemColumns || {}) },
+  totalsBlock: { ...DEFAULT_TEMPLATE.totalsBlock, ...(templateInput?.totalsBlock || {}) },
+  bankFields: { ...DEFAULT_TEMPLATE.bankFields, ...(templateInput?.bankFields || {}) },
+  customText: { ...DEFAULT_TEMPLATE.customText, ...(templateInput?.customText || {}) },
+});
 
 // ─── CUSTOMER PICKER ──────────────────────────────────────────────────────────
 export function CustomerPicker({ customers = [], value, onChange, onClear }) {
@@ -403,7 +448,7 @@ export function PaidConfirmModal({ invoice, onConfirm, onCancel }) {
 }
 
 // ─── A4 INVOICE DOCUMENT ──────────────────────────────────────────────────────
-export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template="classic", footerText="", templateConfig }) {
+export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template = "classic", footerText = "", templateConfig, invoiceTemplate }) {
   const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms, docType } = data;
   const isQuote = docType === "quote";
   const docLabel = isQuote ? "Quote" : "Invoice";
@@ -411,19 +456,55 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   const sym = currSymbol||"£";
   const org = orgSettings||{};
   const tplDef = PDF_TEMPLATES.find(t=>t.id===template)||PDF_TEMPLATES[0];
-  const accent = accentColor || templateConfig?.accentColor || tplDef.defaultAccent;
-  const addrParts = [org.street, org.city, [org.postcode, org.state].filter(Boolean).join(" "), org.country].filter(Boolean);
+  const activeSchemaTemplate = buildActiveTemplate(invoiceTemplate || getDefaultTemplate());
+  const accent = accentColor || activeSchemaTemplate.layout?.accentColor || templateConfig?.accentColor || tplDef.defaultAccent;
+  const fontFamily = FONT_MAP[activeSchemaTemplate.layout?.fontFamily] || FONT_MAP.inter;
+  const fromEntries = sortVisibleEntries(activeSchemaTemplate.fromFields);
+  const toEntries = sortVisibleEntries(activeSchemaTemplate.toFields);
+  const bankEntries = sortVisibleEntries(activeSchemaTemplate.bankFields);
+  const visibleLineColumns = sortVisibleEntries(activeSchemaTemplate.lineItemColumns);
+
+  const fromData = {
+    companyName: org.orgName || "",
+    address: org.street || "",
+    city: org.city || "",
+    country: org.country || "",
+    phone: org.phone || "",
+    email: org.email || "",
+    vatNumber: org.vatNum || "",
+    registrationNumber: org.crn || "",
+    website: org.website || "",
+  };
+
+  const toData = {
+    companyName: customer?.companyName || customer?.name || "",
+    contactName: customer?.name || "",
+    address: customer?.billingAddress?.street || "",
+    city: customer?.billingAddress?.city || "",
+    country: customer?.billingAddress?.country || "",
+    email: customer?.email || "",
+    vatNumber: customer?.vatNumber || "",
+    phone: customer?.phone || "",
+  };
+
+  const bankData = {
+    bankName: org.bankName || "",
+    accountName: org.accountName || org.orgName || "",
+    accountNumber: org.bankAcc || "",
+    sortCode: org.bankSort || "",
+    iban: org.bankIban || "",
+    swift: org.bankSwift || "",
+    routingNumber: org.routingNumber || "",
+  };
 
   const OrgBlock = ({ dark=false }) => (
     <div>
       {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight:(templateConfig?.logoSize||org.logoSize||52), maxWidth:200, objectFit:"contain", display:"block", marginBottom:5, marginLeft:(templateConfig?.logoPosition||"left")==="right"?"auto":0, marginRight:(templateConfig?.logoPosition||"left")==="center"?"auto":0 }} />}
-      <div style={{ fontSize:"15pt", fontWeight:900, color:dark?"#fff":accent, letterSpacing:"-0.01em" }}>{org.orgName||"Your Company"}</div>
-      {addrParts.length>0 && (
-        <div style={{ fontSize:"7.5pt", color:dark?"rgba(255,255,255,0.75)":"#666", marginTop:3, lineHeight:1.8 }}>
-          {addrParts.map((line,i)=><div key={i}>{line}</div>)}
+      {(activeSchemaTemplate.sections?.fromBlock ? fromEntries : [["companyName"]]).map(([fieldKey]) => (
+        <div key={fieldKey} style={{ fontSize: fieldKey === "companyName" ? "15pt" : "7.5pt", fontWeight: fieldKey === "companyName" ? 900 : 500, color:dark?"#fff":(fieldKey === "companyName" ? accent : "#666"), letterSpacing:fieldKey === "companyName" ? "-0.01em" : "normal", marginTop: fieldKey === "companyName" ? 0 : 2 }}>
+          {fieldKey === "companyName" ? (fromData[fieldKey] || "Your Company") : <><strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {fromData[fieldKey] || "—"}</>}
         </div>
-      )}
-      {org.vatNum && <div style={{ fontSize:"7.5pt", color:dark?"rgba(255,255,255,0.6)":"#AAA", marginTop:2 }}>VAT No: {org.vatNum}</div>}
+      ))}
     </div>
   );
 
@@ -442,17 +523,12 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   const BillToBlock = ({ dark=false }) => (
     <div>
       <div style={{ fontSize:"7pt", fontWeight:700, color:dark?"rgba(255,255,255,0.5)":"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"3mm" }}>Bill To</div>
-      {customer ? (<>
-        <div style={{ fontWeight:700, fontSize:"11pt", color:dark?"#fff":"#1A1A1A" }}>{customer.name}</div>
-        {customer.companyName && customer.companyName!==customer.name && <div style={{ fontSize:"9pt", color:dark?"rgba(255,255,255,0.7)":"#555", marginTop:1 }}>{customer.companyName}</div>}
-        {customer.email && <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666", marginTop:2 }}>{customer.email}</div>}
-        {customer.phone && <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666" }}>{formatPhoneNumber(customer.phone)}</div>}
-        {customer.billingAddress && (
-          <div style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.6)":"#666", marginTop:3, lineHeight:1.7 }}>
-            {[customer.billingAddress.street, customer.billingAddress.city, [customer.billingAddress.postcode, customer.billingAddress.county].filter(Boolean).join(" "), customer.billingAddress.country].filter(Boolean).map((l,i)=><div key={i}>{l}</div>)}
-          </div>
-        )}
-      </>) : <div style={{ fontSize:"9pt", color:"#CCC", fontStyle:"italic" }}>No customer selected</div>}
+      {customer ? toEntries.map(([fieldKey]) => (
+        <div key={fieldKey} style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.7)":"#555", marginTop:2 }}>
+          <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong>{" "}
+          {fieldKey === "phone" ? formatPhoneNumber(toData[fieldKey] || "") : (toData[fieldKey] || "—")}
+        </div>
+      )) : <div style={{ fontSize:"9pt", color:"#CCC", fontStyle:"italic" }}>No customer selected</div>}
     </div>
   );
 
@@ -460,19 +536,24 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:"5mm" }}>
       <thead>
         <tr style={{ background:headerBg }}>
-          {["Description","Qty","Unit Price",...(isVat?["VAT"]:[]),"Amount"].map((h,i)=>(
-            <th key={h} style={{ padding:"2.5mm 3mm", textAlign:i>0?"right":"left", fontSize:"7.5pt", fontWeight:700, color:headerColor, letterSpacing:"0.04em" }}>{h}</th>
+          {visibleLineColumns.map(([colKey, colCfg], i)=>(
+            <th key={colKey} style={{ padding:"2.5mm 3mm", textAlign:i>0?"right":"left", fontSize:"7.5pt", fontWeight:700, color:headerColor, letterSpacing:"0.04em" }}>{colCfg?.label || colKey}</th>
           ))}
         </tr>
       </thead>
       <tbody>
         {(items||[]).filter(it=>(it.name||it.description)||it.amount>0).map((it,idx)=>(
           <tr key={it.id||idx} style={{ background:idx%2===0?stripeBg:"#fff" }}>
-            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt" }}><div style={{ fontWeight:700 }}>{it.name||`Item ${idx+1}`}</div>{it.description && <div style={{ fontSize:"8pt", color:"#666", marginTop:1 }}>{it.description}</div>}</td>
-            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{it.quantity}</td>
-            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#666" }}>{fmt(sym,it.rate)}</td>
-            {isVat && <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", textAlign:"right", color:"#888" }}>{it.tax_rate}%</td>}
-            <td style={{ padding:"2.5mm 3mm", fontSize:"9pt", fontWeight:700, textAlign:"right" }}>{fmt(sym,it.amount)}</td>
+            {visibleLineColumns.map(([colKey], i) => {
+              const isDesc = i === 0;
+              const cellStyle = { padding:"2.5mm 3mm", fontSize:"9pt", textAlign:isDesc?"left":"right", color:isDesc?"#1A1A1A":"#666" };
+              if (colKey === "description") return <td key={colKey} style={cellStyle}><div style={{ fontWeight:700 }}>{it.name||`Item ${idx+1}`}</div>{it.description && <div style={{ fontSize:"8pt", color:"#666", marginTop:1 }}>{it.description}</div>}</td>;
+              if (colKey === "quantity") return <td key={colKey} style={cellStyle}>{it.quantity}</td>;
+              if (colKey === "unitPrice") return <td key={colKey} style={cellStyle}>{fmt(sym,it.rate)}</td>;
+              if (colKey === "tax") return <td key={colKey} style={cellStyle}>{isVat ? `${it.tax_rate}%` : "—"}</td>;
+              if (colKey === "discount") return <td key={colKey} style={cellStyle}>{fmt(sym,it.discount || 0)}</td>;
+              return <td key={colKey} style={{ ...cellStyle, fontWeight:700 }}>{fmt(sym,it.amount)}</td>;
+            })}
           </tr>
         ))}
       </tbody>
@@ -510,8 +591,8 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 
   const FooterBar = () => (
     <div style={{ position:"absolute", bottom:"10mm", left:"18mm", right:"18mm", borderTop:"1px solid #EBEBEB", paddingTop:"2.5mm" }}>
-      {footerText
-        ? <div style={{ fontSize:"7pt", color:"#888", textAlign:"center", lineHeight:1.6 }}>{footerText}</div>
+      {(activeSchemaTemplate.customText?.footerNote || footerText)
+        ? <div style={{ fontSize:"7pt", color:"#888", textAlign:"center", lineHeight:1.6 }}>{activeSchemaTemplate.customText?.footerNote || footerText}</div>
         : <div style={{ display:"flex", justifyContent:"space-between" }}>
             <span style={{ fontSize:"7pt", color:"#CCC" }}>{org.orgName||""}{org.vatNum?` · VAT ${org.vatNum}`:""}{org.crn?` · CRN ${org.crn}`:""}</span>
             <span style={{ fontSize:"7pt", color:"#CCC" }}>{org.email||""}</span>
@@ -520,7 +601,31 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     </div>
   );
 
-  const base = { width:"210mm", minHeight:"297mm", background:"#fff", fontFamily:ff, boxSizing:"border-box", fontSize:"10pt", color:"#1A1A1A", position:"relative" };
+  const base = { width:"210mm", minHeight:"297mm", background:"#fff", fontFamily, boxSizing:"border-box", fontSize:"10pt", color:"#1A1A1A", position:"relative" };
+
+  const FromBlock = ({ dark = false }) => (
+    <div>
+      <div style={{ fontSize:"7pt", fontWeight:700, color:dark?"rgba(255,255,255,0.5)":"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"3mm" }}>From</div>
+      {fromEntries.map(([fieldKey]) => (
+        <div key={fieldKey} style={{ fontSize:"8.5pt", color:dark?"rgba(255,255,255,0.7)":"#555", marginTop:2 }}>
+          <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {fromData[fieldKey] || "—"}
+        </div>
+      ))}
+    </div>
+  );
+
+  const BankDetailsBlock = () => activeSchemaTemplate.sections?.bankDetails && bankEntries.length > 0 ? (
+    <div style={{ borderTop:"1px solid #EBEBEB", marginTop:"3mm", paddingTop:"3mm" }}>
+      <div style={{ fontSize:"7pt", fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"2mm" }}>Bank Details</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"2mm 6mm" }}>
+        {bankEntries.map(([fieldKey]) => (
+          <div key={fieldKey} style={{ fontSize:"8pt", color:"#666" }}>
+            <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {bankData[fieldKey] || "—"}
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null;
 
   if(template==="modern") return (
     <div id="a4-invoice-doc" style={{ ...base, display:"flex", flexDirection:"column", padding:0 }}>
@@ -536,7 +641,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       </div>
       <div style={{ padding:"8mm 14mm 14mm" }}>
         <ItemsTable headerBg={`${accent}18`} headerColor={accent} stripeBg="#F0F7FF" />
-        <TotalsSection /><NotesSection />
+        <TotalsSection /><NotesSection /><BankDetailsBlock />
       </div>
       <FooterBar />
     </div>
@@ -556,7 +661,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         <BillToBlock /><InvoiceMetaBlock />
       </div>
       <ItemsTable headerBg={`${accent}15`} headerColor={accent} stripeBg="#FAFAFA" />
-      <TotalsSection /><NotesSection /><FooterBar />
+      <TotalsSection /><NotesSection /><BankDetailsBlock /><FooterBar />
     </div>
   );
 
@@ -577,7 +682,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       </div>
       <div style={{ padding:"7mm 18mm 14mm" }}>
         <ItemsTable headerBg={`${accent}22`} headerColor={accent} stripeBg="#FFFAF8" />
-        <TotalsSection /><NotesSection />
+        <TotalsSection /><NotesSection /><BankDetailsBlock />
       </div>
       <FooterBar />
     </div>
@@ -595,10 +700,14 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       </div>
       <div style={{ padding:"8mm 18mm 14mm" }}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8mm", marginBottom:"8mm", paddingBottom:"6mm", borderBottom:`2px solid ${accent}` }}>
-          <BillToBlock /><InvoiceMetaBlock />
+          <<div>
+            {activeSchemaTemplate.sections?.fromBlock && <FromBlock />}
+            {activeSchemaTemplate.sections?.toBlock && <div style={{ marginTop:"4mm" }}><BillToBlock /></div>}
+          </div>
+          <InvoiceMetaBlock />
         </div>
         <ItemsTable headerBg={accent} headerColor="#fff" stripeBg="#F8F8F8" />
-        <TotalsSection /><NotesSection />
+        <TotalsSection /><NotesSection /><BankDetailsBlock />
       </div>
       <FooterBar />
     </div>
@@ -608,11 +717,13 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 // ─── A4 PRINT MODAL ───────────────────────────────────────────────────────────
 export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTemplate, _overrideAccent }) {
   const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
+  const selectedInvoiceTemplate = getTemplateById(data?.templateId) || getDefaultTemplate();
   const startTpl = _overrideTemplate || pdfTemplate || "classic";
-  const tplDef = PDF_TEMPLATES.find(t=>t.id===startTpl)||PDF_TEMPLATES[0];
+  const resolvedPrintStyle = selectedInvoiceTemplate?.layout?.colorScheme || startTpl;
+  const tplDef = PDF_TEMPLATES.find(t=>t.id===resolvedPrintStyle)||PDF_TEMPLATES[0];
   const [accentColor, setAccentColor] = useState(_overrideAccent || tplDef.defaultAccent);
-  const [activeTemplate, setActiveTemplate] = useState(startTpl);
-  const [previewLogoSize, setPreviewLogoSize] = useState(Number(invoiceTemplateConfig?.logoSize || companyLogoSize || 52));
+  const [activeTemplate, setActiveTemplate] = useState(resolvedPrintStyle);
+  const [previewLogoSize, setPreviewLogoSize] = useState(Number(selectedInvoiceTemplate?.layout?.logoSize === "large" ? 80 : selectedInvoiceTemplate?.layout?.logoSize === "small" ? 36 : (invoiceTemplateConfig?.logoSize || companyLogoSize || 52)));
   
   const switchTemplate = (id) => {
     setActiveTemplate(id);
@@ -681,7 +792,7 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
       <div style={{ width:"100%", maxWidth:820, background:"#fff", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", overflow:"hidden" }}>
         <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat}
           orgSettings={{...orgSettings, logo:companyLogo, logoSize:previewLogoSize}}
-          accentColor={accentColor} template={activeTemplate} footerText={footerText||""} templateConfig={{ ...(invoiceTemplateConfig||{}), logoSize: previewLogoSize }} />
+          accentColor={accentColor} template={activeTemplate} footerText={footerText||""} templateConfig={{ ...(invoiceTemplateConfig||{}), logoSize: previewLogoSize }} invoiceTemplate={selectedInvoiceTemplate} />
       </div>
       </div>
     </div>
