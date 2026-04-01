@@ -631,7 +631,8 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     <div id="a4-invoice-doc" style={{ ...base, display:"flex", flexDirection:"column", padding:0 }}>
       <div style={{ display:"grid", gridTemplateColumns:"42% 58%" }}>
         <div style={{ background:accent, padding:"14mm 12mm 10mm 14mm", minHeight:"62mm" }}>
-          <OrgBlock dark /><div style={{ marginTop:"8mm" }}><BillToBlock dark /></div>
+          <OrgBlock dark />
+          {activeSchemaTemplate.sections?.toBlock && <div style={{ marginTop:"8mm" }}><BillToBlock dark /></div>}
         </div>
         <div style={{ padding:"14mm 14mm 10mm 12mm", background:"#fff" }}>
           <div style={{ fontSize:"28pt", fontWeight:900, color:accent, letterSpacing:"-0.02em", lineHeight:1 }}>{docLabelUpper}</div>
@@ -658,7 +659,8 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       </div>
       <div style={{ height:2, background:`linear-gradient(90deg,${accent},${accent}44)`, marginBottom:"7mm", borderRadius:1 }} />
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8mm", marginBottom:"7mm" }}>
-        <BillToBlock /><InvoiceMetaBlock />
+        {activeSchemaTemplate.sections?.toBlock ? <BillToBlock /> : <div />}
+        <InvoiceMetaBlock />
       </div>
       <ItemsTable headerBg={`${accent}15`} headerColor={accent} stripeBg="#FAFAFA" />
       <TotalsSection /><NotesSection /><BankDetailsBlock /><FooterBar />
@@ -678,7 +680,8 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         </div>
       </div>
       <div style={{ background:tplDef.defaultBg||"#FFF7F4", padding:"6mm 18mm 5mm", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10mm", borderBottom:`3px solid ${accent}` }}>
-        <BillToBlock /><InvoiceMetaBlock />
+        {activeSchemaTemplate.sections?.toBlock ? <BillToBlock /> : <div />}
+        <InvoiceMetaBlock />
       </div>
       <div style={{ padding:"7mm 18mm 14mm" }}>
         <ItemsTable headerBg={`${accent}22`} headerColor={accent} stripeBg="#FFFAF8" />
@@ -715,9 +718,9 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 }
 
 // ─── A4 PRINT MODAL ───────────────────────────────────────────────────────────
-export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTemplate, _overrideAccent }) {
+export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTemplate, _overrideAccent, invoiceTemplate }) {
   const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
-  const selectedInvoiceTemplate = getTemplateById(data?.templateId) || getDefaultTemplate();
+  const selectedInvoiceTemplate = invoiceTemplate || getTemplateById(data?.templateId) || getDefaultTemplate();
   const startTpl = _overrideTemplate || pdfTemplate || "classic";
   const resolvedPrintStyle = selectedInvoiceTemplate?.layout?.colorScheme || startTpl;
   const tplDef = PDF_TEMPLATES.find(t=>t.id===resolvedPrintStyle)||PDF_TEMPLATES[0];
