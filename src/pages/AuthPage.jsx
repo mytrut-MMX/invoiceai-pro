@@ -3,6 +3,7 @@ import { ff } from "../constants";
 import { Ic, Icons } from "../components/icons";
 import { Field, Input } from "../components/atoms";
 import { supabase, supabaseReady, signInWithGoogle, getSession, supabaseConfigError } from "../lib/supabase";
+import ForgotPasswordPage from "./ForgotPasswordPage";
 
 // AUTH-002: PBKDF2-SHA256 with random salt — NIST SP 800-132 compliant
 // Format stored: "pbkdf2:310000:<saltHex>:<hashHex>"
@@ -78,6 +79,7 @@ export default function AuthPage({ onAuth }) {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   const STORAGE_KEY = "ai_invoice_users";
   const getUsers = () => {
@@ -279,6 +281,18 @@ export default function AuthPage({ onAuth }) {
   };
 
     const eyeIcon = showPw ? <Icons.EyeSlash /> : <Icons.Eye />;
+  
+  if (showForgot) {
+    return (
+      <ForgotPasswordPage
+        onBackToLogin={() => {
+          setShowForgot(false);
+          setError("");
+          setPassword("");
+        }}
+      />
+    );
+  }
 
   return (
      <div className="auth-page-bg" style={{ minHeight:'100vh', background:'#FAFAF7', display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
@@ -406,13 +420,21 @@ export default function AuthPage({ onAuth }) {
         </button>
 
             {mode==="login" && (
-          <div style={{ textAlign:"center", marginTop:16 }}>
-            <span style={{ color:"#848484", fontSize:14 }}>Don't have an account? </span>
-            <button onClick={()=>{ setMode("register"); setError(""); }}
-              style={{ color:"#D97706", fontWeight:600, background:"none", border:"none", cursor:"pointer", fontFamily:ff, fontSize:14 }}>
-              Create one free
+          <div style={{ textAlign:"center", marginTop:16, display:"flex", flexDirection:"column", gap:10 }}>
+            <div>
+              <span style={{ color:"#848484", fontSize:14 }}>Don't have an account? </span>
+              <button onClick={()=>{ setMode("register"); setError(""); }}
+                style={{ color:"#D97706", fontWeight:600, background:"none", border:"none", cursor:"pointer", fontFamily:ff, fontSize:14 }}>
+                Create one free
+              </button>
+            </div>
+            <button
+              onClick={() => setShowForgot(true)}
+              style={{ color:"#9A9A9A", fontSize:13, background:"none", border:"none", cursor:"pointer", fontFamily:ff, lineHeight:1.4 }}
+            >
+              Forgot your password?
             </button>
-           </div>
+          </div>
           )}
 
         <div style={{ marginTop:32, color:"#9A9A9A", fontSize:12, textAlign:"center" }}>
