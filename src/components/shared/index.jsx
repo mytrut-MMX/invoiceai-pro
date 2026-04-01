@@ -700,7 +700,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       </div>
       <div style={{ padding:"8mm 18mm 14mm" }}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8mm", marginBottom:"8mm", paddingBottom:"6mm", borderBottom:`2px solid ${accent}` }}>
-          <<div>
+          <div>
             {activeSchemaTemplate.sections?.fromBlock && <FromBlock />}
             {activeSchemaTemplate.sections?.toBlock && <div style={{ marginTop:"4mm" }}><BillToBlock /></div>}
           </div>
