@@ -80,6 +80,11 @@ function AdminDashboard({ onLogout, token }) {
   const [error, setError] = useState('');
   const [tab, setTab] = useState('users');
   const [expandedMsg, setExpandedMsg] = useState(null);
+  const [orchTitle, setOrchTitle] = useState('');
+  const [orchObjective, setOrchObjective] = useState('');
+  const [orchRunning, setOrchRunning] = useState(false);
+  const [orchResult, setOrchResult] = useState(null);
+  const [orchError, setOrchError] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -104,6 +109,45 @@ function AdminDashboard({ onLogout, token }) {
   const users = data?.profiles || [];
   const contacts = data?.contactSubmissions || [];
 
+  const runOrchestrator = async () => {
+  setOrchError('');
+  setOrchResult(null);
+
+  if (!orchObjective.trim()) {
+    setOrchError('Objective is required.');
+    return;
+  }
+
+  setOrchRunning(true);
+
+  try {
+    const res = await fetch('/api/orchestrator', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: orchTitle,
+        objective: orchObjective,
+        context: {}
+      }),
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      throw new Error(json.error || 'Failed to run orchestrator');
+    }
+
+    setOrchResult(json);
+  } catch (e) {
+    setOrchError(e.message);
+  } finally {
+    setOrchRunning(false);
+  }
+};
+
   return (
     <div style={s.page}>
       {/* Header */}
@@ -118,6 +162,49 @@ function AdminDashboard({ onLogout, token }) {
       <div style={s.main}>
         {error && <div style={{ ...s.err, marginBottom:24 }}>{error}</div>}
 
+        <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:12, padding:'20px 24px', marginBottom:24 }}>
+  <div style={s.sectionTitle}>Run Executive Orchestrator</div>
+
+  {orchError && <div style={{ ...s.err, marginBottom:16 }}>{orchError}</div>}
+
+  <div style={{ marginBottom:12 }}>
+    <label style={s.label}>Title</label>
+    <input
+      type="text"
+      value={orchTitle}
+      onChange={e => setOrchTitle(e.target.value)}
+      placeholder="Example: Expenses module upgrade"
+      style={s.input}
+    />
+  </div>
+
+  <div style={{ marginBottom:16 }}>
+    <label style={s.label}>Objective</label>
+    <textarea
+      value={orchObjective}
+      onChange={e => setOrchObjective(e.target.value)}
+      placeholder="Describe the objective for the agent..."
+      style={{ ...s.input, minHeight:120, resize:'vertical' }}
+    />
+  </div>
+
+  <button
+    style={s.btnSm}
+    onClick={runOrchestrator}
+    disabled={orchRunning}
+  >
+    {orchRunning ? 'Running…' : 'Run Orchestrator'}
+  </button>
+
+  {orchResult && (
+    <div style={{ marginTop:16 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', marginBottom:8 }}>Result</div>
+      <div style={s.msgBox}>
+        {JSON.stringify(orchResult.result, null, 2)}
+      </div>
+    </div>
+  )}
+</div>
         {/* Stats */}
         <div style={s.statsGrid}>
           <div style={s.statCard}>
