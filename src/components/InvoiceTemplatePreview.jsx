@@ -53,6 +53,33 @@ function getInvoiceFieldValue(key, invoiceData = {}) {
   return map[key] ?? ""
 }
 
+function getCompanyBankData() {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return {}
+
+  const parse = (key) => {
+    try {
+      const value = localStorage.getItem(key)
+      return value ? JSON.parse(value) : {}
+    } catch {
+      return {}
+    }
+  }
+
+  const company = parse("ai_invoice_company")
+  const org = parse("ai_invoice_org")
+  const legacySettings = parse("invoicesaga_settings")
+
+  return {
+    accountName: company.accountName || org.accountName || legacySettings.accountName || "",
+    bankName: company.bankName || org.bankName || legacySettings.bankName || "",
+    accountNumber: company.accountNumber || company.bankAcc || org.accountNumber || org.bankAcc || legacySettings.accountNumber || legacySettings.bankAcc || "",
+    sortCode: company.sortCode || company.bankSort || org.sortCode || org.bankSort || legacySettings.sortCode || legacySettings.bankSort || "",
+    iban: company.iban || company.bankIban || org.iban || org.bankIban || legacySettings.iban || legacySettings.bankIban || "",
+    swift: company.swift || company.bankSwift || org.swift || org.bankSwift || legacySettings.swift || legacySettings.bankSwift || "",
+    routingNumber: company.routingNumber || org.routingNumber || legacySettings.routingNumber || "",
+  }
+}
+
 function getLineValue(colKey, item, currency) {
   const quantity = Number(item?.quantity || 0)
   const unitPrice = Number(item?.unitPrice || 0)
@@ -103,7 +130,12 @@ export default function InvoiceTemplatePreview({ template, invoiceData, scale = 
   const toEntries = sortedVisibleEntries(safeTemplate.toFields)
   const invoiceFieldEntries = sortedVisibleEntries(safeTemplate.invoiceFields)
   const lineColumns = sortedVisibleEntries(safeTemplate.lineItemColumns)
-  const bankEntries = sortedVisibleEntries(safeTemplate.bankFields)
+  const invoiceBankData = invoiceData?.bank || {}
+  const companyBankData = getCompanyBankData()
+  const bankData = Object.keys(invoiceBankData).some((key) => Boolean(invoiceBankData[key])) ? invoiceBankData : companyBankData
+  const bankEntries = Object.entries(safeTemplate.bankFields || {})
+    .filter(([key, config]) => config?.visible && bankData[key])
+    .sort((a, b) => (a[1]?.order ?? 999) - (b[1]?.order ?? 999))
 
   const logoPosition = safeTemplate.layout.logoPosition || "left"
   const headerStyle = {
@@ -235,13 +267,13 @@ export default function InvoiceTemplatePreview({ template, invoiceData, scale = 
           </div>
         </div>
 
-        {safeTemplate.sections.bankDetails && (
+        {safeTemplate.sections.bankDetails && bankEntries.length > 0 && (
           <div style={{ borderTop: "1px solid #E8E8E8", padding: 16 }}>
             <div style={{ fontWeight: 700, marginBottom: 8 }}>Bank Details</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, fontSize: 13 }}>
               {bankEntries.map(([key]) => (
                 <div key={key}>
-                  <strong>{FIELD_LABELS[key] || key}:</strong> {invoiceData?.bank?.[key] || ""}
+                  <strong>{FIELD_LABELS[key] || key}:</strong> {bankData[key]}
                 </div>
               ))}
             </div>
