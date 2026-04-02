@@ -37,19 +37,15 @@ function renderSummaryRows(rows) {
     </tr>`).join('');
 }
 
-function buildEmailLayout({ companyName, greetingName, bodyLines, ctaLabel, ctaUrl, summaryTitle, summaryRows, note, footerText }) {
-  const ctaBlock = ctaUrl ? `
-    <tr>
-      <td style="padding:0 32px 28px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-          <tr>
-            <td bgcolor="#111110" style="border-radius:8px;">
-              <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;">${escapeHtml(ctaLabel)}</a>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>` : '';
+function buildEmailLayout({ companyName, greetingName, bodyLines, ctaLabel, ctaUrl, summaryTitle, summaryRows, note, footerText, personalMessage }) {
+  const trimmedPersonalMessage = String(personalMessage ?? '').trim();
+  const personalMessageBlock = trimmedPersonalMessage ? `
+                  <tr>
+                    <td style="padding:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#333333;white-space:pre-line;">${escapeHtml(trimmedPersonalMessage)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 0 12px;border-top:1px solid #E5E3DC;font-size:0;line-height:0;">&nbsp;</td>
+                  </tr>` : '';
 
   const noteBlock = note ? `
     <tr>
@@ -89,16 +85,29 @@ function buildEmailLayout({ companyName, greetingName, bodyLines, ctaLabel, ctaU
             </tr>
             <tr>
               <td style="padding:0 32px 18px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px;color:#111110;">Hi ${escapeHtml(greetingName)},</td>
-            </tr>${renderedBody}${ctaBlock}
+            </tr>${renderedBody}
             <tr>
               <td style="padding:0 32px;">
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#FAFAF9;border:1px solid #E7E5E4;border-radius:12px;padding:18px 16px;">
+                ${personalMessageBlock}
                   <tr>
                     <td style="font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.03em;color:#6B7280;text-transform:uppercase;padding-bottom:8px;">${escapeHtml(summaryTitle)}</td>
                   </tr>${renderSummaryRows(summaryRows)}
                 </table>
               </td>
             </tr>${noteBlock}
+            ${ctaUrl ? `
+            <tr>
+              <td style="padding:20px 32px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td bgcolor="#111110" style="border-radius:8px;">
+                      <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;">${escapeHtml(ctaLabel)}</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>` : ''}
             <tr>
               <td style="padding:28px 32px 30px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#71717A;">${escapeHtml(footerText)}</td>
             </tr>
@@ -110,7 +119,7 @@ function buildEmailLayout({ companyName, greetingName, bodyLines, ctaLabel, ctaU
 </html>`;
 }
 
-export function buildInvoiceEmail({ invoice = {}, company = {}, customer = {}, template = {} }) {
+export function buildInvoiceEmail({ invoice = {}, company = {}, customer = {}, template = {}, personalMessage = '' }) {
   const currency = getCurrencyCode(invoice, company);
   const total = formatCurrency(invoice.total ?? invoice.amountDue ?? invoice.balanceDue ?? 0, currency);
   const portalUrl = resolvePortalUrl(invoice, template);
@@ -132,11 +141,12 @@ export function buildInvoiceEmail({ invoice = {}, company = {}, customer = {}, t
       { label: 'Amount Due:', value: total },
     ],
     note: invoice.notes,
+    personalMessage,
     footerText: 'Sent via InvoiceSaga · invoicesaga.com',
   });
 }
 
-export function buildQuoteEmail({ quote = {}, company = {}, customer = {} }) {
+export function buildQuoteEmail({ quote = {}, company = {}, customer = {}, personalMessage = '' }) {
   const currency = getCurrencyCode(quote, company);
   const total = formatCurrency(quote.total ?? quote.amount ?? 0, currency);
   const portalUrl = resolvePortalUrl(quote);
@@ -157,11 +167,12 @@ export function buildQuoteEmail({ quote = {}, company = {}, customer = {} }) {
       { label: 'Valid Until:', value: formatDate(quote.expiryDate) },
       { label: 'Total:', value: total },
     ],
+    personalMessage,
     footerText: 'Sent via InvoiceSaga · invoicesaga.com',
   });
 }
 
-export function buildPaymentConfirmationEmail({ invoice = {}, payment = {}, company = {}, customer = {} }) {
+export function buildPaymentConfirmationEmail({ invoice = {}, payment = {}, company = {}, customer = {}, personalMessage = '' }) {
   const currency = getCurrencyCode(payment, invoice) || getCurrencyCode(invoice, company);
   const amountPaid = formatCurrency(payment.amount ?? 0, currency);
   const balanceValue = invoice.balanceDue ?? invoice.remainingBalance ?? 0;
@@ -188,6 +199,7 @@ export function buildPaymentConfirmationEmail({ invoice = {}, payment = {}, comp
       { label: 'Amount Paid:', value: amountPaid },
       { label: 'Balance Due:', value: remainingBalance },
     ],
+    personalMessage,
     footerText: 'Sent via InvoiceSaga · invoicesaga.com',
   });
 }
