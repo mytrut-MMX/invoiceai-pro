@@ -11,6 +11,15 @@ import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../utils/help
 import { calcTotals } from "../utils/calcTotals";
 import ItemModal from "../modals/ItemModal";
 import { useCISSettings } from "../hooks/useCISSettings";
+import SendDocumentModal from "../modals/SendDocumentModal";
+import { markDocumentAsSent } from "../utils/helpers";
+
+const EmailIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 446" width="18" height="18" fill="currentColor">
+    <path d="M412 0H100C44.86 0 0 44.86 0 100v246c0 55.14 44.86 100 100 100h312c55.14 0 100-44.86 100-100V100C512 44.86 467.14 0 412 0zm60 346c0 33.08-26.92 60-60 60H100c-33.08 0-60-26.92-60-60V100c0-33.08 26.92-60 60-60h312c33.08 0 60 26.92 60 60v246z"/>
+    <path d="M387.16 112.78l-107.98 76.47c-13.84 9.8-32.44 9.8-46.28 0l-107.97-76.47c-9.01-6.38-21.5-4.25-27.88 4.76-6.38 9.01-4.25 21.5 4.76 27.88l107.97 76.47c13.84 9.8 30.05 14.7 46.26 14.7s32.43-4.9 46.26-14.7l107.98-76.47c9.01-6.38 11.15-18.87 4.76-27.88-6.38-9.01-18.87-11.15-27.88-4.76z"/>
+  </svg>
+);
 
 // ─── QUOTE FORM PANEL ─────────────────────────────────────────────────────────
 function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage = false }) {
@@ -285,6 +294,15 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
   const isVat = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendDocumentType, setSendDocumentType] = useState("quote");
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 768 : false));
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const totals = calcTotals(
     quote.line_items || [],
@@ -316,11 +334,30 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
   const activeTemplate = quote.template || pdfTemplate || "classic";
   const tplDef = PDF_TEMPLATES.find(t => t.id === activeTemplate) || PDF_TEMPLATES[0];
   const isInvoiced = quote.status === "Invoiced";
+  const mappedQuote = {
+    ...quote,
+    quoteNumber: quote.quote_number,
+    dueDate: quote.expiry_date,
+    currency: orgSettings?.currency || "GBP",
+  };
 
   return (
     <>
       {showPrintModal && (
         <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={() => setShowPrintModal(false)} />
+      )}
+      {showSendModal && (
+        <SendDocumentModal
+          documentType={sendDocumentType}
+          document={mappedQuote}
+          company={{ ...orgSettings, companyName: orgSettings?.companyName || orgSettings?.name }}
+          customer={quote.customer || {}}
+          onClose={() => setShowSendModal(false)}
+          onSent={() => {
+            setShowSendModal(false);
+            markDocumentAsSent(quote.id);
+          }}
+        />
       )}
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", fontFamily: ff, padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
         {/* Action bar */}
@@ -334,6 +371,29 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
             <Tag color={STATUS_COLORS[quote.status] || "#888"}>{quote.status || "Draft"}</Tag>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => {
+                setSendDocumentType("quote");
+                setShowSendModal(true);
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 16px",
+                background: "#111110",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontFamily: ff,
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              <EmailIcon />
+              {!isMobile && "Send"}
+            </button>
             <Btn variant="outline" icon={<Icons.Receipt />} onClick={() => setShowPrintModal(true)}>Print / PDF</Btn>
             {!isInvoiced && (
               <>
