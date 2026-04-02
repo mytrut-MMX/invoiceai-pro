@@ -192,8 +192,19 @@ export default function SendDocumentModal({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Send failed");
+      const contentType = res.headers.get("content-type") || "";
+      const isJson = contentType.toLowerCase().includes("application/json");
+      const data = isJson ? await res.json() : null;
+      const rawText = isJson ? "" : await res.text();
+
+      if (!res.ok) {
+        const fallbackError = rawText?.trim() || "Send failed";
+        throw new Error(data?.error || data?.message || fallbackError);
+      }
+
+      if (!data) {
+        throw new Error(rawText?.trim() || "Email sent, but the server response was not JSON.");
+      }
 
       setSent(true);
       setTimeout(() => onSent?.(data), 1500);
