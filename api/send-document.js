@@ -1,5 +1,3 @@
-import { Resend } from 'resend';
-
 function parseRequestBody(body) {
   if (!body) return null;
   if (typeof body === 'string') {
@@ -12,62 +10,69 @@ function parseRequestBody(body) {
   return body;
 }
 
-  export default async function handler(req, res) {
+  function isValidEmail(value) {
+  return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-  if (!process.env.RESEND_API_KEY) {
+    if (!process.env.RESEND_API_KEY) {
       return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
     }
 
-  const payload = parseRequestBody(req.body);
+    const payload = parseRequestBody(req.body);
     if (!payload) {
       return res.status(400).json({ error: 'Invalid JSON request body' });
     }
 
-  const {
-      to,
-      cc,
-      subject,
-      htmlBody,
-      documentType,
-      documentNumber,
-      replyTo,
-    } = payload;
+  const { to, cc, subject, htmlBody, documentType, documentNumber, replyTo } = payload;
 
     if (!to || !subject || !htmlBody) {
       return res.status(400).json({ error: 'Missing required fields: to, subject, htmlBody' });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
+    if (!isValidEmail(to)) {
       return res.status(400).json({ error: 'Invalid recipient email address' });
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    const emailOptions = {
+    const resendPayload = {
       from: 'InvoiceSaga <noreply@invoicesaga.com>',
       to: [to],
       subject,
       html: htmlBody,
     };
 
-    if (cc && emailRegex.test(cc)) {
-      emailOptions.cc = [cc];
+    if (cc && isValidEmail(cc)) {
+      resendPayload.cc = [cc];
     }
 
     if (replyTo && emailRegex.test(replyTo)) {
       emailOptions.reply_to = replyTo;
     }
 
-    const result = await resend.emails.send(emailOptions);
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(resendPayload),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      const apiError = result?.error?.message || result?.message || 'Failed to send email via Resend';
+      return res.status(response.status).json({ error: apiError });
+    }
 
     return res.status(200).json({
       ok: true,
-      emailId: result.id,
+      emailId: result?.id,
       documentType,
       documentNumber,
     });
