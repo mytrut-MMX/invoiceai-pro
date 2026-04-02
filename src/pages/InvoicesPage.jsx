@@ -12,8 +12,17 @@ import { useCISSettings } from "../hooks/useCISSettings";
 import { postInvoiceEntry, reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { getDefaultTemplate, getTemplateById } from "../utils/InvoiceTemplateSchema";
+import SendDocumentModal from "../modals/SendDocumentModal";
+import { getDocumentSentStatus, markDocumentAsSent } from "../utils/helpers";
 
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
+
+const EmailIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 446" width="18" height="18" fill="currentColor">
+    <path d="M412 0H100C44.86 0 0 44.86 0 100v246c0 55.14 44.86 100 100 100h312c55.14 0 100-44.86 100-100V100C512 44.86 467.14 0 412 0zm60 346c0 33.08-26.92 60-60 60H100c-33.08 0-60-26.92-60-60V100c0-33.08 26.92-60 60-60h312c33.08 0 60 26.92 60 60v246z"/>
+    <path d="M387.16 112.78l-107.98 76.47c-13.84 9.8-32.44 9.8-46.28 0l-107.97-76.47c-9.01-6.38-21.5-4.25-27.88 4.76-6.38 9.01-4.25 21.5 4.76 27.88l107.97 76.47c13.84 9.8 30.05 14.7 46.26 14.7s32.43-4.9 46.26-14.7l107.98-76.47c9.01-6.38 11.15-18.87 4.76-27.88-6.38-9.01-18.87-11.15-27.88-4.76z"/>
+  </svg>
+);
 
 // ─── INVOICE FORM PANEL ───────────────────────────────────────────────────────
 function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
@@ -388,6 +397,15 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
   const isVat = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendDocumentType, setSendDocumentType] = useState("invoice");
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 768 : false));
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const totals = calcTotals(
     invoice.line_items || [],
@@ -419,6 +437,14 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
   const activeTemplate = invoice.template || pdfTemplate || "classic";
   const tplDef = PDF_TEMPLATES.find(t => t.id === activeTemplate) || PDF_TEMPLATES[0];
   const activeInvoiceTemplate = getTemplateById(invoice.templateId) || getDefaultTemplate();
+  const mappedInvoice = {
+    ...invoice,
+    invoiceNumber: invoice.invoice_number,
+    dueDate: invoice.due_date,
+    currency: orgSettings?.currency || "GBP",
+  };
+  const company = { ...orgSettings, companyName: orgSettings?.companyName || orgSettings?.name };
+  const customer = invoice.customer || {};
 
   return (
     <>
@@ -429,6 +455,19 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
           isVat={isVat}
           onClose={() => setShowPrintModal(false)}
           invoiceTemplate={activeInvoiceTemplate}
+        />
+      )}
+      {showSendModal && (
+        <SendDocumentModal
+          documentType={sendDocumentType}
+          document={mappedInvoice}
+          company={company}
+          customer={customer}
+          onClose={() => setShowSendModal(false)}
+          onSent={() => {
+            setShowSendModal(false);
+            markDocumentAsSent(invoice.id);
+          }}
         />
       )}
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", fontFamily: ff, padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
@@ -442,7 +481,42 @@ function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
             <span style={{ fontSize: 16, fontWeight: 800, color: "#1A1A1A" }}>{invoice.invoice_number}</span>
             <Tag color={STATUS_COLORS[invoice.status] || "#888"}>{invoice.status || "Draft"}</Tag>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => {
+                setSendDocumentType("invoice");
+                setShowSendModal(true);
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 16px",
+                background: "#111110",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontFamily: ff,
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              <EmailIcon />
+              {!isMobile && "Send"}
+            </button>
+            {invoice.status === "Paid" && (
+              <Btn
+                variant="outline"
+                icon={<EmailIcon />}
+                onClick={() => {
+                  setSendDocumentType("payment_confirmation");
+                  setShowSendModal(true);
+                }}
+              >
+                Send Receipt
+              </Btn>
+            )}
             <Btn variant="outline" icon={<Icons.Receipt />} onClick={() => setShowPrintModal(true)}>Print / PDF</Btn>
             <Btn variant="primary" icon={<Icons.Edit />} onClick={onEdit}>Edit</Btn>
             <Btn variant="ghost" icon={<Icons.Trash />}
@@ -582,6 +656,10 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
 
   const [panel, setPanel] = useState(initialShowForm ? { mode:"new" } : null);
   const [search, setSearch] = useState("");
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendDocumentType, setSendDocumentType] = useState("invoice");
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [filterStatus, setFilterStatus] = useState(() => {
     const saved = sessionStorage.getItem("invoices_filter");
     if (saved) { sessionStorage.removeItem("invoices_filter"); return saved; }
@@ -678,6 +756,19 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
   // ─── list view ────────────────────────────────────────────────────────────
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+      {showSendModal && selectedDocument && (
+        <SendDocumentModal
+          documentType={sendDocumentType}
+          document={selectedDocument}
+          company={{ ...orgSettings, companyName: orgSettings?.companyName || orgSettings?.name }}
+          customer={selectedCustomer || {}}
+          onClose={() => setShowSendModal(false)}
+          onSent={() => {
+            setShowSendModal(false);
+            if (selectedDocument?.id) markDocumentAsSent(selectedDocument.id);
+          }}
+        />
+      )}
 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:20, flexWrap:"wrap" }}>
@@ -812,6 +903,7 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
               ) : filtered.map(inv => {
                 const isOverdue = inv.status === "Overdue";
                 const av = avatarFor(inv.customer?.name || "");
+                const sentStatus = getDocumentSentStatus(inv.id);
                 return (
                   <tr key={inv.id}
                     onClick={() => setPanel({ mode:"view", invoice:inv })}
@@ -863,12 +955,47 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
 
                     {/* Status */}
                     <td style={{ padding:"11px 16px", whiteSpace:"nowrap" }}>
-                      <StatusBadge status={inv.status || "Draft"} />
+                      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                        <StatusBadge status={inv.status || "Draft"} />
+                        {sentStatus && (
+                          <span style={{
+                            display:"inline-flex",
+                            alignItems:"center",
+                            padding:"2px 8px",
+                            borderRadius:20,
+                            background:"#ecfdf5",
+                            border:"1px solid #bbf7d0",
+                            color:"#166534",
+                            fontSize:10,
+                            fontWeight:700,
+                            letterSpacing:"0.02em",
+                          }}>
+                            Sent
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
                     <td style={{ padding:"11px 16px", textAlign:"right", whiteSpace:"nowrap" }} onClick={e => e.stopPropagation()}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4 }}>
+                        <button
+                          onClick={() => {
+                            setSelectedDocument({
+                              ...inv,
+                              invoiceNumber: inv.invoice_number,
+                              dueDate: inv.due_date,
+                              currency: orgSettings?.currency || "GBP",
+                            });
+                            setSelectedCustomer(inv.customer || null);
+                            setSendDocumentType(inv.status === "Paid" ? "payment_confirmation" : "invoice");
+                            setShowSendModal(true);
+                          }}
+                          title={inv.status === "Paid" ? "Send receipt" : "Send invoice"}
+                          style={{ background:"none", border:"1px solid #e8e8ec", borderRadius:6, padding:"5px 7px", cursor:"pointer", color:"#6b7280", display:"flex", alignItems:"center", transition:"all 0.12s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor="#1e6be0"; e.currentTarget.style.color="#1e6be0"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor="#e8e8ec"; e.currentTarget.style.color="#6b7280"; }}
+                        ><EmailIcon /></button>
                         <button
                           onClick={() => setPanel({ mode:"edit", invoice:inv })}
                           title="Edit invoice"
