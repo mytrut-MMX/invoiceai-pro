@@ -50,8 +50,8 @@ export default async function handler(req, res) {
       resendPayload.cc = [cc];
     }
 
-    if (replyTo && emailRegex.test(replyTo)) {
-      emailOptions.reply_to = replyTo;
+    if (replyTo && isValidEmail(replyTo)) {
+      resendPayload.reply_to = replyTo;
     }
 
     const response = await fetch('https://api.resend.com/emails', {
