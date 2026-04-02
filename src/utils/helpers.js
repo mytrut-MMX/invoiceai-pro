@@ -89,3 +89,15 @@ export const formatPhoneNumber = (phone) => {
 
   return [countryCode, mobileCode, localGrouped].filter(Boolean).join(" ").trim();
 };
+
+export function markDocumentAsSent(invoiceId) {
+  const key = "ai_invoice_sent_log";
+  const log = JSON.parse(localStorage.getItem(key) || "{}");
+  log[invoiceId] = { sentAt: new Date().toISOString() };
+  localStorage.setItem(key, JSON.stringify(log));
+}
+
+export function getDocumentSentStatus(invoiceId) {
+  const log = JSON.parse(localStorage.getItem("ai_invoice_sent_log") || "{}");
+  return log[invoiceId] || null;
+}
