@@ -108,6 +108,8 @@ function AdminDashboard({ onLogout, token }) {
 
   const users = data?.profiles || [];
   const contacts = data?.contactSubmissions || [];
+  const objectives = data?.agentObjectives || [];
+  const tasks = data?.agentTasks || [];
 
   const runOrchestrator = async () => {
   setOrchError('');
@@ -300,6 +302,9 @@ function AdminDashboard({ onLogout, token }) {
           </button>
           <button style={tab === 'contacts' ? s.tabActive : s.tab} onClick={() => setTab('contacts')}>
             Contact ({contacts.length})
+          </button>
+           <button style={tab === 'orchestrator' ? s.tabActive : s.tab} onClick={() => setTab('orchestrator')}>
+            Orchestrator
           </button>
         </div>
 
