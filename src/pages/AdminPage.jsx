@@ -414,7 +414,8 @@ function AdminDashboard({ onLogout, token }) {
                 </div>
 
                 {objectives.map((obj, i) => {
-                  const taskCount = tasks.filter(t => t.objective_id === obj.id).length;
+                  const relatedTasks = tasks.filter(t => t.objective_id === obj.id);
+                  const taskCount = relatedTasks.length;
 
                   return (
                     <Fragment key={obj.id || i}>
@@ -445,15 +446,19 @@ function AdminDashboard({ onLogout, token }) {
                             Tasks
                           </div>
 
-                          {(tasks.filter(t => t.objective_id === obj.id) || []).map((task, idx) => (
-                            <div key={idx} style={{ marginBottom:8, padding:'10px 12px', background:'#fff', border:'1px solid #E2E8F0', borderRadius:6 }}>
-                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                                <span style={{ fontSize:11, fontWeight:700, color:'#64748B' }}>{task.agent}</span>
-                                <span style={{ fontSize:11, fontWeight:700, color:'#0EA5E9' }}>{task.priority}</span>
+                          {relatedTasks.length === 0 ? (
+                            <div style={{ fontSize:12, color:'#94A3B8' }}>No tasks found.</div>
+                          ) : (
+                            relatedTasks.map((task, idx) => (
+                              <div key={task.id || idx} style={{ marginBottom:8, padding:'10px 12px', background:'#fff', border:'1px solid #E2E8F0', borderRadius:6 }}>
+                                <div style={{ fontSize:13, color:'#0F172A', marginBottom:6 }}>{task.title || 'Untitled task'}</div>
+                                <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+                                  <span style={{ fontSize:11, fontWeight:700, color:'#64748B' }}>Agent: {task.agent || '—'}</span>
+                                  <span style={{ fontSize:11, fontWeight:700, color:'#0EA5E9' }}>Priority: {task.priority || '—'}</span>
+                                </div>
                               </div>
-                              <div style={{ fontSize:13, color:'#0F172A' }}>{task.title}</div>
-                            </div>
-                          ))}
+                              ))
+                          )}
                         </div>
                       )}
                     </Fragment>
