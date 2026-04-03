@@ -387,12 +387,56 @@ function AdminDashboard({ onLogout, token }) {
                 ))}
               </div>
             )}
-          </div>
-        )}
+
+            {tab === 'orchestrator' && (
+  <div>
+    <div style={s.sectionTitle}>Orchestrator History</div>
+
+    {loading ? (
+      <div style={s.emptyState}>Loading…</div>
+    ) : objectives.length === 0 ? (
+      <div style={s.emptyState}>
+        <div style={{ fontSize:32, marginBottom:8 }}>🤖</div>
+        No orchestrator runs yet.
       </div>
-    </div>
-  );
-}
+    ) : (
+      <div style={s.tableWrap}>
+        <div style={{ ...s.tableHead, gridTemplateColumns:'2fr 1fr 1fr 1fr 1.5fr' }}>
+          <span style={s.tableCellHead}>Title</span>
+          <span style={s.tableCellHead}>Status</span>
+          <span style={s.tableCellHead}>Tasks</span>
+          <span style={s.tableCellHead}>Objective ID</span>
+          <span style={s.tableCellHead}>Created</span>
+        </div>
+
+        {objectives.map((obj, i) => {
+          const taskCount = tasks.filter(t => t.objective_id === obj.id).length;
+
+          return (
+            <div
+              key={obj.id || i}
+              style={{
+                ...s.tableRow,
+                gridTemplateColumns:'2fr 1fr 1fr 1fr 1.5fr',
+                background: i % 2 === 0 ? '#fff' : '#FAFAFA'
+              }}
+            >
+              <span style={s.tableCell}>{obj.title || 'Untitled objective'}</span>
+              <span style={s.tableCell}>
+                <span style={s.pill}>{obj.status || 'pending'}</span>
+              </span>
+              <span style={s.tableCell}>{taskCount}</span>
+              <span style={{ ...s.tableCell, color:'#64748B', fontSize:12 }}>
+                {obj.id ? obj.id.slice(0, 8) : '—'}
+              </span>
+              <span style={{ ...s.tableCell, color:'#64748B' }}>{fmt(obj.created_at)}</span>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
 
 // ── Password Gate ────────────────────────────────────────────────────────────
 export default function AdminPage() {
