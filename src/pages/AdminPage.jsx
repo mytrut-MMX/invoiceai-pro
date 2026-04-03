@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import AdminLogin from '../components/admin/AdminLogin';
 import AdminHeader from '../components/admin/AdminHeader';
+import AdminLayout from '../components/admin/AdminLayout';
 import AdminStats from '../components/admin/AdminStats';
-import AdminTabs from '../components/admin/AdminTabs';
 import AdminUsersPanel from '../components/admin/AdminUsersPanel';
 import AdminContactsPanel from '../components/admin/AdminContactsPanel';
 import AdminOrchestratorRunner from '../components/admin/AdminOrchestratorRunner';
@@ -13,7 +13,7 @@ function AdminDashboard({ onLogout, token }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState('users');
+  const [section, setSection] = useState('overview');
   const [expandedMsg, setExpandedMsg] = useState(null);
   const [orchTitle, setOrchTitle] = useState('');
   const [orchObjective, setOrchObjective] = useState('');
@@ -28,7 +28,7 @@ function AdminDashboard({ onLogout, token }) {
     try {
       // AUTH-001: Use signed HMAC token — password never re-transmitted
       const res = await fetch('/api/admin-data', {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Session expired — please log in again');
@@ -40,7 +40,9 @@ function AdminDashboard({ onLogout, token }) {
     }
   }, [token]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const users = data?.profiles || [];
   const contacts = data?.contactSubmissions || [];
@@ -48,22 +50,23 @@ function AdminDashboard({ onLogout, token }) {
   const tasks = data?.agentTasks || [];
 
   const runOrchestrator = async () => {
-  setOrchError('');
+    setOrchError('');
     setOrchResult(null);
 
     setOrchRunning(true);
 
   if (!orchObjective.trim()) {
-    setOrchError('Objective is required.');
-    return;
-  }
+      setOrchError('Objective is required.');
+      setOrchRunning(false);
+      return;
+    }
 
-  try {
+    try {
       const res = await fetch('/api/orchestrator', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: orchTitle,
@@ -72,59 +75,96 @@ function AdminDashboard({ onLogout, token }) {
         }),
       });
 
-  const json = await res.json();
+      const json = await res.json();
 
     if (!res.ok) {
         throw new Error(json.error || 'Failed to run orchestrator');
       }
 
-    setOrchResult(json);
+      setOrchResult(json);
+      setSection('orchestrator');
+      fetchData();
     } catch (e) {
       setOrchError(e.message);
     } finally {
       setOrchRunning(false);
     }
-};
+  };
+
+  const quickSummary = [
+    { label: 'Total users', value: users.length },
+    { label: 'Contact submissions', value: contacts.length },
+    { label: 'Orchestrator runs', value: objectives.length },
+    { label: 'Tasks generated', value: tasks.length },
+  ];
 
   return (
     <div style={s.page}>
       <AdminHeader onRefresh={fetchData} loading={loading} onLogout={onLogout} />
 
       <div style={s.main}>
-        {error && <div style={{ ...s.err, marginBottom:24 }}>{error}</div>}
+        {error && <div style={{ ...s.err, marginBottom: 24 }}>{error}</div>}
 
-        <AdminOrchestratorRunner
-          orchTitle={orchTitle}
-          setOrchTitle={setOrchTitle}
-          orchObjective={orchObjective}
-          setOrchObjective={setOrchObjective}
-          orchRunning={orchRunning}
-          runOrchestrator={runOrchestrator}
-          orchError={orchError}
-          orchResult={orchResult}
-        />
+        <AdminLayout
+          section={section}
+          setSection={setSection}
+          userCount={users.length}
+          contactCount={contacts.length}
+          orchestratorCount={objectives.length}
+        >
+          {section === 'overview' && (
+            <div>
+              <div style={s.sectionTitle}>Overview</div>
+              <AdminStats users={users} contacts={contacts} />
 
-        <AdminStats users={users} contacts={contacts} />
+              <div style={s.tableWrap}>
+                <div style={s.tableHead}>
+                  <span style={s.tableCellHead}>Quick Summary</span>
+                </div>
+                {quickSummary.map((item) => (
+                  <div key={item.label} style={{ ...s.tableRow, gridTemplateColumns: '2fr 1fr' }}>
+                    <span style={s.tableCell}>{item.label}</span>
+                    <span style={{ ...s.tableCell, fontWeight: 700 }}>{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-  <AdminTabs tab={tab} setTab={setTab} userCount={users.length} contactCount={contacts.length} />
+          {section === 'users' && <AdminUsersPanel loading={loading} users={users} />}
 
-          {tab === 'users' && (
-           <AdminUsersPanel loading={loading} users={users} />
-        )}
+          {section === 'contacts' && (
+            <AdminContactsPanel
+              loading={loading}
+              contacts={contacts}
+              expandedMsg={expandedMsg}
+              setExpandedMsg={setExpandedMsg}
+            />
+          )}
 
-        {tab === 'contacts' && (
-          <AdminContactsPanel loading={loading} contacts={contacts} expandedMsg={expandedMsg} setExpandedMsg={setExpandedMsg} />
-        )}
+          {section === 'orchestrator' && (
+            <div>
+              <AdminOrchestratorRunner
+                orchTitle={orchTitle}
+                setOrchTitle={setOrchTitle}
+                orchObjective={orchObjective}
+                setOrchObjective={setOrchObjective}
+                orchRunning={orchRunning}
+                runOrchestrator={runOrchestrator}
+                orchError={orchError}
+                orchResult={orchResult}
+              />
 
-        {tab === 'orchestrator' && (
-          <AdminOrchestratorHistory
-            loading={loading}
-            objectives={objectives}
-            tasks={tasks}
-            selectedObjectiveId={selectedObjectiveId}
-            setSelectedObjectiveId={setSelectedObjectiveId}
-          />
-        )}
+              <AdminOrchestratorHistory
+                loading={loading}
+                objectives={objectives}
+                tasks={tasks}
+                selectedObjectiveId={selectedObjectiveId}
+                setSelectedObjectiveId={setSelectedObjectiveId}
+              />
+            </div>
+          )}
+        </AdminLayout>
       </div>
     </div>
   );
