@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 
 const ff = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
@@ -85,6 +85,7 @@ function AdminDashboard({ onLogout, token }) {
   const [orchRunning, setOrchRunning] = useState(false);
   const [orchResult, setOrchResult] = useState(null);
   const [orchError, setOrchError] = useState('');
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -416,24 +417,46 @@ function AdminDashboard({ onLogout, token }) {
                   const taskCount = tasks.filter(t => t.objective_id === obj.id).length;
 
                   return (
-                    <div
-                      key={obj.id || i}
-                      style={{
-                        ...s.tableRow,
-                        gridTemplateColumns:'2fr 1fr 1fr 1fr 1.5fr',
-                        background: i % 2 === 0 ? '#fff' : '#FAFAFA'
-                      }}
-                    >
-                      <span style={s.tableCell}>{obj.title || 'Untitled objective'}</span>
-                      <span style={s.tableCell}>
-                        <span style={s.pill}>{obj.status || 'pending'}</span>
-                      </span>
-                      <span style={s.tableCell}>{taskCount}</span>
-                      <span style={{ ...s.tableCell, color:'#64748B', fontSize:12 }}>
-                        {obj.id ? obj.id.slice(0, 8) : '—'}
-                      </span>
-                      <span style={{ ...s.tableCell, color:'#64748B' }}>{fmt(obj.created_at)}</span>
-                    </div>
+                    <Fragment key={obj.id || i}>
+                      <div
+                        key={obj.id || i}
+                        onClick={() => setSelectedObjectiveId(prev => prev === obj.id ? null : obj.id)}
+                        style={{
+                          ...s.tableRow,
+                          gridTemplateColumns:'2fr 1fr 1fr 1fr 1.5fr',
+                          background: i % 2 === 0 ? '#fff' : '#FAFAFA',
+                          cursor:'pointer'
+                        }}
+                      >
+                        <span style={s.tableCell}>{obj.title || 'Untitled objective'}</span>
+                        <span style={s.tableCell}>
+                          <span style={s.pill}>{obj.status || 'pending'}</span>
+                        </span>
+                        <span style={s.tableCell}>{taskCount}</span>
+                        <span style={{ ...s.tableCell, color:'#64748B', fontSize:12 }}>
+                          {obj.id ? obj.id.slice(0, 8) : '—'}
+                        </span>
+                        <span style={{ ...s.tableCell, color:'#64748B' }}>{fmt(obj.created_at)}</span>
+                      </div>
+
+                      {selectedObjectiveId === obj.id && (
+                        <div style={{ padding:'12px 20px', background:'#F8FAFC', borderBottom:'1px solid #E2E8F0' }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:'#475569', marginBottom:8 }}>
+                            Tasks
+                          </div>
+
+                          {(tasks.filter(t => t.objective_id === obj.id) || []).map((task, idx) => (
+                            <div key={idx} style={{ marginBottom:8, padding:'10px 12px', background:'#fff', border:'1px solid #E2E8F0', borderRadius:6 }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                                <span style={{ fontSize:11, fontWeight:700, color:'#64748B' }}>{task.agent}</span>
+                                <span style={{ fontSize:11, fontWeight:700, color:'#0EA5E9' }}>{task.priority}</span>
+                              </div>
+                              <div style={{ fontSize:13, color:'#0F172A' }}>{task.title}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </Fragment>
                   );
                 })}
               </div>
