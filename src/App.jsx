@@ -47,36 +47,27 @@ const LS = {
 };
 
 export default function App() {
-  // Auth — AUTH-003: validate session expiry on load
-  const [user, setUser] = useState(() => {
-    const stored = LS.get("ai_invoice_user", null);
-    if (!stored) return null;
-    if (stored.expiresAt && Date.now() > stored.expiresAt) {
-      localStorage.removeItem("ai_invoice_user");
-      return null;
-    }
-    return stored;
-  });
+  // Auth is bootstrapped from Supabase session only (never localStorage).
+  const [user, setUser] = useState(null);
   // Check for an active Supabase OAuth session on first load (handles the case where
   // Google/GitHub redirects back to "/" with tokens in the URL hash instead of /auth/callback)
-  const [authChecked, setAuthChecked] = useState(false);
+  const [authInitializing, setAuthInitializing] = useState(true);
   useEffect(() => {
+    let active = true;
     const applySession = (session) => {
-      if (!session?.user) return;
+      if (!active) return;
+      if (!session?.user) {
+        setUser(null);
+        return;
+      }
       const u = {
         id: session.user.id,
         name: session.user.user_metadata?.full_name || session.user.email,
         email: session.user.email,
         role: "Admin",
-        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        expiresAt: session.expires_at ? session.expires_at * 1000 : null,
         provider: session.user.app_metadata?.provider || "email",
       };
-      const prev = LS.get("ai_invoice_user", null);
-      if (prev && prev.email !== u.email) {
-        setOnboardingDoneState(false);
-        LS.set("ai_invoice_onboarding_done", false);
-      }
-      LS.set("ai_invoice_user", u);
       setUser(u);
       // Clean up any OAuth params from the URL without causing a reload
       if (window.location.search || window.location.hash) {
@@ -87,7 +78,7 @@ export default function App() {
     let unsubscribe = () => {};
     if (supabase) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
           applySession(session);
         }
       });
@@ -100,12 +91,16 @@ export default function App() {
       })
       .catch((err) => {
         console.warn("[Auth] Session check failed. Rendering app without Supabase session.", err);
+        if (active) setUser(null);
       })
       .finally(() => {
-        setAuthChecked(true);
+        if (active) setAuthInitializing(false);
       });
 
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [orgSettings, setOrgSettingsState] = useState(null);
@@ -178,7 +173,6 @@ export default function App() {
     const check = () => {
       if (Date.now() > user.expiresAt) {
         setUser(null);
-        localStorage.removeItem("ai_invoice_user");
         alert("Your session has expired. Please log in again.");
       }
     };
@@ -201,6 +195,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (authInitializing) return;
     if (!user?.id) {
       setBusinessDataHydrated(true);
       return;
@@ -241,7 +236,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [authInitializing, user?.id]);
 
   useEffect(() => {
     if (!user?.id || !businessDataHydrated) return;
@@ -275,7 +270,6 @@ export default function App() {
         }
       });
       saveAll({
-        ai_invoice_user: user,
         ai_invoice_sidebar_pinned: sidebarPinned,
         ai_invoice_theme: appTheme,
         ai_invoice_avatar: userAvatar,
@@ -372,11 +366,6 @@ export default function App() {
   if(isOAuthCallback) {
     return (
       <AuthCallbackPage onAuth={(u) => {
-        const prev = LS.get("ai_invoice_user", null);
-        if (prev && prev.email !== u.email) {
-          setOnboardingDoneState(false);
-        }
-        LS.set("ai_invoice_user", u);
         setUser(u);
       }} />
     );
@@ -384,7 +373,7 @@ export default function App() {
 
   // Don't render landing page until we've checked for an existing OAuth session —
   // prevents a flash of LandingPage when user returns from Google OAuth redirect
-  if (!user && !authChecked) return null;
+  if (authInitializing) return null;
 
   if(!user) {
   if(path === '/' || path === '') return <LandingPage />;
@@ -393,10 +382,7 @@ export default function App() {
   return (
     <AppCtx.Provider value={ctx}>
       <AuthPage onAuth={(u)=>{
-        const prev = LS.get("ai_invoice_user", null);
-        if (prev && prev.email !== u.email) {
-          setOnboardingDoneState(false);
-        }
+        if (!u?.id) return;
         setUser(u);
       }} />
     </AppCtx.Provider>
@@ -473,7 +459,7 @@ export default function App() {
       {sessionExpiringSoon && (
         <div style={{ position:"fixed", top:storageError ? 44 : 0, left:0, right:0, zIndex:9998, background:"#78350F", color:"#FEF3C7", fontSize:13, fontWeight:600, padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, fontFamily:ff }}>
           <span>⚠ Your session expires soon. Save your work.</span>
-          <button onClick={() => setUser(prev => { const updated = { ...prev, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }; localStorage.setItem("ai_invoice_user", JSON.stringify(updated)); return updated; })} style={{ background:"#FEF3C7", color:"#78350F", border:"none", borderRadius:6, padding:"4px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff }}>Stay logged in</button>
+          <button onClick={() => setUser(prev => ({ ...prev, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }))} style={{ background:"#FEF3C7", color:"#78350F", border:"none", borderRadius:6, padding:"4px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff }}>Stay logged in</button>
         </div>
       )}
       <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:ff, background:"#f4f5f7" }}>
