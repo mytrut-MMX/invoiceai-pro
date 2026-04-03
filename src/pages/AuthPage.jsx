@@ -5,52 +5,6 @@ import { Field, Input } from "../components/atoms";
 import { supabase, supabaseReady, signInWithGoogle, getSession, supabaseConfigError } from "../lib/supabase";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 
-// AUTH-002: PBKDF2-SHA256 with random salt — NIST SP 800-132 compliant
-// Format stored: "pbkdf2:310000:<saltHex>:<hashHex>"
-const PBKDF2_ITERATIONS = 310000;
-
-function bytesToHex(buf) {
-  return Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-function hexToBytes(hex) {
-  return new Uint8Array(hex.match(/.{2}/g).map(h => parseInt(h, 16)));
-}
-
-async function hashPassword(password, existingSaltHex = null) {
-  const salt = existingSaltHex
-    ? hexToBytes(existingSaltHex)
-    : crypto.getRandomValues(new Uint8Array(16));
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
-    keyMaterial, 256
-  );
-  return `pbkdf2:${PBKDF2_ITERATIONS}:${bytesToHex(salt)}:${bytesToHex(new Uint8Array(bits))}`;
-}
-
-async function verifyPassword(password, stored) {
-  if (stored && stored.startsWith('pbkdf2:')) {
-    const [, iterStr, saltHex, expectedHash] = stored.split(':');
-    const salt = hexToBytes(saltHex);
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
-    );
-    const bits = await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', salt, iterations: Number(iterStr), hash: 'SHA-256' },
-      keyMaterial, 256
-    );
-    return bytesToHex(new Uint8Array(bits)) === expectedHash;
-  }
-  // AUTH-002: Legacy SHA-256 fallback — will be upgraded on successful login
-  if (stored && /^[0-9a-f]{64}$/.test(stored)) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
-    return bytesToHex(new Uint8Array(buf)) === stored;
-  }
-  return false;
-}
-
 // AUTH-008: In-memory brute-force lockout (per email, 5 attempts → 15 min lockout)
 const loginAttempts = new Map();
 const MAX_ATTEMPTS = 5;
@@ -80,42 +34,6 @@ export default function AuthPage({ onAuth }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
-
-  const STORAGE_KEY = "ai_invoice_users";
-  const getUsers = () => {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
-  const saveUsers = (users) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.isArray(users) ? users : []));
-    } catch {}
-  };
-
-  // AUTH-002: Migrate plaintext passwords (no hash prefix) to PBKDF2 on mount
-  // SHA-256 hashes (64-char hex) are left as-is and upgraded on next successful login
-  const migratePasswords = async () => {
-    const users = getUsers();
-    const isPbkdf2 = (pw) => pw && pw.startsWith('pbkdf2:');
-    const isSha256 = (pw) => pw && /^[0-9a-f]{64}$/.test(pw);
-    const isPlaintext = (pw) => pw && !isPbkdf2(pw) && !isSha256(pw);
-    const needsMigration = users.some(u => isPlaintext(u.password));
-    if (!needsMigration) return;
-    const migrated = await Promise.all(users.map(async u => {
-      if (isPlaintext(u.password)) {
-        return { ...u, password: await hashPassword(u.password) };
-      }
-      return u;
-    }));
-    saveUsers(migrated);
-  };
-
-  // Run migration once on component mount
-  useState(() => { migratePasswords(); });
 
   // Check for an existing Supabase OAuth session on mount (e.g. after redirect back)
   useEffect(() => {
@@ -154,17 +72,21 @@ export default function AuthPage({ onAuth }) {
     // on success: browser redirects to OAuth provider, then back to /auth/callback
   };
 
-  const saveProfileToSupabase = async (email, name) => {
+  const saveProfileToSupabase = async ({ userId, email, name }) => {
     if (!supabaseReady || !supabase) return;
+    if (!userId) return;
     try {
-      await supabase.from("profiles").upsert({ email, name }, { onConflict: "email" });
+      await supabase
+        .from("profiles")
+        .upsert({ user_id: userId, email, name }, { onConflict: "user_id" });
     } catch {}
   };
 
-  const fetchNameFromSupabase = async (email) => {
+  const fetchNameFromSupabase = async (userId) => {
     if (!supabaseReady || !supabase) return null;
+    if (!userId) return null;
     try {
-      const { data } = await supabase.from("profiles").select("name").eq("email", email).single();
+      const { data } = await supabase.from("profiles").select("name").eq("user_id", userId).single();
       return data?.name || null;
     } catch { return null; }
   };
@@ -184,7 +106,6 @@ export default function AuthPage({ onAuth }) {
 
     setLoading(true);
     setTimeout(async () => {
-      const users = getUsers();
       if(mode==="register") {
         if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
         if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
@@ -200,7 +121,11 @@ export default function AuthPage({ onAuth }) {
             setLoading(false);
             return;
           }
-          await saveProfileToSupabase(normalizedEmail, name.trim());
+          await saveProfileToSupabase({
+            userId: data?.user?.id,
+            email: normalizedEmail,
+            name: name.trim(),
+          });
           if (data?.user && data?.session) {
             clearAttempts(normalizedEmail);
             onAuth({
@@ -218,15 +143,9 @@ export default function AuthPage({ onAuth }) {
           return;
         }
 
-        if(users.find(u=>u.email===normalizedEmail)) { setError("An account with this email already exists."); setLoading(false); return; }
-        // AUTH-002: Hash new passwords with PBKDF2 (not SHA-256)
-        // Yield a frame so the loading spinner renders before the expensive PBKDF2 starts
-        await new Promise(resolve => setTimeout(resolve, 0));
-        const pwHash = await hashPassword(password);
-        const newUser = { name: name.trim(), email: normalizedEmail, password: pwHash, role:"Admin", createdAt: new Date().toISOString() };
-        saveUsers([...users, newUser]);
-        await saveProfileToSupabase(normalizedEmail, name.trim());
-        onAuth({ name: newUser.name, email: newUser.email, role:"Admin", expiresAt: Date.now() + 8 * 60 * 60 * 1000 });
+        setError("Supabase authentication is required. Configure Supabase to sign in.");
+        setLoading(false);
+        return;
       } else {
         if (supabaseReady && supabase) {
           const { data, error } = await supabase.auth.signInWithPassword({
@@ -240,7 +159,7 @@ export default function AuthPage({ onAuth }) {
             return;
           }
           clearAttempts(normalizedEmail);
-          const sbName = await fetchNameFromSupabase(normalizedEmail);
+          const sbName = await fetchNameFromSupabase(data.user.id);
           onAuth({
             id: data.user.id,
             name: sbName || data.user.user_metadata?.full_name || data.user.email,
@@ -253,28 +172,9 @@ export default function AuthPage({ onAuth }) {
           return;
         }
 
-        const found = users.find(u => u.email === normalizedEmail);
-        // Yield a frame before PBKDF2 verify so spinner is visible on mobile
-        await new Promise(resolve => setTimeout(resolve, 0));
-        if(!found || !(await verifyPassword(password, found.password))) {
-          // AUTH-008: Record failure for lockout tracking
-          recordFailure(normalizedEmail);
-          setError("Incorrect email or password."); setLoading(false); return;
-        }
-        // AUTH-002: Upgrade SHA-256 hash to PBKDF2 on successful login
-        if(found.password && !found.password.startsWith('pbkdf2:')) {
-          const upgraded = await hashPassword(password);
-          saveUsers(users.map(u => u.email === normalizedEmail ? { ...u, password: upgraded } : u));
-        }
-        clearAttempts(normalizedEmail);
-        const sbName = await fetchNameFromSupabase(normalizedEmail);
-        // AUTH-003: Add session expiry (8 hours from now)
-        onAuth({
-          name: sbName || found.name,
-          email: found.email,
-          role: found.role || "Admin",
-          expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-        });
+        setError("Supabase authentication is required. Configure Supabase to sign in.");
+        setLoading(false);
+        return;
       }
       setLoading(false);
     }, 600);
@@ -300,7 +200,7 @@ export default function AuthPage({ onAuth }) {
       {!supabaseReady && (
         <div style={{ position:"fixed", top:0, left:0, right:0, background:"#FEF3C7", borderBottom:"1px solid #D97706", padding:"8px 16px", display:"flex", alignItems:"center", gap:8, zIndex:999, fontSize:12, color:"#92400e" }}>
           <span>⚠️</span>
-          <span><strong>Supabase not configured</strong> — {supabaseConfigError || "accounts are saved locally only. Set"} {!supabaseConfigError && <><code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</>}</span>
+          <span><strong>Supabase not configured</strong> — {supabaseConfigError || "cloud authentication is required. Set"} {!supabaseConfigError && <><code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your environment.</>}</span>
         </div>
       )}
       <div style={{ width:"100%", maxWidth:460 }}>
