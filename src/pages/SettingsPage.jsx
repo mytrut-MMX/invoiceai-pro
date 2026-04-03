@@ -110,8 +110,6 @@ export default function SettingsPage({ onNavigate }) {
   } = useContext(AppCtx);
 
   const org = orgSettings||{};
-  let storedSettings = {};
-  try { storedSettings = JSON.parse(localStorage.getItem("invoicesaga_settings") || "{}"); } catch {}
 
   // Organisation form state
   const [orgName,      setOrgName]      = useState(org.orgName||"");
@@ -129,11 +127,11 @@ export default function SettingsPage({ onNavigate }) {
   const [vatNum,       setVatNum]       = useState(org.vatNum||"");
   const [cisRole,      setCisRole]      = useState(org.cisRole||"Contractor");
   const [cisRegistrationStatus, setCisRegistrationStatus] = useState(org.cisRegistrationStatus||"Net");
-  const [cisEnabled,        setCisEnabled]        = useState(storedSettings?.cis?.enabled ?? org.cis?.enabled ?? CIS_DEFAULT_SETTINGS.enabled);
-  const [cisContractorName, setCisContractorName] = useState(storedSettings?.cis?.contractorName ?? org.cis?.contractorName ?? CIS_DEFAULT_SETTINGS.contractorName);
-  const [cisContractorUTR,  setCisContractorUTR]  = useState(storedSettings?.cis?.contractorUTR ?? org.cis?.contractorUTR ?? org.cisUtrNo ?? CIS_DEFAULT_SETTINGS.contractorUTR);
-  const [cisEmployerRef,    setCisEmployerRef]    = useState(storedSettings?.cis?.employerRef ?? org.cis?.employerRef ?? CIS_DEFAULT_SETTINGS.employerRef);
-  const [cisDefaultRate,    setCisDefaultRate]    = useState(storedSettings?.cis?.defaultRate ?? org.cis?.defaultRate ?? org.cisRate ?? CIS_DEFAULT_SETTINGS.defaultRate);
+  const [cisEnabled,        setCisEnabled]        = useState(org.cis?.enabled ?? CIS_DEFAULT_SETTINGS.enabled);
+  const [cisContractorName, setCisContractorName] = useState(org.cis?.contractorName ?? CIS_DEFAULT_SETTINGS.contractorName);
+  const [cisContractorUTR,  setCisContractorUTR]  = useState(org.cis?.contractorUTR ?? org.cisUtrNo ?? CIS_DEFAULT_SETTINGS.contractorUTR);
+  const [cisEmployerRef,    setCisEmployerRef]    = useState(org.cis?.employerRef ?? CIS_DEFAULT_SETTINGS.employerRef);
+  const [cisDefaultRate,    setCisDefaultRate]    = useState(org.cis?.defaultRate ?? org.cisRate ?? CIS_DEFAULT_SETTINGS.defaultRate);
   const [crn,          setCrn]          = useState(org.crn||"");
   const [bankName,     setBankName]     = useState(org.bankName||"");
   const [bankSort,     setBankSort]     = useState(org.bankSort||"");
@@ -177,6 +175,11 @@ export default function SettingsPage({ onNavigate }) {
     setIndustry(org.industry || "");
     setVatReg(org.vatReg || "No");
     setVatNum(org.vatNum || "");
+    setCisEnabled(org.cis?.enabled ?? (org.cisReg === "Yes"));
+    setCisContractorName(org.cis?.contractorName || "");
+    setCisContractorUTR(org.cis?.contractorUTR || org.cisUtrNo || "");
+    setCisEmployerRef(org.cis?.employerRef || "");
+    setCisDefaultRate(org.cis?.defaultRate || org.cisRate || CIS_DEFAULT_SETTINGS.defaultRate);
     setCrn(org.crn || "");
     setBankName(org.bankName || "");
     setBankSort(org.bankSort || "");
@@ -225,18 +228,6 @@ export default function SettingsPage({ onNavigate }) {
       }
     }
     setOrgSettings(buildOrgSettings());
-    let existingSettings = {};
-    try { existingSettings = JSON.parse(localStorage.getItem('invoicesaga_settings') || '{}'); } catch {}
-    localStorage.setItem('invoicesaga_settings', JSON.stringify({
-      ...existingSettings,
-      cis: {
-        enabled: cisEnabled,
-        contractorName: cisContractorName,
-        contractorUTR: cisContractorUTR,
-        employerRef: cisEmployerRef,
-        defaultRate: cisDefaultRate,
-      }
-    }));
     setVatNumberLocked(Boolean(vatNum));
     setPdfTemplate(selectedTpl);
     setCompanyLogoSize(logoSize);
