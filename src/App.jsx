@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import "./responsive.css";
-import { ff, MOCK_CUSTOMERS, MOCK_ITEMS_INIT, MOCK_INV_LIST, MOCK_QUOTES_LIST, MOCK_PAYMENTS, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
+import { ff, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
 import { AppCtx } from "./context/AppContext";
 import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from "./components/layout";
 import { todayStr } from "./utils/helpers";
 import { saveAll } from "./utils/storage";
 import { getSession, signOut, supabase } from "./lib/supabase";
+import { loadBusinessData, saveBusinessData, migrateLegacyBusinessDataIfNeeded } from "./lib/businessData";
 
 // pages
 import AuthPage from "./pages/AuthPage";
@@ -107,18 +108,19 @@ export default function App() {
     return unsubscribe;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [orgSettings, setOrgSettingsState] = useState(()=>LS.get("ai_invoice_org",null));
-  const [onboardingDone, setOnboardingDoneState] = useState(() => LS.get("ai_invoice_onboarding_done", false));
+  const [orgSettings, setOrgSettingsState] = useState(null);
+  const [onboardingDone, setOnboardingDoneState] = useState(false);
+  const [businessDataHydrated, setBusinessDataHydrated] = useState(false);
 
   // App state
   const [page, setPage] = useState(() => (window.location.pathname === "/settings/invoice-templates" ? "settings/invoice-templates" : "home"));
-  const [customers, setCustomers] = useState(()=>LS.getArray("ai_invoice_customers", MOCK_CUSTOMERS));
-  const [catalogItems, setCatalogItems] = useState(()=>LS.getArray("ai_invoice_items", MOCK_ITEMS_INIT));
-  const [invoices, setInvoices] = useState(()=>LS.getArray("ai_invoice_invoices", MOCK_INV_LIST));
-  const [quotes, setQuotes] = useState(()=>LS.getArray("ai_invoice_quotes", MOCK_QUOTES_LIST));
-  const [payments, setPayments] = useState(()=>LS.getArray("ai_invoice_payments", MOCK_PAYMENTS));
-  const [customPayMethods, setCustomPayMethods] = useState(()=>LS.getArray("ai_invoice_pay_methods",[]));
-  const [expenses, setExpenses] = useState(()=>LS.getArray("ai_invoice_expenses",[]));
+  const [customers, setCustomers] = useState([]);
+  const [catalogItems, setCatalogItems] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [customPayMethods, setCustomPayMethods] = useState([]);
+  const [expenses, setExpenses] = useState([]);
 
   // UI / Prefs
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -129,18 +131,18 @@ export default function App() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // PDF / Invoice settings
-  const [pdfTemplate, setPdfTemplate] = useState(()=>LS.get("ai_invoice_pdf_template","classic"));
-  const [companyLogo, setCompanyLogo] = useState(()=>LS.get("ai_invoice_logo",null));
-  const [companyLogoSize, setCompanyLogoSize] = useState(()=>LS.get("ai_invoice_logo_size",52));
-  const [invoicePrefix, setInvoicePrefix] = useState(()=>LS.get("ai_invoice_inv_prefix","INV-"));
-  const [quotePrefix, setQuotePrefix] = useState(()=>LS.get("ai_invoice_quo_prefix","QUO-"));
-  const [invoiceStartNum, setInvoiceStartNum] = useState(()=>LS.get("ai_invoice_inv_start",1));
-  const [quoteStartNum, setQuoteStartNum] = useState(()=>LS.get("ai_invoice_quo_start",1));
-  const [defaultInvTerms, setDefaultInvTerms] = useState(()=>LS.get("ai_invoice_inv_terms",DEFAULT_INV_TERMS));
-  const [defaultQuoteTerms, setDefaultQuoteTerms] = useState(()=>LS.get("ai_invoice_quo_terms",DEFAULT_QUOTE_TERMS));
-  const [defaultPaymentTerms, setDefaultPaymentTerms] = useState(()=>LS.get("ai_invoice_pay_terms","Net 30"));
-  const [footerText, setFooterText] = useState(()=>LS.get("ai_invoice_footer",""));
-  const [invoiceTemplateConfig, setInvoiceTemplateConfig] = useState(()=>LS.get("ai_invoice_template_config",null))
+  const [pdfTemplate, setPdfTemplate] = useState("classic");
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [companyLogoSize, setCompanyLogoSize] = useState(52);
+  const [invoicePrefix, setInvoicePrefix] = useState("INV-");
+  const [quotePrefix, setQuotePrefix] = useState("QUO-");
+  const [invoiceStartNum, setInvoiceStartNum] = useState(1);
+  const [quoteStartNum, setQuoteStartNum] = useState(1);
+  const [defaultInvTerms, setDefaultInvTerms] = useState(DEFAULT_INV_TERMS);
+  const [defaultQuoteTerms, setDefaultQuoteTerms] = useState(DEFAULT_QUOTE_TERMS);
+  const [defaultPaymentTerms, setDefaultPaymentTerms] = useState("Net 30");
+  const [footerText, setFooterText] = useState("");
+  const [invoiceTemplateConfig, setInvoiceTemplateConfig] = useState(null)
 
   // Integrations
   const [supabaseUrl, setSupabaseUrl] = useState(()=>LS.get("ai_invoice_sb_url",""));
@@ -199,51 +201,102 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!user?.id) {
+      setBusinessDataHydrated(true);
+      return;
+    }
+    let cancelled = false;
+    const hydrateBusinessData = async () => {
+      setBusinessDataHydrated(false);
+      const { data, error } = await loadBusinessData(user.id);
+      if (error) {
+        console.warn("[Data] Failed to hydrate business data from Supabase.", error);
+      }
+      const merged = await migrateLegacyBusinessDataIfNeeded(user.id, data);
+      if (cancelled) return;
+      setOrgSettingsState(merged?.org_settings ?? null);
+      setOnboardingDoneState(Boolean(merged?.onboarding_done));
+      setCustomers(Array.isArray(merged?.customers) ? merged.customers : []);
+      setCatalogItems(Array.isArray(merged?.catalog_items) ? merged.catalog_items : []);
+      setInvoices(Array.isArray(merged?.invoices) ? merged.invoices : []);
+      setQuotes(Array.isArray(merged?.quotes) ? merged.quotes : []);
+      setPayments(Array.isArray(merged?.payments) ? merged.payments : []);
+      setCustomPayMethods(Array.isArray(merged?.custom_pay_methods) ? merged.custom_pay_methods : []);
+      setExpenses(Array.isArray(merged?.expenses) ? merged.expenses : []);
+      setPdfTemplate(merged?.pdf_template || "classic");
+      setCompanyLogo(merged?.company_logo ?? null);
+      setCompanyLogoSize(Number(merged?.company_logo_size || 52));
+      setInvoicePrefix(merged?.invoice_prefix || "INV-");
+      setQuotePrefix(merged?.quote_prefix || "QUO-");
+      setInvoiceStartNum(Number(merged?.invoice_start_num || 1));
+      setQuoteStartNum(Number(merged?.quote_start_num || 1));
+      setDefaultInvTerms(merged?.default_inv_terms || DEFAULT_INV_TERMS);
+      setDefaultQuoteTerms(merged?.default_quote_terms || DEFAULT_QUOTE_TERMS);
+      setDefaultPaymentTerms(merged?.default_payment_terms || "Net 30");
+      setFooterText(merged?.footer_text || "");
+      setInvoiceTemplateConfig(merged?.invoice_template_config ?? null);
+      setBusinessDataHydrated(true);
+    };
+    hydrateBusinessData();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !businessDataHydrated) return;
     clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
+      saveBusinessData(user.id, {
+        org_settings: orgSettings,
+        onboarding_done: onboardingDone,
+        customers,
+        catalog_items: catalogItems,
+        invoices,
+        quotes,
+        payments,
+        custom_pay_methods: customPayMethods,
+        expenses,
+        pdf_template: pdfTemplate,
+        company_logo: companyLogo,
+        company_logo_size: companyLogoSize,
+        invoice_prefix: invoicePrefix,
+        quote_prefix: quotePrefix,
+        invoice_start_num: invoiceStartNum,
+        quote_start_num: quoteStartNum,
+        default_inv_terms: defaultInvTerms,
+        default_quote_terms: defaultQuoteTerms,
+        default_payment_terms: defaultPaymentTerms,
+        footer_text: footerText,
+        invoice_template_config: invoiceTemplateConfig,
+      }).then(({ error }) => {
+        if (error) {
+          console.warn("[Data] Failed to persist business data to Supabase.", error);
+        }
+      });
       saveAll({
-        ai_invoice_user:           user,
-        ai_invoice_org:            orgSettings,
-        ai_invoice_onboarding_done:onboardingDone,
-        ai_invoice_customers:      customers,
-        ai_invoice_items:          catalogItems,
-        ai_invoice_invoices:       invoices,
-        ai_invoice_quotes:         quotes,
-        ai_invoice_payments:       payments,
-        ai_invoice_pay_methods:    customPayMethods,
-        ai_invoice_expenses:       expenses,
+        ai_invoice_user: user,
         ai_invoice_sidebar_pinned: sidebarPinned,
-        ai_invoice_theme:          appTheme,
-        ai_invoice_avatar:         userAvatar,
-        ai_invoice_pdf_template:   pdfTemplate,
-        ai_invoice_logo:           companyLogo !== lastSavedLogo.current ? companyLogo : undefined,
-        ai_invoice_logo_size:      companyLogoSize,
-        ai_invoice_inv_prefix:     invoicePrefix,
-        ai_invoice_quo_prefix:     quotePrefix,
-        ai_invoice_inv_start:      invoiceStartNum,
-        ai_invoice_quo_start:      quoteStartNum,
-        ai_invoice_inv_terms:      defaultInvTerms,
-        ai_invoice_quo_terms:      defaultQuoteTerms,
-        ai_invoice_pay_terms:      defaultPaymentTerms,
-        ai_invoice_footer:         footerText,
-        ai_invoice_template_config:invoiceTemplateConfig,
-        ai_invoice_sb_url:         supabaseUrl,
-        ai_invoice_sb_key:         supabaseKey,
-        ai_invoice_gdrive:         googleDriveEnabled,
-        ai_invoice_email_en:       emailEnabled,
-        ai_invoice_email_prov:     emailProvider,
-        ai_invoice_email_from:     emailFrom,
+        ai_invoice_theme: appTheme,
+        ai_invoice_avatar: userAvatar,
+        ai_invoice_sb_url: supabaseUrl,
+        ai_invoice_sb_key: supabaseKey,
+        ai_invoice_gdrive: googleDriveEnabled,
+        ai_invoice_email_en: emailEnabled,
+        ai_invoice_email_prov: emailProvider,
+        ai_invoice_email_from: emailFrom,
       });
       lastSavedLogo.current = companyLogo;
     }, 800);
     return () => clearTimeout(persistTimer.current);
   }, [
-    user, orgSettings, onboardingDone, customers, catalogItems,
+    user?.id, businessDataHydrated, orgSettings, onboardingDone, customers, catalogItems,
     invoices, quotes, payments, customPayMethods, expenses,
-    sidebarPinned, appTheme, userAvatar, pdfTemplate,
+    pdfTemplate,
     companyLogo, companyLogoSize, invoicePrefix, quotePrefix,
     invoiceStartNum, quoteStartNum, defaultInvTerms, defaultQuoteTerms,
     defaultPaymentTerms, footerText, invoiceTemplateConfig,
+    sidebarPinned, appTheme, userAvatar,
     supabaseUrl, supabaseKey, googleDriveEnabled,
     emailEnabled, emailProvider, emailFrom,
   ]);
@@ -322,7 +375,6 @@ export default function App() {
         const prev = LS.get("ai_invoice_user", null);
         if (prev && prev.email !== u.email) {
           setOnboardingDoneState(false);
-          LS.set("ai_invoice_onboarding_done", false);
         }
         LS.set("ai_invoice_user", u);
         setUser(u);
@@ -344,13 +396,13 @@ export default function App() {
         const prev = LS.get("ai_invoice_user", null);
         if (prev && prev.email !== u.email) {
           setOnboardingDoneState(false);
-          LS.set("ai_invoice_onboarding_done", false);
         }
         setUser(u);
       }} />
     </AppCtx.Provider>
   );
 }
+  if (!businessDataHydrated) return null;
 
   if (!orgSettings || !onboardingDone) return (
   <AppCtx.Provider value={ctx}>
@@ -359,7 +411,7 @@ export default function App() {
       orgSettings={orgSettings}
       onComplete={({ orgSettings: org, done }) => {
         if (org) setOrgSettings(org);
-        if (done) { setOnboardingDoneState(true); LS.set("ai_invoice_onboarding_done", true); }
+        if (done) { setOnboardingDoneState(true); }
       }}
       customers={customers}
       setCustomers={setCustomers}
