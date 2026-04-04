@@ -18,7 +18,6 @@ export default async function handler(req, res) {
 
     const response = await openai.chat.completions.create({
       model: "gpt-5",
-      temperature: 0.2,
       messages: [
         {
           role: "system",
