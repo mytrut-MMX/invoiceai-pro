@@ -389,6 +389,10 @@ export default function App() {
   );
 }
   if (!businessDataHydrated) return null;
+  
+  // Keep the public root as the marketing landing page for users
+  // that have not finished onboarding yet.
+  if (path === "/" && user && !onboardingDone) return <LandingPage />;
 
   if (!orgSettings || !onboardingDone) return (
   <AppCtx.Provider value={ctx}>
