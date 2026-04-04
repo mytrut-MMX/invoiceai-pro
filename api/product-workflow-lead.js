@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { PRODUCT_WORKFLOW_LEAD_PROMPT } from "../lib/prompts/productWorkflowLead.js";
+import { supabaseAdmin } from "../lib/supabaseAdmin.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -56,18 +57,9 @@ const PRODUCT_WORKFLOW_LEAD_SCHEMA = {
         required: ["goal", "in_scope", "out_of_scope", "assumptions"],
         properties: {
           goal: { type: "string", minLength: 1 },
-          in_scope: {
-            type: "array",
-            items: { type: "string" }
-          },
-          out_of_scope: {
-            type: "array",
-            items: { type: "string" }
-          },
-          assumptions: {
-            type: "array",
-            items: { type: "string" }
-          }
+          in_scope: { type: "array", items: { type: "string" } },
+          out_of_scope: { type: "array", items: { type: "string" } },
+          assumptions: { type: "array", items: { type: "string" } }
         }
       },
       workflow: {
@@ -310,9 +302,30 @@ export default async function handler(req, res) {
       });
     }
 
+    const { data: insertedRows, error: insertError } = await supabaseAdmin
+      .from("agent_task_specs")
+      .insert([
+        {
+          objective_id: parsed.objective_id,
+          task_id: parsed.task_id,
+          agent_name: parsed.agent,
+          spec_payload: parsed,
+          status: parsed.status
+        }
+      ])
+      .select();
+
+    if (insertError) {
+      return res.status(500).json({
+        success: false,
+        error: insertError.message
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      data: parsed
+      data: parsed,
+      saved: insertedRows?.[0] || null
     });
   } catch (error) {
     console.error("PRODUCT_WORKFLOW_LEAD_ERROR:", error);
