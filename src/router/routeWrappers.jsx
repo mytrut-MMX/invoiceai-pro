@@ -10,6 +10,8 @@ import { AppCtx } from "../context/AppContext";
 import { ROUTES } from "./routes";
 import PageLoader from "../components/ui/PageLoader";
 
+// Note: lsGet removed — onboardingDone is now read from AppCtx (Supabase-sourced)
+
 // Lazy page imports — only the pages rendered by these wrappers
 const LandingPage        = lazy(() => import("../pages/landing/LandingPage"));
 const AuthPage           = lazy(() => import("../pages/AuthPage"));
@@ -18,27 +20,30 @@ const ResetPasswordPage  = lazy(() => import("../pages/ResetPasswordPage"));
 const AuthCallbackPage   = lazy(() => import("../pages/AuthCallbackPage"));
 const OnboardingFlow     = lazy(() => import("../pages/OnboardingFlow"));
 
-function lsGet(key, fallback) {
-  try {
-    const v = localStorage.getItem(key);
-    return v !== null ? JSON.parse(v) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 function S({ children }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
 /**
  * "/" — shows LandingPage to guests; redirects authenticated users to the app.
+ *
+ * Gated on authInitializing + businessDataHydrated so onboardingDone is read
+ * from the Supabase-sourced context value rather than from localStorage,
+ * which may be absent or stale (e.g. different device, cleared storage).
  */
 export function IndexRedirect() {
-  const { user } = useContext(AppCtx);
-  const onboardingDone = lsGet("ai_invoice_onboarding_done", false);
+  const { user, authInitializing, onboardingDone, businessDataHydrated } = useContext(AppCtx);
 
+  // Wait for Supabase session check before rendering anything
+  if (authInitializing) return <PageLoader />;
+
+  // Not logged in → marketing landing page
   if (!user) return <S><LandingPage /></S>;
+
+  // Logged in but business data not yet loaded → brief loader
+  if (!businessDataHydrated) return <PageLoader />;
+
+  // Logged in + data loaded → route on Supabase-sourced onboarding state
   if (!onboardingDone) return <Navigate to={ROUTES.ONBOARDING} replace />;
   return <Navigate to={ROUTES.DASHBOARD} replace />;
 }
@@ -93,6 +98,7 @@ export function AuthCallbackRoute() {
 export function OnboardingRoute() {
   const {
     user, orgSettings, setOrgSettings,
+    setOnboardingDone,
     customers, setCustomers,
     invoices,  setInvoices,
     invoicePrefix, invoiceStartNum,
@@ -100,12 +106,14 @@ export function OnboardingRoute() {
   const navigate = useNavigate();
 
   const handleComplete = useCallback(({ orgSettings: org, done }) => {
-    if (org)  setOrgSettings(org);
+    if (org) setOrgSettings(org);
     if (done) {
+      // Write to both context (Supabase-sourced) and localStorage (fast-path fallback)
+      setOnboardingDone(true);
       localStorage.setItem("ai_invoice_onboarding_done", JSON.stringify(true));
       navigate(ROUTES.DASHBOARD, { replace: true });
     }
-  }, [setOrgSettings, navigate]);
+  }, [setOrgSettings, setOnboardingDone, navigate]);
 
   return (
     <S>
