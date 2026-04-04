@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { PRODUCT_WORKFLOW_LEAD_PROMPT } from "../lib/prompts/productWorkflowLead";
+import { PRODUCT_WORKFLOW_LEAD_PROMPT } from "../lib/prompts/productWorkflowLead.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
