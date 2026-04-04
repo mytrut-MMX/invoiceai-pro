@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '../router/routes';
 import AdminDashboard from '../components/admin/AdminDashboard';
 
 const ff = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -88,7 +90,7 @@ export default function AdminPage() {
         </form>
 
         <div style={{ textAlign:'center', marginTop:20, fontSize:12, color:'#9CA3AF' }}>
-          <a href="/" style={{ color:'#64748B', textDecoration:'none' }}>← Back to InvoiceSaga</a>
+          <Link to={ROUTES.LANDING} style={{ color:'#64748B', textDecoration:'none' }}>← Back to InvoiceSaga</Link>
         </div>
       </div>
     </div>

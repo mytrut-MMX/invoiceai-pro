@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '../../router/routes';
 import { Icons } from '../../components/icons';
 import SharedNav from '../../components/SharedNav';
 
@@ -97,7 +99,7 @@ export default function LandingPage() {
 
       {/* Announcement bar */}
       <div style={{ background:'#D97706', padding:'8px 2rem', textAlign:'center', fontSize:13, fontWeight:500, color:'#fff' }}>
-        Early access is open — <a href="/signup" style={{ color:'#fff', fontWeight:700, textDecoration:'underline' }}>Join free and lock in 40% off Pro →</a>
+        Early access is open — <Link to={ROUTES.SIGNUP} style={{ color:'#fff', fontWeight:700, textDecoration:'underline' }}>Join free and lock in 40% off Pro →</Link>
       </div>
 
       <SharedNav />
@@ -111,7 +113,7 @@ export default function LandingPage() {
             <h1 style={s.heroH1}>Professional invoices. Sent in minutes. Get paid faster.</h1>
             <p style={s.heroSub}>No learning curve, no bloat. Just clean invoices you can send in minutes — so you can get back to the work you actually love.</p>
             <div style={{ ...s.heroBtns, justifyContent:'flex-start' }}>
-              <a href="/signup" style={s.btnPrimary}>Start for free →</a>
+              <Link to={ROUTES.SIGNUP} style={s.btnPrimary}>Start for free →</Link>
               <a href="#how-it-works" style={s.btnSecondary}>How it works →</a>
             </div>
           </div>
@@ -294,7 +296,7 @@ export default function LandingPage() {
                   <li key={i} style={s.pricingItem}><span style={s.check}>✓</span>{item}</li>
                 ))}
               </ul>
-              <a href="/signup" style={{ ...s.btnSecondary, border:'1px solid #E2E8F0', color:'#0F172A', display:'block', textAlign:'center' }}>Get started free</a>
+              <Link to={ROUTES.SIGNUP} style={{ ...s.btnSecondary, border:'1px solid #E2E8F0', color:'#0F172A', display:'block', textAlign:'center' }}>Get started free</Link>
             </div>
             <div style={s.pricingCardPro}>
               <div style={s.pricingBadge}>Most popular</div>
@@ -307,12 +309,12 @@ export default function LandingPage() {
                   <li key={i} style={s.pricingItemPro}><span style={s.check}>✓</span>{item}</li>
                 ))}
               </ul>
-              <a href="/signup" style={{ ...s.btnPrimary, display:'block', textAlign:'center' }}>Start free trial</a>
+              <Link to={ROUTES.SIGNUP} style={{ ...s.btnPrimary, display:'block', textAlign:'center' }}>Start free trial</Link>
             </div>
           </div>
           <div style={{ textAlign:'center', marginTop:32, fontSize:13, color:'#9A9A9A' }}>
             Join during beta and lock in your price forever — no increases, ever.{' '}
-            <a href="/signup" style={{ textDecoration:'none', color:'#D97706' }}><span style={{ color:'#D97706', fontWeight:500 }}>Join the waitlist to lock it in →</span></a>
+            <Link to={ROUTES.SIGNUP} style={{ textDecoration:'none', color:'#D97706' }}><span style={{ color:'#D97706', fontWeight:500 }}>Join the waitlist to lock it in →</span></Link>
           </div>
         </div>
       </div>
@@ -328,7 +330,7 @@ export default function LandingPage() {
           </div>
           {/* Right */}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:16 }}>
-            <a href="/signup" style={s.btnPrimary}>Create your free account →</a>
+            <Link to={ROUTES.SIGNUP} style={s.btnPrimary}>Create your free account →</Link>
             <div style={{ fontSize:13, color:'#6B6B6B' }}>Free to start · No credit card · Cancel anytime</div>
             <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:32 }}>
               {[
@@ -355,17 +357,17 @@ export default function LandingPage() {
         <div style={{ marginBottom:8 }}>
           <span style={{ color:'#D97706', fontWeight:700 }}>InvoiceSaga</span>
           {' · '}
-          <a href="/templates" style={{ color:'#475569' }}>Offline Generator</a>
+          <Link to={ROUTES.TEMPLATES} style={{ color:'#475569', textDecoration:'none' }}>Offline Generator</Link>
           {' · '}
-          <a href="/contact" style={{ color:'#475569' }}>Contact</a>
+          <Link to={ROUTES.CONTACT}   style={{ color:'#475569', textDecoration:'none' }}>Contact</Link>
           {' · '}
-          <a href="/privacy" style={{ color:'#475569' }}>Privacy Policy</a>
+          <Link to={ROUTES.PRIVACY}   style={{ color:'#475569', textDecoration:'none' }}>Privacy Policy</Link>
           {' · '}
-          <a href="/terms" style={{ color:'#475569' }}>Terms of Service</a>
+          <Link to={ROUTES.TERMS}     style={{ color:'#475569', textDecoration:'none' }}>Terms of Service</Link>
           {' · '}
-          <a href="/cookies" style={{ color:'#475569' }}>Cookie Policy</a>
+          <Link to={ROUTES.COOKIES}   style={{ color:'#475569', textDecoration:'none' }}>Cookie Policy</Link>
           {' · '}
-          <a href="/gdpr" style={{ color:'#475569' }}>GDPR</a>
+          <Link to={ROUTES.GDPR}      style={{ color:'#475569', textDecoration:'none' }}>GDPR</Link>
         </div>
         <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
       </footer>
