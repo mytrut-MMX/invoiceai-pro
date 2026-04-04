@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, lazy, Suspense } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -22,8 +23,12 @@ const TabFallback = () => (
 
 export default function LedgerPage() {
   const { user } = useContext(AppCtx);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
-  const [tab,            setTab]            = useState("journal");
+  // Derive active tab from the URL path segment: /ledger/journal → "journal"
+  const tab = pathname.split("/")[2] || "journal";
+  const setTab = (t) => navigate(`/ledger/${t}`, { replace: true });
   const [accounts,       setAccounts]       = useState([]);
   const [entries,        setEntries]        = useState([]);
   const [loading,        setLoading]        = useState(true);

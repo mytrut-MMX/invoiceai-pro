@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff, PDF_TEMPLATES } from "../constants";
 import { A4InvoiceDoc } from "../components/shared";
 import { Btn, Field, Input, Select } from "../components/atoms";
@@ -220,9 +222,9 @@ export default function InvoiceTemplatesPage() {
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8A8A84", marginBottom: 12 }}>LIVE PREVIEW</div>
           <div style={{ marginBottom: 12, border: "1px solid #E8E6E0", borderRadius: 10, background: "#FAFAF7", padding: "10px 12px", fontSize: 12, color: "#4F4F48" }}>
             <div>Bank details shown here are from your Company Profile. Template controls which fields are visible on each invoice.</div>
-            <a href="/settings" style={{ display: "inline-block", marginTop: 6, color: "#1F4FBF", fontWeight: 700, textDecoration: "none" }}>
+            <Link to={ROUTES.SETTINGS_GENERAL} style={{ display: "inline-block", marginTop: 6, color: "#1F4FBF", fontWeight: 700, textDecoration: "none" }}>
               Go to Company Profile →
-            </a>
+            </Link>
           </div>
           <div style={{ background: "#F5F4F0", border: "1px solid #E8E6E0", borderRadius: 10, padding: 10, minHeight: 640, overflow: "auto" }}>
             <div style={{ transform: "scale(0.6)", transformOrigin: "top center", marginBottom: "-360px" }}>

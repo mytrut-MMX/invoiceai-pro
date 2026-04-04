@@ -1,4 +1,5 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '../../router/routes';
 import LegalLayout, { Section, P, UL, InfoCard } from './LegalLayout';
 
 export default function PrivacyPage() {
@@ -82,7 +83,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="9. Cookies">
-        <P>We use cookies to operate the service and understand how it is used. For full details, please read our <a href="/cookies" style={{ color: '#0EA5E9' }}>Cookie Policy</a>.</P>
+        <P>We use cookies to operate the service and understand how it is used. For full details, please read our <Link to={ROUTES.COOKIES} style={{ color: '#0EA5E9' }}>Cookie Policy</Link>.</P>
       </Section>
 
       <Section title="10. Changes to This Policy">

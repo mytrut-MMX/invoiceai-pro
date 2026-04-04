@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '../../router/routes';
 import './TemplatesPage.css';
 import SharedNav from '../../components/SharedNav';
 
@@ -62,7 +64,7 @@ export default function TemplatesPage() {
       {/* PAGE HERO */}
       <section className="tp-page-hero">
         <div className="tp-breadcrumb">
-          <a href="/">Home</a>
+          <Link to={ROUTES.LANDING}>Home</Link>
           <span>›</span>
           <span>Templates</span>
         </div>
@@ -132,6 +134,7 @@ export default function TemplatesPage() {
                   <div className="tp-price-note">One-time · no subscription</div>
                 </div>
                 <div className="tp-card-actions">
+                  {/* /demo is a standalone static product file, not a React route */}
                   <a href="/demo" className="tp-btn-demo">▶ Live Demo</a>
                   <a
                     href="https://invoicesaga.lemonsqueezy.com/checkout/buy/ddb25220-5d21-4641-b2b0-98cdd1b02062?embed=1"
@@ -200,6 +203,7 @@ export default function TemplatesPage() {
                   <div className="tp-price-note">One-time · no subscription</div>
                 </div>
                 <div className="tp-card-actions">
+                  {/* /demo-construction is a standalone static product file, not a React route */}
                   <a href="/demo-construction" className="tp-btn-demo">▶ Live Demo</a>
                   <a href="#" className="tp-btn-card-buy">Buy Now →</a>
                 </div>
@@ -252,15 +256,15 @@ export default function TemplatesPage() {
         <div style={{ marginBottom:8 }}>
           <span style={{ color:'#D97706', fontWeight:700 }}>InvoiceSaga</span>
           {' · '}
-          <a href="/" style={{ color:'#475569', textDecoration:'none' }}>Home</a>
+          <Link to={ROUTES.LANDING}   style={{ color:'#475569', textDecoration:'none' }}>Home</Link>
           {' · '}
-          <a href="/templates" style={{ color:'#475569', textDecoration:'none' }}>Templates</a>
+          <Link to={ROUTES.TEMPLATES} style={{ color:'#475569', textDecoration:'none' }}>Templates</Link>
           {' · '}
-          <a href="/contact" style={{ color:'#475569', textDecoration:'none' }}>Contact</a>
+          <Link to={ROUTES.CONTACT}   style={{ color:'#475569', textDecoration:'none' }}>Contact</Link>
           {' · '}
-          <a href="/privacy" style={{ color:'#475569', textDecoration:'none' }}>Privacy Policy</a>
+          <Link to={ROUTES.PRIVACY}   style={{ color:'#475569', textDecoration:'none' }}>Privacy Policy</Link>
           {' · '}
-          <a href="/terms" style={{ color:'#475569', textDecoration:'none' }}>Terms of Service</a>
+          <Link to={ROUTES.TERMS}     style={{ color:'#475569', textDecoration:'none' }}>Terms of Service</Link>
         </div>
         <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
       </footer>

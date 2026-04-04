@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff } from "../constants";
 import { supabase, getSession } from "../lib/supabase";
 
@@ -91,9 +93,9 @@ export default function AuthCallbackPage({ onAuth }) {
           <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
           <div style={{ fontSize: 18, fontWeight: 600, color: "#111110", marginBottom: 8 }}>Sign-in failed</div>
           <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 24 }}>{errorMessage}</div>
-          <a href="/login" style={{ display: "inline-block", background: "#111110", color: "#FAFAF7", padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
+          <Link to={ROUTES.LOGIN} style={{ display: "inline-block", background: "#111110", color: "#FAFAF7", padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
             Back to sign in
-          </a>
+          </Link>
         </div>
       </div>
     );
