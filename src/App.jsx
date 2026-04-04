@@ -1,11 +1,41 @@
 import { useState, useEffect, useRef } from "react";
 import "./responsive.css";
 import { MOCK_CUSTOMERS, MOCK_ITEMS_INIT, MOCK_INV_LIST, MOCK_QUOTES_LIST, MOCK_PAYMENTS, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
+import { ff, DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
 import { AppCtx } from "./context/AppContext";
 import { todayStr } from "./utils/helpers";
 import { saveAll } from "./utils/storage";
 import { getSession, signOut, supabase } from "./lib/supabase";
 import AppRouter from "./router";
+import { loadBusinessData, saveBusinessData, migrateLegacyBusinessDataIfNeeded } from "./lib/businessData";
+
+// pages
+import AuthPage from "./pages/AuthPage";
+import OrgSetupPage from "./pages/OrgSetupPage";
+import HomePage from "./pages/HomePage";
+import CustomersPage from "./pages/CustomersPage";
+import ItemsPage from "./pages/ItemsPage";
+import InvoicesPage from "./pages/InvoicesPage";
+import QuotesPage from "./pages/QuotesPage";
+import PaymentsPage from "./pages/PaymentsPage";
+import ExpensesPage from "./pages/ExpensesPage";
+import SettingsPage from "./pages/SettingsPage";
+import LandingPage from './pages/landing';
+import OnboardingFlow from "./pages/OnboardingFlow.jsx";
+import PrivacyPage from "./pages/landing/PrivacyPage";
+import TermsPage from "./pages/landing/TermsPage";
+import CookiePolicyPage from "./pages/landing/CookiePolicyPage";
+import GdprPage from "./pages/landing/GdprPage";
+import TemplatesPage from "./pages/landing/TemplatesPage";
+import ContactPage from "./pages/landing/ContactPage";
+import AdminPage from "./pages/AdminPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import LedgerPage from "./pages/LedgerPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
+import InvoiceTemplatesPage from "./pages/InvoiceTemplatesPage";
+
+// modals
+import UserEditModal from "./modals/UserEditModal";
 
 // ─── localStorage helpers ──────────────────────────────────────────────────
 const LS = {
@@ -34,15 +64,25 @@ export default function App() {
   // but this flag is exposed in ctx for any component that needs it.
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Auth is bootstrapped from Supabase session only (never localStorage).
+  const [user, setUser] = useState(null);
+  // Check for an active Supabase OAuth session on first load (handles the case where
+  // Google/GitHub redirects back to "/" with tokens in the URL hash instead of /auth/callback)
+  const [authInitializing, setAuthInitializing] = useState(true);
   useEffect(() => {
+    let active = true;
     const applySession = (session) => {
-      if (!session?.user) return;
+      if (!active) return;
+      if (!session?.user) {
+        setUser(null);
+        return;
+      }
       const u = {
         id: session.user.id,
         name: session.user.user_metadata?.full_name || session.user.email,
         email: session.user.email,
         role: "Admin",
-        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        expiresAt: session.expires_at ? session.expires_at * 1000 : null,
         provider: session.user.app_metadata?.provider || "email",
       };
       // If a different user is logging in, reset their onboarding flag.
@@ -61,7 +101,7 @@ export default function App() {
     let unsubscribe = () => {};
     if (supabase) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
           applySession(session);
         }
       });
@@ -72,10 +112,17 @@ export default function App() {
       .then(applySession)
       .catch((err) => {
         console.warn("[Auth] Session check failed. Rendering app without Supabase session.", err);
+        if (active) setUser(null);
       })
       .finally(() => setAuthChecked(true));
+      .finally(() => {
+        if (active) setAuthInitializing(false);
+      });
 
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Session expiry enforcement ────────────────────────────────────────────
@@ -92,6 +139,49 @@ export default function App() {
     const interval = setInterval(check, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user?.expiresAt]);
+  const [orgSettings, setOrgSettingsState] = useState(null);
+  const [onboardingDone, setOnboardingDoneState] = useState(false);
+  const [businessDataHydrated, setBusinessDataHydrated] = useState(false);
+
+  // App state
+  const [page, setPage] = useState(() => (window.location.pathname === "/settings/invoice-templates" ? "settings/invoice-templates" : "home"));
+  const [customers, setCustomers] = useState([]);
+  const [catalogItems, setCatalogItems] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [customPayMethods, setCustomPayMethods] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+
+  // UI / Prefs
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(()=>LS.get("ai_invoice_sidebar_pinned",true));
+  const [appTheme, setAppTheme] = useState(()=>LS.get("ai_invoice_theme",{ type:"solid", color:"rgb(33, 38, 60)", color2:"#333", accent:"#E86C4A" }));
+  const [userAvatar, setUserAvatar] = useState(()=>LS.get("ai_invoice_avatar",null));
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // PDF / Invoice settings
+  const [pdfTemplate, setPdfTemplate] = useState("classic");
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [companyLogoSize, setCompanyLogoSize] = useState(52);
+  const [invoicePrefix, setInvoicePrefix] = useState("INV-");
+  const [quotePrefix, setQuotePrefix] = useState("QUO-");
+  const [invoiceStartNum, setInvoiceStartNum] = useState(1);
+  const [quoteStartNum, setQuoteStartNum] = useState(1);
+  const [defaultInvTerms, setDefaultInvTerms] = useState(DEFAULT_INV_TERMS);
+  const [defaultQuoteTerms, setDefaultQuoteTerms] = useState(DEFAULT_QUOTE_TERMS);
+  const [defaultPaymentTerms, setDefaultPaymentTerms] = useState("Net 30");
+  const [footerText, setFooterText] = useState("");
+  const [invoiceTemplateConfig, setInvoiceTemplateConfig] = useState(null)
+
+  // Integrations
+  const [supabaseUrl, setSupabaseUrl] = useState(()=>LS.get("ai_invoice_sb_url",""));
+  const [supabaseKey, setSupabaseKey] = useState(()=>LS.get("ai_invoice_sb_key",""));
+  const [googleDriveEnabled, setGoogleDriveEnabled] = useState(()=>LS.get("ai_invoice_gdrive",false));
+  const [emailEnabled, setEmailEnabled] = useState(()=>LS.get("ai_invoice_email_en",false));
+  const [emailProvider, setEmailProvider] = useState(()=>LS.get("ai_invoice_email_prov","SMTP"));
+  const [emailFrom, setEmailFrom] = useState(()=>LS.get("ai_invoice_email_from",""));
 
   // ─── App data state ────────────────────────────────────────────────────────
   const [orgSettings, setOrgSettingsState] = useState(() => LS.get("ai_invoice_org", null));
@@ -150,13 +240,108 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // ─── Debounced persistence to localStorage ─────────────────────────────────
-  const persistTimer  = useRef(null);
+  // ─── session expiry enforcement ──────────────────────────────
+  useEffect(() => {
+    if (!user?.expiresAt) return;
+    const check = () => {
+      if (Date.now() > user.expiresAt) {
+        setUser(null);
+        alert("Your session has expired. Please log in again.");
+      }
+    };
+    check();
+    const interval = setInterval(check, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user?.expiresAt]);
+
+  const sessionExpiringSoon = user?.expiresAt && (user.expiresAt - Date.now()) < 30 * 60 * 1000 && Date.now() < user.expiresAt;
+
+  // ─── debounced persistence to localStorage ────────────────────
+  const [storageError, setStorageError] = useState(null);
+  const persistTimer = useRef(null);
   const lastSavedLogo = useRef(companyLogo);
 
   useEffect(() => {
+    window.addEventListener("storage-error", (e) => {
+      setStorageError(`Storage full — data may not be saved (${e.detail.keys.length} key(s) failed).`);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (authInitializing) return;
+    if (!user?.id) {
+      setBusinessDataHydrated(true);
+      return;
+    }
+    let cancelled = false;
+    const hydrateBusinessData = async () => {
+      setBusinessDataHydrated(false);
+      const { data, error } = await loadBusinessData(user.id);
+      if (error) {
+        console.warn("[Data] Failed to hydrate business data from Supabase.", error);
+      }
+      const merged = await migrateLegacyBusinessDataIfNeeded(user.id, data);
+      if (cancelled) return;
+      setOrgSettingsState(merged?.org_settings ?? null);
+      setOnboardingDoneState(Boolean(merged?.onboarding_done));
+      setCustomers(Array.isArray(merged?.customers) ? merged.customers : []);
+      setCatalogItems(Array.isArray(merged?.catalog_items) ? merged.catalog_items : []);
+      setInvoices(Array.isArray(merged?.invoices) ? merged.invoices : []);
+      setQuotes(Array.isArray(merged?.quotes) ? merged.quotes : []);
+      setPayments(Array.isArray(merged?.payments) ? merged.payments : []);
+      setCustomPayMethods(Array.isArray(merged?.custom_pay_methods) ? merged.custom_pay_methods : []);
+      setExpenses(Array.isArray(merged?.expenses) ? merged.expenses : []);
+      setPdfTemplate(merged?.pdf_template || "classic");
+      setCompanyLogo(merged?.company_logo ?? null);
+      setCompanyLogoSize(Number(merged?.company_logo_size || 52));
+      setInvoicePrefix(merged?.invoice_prefix || "INV-");
+      setQuotePrefix(merged?.quote_prefix || "QUO-");
+      setInvoiceStartNum(Number(merged?.invoice_start_num || 1));
+      setQuoteStartNum(Number(merged?.quote_start_num || 1));
+      setDefaultInvTerms(merged?.default_inv_terms || DEFAULT_INV_TERMS);
+      setDefaultQuoteTerms(merged?.default_quote_terms || DEFAULT_QUOTE_TERMS);
+      setDefaultPaymentTerms(merged?.default_payment_terms || "Net 30");
+      setFooterText(merged?.footer_text || "");
+      setInvoiceTemplateConfig(merged?.invoice_template_config ?? null);
+      setBusinessDataHydrated(true);
+    };
+    hydrateBusinessData();
+    return () => {
+      cancelled = true;
+    };
+  }, [authInitializing, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !businessDataHydrated) return;
     clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
+      saveBusinessData(user.id, {
+        org_settings: orgSettings,
+        onboarding_done: onboardingDone,
+        customers,
+        catalog_items: catalogItems,
+        invoices,
+        quotes,
+        payments,
+        custom_pay_methods: customPayMethods,
+        expenses,
+        pdf_template: pdfTemplate,
+        company_logo: companyLogo,
+        company_logo_size: companyLogoSize,
+        invoice_prefix: invoicePrefix,
+        quote_prefix: quotePrefix,
+        invoice_start_num: invoiceStartNum,
+        quote_start_num: quoteStartNum,
+        default_inv_terms: defaultInvTerms,
+        default_quote_terms: defaultQuoteTerms,
+        default_payment_terms: defaultPaymentTerms,
+        footer_text: footerText,
+        invoice_template_config: invoiceTemplateConfig,
+      }).then(({ error }) => {
+        if (error) {
+          console.warn("[Data] Failed to persist business data to Supabase.", error);
+        }
+      });
       saveAll({
         ai_invoice_user:            user,
         ai_invoice_org:             orgSettings,
@@ -186,6 +371,15 @@ export default function App() {
         ai_invoice_email_en:        emailEnabled,
         ai_invoice_email_prov:      emailProvider,
         ai_invoice_email_from:      emailFrom,
+        ai_invoice_sidebar_pinned: sidebarPinned,
+        ai_invoice_theme: appTheme,
+        ai_invoice_avatar: userAvatar,
+        ai_invoice_sb_url: supabaseUrl,
+        ai_invoice_sb_key: supabaseKey,
+        ai_invoice_gdrive: googleDriveEnabled,
+        ai_invoice_email_en: emailEnabled,
+        ai_invoice_email_prov: emailProvider,
+        ai_invoice_email_from: emailFrom,
       });
       lastSavedLogo.current = companyLogo;
     }, 800);
@@ -197,6 +391,13 @@ export default function App() {
     invoicePrefix, quotePrefix, invoiceStartNum, quoteStartNum,
     defaultInvTerms, defaultQuoteTerms, defaultPaymentTerms,
     footerText, invoiceTemplateConfig,
+    user?.id, businessDataHydrated, orgSettings, onboardingDone, customers, catalogItems,
+    invoices, quotes, payments, customPayMethods, expenses,
+    pdfTemplate,
+    companyLogo, companyLogoSize, invoicePrefix, quotePrefix,
+    invoiceStartNum, quoteStartNum, defaultInvTerms, defaultQuoteTerms,
+    defaultPaymentTerms, footerText, invoiceTemplateConfig,
+    sidebarPinned, appTheme, userAvatar,
     supabaseUrl, supabaseKey, googleDriveEnabled,
     emailEnabled, emailProvider, emailFrom,
   ]);
@@ -237,6 +438,237 @@ export default function App() {
   return (
     <AppCtx.Provider value={ctx}>
       <AppRouter />
+  const sidebarBg = appTheme.type==="gradient"
+    ? `linear-gradient(160deg,${appTheme.color},${appTheme.color2})`
+    : appTheme.color;
+
+  // ─── gates ─────────────────────────────────────────────────────
+  const path = window.location.pathname;
+  if(path === '/privacy')         return <PrivacyPage />;
+  if(path === '/terms')           return <TermsPage />;
+  if(path === '/cookies')         return <CookiePolicyPage />;
+  if(path === '/gdpr')            return <GdprPage />;
+  if(path === '/contact')         return <ContactPage />;
+  if(path === '/templates')       return <TemplatesPage />;
+  if(path === '/login' || path === '/signup') {
+    return (
+      <AppCtx.Provider value={ctx}>
+        <AuthPage onAuth={(u)=>{
+          if (!u?.id) return;
+          setUser(u);
+        }} />
+      </AppCtx.Provider>
+    );
+  }
+
+  if (path === '/reset-password') {
+  return (
+    <ResetPasswordPage
+      onPasswordReset={() => {}}
+      onBackToLogin={() => {
+        window.history.replaceState({}, "", "/login");
+        window.location.reload();
+      }}
+    />
+  );
+}
+
+  // Supabase Auth exchanges the OAuth token from the URL hash automatically
+  // via the JS client; this page just waits for the session and calls onAuth.
+  // Also handle ?code= landing on "/" if Supabase redirects to site root instead of /auth/callback
+  const _search = new URLSearchParams(window.location.search);
+  const _hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const isOAuthCallback =
+    path === '/auth/callback' ||
+    _search.has('code') ||
+    _hash.has('access_token') ||
+    _hash.has('refresh_token');
+  if(isOAuthCallback) {
+    return (
+      <AuthCallbackPage onAuth={(u) => {
+        setUser(u);
+      }} />
+    );
+  }
+
+  // Don't render landing page until we've checked for an existing OAuth session —
+  // prevents a flash of LandingPage when user returns from Google OAuth redirect
+  if (authInitializing) return null;
+
+  if(!user) {
+  if(path === '/' || path === '') return <LandingPage />;
+  if(path === '/admin')           return <AdminPage />;
+  return (
+    <AppCtx.Provider value={ctx}>
+      <AuthPage onAuth={(u)=>{
+        if (!u?.id) return;
+        setUser(u);
+      }} />
+    </AppCtx.Provider>
+  );
+}
+  if (!businessDataHydrated) return null;
+  
+  // Keep the public root as the marketing landing page for users
+  // that have not finished onboarding yet.
+  if (path === "/" && user && !onboardingDone) return <LandingPage />;
+
+  if (!orgSettings || !onboardingDone) return (
+  <AppCtx.Provider value={ctx}>
+    <OnboardingFlow
+      user={user}
+      orgSettings={orgSettings}
+      onComplete={({ orgSettings: org, done }) => {
+        if (org) setOrgSettings(org);
+        if (done) { setOnboardingDoneState(true); }
+      }}
+      customers={customers}
+      setCustomers={setCustomers}
+      invoices={invoices}
+      setInvoices={setInvoices}
+      invoicePrefix={invoicePrefix}
+      invoiceStartNum={invoiceStartNum}
+    />
+  </AppCtx.Provider>
+);
+
+  // ─── page renderer ─────────────────────────────────────────────
+  const doLogout = async () => {
+    try { await signOut(); } catch {}
+    localStorage.removeItem("ai_invoice_user");
+    window.location.href = '/';
+  };
+
+  const handleNavigate = (nextPage) => {
+    if (nextPage === "logout") {
+      doLogout(); 
+      return;
+    }
+    setPage(nextPage);
+    setMobileDrawerOpen(false);
+  };
+
+  const renderPage = () => {
+    if (page === "settings/invoice-templates" || page === "settings/templates") return <InvoiceTemplatesPage />;
+
+    switch(page) {
+       case "home":         return <HomePage key={page} user={user} onNavigate={handleNavigate} />;
+      case "customers":    return <CustomersPage key={page} />;
+      case "customers:new": return <CustomersPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "items":        return <ItemsPage key={page} />;
+      case "items:new":    return <ItemsPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "quotes":       return <QuotesPage key={page} onNavigate={handleNavigate} />;
+      case "quotes:new":   return <QuotesPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "invoices":     return <InvoicesPage key={page} />;
+      case "invoices:new": return <InvoicesPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "payments":     return <PaymentsPage key={page} />;
+      case "payments:new": return <PaymentsPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "expenses":     return <ExpensesPage key={page} />;
+      case "expenses:new": return <ExpensesPage key={page} initialShowForm={true} onNavigate={handleNavigate} />;
+      case "settings":     return <SettingsPage key={page} onNavigate={handleNavigate} />;
+      case "ledger":       return <LedgerPage key={page} />;
+      default:             return <HomePage key={page} user={user} onNavigate={handleNavigate} />;
+    }
+  };
+
+  return (
+    <AppCtx.Provider value={ctx}>
+      {storageError && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:9999, background:"#7F1D1D", color:"#FEE2E2", fontSize:13, fontWeight:600, padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, fontFamily:ff }}>
+          <span>⚠ {storageError}</span>
+          <button onClick={() => setStorageError(null)} style={{ background:"none", border:"none", color:"#FCA5A5", cursor:"pointer", fontSize:18, lineHeight:1, padding:0 }}>×</button>
+        </div>
+      )}
+      {sessionExpiringSoon && (
+        <div style={{ position:"fixed", top:storageError ? 44 : 0, left:0, right:0, zIndex:9998, background:"#78350F", color:"#FEF3C7", fontSize:13, fontWeight:600, padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, fontFamily:ff }}>
+          <span>⚠ Your session expires soon. Save your work.</span>
+          <button onClick={() => setUser(prev => ({ ...prev, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }))} style={{ background:"#FEF3C7", color:"#78350F", border:"none", borderRadius:6, padding:"4px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff }}>Stay logged in</button>
+        </div>
+      )}
+      <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:ff, background:"#f4f5f7" }}>
+
+        {/* Desktop sidebar — hidden on mobile via media query in index.css */}
+        <div className="desktop-only">
+          <Sidebar
+            activePage={page}
+            onNavigate={handleNavigate}
+            collapsed={sidebarCollapsed}
+            onCollapsedChange={setSidebarCollapsed}
+            accent={appTheme.accent}
+            sidebarBg={sidebarBg}
+            user={user}
+            userAvatar={userAvatar}
+            onUserClick={()=>setShowUserModal(true)}
+            onLogout={doLogout}
+          />
+        </div>
+
+        {/* Main content */}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0, background:"#fff", borderBottom:"1px solid #e8e8ec" }}>
+
+          {/* Mobile top bar */}
+          <div className="mobile-only">
+            <MobileTopBar
+              activePage={page}
+              onMenuOpen={()=>setMobileDrawerOpen(true)}
+              sidebarBg={sidebarBg}
+              accent={appTheme.accent}
+              user={user}
+              userAvatar={userAvatar}
+              onUserClick={()=>setShowUserModal(true)}
+            />
+            {/* Spacer so content doesn't hide under fixed topbar */}
+            <div style={{ height:52 }} />
+          </div>
+
+          {/* Page content */}
+          <main className="main-content" style={{ flex:1, overflowY:"auto" }}>
+            {renderPage()}
+          </main>
+
+          {/* Mobile bottom nav */}
+          <div className="mobile-only">
+            <MobileBottomNav
+              activePage={page}
+              onNavigate={handleNavigate}
+              accent={appTheme.accent}
+            />
+            {/* Spacer so content doesn't hide under fixed bottom nav */}
+            <div style={{ height:60 }} />
+          </div>
+        </div>
+
+        {/* Mobile drawer */}
+        {mobileDrawerOpen && (
+          <MobileDrawer
+            activePage={page}
+            onNavigate={handleNavigate}
+            onClose={()=>setMobileDrawerOpen(false)}
+            sidebarBg={sidebarBg}
+            accent={appTheme.accent}
+            user={user}
+            userAvatar={userAvatar}
+            onUserClick={()=>setShowUserModal(true)}
+            onLogout={doLogout}
+          />
+        )}
+
+        {/* User / appearance modal */}
+        {showUserModal && (
+          <UserEditModal
+            user={user}
+            onClose={()=>setShowUserModal(false)}
+            onSave={(u)=>setUser(p=>({...p,...u}))}
+            userAvatar={userAvatar}
+            setUserAvatar={setUserAvatar}
+            appTheme={appTheme}
+            setAppTheme={setAppTheme}
+            sidebarPinned={sidebarPinned}
+            setSidebarPinned={setSidebarPinned}
+            onLogout={doLogout}
+          />
+        )}
+      </div>
     </AppCtx.Provider>
   );
 }

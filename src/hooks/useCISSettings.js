@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useContext, useState, useEffect } from "react";
+import { AppCtx } from "../context/AppContext";
 
 function readCIS() {
   const legacyRaw = localStorage.getItem("invoicesaga_settings");
@@ -23,12 +24,27 @@ function readCIS() {
 }
 
 export function useCISSettings() {
-  const [cis, setCIS] = useState(() => readCIS());
+  const app = useContext(AppCtx);
+  const orgCis = app?.orgSettings?.cis ?? {};
+  const appDerived = app?.orgSettings ? {
+    enabled: orgCis?.enabled ?? (app.orgSettings?.cisReg === "Yes"),
+    defaultRate: Number(orgCis?.defaultRate ?? app.orgSettings?.cisRate ?? 20) || 20,
+    contractorName: orgCis?.contractorName ?? "",
+    contractorUTR: orgCis?.contractorUTR ?? app.orgSettings?.cisUtrNo ?? "",
+    employerRef: orgCis?.employerRef ?? "",
+  } : null;
+
+  const [cis, setCIS] = useState(() => appDerived || readCIS());
 
   useEffect(() => {
+    if (appDerived) setCIS(appDerived);
+  }, [appDerived?.enabled, appDerived?.defaultRate, appDerived?.contractorName, appDerived?.contractorUTR, appDerived?.employerRef]);
+
+  useEffect(() => {
+    if (appDerived) return () => {};
     const handler = () => setCIS(readCIS());
     window.addEventListener("storage", handler);
-   window.addEventListener("focus", handler);
+    window.addEventListener("focus", handler);
     return () => {
       window.removeEventListener("storage", handler);
       window.removeEventListener("focus", handler);

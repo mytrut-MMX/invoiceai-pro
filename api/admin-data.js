@@ -75,15 +75,24 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
   try {
-    const [profilesRes, contactRes] = await Promise.all([
-      fetch(`${supabaseUrl}/rest/v1/profiles?select=*&order=created_at.desc`, { headers }),
-      fetch(`${supabaseUrl}/rest/v1/contact_submissions?select=*&order=created_at.desc`, { headers }),
-    ]);
+    const [profilesRes, contactRes, objectivesRes, tasksRes] = await Promise.all([
+  fetch(`${supabaseUrl}/rest/v1/profiles?select=*&order=created_at.desc`, { headers }),
+  fetch(`${supabaseUrl}/rest/v1/contact_submissions?select=*&order=created_at.desc`, { headers }),
+  fetch(`${supabaseUrl}/rest/v1/agent_objectives?select=*&order=created_at.desc`, { headers }),
+  fetch(`${supabaseUrl}/rest/v1/agent_tasks?select=objective_id&id`, { headers }),
+]);
 
     const profiles = profilesRes.ok ? await profilesRes.json() : [];
-    const contactSubmissions = contactRes.ok ? await contactRes.json() : [];
+const contactSubmissions = contactRes.ok ? await contactRes.json() : [];
+const agentObjectives = objectivesRes.ok ? await objectivesRes.json() : [];
+const agentTasks = tasksRes.ok ? await tasksRes.json() : [];
 
-    res.status(200).json({ profiles, contactSubmissions });
+res.status(200).json({
+  profiles,
+  contactSubmissions,
+  agentObjectives,
+  agentTasks
+});
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }

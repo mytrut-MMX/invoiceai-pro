@@ -15,10 +15,9 @@ export default function AuthCallbackPage({ onAuth }) {
         name: session.user.user_metadata?.full_name || session.user.email,
         email: session.user.email,
         role: "Admin",
-        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        expiresAt: session.expires_at ? session.expires_at * 1000 : null,
         provider: session.user.app_metadata?.provider || "email",
       };
-      try { localStorage.setItem("ai_invoice_user", JSON.stringify(u)); } catch {}
       // Change URL to "/" before triggering re-render — no page reload needed.
       // This avoids any localStorage/reload race condition: React state is already
       // set in memory, and App.jsx re-renders with path="/" and user set.
