@@ -340,6 +340,17 @@ export default function App() {
   if(path === '/cookies')         return <CookiePolicyPage />;
   if(path === '/gdpr')            return <GdprPage />;
   if(path === '/contact')         return <ContactPage />;
+  if(path === '/templates')       return <TemplatesPage />;
+  if(path === '/login' || path === '/signup') {
+    return (
+      <AppCtx.Provider value={ctx}>
+        <AuthPage onAuth={(u)=>{
+          if (!u?.id) return;
+          setUser(u);
+        }} />
+      </AppCtx.Provider>
+    );
+  }
 
   if (path === '/reset-password') {
   return (
@@ -377,7 +388,6 @@ export default function App() {
 
   if(!user) {
   if(path === '/' || path === '') return <LandingPage />;
-  if(path === '/templates')       return <TemplatesPage />;
   if(path === '/admin')           return <AdminPage />;
   return (
     <AppCtx.Provider value={ctx}>
