@@ -1,4 +1,6 @@
 import { useState, useContext, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { createPortal } from "react-dom";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
@@ -447,12 +449,19 @@ function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onClose }) {
 }
 
 // ─── QUOTES PAGE ──────────────────────────────────────────────────────────────
-export default function QuotesPage({ onNavigate, initialShowForm = false }) {
+export default function QuotesPage({ initialShowForm = false }) {
   const { quotes, setQuotes, invoices, setInvoices, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { cisEnabled, cisDefaultRate } = useCISSettings();
   const [panel, setPanel] = useState(initialShowForm ? { mode:"new-page" } : null);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
+
+  // Filters driven by URL search params
+  const search       = searchParams.get("q") || "";
+  const filterStatus = searchParams.get("status") || "All";
+
+  const setSearch = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v ? n.set("q", v) : n.delete("q"); return n; }, { replace: true });
+  const setFilterStatus = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v && v !== "All" ? n.set("status", v) : n.delete("status"); return n; }, { replace: true });
   const isNewQuotePage = panel?.mode === "new-page";
   const isViewPage = panel?.mode === "view";
 
@@ -516,7 +525,7 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
     };
     setInvoices(p=>[inv,...p]);
     setPanel(null);
-    onNavigate?.("invoices");
+    navigate(ROUTES.INVOICES, { replace: true });
   };
 
   const summary = {
@@ -570,13 +579,13 @@ export default function QuotesPage({ onNavigate, initialShowForm = false }) {
         <div style={{ marginBottom:14 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, gap:10, flexWrap:"wrap" }}>
             <div style={{ fontSize:20, fontWeight:800, color:"#1A1A1A" }}>New Quote</div>
-            <Btn onClick={()=>{ if(initialShowForm && onNavigate) onNavigate("quotes"); else setPanel(null); }} variant="outline" icon={<Icons.ChevDown />}>← Quotes</Btn>
+            <Btn onClick={()=>{ if(initialShowForm) navigate(ROUTES.QUOTES, { replace: true }); else setPanel(null); }} variant="outline" icon={<Icons.ChevDown />}>← Quotes</Btn>
           </div>
           <QuoteFormPanel
             asPage
             existing={null}
-            onClose={()=>{ if(initialShowForm && onNavigate) onNavigate("quotes"); else setPanel(null); }}
-            onSave={q=>{ onSave(q); if(initialShowForm && onNavigate) onNavigate("quotes"); else setPanel(null); }}
+            onClose={()=>{ if(initialShowForm) navigate(ROUTES.QUOTES, { replace: true }); else setPanel(null); }}
+            onSave={q=>{ onSave(q); if(initialShowForm) navigate(ROUTES.QUOTES, { replace: true }); else setPanel(null); }}
             onConvertToInvoice={handleConvertToInvoice}
           />
         </div>

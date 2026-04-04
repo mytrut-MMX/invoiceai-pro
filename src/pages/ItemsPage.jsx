@@ -1,4 +1,6 @@
 import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -7,8 +9,9 @@ import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "..
 import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 
-export default function ItemsPage({ initialShowForm = false, onNavigate }) {
+export default function ItemsPage({ initialShowForm = false }) {
   const { orgSettings, catalogItems, setCatalogItems, invoices, quotes } = useContext(AppCtx);
+  const navigate = useNavigate();
   const isVat = orgSettings?.vatReg === "Yes";
   const isCisOrg = orgSettings?.cisReg === "Yes";
   const [showForm, setShowForm] = useState(initialShowForm);
@@ -42,7 +45,7 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
       if(i>=0){ const u=[...p]; u[i]=item; return u; }
       return [...p, item];
     });
-    if (initialShowForm && onNavigate) { onNavigate("items"); return; }
+    if (initialShowForm) { navigate(ROUTES.ITEMS, { replace: true }); return; }
     setShowForm(false);
     setEditingItem(null);
   };
@@ -61,7 +64,7 @@ export default function ItemsPage({ initialShowForm = false, onNavigate }) {
       existing={editingItem}
       items={catalogItems}
       onClose={() => {
-        if (initialShowForm && onNavigate) { onNavigate("items"); return; }
+        if (initialShowForm) { navigate(ROUTES.ITEMS, { replace: true }); return; }
         setShowForm(false); setEditingItem(null);
       }}
       onSave={onSave}

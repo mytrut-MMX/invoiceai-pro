@@ -1,4 +1,6 @@
 import { useState, useContext, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff, STATUS_COLORS, CUR_SYM, DEFAULT_INV_TERMS, PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -650,21 +652,24 @@ const AVATARS = [
 ];
 const avatarFor = (name = "") => AVATARS[name.charCodeAt(0) % AVATARS.length];
 
-export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
+export default function InvoicesPage({ initialShowForm = false }) {
   const { invoices, setInvoices, quotes, setQuotes, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
   const [panel, setPanel] = useState(initialShowForm ? { mode:"new" } : null);
-  const [search, setSearch] = useState("");
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendDocumentType, setSendDocumentType] = useState("invoice");
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [filterStatus, setFilterStatus] = useState(() => {
-    const saved = sessionStorage.getItem("invoices_filter");
-    if (saved) { sessionStorage.removeItem("invoices_filter"); return saved; }
-    return "All";
-  });
+
+  // Filters driven by URL search params
+  const search       = searchParams.get("q") || "";
+  const filterStatus = searchParams.get("status") || "All";
+
+  const setSearch = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v ? n.set("q", v) : n.delete("q"); return n; }, { replace: true });
+  const setFilterStatus = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v && v !== "All" ? n.set("status", v) : n.delete("status"); return n; }, { replace: true });
 
   // ─── filtered list (logic unchanged) ─────────────────────────────────────
   const filtered = useMemo(() => invoices.filter(inv => {
@@ -740,12 +745,11 @@ export default function InvoicesPage({ initialShowForm = false, onNavigate }) {
     );
   }
   if (panel) {
-    const isInitialNew = initialShowForm && panel.mode === "new";
     return (
       <InvoiceFormPanel
         existing={panel.mode === "edit" ? panel.invoice : null}
-        onClose={() => { if (isInitialNew && onNavigate) onNavigate("invoices"); else setPanel(null); }}
-        onSave={inv => { onSave(inv); if (isInitialNew && onNavigate) onNavigate("invoices"); else setPanel(null); }}
+        onClose={() => { if (initialShowForm) navigate(ROUTES.INVOICES, { replace: true }); else setPanel(null); }}
+        onSave={inv => { onSave(inv); if (initialShowForm) navigate(ROUTES.INVOICES, { replace: true }); else setPanel(null); }}
         onConvertFromQuote={handleConvertAcceptedQuote}
       />
     );

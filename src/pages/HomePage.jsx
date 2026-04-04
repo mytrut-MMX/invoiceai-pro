@@ -1,17 +1,28 @@
 import { useState, useRef, useEffect, useMemo, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { ff } from "../constants";
 import { Icons } from "../components/icons";
 import { AppCtx } from "../context/AppContext";
 import { fmt, parseCisRate } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import { generateAlerts } from "../utils/ledger/generateAlerts";
+import { ROUTES } from "../router/routes";
+
+// Map legacy page IDs (from generateAlerts) to router paths
+const ALERT_PAGE_ROUTES = {
+  "invoices":     ROUTES.INVOICES,
+  "invoices:new": ROUTES.INVOICES_NEW,
+  "payments":     ROUTES.PAYMENTS,
+  "expenses":     ROUTES.EXPENSES,
+};
 
 const LS_DISMISSED_KEY = "invoicesaga_dismissed_alerts";
 const getDismissed = () => { try { return JSON.parse(localStorage.getItem(LS_DISMISSED_KEY) || "[]"); } catch { return []; } };
 const saveDismissed = (ids) => { try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify(ids)); } catch {} }
 
-export default function HomePage({ user, onNavigate }) {
-  const { invoices, expenses, payments, orgSettings } = useContext(AppCtx);
+export default function HomePage() {
+  const { user, invoices, expenses, payments, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
   const [reportPeriod, setReportPeriod] = useState("this_month");
   const [aiInput, setAiInput] = useState("");
   const [messages, setMessages] = useState([{ role:"assistant", text:`Hi ${user?.name?.split(" ")[0]||"there"}  I'm your InvoiceSaga assistant. Ask me anything!` }]);
@@ -235,7 +246,7 @@ export default function HomePage({ user, onNavigate }) {
           const isClickable = !!filter;
           return (
             <div key={s.label}
-              onClick={isClickable ? () => { sessionStorage.setItem("invoices_filter", filter); onNavigate("invoices"); } : undefined}
+              onClick={isClickable ? () => navigate(`${ROUTES.INVOICES}?status=${filter}`) : undefined}
               onMouseEnter={isClickable ? () => setHoveredStat(s.label) : undefined}
               onMouseLeave={isClickable ? () => setHoveredStat(null) : undefined}
               style={{ background: hoveredStat === s.label ? "#f8faff" : "#fff", borderRadius:12, padding:"16px 18px", border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", cursor: isClickable ? "pointer" : "default", transition:"background 0.15s" }}>
@@ -258,7 +269,7 @@ export default function HomePage({ user, onNavigate }) {
             <span style={{ fontSize:13, fontWeight:600, color:"#DC2626" }}>
               ⚠ You have {overdue.length} overdue invoice{overdue.length !== 1 ? "s" : ""} totalling {fmt(currencySymbol, total)}.
             </span>
-            <button onClick={() => onNavigate("invoices")}
+            <button onClick={() => navigate(ROUTES.INVOICES)}
               style={{ background:"#DC2626", color:"#fff", border:"none", borderRadius:7, padding:"6px 14px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
               Take action →
             </button>
@@ -330,7 +341,7 @@ export default function HomePage({ user, onNavigate }) {
                       <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
                         {alert.actionPage && (
                           <button
-                            onClick={() => onNavigate(alert.actionPage)}
+                            onClick={() => navigate(ALERT_PAGE_ROUTES[alert.actionPage] || ROUTES.DASHBOARD)}
                             style={{ fontSize:11, fontWeight:700, color:s.labelColor, background:"none", border:`1px solid ${s.border}`, borderRadius:6, padding:"3px 9px", cursor:"pointer", fontFamily:ff, whiteSpace:"nowrap" }}
                           >
                             View →

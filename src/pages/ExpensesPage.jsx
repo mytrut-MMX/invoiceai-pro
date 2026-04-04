@@ -1,4 +1,6 @@
 import { useState, useContext, useMemo, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff, CUR_SYM, TAX_RATES, EXPENSE_CATEGORIES, EXPENSE_STATUSES, PAYMENT_METHODS } from "../constants";
 import { postExpenseEntry } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
@@ -307,8 +309,9 @@ function filterExpenses(expenses, key) {
 }
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
-export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
+export default function ExpensesPage({ initialShowForm = false }) {
   const { expenses, setExpenses, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
   const isVat  = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
@@ -353,7 +356,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
       if (idx >= 0) { const u = [...prev]; u[idx] = item; return u; }
       return [item, ...prev];
     });
-    if (initialShowForm && onNavigate) { onNavigate("expenses"); return; }
+    if (initialShowForm) { navigate(ROUTES.EXPENSES, { replace: true }); return; }
     setShowForm(false);
     setEditingExp(null);
   };
@@ -367,7 +370,7 @@ export default function ExpensesPage({ initialShowForm = false, onNavigate }) {
     <ExpenseForm
       existing={editingExp}
       onClose={() => {
-        if (initialShowForm && onNavigate) { onNavigate("expenses"); return; }
+        if (initialShowForm) { navigate(ROUTES.EXPENSES, { replace: true }); return; }
         setShowForm(false); setEditingExp(null);
       }}
       onSave={onSave}

@@ -1,31 +1,37 @@
+import { useNavigate, useLocation } from "react-router-dom";
 import { ff } from "../../constants";
 import { Ic, Icons } from "../icons";
 import InvoiceSagaLogo from "../InvoiceSagaLogo";
+import { ROUTES } from "../../router/routes";
 
 // ─── NAVIGATION DEFINITION ────────────────────────────────────────────────────
+// Each entry maps a sidebar item to its route(s).
+// `route`    — the list/index page path
+// `addRoute` — the "create new" page path (optional)
+// `match`    — path prefix used to determine if this item is active
 export const NAV = [
-  { id:"home",      label:"Home",             Icon:Icons.Home },
-  { id:"customers", label:"Customers",         Icon:Icons.Customers, addId:"customers:new" },
-  { id:"items",     label:"Items",             Icon:Icons.Items,     addId:"items:new" },
-  { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes,    addId:"quotes:new" },
-  { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices,  addId:"invoices:new" },
-  { id:"payments",  label:"Payments Received", Icon:Icons.Payments,  addId:"payments:new" },
-  { id:"expenses",  label:"Expenses",          Icon:Icons.Expenses,  addId:"expenses:new" },
-  { id:"settings",  label:"Settings",          Icon:Icons.Settings },
-  ];
+  { id:"home",      label:"Home",             Icon:Icons.Home,     route:ROUTES.DASHBOARD,  match:ROUTES.DASHBOARD },
+  { id:"customers", label:"Customers",         Icon:Icons.Customers,route:ROUTES.CUSTOMERS,  match:"/customers", addRoute:ROUTES.CUSTOMERS_NEW },
+  { id:"items",     label:"Items",             Icon:Icons.Items,    route:ROUTES.ITEMS,      match:"/items",     addRoute:ROUTES.ITEMS_NEW },
+  { id:"quotes",    label:"Quotes",            Icon:Icons.Quotes,   route:ROUTES.QUOTES,     match:"/quotes",    addRoute:ROUTES.QUOTES_NEW },
+  { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices, route:ROUTES.INVOICES,   match:"/invoices",  addRoute:ROUTES.INVOICES_NEW },
+  { id:"payments",  label:"Payments Received", Icon:Icons.Payments, route:ROUTES.PAYMENTS,   match:"/payments",  addRoute:ROUTES.PAYMENTS_NEW },
+  { id:"expenses",  label:"Expenses",          Icon:Icons.Expenses, route:ROUTES.EXPENSES,   match:"/expenses",  addRoute:ROUTES.EXPENSES_NEW },
+  { id:"settings",  label:"Settings",          Icon:Icons.Settings, route:ROUTES.SETTINGS_GENERAL, match:"/settings" },
+];
 
 const MOB_NAV = [
-  { id:"home",      label:"Home",     Icon:Icons.Home },
-  { id:"invoices",  label:"Invoices", Icon:Icons.Invoices },
-  { id:"quotes",    label:"Quotes",   Icon:Icons.Quotes },
-  { id:"customers", label:"Clients",  Icon:Icons.Customers },
-  { id:"settings",  label:"Settings", Icon:Icons.Settings },
+  { id:"home",      label:"Home",     Icon:Icons.Home,     route:ROUTES.DASHBOARD,       match:ROUTES.DASHBOARD },
+  { id:"invoices",  label:"Invoices", Icon:Icons.Invoices, route:ROUTES.INVOICES,        match:"/invoices" },
+  { id:"quotes",    label:"Quotes",   Icon:Icons.Quotes,   route:ROUTES.QUOTES,          match:"/quotes" },
+  { id:"customers", label:"Clients",  Icon:Icons.Customers,route:ROUTES.CUSTOMERS,       match:"/customers" },
+  { id:"settings",  label:"Settings", Icon:Icons.Settings, route:ROUTES.SETTINGS_GENERAL,match:"/settings" },
 ];
 
 export const SIDEBAR_FULL = 220;
 export const SIDEBAR_ICON = 54;
 
-// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+// ─── helpers ──────────────────────────────────────────────────────────────────
 function isDark(color = "") {
   const rgb = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
   let r, g, b;
@@ -38,8 +44,13 @@ function isDark(color = "") {
   return (0.299*r + 0.587*g + 0.114*b) / 255 < 0.5;
 }
 
+function isActive(pathname, match) {
+  if (match === ROUTES.DASHBOARD) return pathname === ROUTES.DASHBOARD;
+  return pathname.startsWith(match);
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 export function Sidebar({
-  activePage, onNavigate,
   user, onUserClick, onLogout,
   accent = "#E86C4A",
   collapsed = false,
@@ -47,6 +58,8 @@ export function Sidebar({
   userAvatar,
   sidebarBg = "rgb(33, 38, 60)",
 }) {
+  const navigate  = useNavigate();
+  const { pathname } = useLocation();
   const toggleCollapsed = () => onCollapsedChange?.(!collapsed);
   const dark = isDark(sidebarBg);
   const txt     = dark ? "rgba(255,255,255,0.82)" : "#374151";
@@ -96,10 +109,11 @@ export function Sidebar({
 
       {/* Nav */}
       <nav style={{ flex:1, padding: collapsed ? "8px 0" : "10px 8px", overflowY:"auto" }}>
-        {NAV.map(({ id, label, Icon, addId }) => {
-          const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id || activePage === addId;
+        {NAV.map(({ id, label, Icon, route, match, addRoute }) => {
+          const on = isActive(pathname, match);
+          const onAdd = addRoute && pathname === addRoute;
           return collapsed ? (
-            <button key={id} onClick={() => onNavigate(id)} title={label}
+            <button key={id} onClick={() => navigate(route)} title={label}
               style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", padding:"11px 0", border:"none", background:on?bgOn:"none", color:on?txtOn:txt, cursor:"pointer", marginBottom:1, position:"relative", transition:"all 0.15s" }}
               onMouseEnter={e=>{ if(!on) e.currentTarget.style.background=bgHover; }}
               onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
@@ -108,8 +122,8 @@ export function Sidebar({
             </button>
           ) : (
             <div key={id} style={{ position:"relative", marginBottom:2 }}>
-              <button onClick={() => onNavigate(id)}
-                style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", paddingRight: addId ? 36 : 12, borderRadius:8, border:"none", background:on?bgOn:"none", color:on?txtOn:txt, cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, textAlign:"left", transition:"all 0.15s", position:"relative" }}
+              <button onClick={() => navigate(route)}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", paddingRight: addRoute ? 36 : 12, borderRadius:8, border:"none", background:on?bgOn:"none", color:on?txtOn:txt, cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, textAlign:"left", transition:"all 0.15s", position:"relative" }}
                 onMouseEnter={e=>{ if(!on) e.currentTarget.style.background=bgHover; }}
                 onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>
                 <span style={on ? { background:iconOn, borderRadius:7, width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } : { width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -118,14 +132,14 @@ export function Sidebar({
                 {label}
                 {on && <div style={{ position:"absolute", left:0, top:"25%", bottom:"25%", width:3, borderRadius:"0 3px 3px 0", background:accentBar }} />}
               </button>
-              {addId && (
+              {addRoute && (
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onNavigate(activePage === addId ? id : addId); }}
-                  title={activePage === addId ? label : `New ${label.replace(/s$/,"")}`}
-                  style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:"none", background: activePage === addId ? accent : bgOn, color: activePage === addId ? "#fff" : txtOn, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, transition:"all 0.15s", flexShrink:0, zIndex:2 }}
+                  onClick={(e) => { e.stopPropagation(); navigate(onAdd ? route : addRoute); }}
+                  title={onAdd ? label : `New ${label.replace(/s$/,"")}`}
+                  style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:"none", background:onAdd?accent:bgOn, color:onAdd?"#fff":txtOn, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, transition:"all 0.15s", flexShrink:0, zIndex:2 }}
                   onMouseEnter={e=>{ e.currentTarget.style.background=accent; e.currentTarget.style.color="#fff"; }}
-                  onMouseLeave={e=>{ e.currentTarget.style.background = activePage === addId ? accent : bgOn; e.currentTarget.style.color = activePage === addId ? "#fff" : txtOn; }}>
+                  onMouseLeave={e=>{ e.currentTarget.style.background=onAdd?accent:bgOn; e.currentTarget.style.color=onAdd?"#fff":txtOn; }}>
                   <span style={{ pointerEvents:"none", display:"flex" }}><Icons.Plus /></span>
                 </button>
               )}
@@ -170,8 +184,9 @@ export function Sidebar({
 }
 
 // ─── MOBILE TOP BAR ───────────────────────────────────────────────────────────
-export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick }) {
-  const page = NAV.find(n => n.id === activePage || n.addId === activePage);
+export function MobileTopBar({ onMenuOpen, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick }) {
+  const { pathname } = useLocation();
+  const page = NAV.find(n => isActive(pathname, n.match));
   return (
     <div className="mobile-topbar" style={{
       display: "flex",
@@ -203,7 +218,9 @@ export function MobileTopBar({ activePage, onMenuOpen, sidebarBg="rgb(33, 38, 60
 }
 
 // ─── MOBILE BOTTOM NAV ────────────────────────────────────────────────────────
-export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
+export function MobileBottomNav({ accent="#E86C4A" }) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   return (
     <div className="mobile-bottom-nav" style={{
       display: "flex",
@@ -212,10 +229,10 @@ export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
       borderTop: "1px solid rgba(255,255,255,0.08)",
       alignItems: "center", justifyContent: "space-around",
     }}>
-      {MOB_NAV.map(({ id, label, Icon }) => {
-        const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
+      {MOB_NAV.map(({ id, label, Icon, route, match }) => {
+        const on = isActive(pathname, match);
         return (
-          <button key={id} onClick={() => onNavigate(id)}
+          <button key={id} onClick={() => navigate(route)}
             style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"none", border:"none", cursor:"pointer", color:on?accent:"#fff", fontFamily:ff, padding:"6px 12px", minWidth:52, transition:"color 0.15s" }}>
             <Icon />
             <span style={{ fontSize:10, fontWeight:on?700:400 }}>{label}</span>
@@ -227,7 +244,9 @@ export function MobileBottomNav({ activePage, onNavigate, accent="#E86C4A" }) {
 }
 
 // ─── MOBILE DRAWER (overlay sidebar on mobile) ────────────────────────────────
-export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick, onLogout }) {
+export function MobileDrawer({ onClose, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick, onLogout }) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   return (
     <>
       <div onClick={onClose}
@@ -245,10 +264,10 @@ export function MobileDrawer({ activePage, onNavigate, onClose, sidebarBg="rgb(3
           </button>
         </div>
         <nav style={{ flex:1, padding:"10px 8px", overflowY:"auto" }}>
-          {NAV.map(({ id, label, Icon }) => {
-            const on = id==="settings" ? String(activePage||"").startsWith("settings") : activePage === id;
+          {NAV.map(({ id, label, Icon, route, match }) => {
+            const on = isActive(pathname, match);
             return (
-              <button key={id} onClick={() => { onNavigate(id); onClose(); }}
+              <button key={id} onClick={() => { navigate(route); onClose(); }}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:8, border:"none", background:on?"#e8f0fc":"none", color:on?"#1e6be0":"#374151", cursor:"pointer", fontSize:13, fontWeight:on?700:400, fontFamily:ff, marginBottom:2, textAlign:"left", transition:"all 0.15s" }}
                 onMouseEnter={e=>{ if(!on) e.currentTarget.style.background="#f3f4f6"; }}
                 onMouseLeave={e=>{ if(!on) e.currentTarget.style.background="none"; }}>

@@ -1,4 +1,6 @@
 import { useState, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS, normalizeCurrencyCode } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -97,7 +99,8 @@ function TemplatePreviewModal({ templateId, orgSettings, companyLogo, companyLog
 }
 
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
-export default function SettingsPage({ onNavigate }) {
+export default function SettingsPage() {
+  const navigate = useNavigate();
   const {
     orgSettings, setOrgSettings,
     pdfTemplate, setPdfTemplate,
@@ -372,7 +375,7 @@ export default function SettingsPage({ onNavigate }) {
   <div style={{ fontSize:13, color:"#64748B", marginBottom:8 }}>Want to go through the setup wizard again?</div>
   <Btn variant="outline" onClick={() => {
     localStorage.removeItem("ai_invoice_onboarding_done");
-    window.location.reload();
+    navigate(ROUTES.ONBOARDING, { replace: true });
   }}>
     Restart onboarding
   </Btn>
@@ -463,7 +466,7 @@ export default function SettingsPage({ onNavigate }) {
       {/* PDF Templates */}
       {activeTab === "templates" && (<Section title="PDF Invoice Templates">
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
-          <Btn onClick={()=>onNavigate?.("settings/invoice-templates")} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
+          <Btn onClick={() => navigate(ROUTES.SETTINGS_TEMPLATES)} variant="outline" icon={<Icons.Pen />}>Open dedicated template page</Btn>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginBottom:16 }}>
           {PDF_TEMPLATES.map(tpl=>{
@@ -629,7 +632,7 @@ export default function SettingsPage({ onNavigate }) {
               <li>Chart of Accounts — live balances per account</li>
               <li>P&amp;L — period profit &amp; loss from ledger data</li>
             </ul>
-            <Btn variant="primary" icon={<Icons.Bank />} onClick={() => onNavigate?.("ledger")}>
+            <Btn variant="primary" icon={<Icons.Bank />} onClick={() => navigate(ROUTES.LEDGER_JOURNAL)}>
               Open General Ledger
             </Btn>
           </div>

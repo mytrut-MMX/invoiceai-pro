@@ -1,4 +1,6 @@
 import { useState, useMemo, useContext } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -80,15 +82,21 @@ function CustomerAvatar({ name }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
-export default function CustomersPage({ initialShowForm = false, onNavigate }) {
+export default function CustomersPage({ initialShowForm = false }) {
   const { customers, setCustomers, orgSettings, invoices, quotes, payments } = useContext(AppCtx);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
   const [editingCustomer, setEditingCustomer] = useState(null);
-
   const [showForm, setShowForm] = useState(initialShowForm);
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All");
+
+  // Filters driven by URL search params
+  const search     = searchParams.get("q") || "";
+  const typeFilter = searchParams.get("type") || "All";
+
+  const setSearch     = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v ? n.set("q", v) : n.delete("q"); return n; }, { replace: true });
+  const setTypeFilter = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v && v !== "All" ? n.set("type", v) : n.delete("type"); return n; }, { replace: true });
 
   // ─── handlers ─────────────────────────────────────────────────────────────
   const deleteCustomer = (c) => {
@@ -103,7 +111,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
 
   const onSave = c => {
     setCustomers(p => upsert(p, c));
-    if (initialShowForm && onNavigate) { onNavigate("customers"); return; }
+    if (initialShowForm) { navigate(ROUTES.CUSTOMERS, { replace: true }); return; }
     setShowForm(false);
     setEditingCustomer(null);
   };
@@ -111,7 +119,7 @@ export default function CustomersPage({ initialShowForm = false, onNavigate }) {
   const openNew   = () => { setEditingCustomer(null); setShowForm(true); };
   const openEdit  = (c) => { setEditingCustomer(c); setShowForm(true); };
   const closeForm = () => {
-    if (initialShowForm && onNavigate) { onNavigate("customers"); return; }
+    if (initialShowForm) { navigate(ROUTES.CUSTOMERS, { replace: true }); return; }
     setShowForm(false);
     setEditingCustomer(null);
   };

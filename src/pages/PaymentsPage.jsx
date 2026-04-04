@@ -1,4 +1,6 @@
 import { useState, useContext, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff, CUR_SYM, PAYMENT_METHODS } from "../constants";
 import { postPaymentEntry } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
@@ -235,15 +237,23 @@ function PaymentModal({ existing, onClose, onSave }) {
 }
 
 // ─── Payments Page ────────────────────────────────────────────────────────────
-export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
+export default function PaymentsPage({ initialShowForm = false }) {
   const { payments, setPayments, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
   const [showForm, setShowForm] = useState(initialShowForm);
   const [editingPayment, setEditingPayment] = useState(null);
   const [viewingPayment, setViewingPayment] = useState(null);
-  const [search, setSearch] = useState("");
-  const [filterMethod, setFilterMethod] = useState("All");
-  const [filterStatus, setFilterStatus] = useState("All");
+
+  // Filters driven by URL search params
+  const search       = searchParams.get("q") || "";
+  const filterMethod = searchParams.get("method") || "All";
+  const filterStatus = searchParams.get("status") || "All";
+
+  const setSearch       = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v ? n.set("q", v) : n.delete("q"); return n; }, { replace: true });
+  const setFilterMethod = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v && v !== "All" ? n.set("method", v) : n.delete("method"); return n; }, { replace: true });
+  const setFilterStatus = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v && v !== "All" ? n.set("status", v) : n.delete("status"); return n; }, { replace: true });
 
   const methods = useMemo(()=>["All",...new Set(payments.map(p=>p.method).filter(Boolean))],[payments]);
 
@@ -300,12 +310,12 @@ export default function PaymentsPage({ initialShowForm = false, onNavigate }) {
     <PaymentModal
       existing={editingPayment}
       onClose={() => {
-        if (initialShowForm && onNavigate) { onNavigate("payments"); return; }
+        if (initialShowForm) { navigate(ROUTES.PAYMENTS, { replace: true }); return; }
         setShowForm(false); setEditingPayment(null);
       }}
       onSave={pmt => {
         onSave(pmt);
-        if (initialShowForm && onNavigate) { onNavigate("payments"); return; }
+        if (initialShowForm) { navigate(ROUTES.PAYMENTS, { replace: true }); return; }
         setShowForm(false); setEditingPayment(null);
       }}
     />
