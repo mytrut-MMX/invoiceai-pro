@@ -1,0 +1,1 @@
+export const PRODUCT_WORKFLOW_LEAD_PROMPT = `...`;
