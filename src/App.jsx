@@ -156,7 +156,9 @@ export default function App() {
       const merged = await migrateLegacyBusinessDataIfNeeded(user.id, data);
       if (cancelled) return;
       setOrgSettingsState(merged?.org_settings ?? null);
-      setOnboardingDoneState(Boolean(merged?.onboarding_done));
+      // Treat as done if the flag is explicitly true OR if org_settings is present
+      // (covers users whose row predates the onboarding_done field).
+      setOnboardingDoneState(Boolean(merged?.onboarding_done) || Boolean(merged?.org_settings));
       setCustomers(Array.isArray(merged?.customers) ? merged.customers : []);
       setCatalogItems(Array.isArray(merged?.catalog_items) ? merged.catalog_items : []);
       setInvoices(Array.isArray(merged?.invoices) ? merged.invoices : []);
