@@ -50,7 +50,19 @@ export default function OrgSetupPage({ onComplete, initialData }) {
       currency: normalizeCurrencyCode(currency), timezone, email:orgEmail, phone:formatPhoneNumber(orgPhone),
       deliversItems,
       vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
-      cisReg: cisReg ? "Yes" : "No", cisContractor, cisSub, cisRate, cisUtr });
+      cisReg: cisReg ? "Yes" : "No",
+      cisContractor,
+      cisSub,
+      cisRate,
+      cisUtr,
+      cisUtrNo: cisUtr,
+      cisRegistrationStatus,
+      cis: {
+        enabled: cisReg,
+        contractorUTR: cisUtr,
+        defaultRate: cisRate,
+      },
+    });
   };
 
   return (
