@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid JSON request body' });
     }
 
-  const { to, cc, subject, htmlBody, documentType, documentNumber, replyTo } = payload;
+  const { to, cc, subject, htmlBody, documentType, documentNumber, replyTo, fromName, attachmentBase64, attachmentFilename } = payload;
 
     if (!to || !subject || !htmlBody) {
       return res.status(400).json({ error: 'Missing required fields: to, subject, htmlBody' });
@@ -39,8 +39,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid recipient email address' });
     }
 
+    const senderName = (fromName && fromName.trim()) ? fromName.trim() : "InvoiceSaga";
     const resendPayload = {
-      from: 'InvoiceSaga <noreply@invoicesaga.com>',
+      from: `${senderName} <noreply@invoicesaga.com>`,
       to: [to],
       subject,
       html: htmlBody,
@@ -52,6 +53,13 @@ export default async function handler(req, res) {
 
     if (replyTo && isValidEmail(replyTo)) {
       resendPayload.reply_to = replyTo;
+    }
+
+    if (attachmentBase64 && attachmentFilename) {
+      resendPayload.attachments = [{
+        filename: attachmentFilename,
+        content: attachmentBase64,
+      }];
     }
 
     const response = await fetch('https://api.resend.com/emails', {

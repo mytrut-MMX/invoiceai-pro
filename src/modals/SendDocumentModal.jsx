@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { ff } from "../constants";
+import { ff, PDF_TEMPLATES } from "../constants";
 import { Btn, Field, Input, Textarea } from "../components/atoms";
 import { Icons } from "../components/icons";
 import { buildInvoiceEmail, buildPaymentConfirmationEmail, buildQuoteEmail } from "../utils/emailTemplates";
+import { A4InvoiceDoc } from "../components/shared/A4InvoiceDoc";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -33,8 +34,13 @@ function getDocumentLabel(documentType) {
   return "Invoice";
 }
 
+function extractCompanyName(company) {
+  // orgSettings stores the org name as `orgName`; callers may also pass companyName/name
+  return company?.orgName || company?.companyName || company?.name || "";
+}
+
 function buildDefaultSubject(documentType, document, company) {
-  const companyName = company?.companyName || company?.name || "Your Company";
+  const companyName = extractCompanyName(company) || "Your Company";
 
   if (documentType === "quote") {
     return `Quote ${document?.quoteNumber || "—"} from ${companyName}`;
@@ -49,7 +55,7 @@ function buildDefaultSubject(documentType, document, company) {
 
 function buildDefaultMessage(documentType, document, company, customer) {
   const customerName = customer?.contactName || customer?.companyName || customer?.name || "there";
-  const companyName = company?.companyName || company?.name || "Your Company";
+  const companyName = extractCompanyName(company) || "Your Company";
   const documentNumber = getDocumentNumber(documentType, document);
   const currency = document?.currency || company?.currency || "GBP";
   const total = formatCurrency(document?.total || document?.amount || document?.amountDue || 0, currency);
@@ -128,10 +134,19 @@ export default function SendDocumentModal({
   customer,
   onClose,
   onSent,
+  // PDF generation props (optional — when provided, PDF is attached to the email)
+  docData,
+  currSymbol,
+  isVat,
+  pdfTemplate,
+  accentColor,
+  footerText,
+  invoiceTemplate,
 }) {
   const [to, setTo] = useState(customer?.email || "");
   const [cc, setCc] = useState("");
   const [replyTo, setReplyTo] = useState(company?.email || "");
+  const companyDisplayName = extractCompanyName(company);
   const [subject, setSubject] = useState(() => buildDefaultSubject(documentType, document, company));
   const [personalMessage, setPersonalMessage] = useState(() =>
     buildDefaultMessage(documentType, document, company, customer),
@@ -167,6 +182,32 @@ export default function SendDocumentModal({
     setSending(true);
     setError(null);
 
+    // Capture the hidden invoice element for PDF attachment
+    let attachmentBase64 = null;
+    let attachmentFilename = null;
+    if (docData) {
+      try {
+        const el = window.document.getElementById("send-modal-pdf-preview");
+        if (el) {
+          // Sanitize clone (same approach as A4PrintModal.handlePrint)
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll("script").forEach(s => s.remove());
+          clone.querySelectorAll("*").forEach(node => {
+            Array.from(node.attributes).forEach(attr => {
+              if (/^on[a-z]/i.test(attr.name)) node.removeAttribute(attr.name);
+            });
+          });
+          const docNum = (document?.invoiceNumber || document?.quoteNumber || "").replace(/[^a-zA-Z0-9_-]/g, "");
+          const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${docNum}</title><style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{background:#fff;font-family:'Lato','DM Sans','Helvetica Neue',sans-serif}@page{size:A4;margin:0}</style></head><body>${clone.outerHTML}</body></html>`;
+          attachmentBase64 = btoa(unescape(encodeURIComponent(fullHtml)));
+          const docTypeLabel = documentType === "quote" ? "Quote" : "Invoice";
+          attachmentFilename = `${docTypeLabel}-${docNum || "document"}.html`;
+        }
+      } catch {
+        // PDF capture failed — send email without attachment rather than blocking
+      }
+    }
+
     const htmlBody = buildEmailHtml({
       documentType,
       document,
@@ -183,6 +224,9 @@ export default function SendDocumentModal({
       documentType,
       documentNumber: document?.invoiceNumber || document?.quoteNumber,
       replyTo: replyTo.trim() || undefined,
+      fromName: companyDisplayName || undefined,
+      attachmentBase64: attachmentBase64 || undefined,
+      attachmentFilename: attachmentFilename || undefined,
     };
 
     try {
@@ -298,8 +342,13 @@ export default function SendDocumentModal({
                   onChange={(event) => setSendCopy(event.target.checked)}
                   style={{ width: 16, height: 16, accentColor: "#D97706" }}
                 />
-                <span>Send me a copy (CC to {company?.email || "company email"})</span>
+                <span>Send me a copy (CC to {company?.email || (companyDisplayName ? `${companyDisplayName} email` : "company email")})</span>
               </label>
+              {docData && (
+                <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 5 }}>
+                  <Icons.Receipt /> A copy of your {documentType === "quote" ? "quote" : "invoice"} will be attached to this email.
+                </div>
+              )}
             </div>
 
             {(missingCustomerEmail || error) && (
@@ -320,9 +369,26 @@ export default function SendDocumentModal({
             <div style={{ padding: "16px 18px", display: "flex", justifyContent: "flex-end", gap: 10, background: "#F0EFE9" }}>
               <Btn variant="outline" onClick={onClose} disabled={sending}>Cancel</Btn>
               <Btn variant="accent" onClick={handleSend} disabled={sending || !!toError || !!subjectError} icon={<Icons.Send />}>
-                {sending ? "Sending..." : "Send Email →"}
+                {sending ? "Sending…" : "Send Email →"}
               </Btn>
             </div>
+
+            {/* Hidden invoice render for PDF attachment capture */}
+            {docData && (
+              <div style={{ position: "fixed", left: -9999, top: 0, width: "210mm", visibility: "hidden", pointerEvents: "none", overflow: "hidden", height: 0 }}>
+                <A4InvoiceDoc
+                  docId="send-modal-pdf-preview"
+                  data={docData}
+                  currSymbol={currSymbol || "£"}
+                  isVat={isVat || false}
+                  orgSettings={company || {}}
+                  accentColor={accentColor || (PDF_TEMPLATES.find(t => t.id === (pdfTemplate || "classic"))?.defaultAccent || "#1e6be0")}
+                  template={pdfTemplate || "classic"}
+                  footerText={footerText || ""}
+                  invoiceTemplate={invoiceTemplate}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

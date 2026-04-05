@@ -43,12 +43,13 @@ export const DEFAULT_TEMPLATE = {
   toFields: {
     companyName: { visible: true, order: 1 },
     contactName: { visible: true, order: 2 },
-    address: { visible: true, order: 3 },
-    city: { visible: true, order: 4 },
-    country: { visible: true, order: 5 },
-    email: { visible: false, order: 6 },
-    vatNumber: { visible: false, order: 7 },
-    phone: { visible: false, order: 8 },
+    address:     { visible: true, order: 3 },
+    city:        { visible: true, order: 4 },
+    postcode:    { visible: true, order: 5 },
+    country:     { visible: true, order: 6 },
+    email:       { visible: false, order: 7 },
+    vatNumber:   { visible: false, order: 8 },
+    phone:       { visible: false, order: 9 },
   },
 
   // Câmpuri din header-ul invoicei

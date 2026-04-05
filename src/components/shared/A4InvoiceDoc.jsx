@@ -13,6 +13,7 @@ const FIELD_LABELS = {
   contactName: "Contact",
   address: "Address",
   city: "City",
+  postcode: "Postcode",
   country: "Country",
   phone: "Phone",
   email: "Email",
@@ -46,7 +47,7 @@ const buildActiveTemplate = (templateInput) => ({
   customText: { ...DEFAULT_TEMPLATE.customText, ...(templateInput?.customText || {}) },
 });
 
-export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template = "classic", footerText = "", templateConfig, invoiceTemplate }) {
+export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template = "classic", footerText = "", templateConfig, invoiceTemplate, docId = "a4-invoice-doc" }) {
   const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms, docType } = data;
   const isQuote = docType === "quote";
   const docLabel = isQuote ? "Quote" : "Invoice";
@@ -77,8 +78,11 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   const toData = {
     companyName: customer?.companyName || customer?.name || "",
     contactName: customer?.name || "",
-    address: customer?.billingAddress?.street || "",
+    // Support both street1 (CustomerModal format) and street (legacy/demo format)
+    address: customer?.billingAddress?.street1 || customer?.billingAddress?.street || "",
     city: customer?.billingAddress?.city || "",
+    // Support both zip (CustomerModal) and postcode (legacy/demo)
+    postcode: customer?.billingAddress?.zip || customer?.billingAddress?.postcode || "",
     country: customer?.billingAddress?.country || "",
     email: customer?.email || "",
     vatNumber: customer?.vatNumber || "",
@@ -226,7 +230,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   ) : null;
 
   if (template === "modern") return (
-    <div id="a4-invoice-doc" style={{ ...base, display: "flex", flexDirection: "column", padding: 0 }}>
+    <div id={docId} style={{ ...base, display: "flex", flexDirection: "column", padding: 0 }}>
       <div style={{ display: "grid", gridTemplateColumns: "42% 58%" }}>
         <div style={{ background: accent, padding: "14mm 12mm 10mm 14mm", minHeight: "62mm" }}>
           <OrgBlock dark />
@@ -247,7 +251,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   );
 
   if (template === "minimal") return (
-    <div id="a4-invoice-doc" style={{ ...base, padding: "14mm 18mm 16mm" }}>
+    <div id={docId} style={{ ...base, padding: "14mm 18mm 16mm" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8mm" }}>
         <OrgBlock />
         <div style={{ textAlign: "right" }}>
@@ -266,7 +270,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   );
 
   if (template === "branded") return (
-    <div id="a4-invoice-doc" style={{ ...base, padding: 0 }}>
+    <div id={docId} style={{ ...base, padding: 0 }}>
       <div style={{ background: `linear-gradient(135deg,${accent} 0%,${accent}BB 100%)`, padding: "12mm 18mm 8mm", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -20, right: -20, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative" }}>
@@ -291,7 +295,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 
   // default: classic
   return (
-    <div id="a4-invoice-doc" style={{ ...base }}>
+    <div id={docId} style={{ ...base }}>
       <div style={{ background: accent, padding: "14mm 18mm 10mm", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <OrgBlock dark />
         <div style={{ textAlign: "right" }}>

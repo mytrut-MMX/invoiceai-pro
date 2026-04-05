@@ -8,6 +8,7 @@ import SendDocumentModal from "../../modals/SendDocumentModal";
 import { fmt, fmtDate, markDocumentAsSent } from "../../utils/helpers";
 import { calcTotals } from "../../utils/calcTotals";
 import { useCISSettings } from "../../hooks/useCISSettings";
+import { getDefaultTemplate } from "../../utils/InvoiceTemplateSchema";
 
 const EmailIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 446" width="18" height="18" fill="currentColor">
@@ -85,6 +86,13 @@ export default function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onC
             setShowSendModal(false);
             markDocumentAsSent(quote.id);
           }}
+          docData={docData}
+          currSymbol={currSym}
+          isVat={isVat}
+          pdfTemplate={activeTemplate}
+          accentColor={tplDef?.defaultAccent}
+          footerText={footerText || ""}
+          invoiceTemplate={getDefaultTemplate()}
         />
       )}
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", fontFamily: ff, padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
