@@ -94,6 +94,7 @@ export default function App() {
   const [payments,             setPayments]             = useState([]);
   const [customPayMethods,     setCustomPayMethods]     = useState([]);
   const [expenses,             setExpenses]             = useState([]);
+  const [bills,                setBills]                = useState([]);
 
   // ─── PDF / Invoice settings (loaded from Supabase; defaults below) ─────────
   const [pdfTemplate,          setPdfTemplate]          = useState("classic");
@@ -166,6 +167,7 @@ export default function App() {
       setPayments(Array.isArray(merged?.payments) ? merged.payments : []);
       setCustomPayMethods(Array.isArray(merged?.custom_pay_methods) ? merged.custom_pay_methods : []);
       setExpenses(Array.isArray(merged?.expenses) ? merged.expenses : []);
+      setBills(Array.isArray(merged?.bills) ? merged.bills : []);
       setPdfTemplate(merged?.pdf_template || "classic");
       setCompanyLogo(merged?.company_logo ?? null);
       setCompanyLogoSize(Number(merged?.company_logo_size || 52));
@@ -199,6 +201,7 @@ export default function App() {
         payments,
         custom_pay_methods:      customPayMethods,
         expenses,
+        bills,
         pdf_template:            pdfTemplate,
         company_logo:            companyLogo,
         company_logo_size:       companyLogoSize,
@@ -224,6 +227,7 @@ export default function App() {
         ai_invoice_payments:        payments,
         ai_invoice_pay_methods:     customPayMethods,
         ai_invoice_expenses:        expenses,
+        ai_invoice_bills:           bills,
         ai_invoice_theme:           appTheme,
         ai_invoice_pdf_template:    pdfTemplate,
         ai_invoice_logo:            companyLogo !== lastSavedLogo.current ? companyLogo : undefined,
@@ -250,7 +254,7 @@ export default function App() {
   }, [
     user?.id, businessDataHydrated,
     orgSettings, onboardingDone, customers, catalogItems,
-    invoices, quotes, payments, customPayMethods, expenses,
+    invoices, quotes, payments, customPayMethods, expenses, bills,
     pdfTemplate, companyLogo, companyLogoSize,
     invoicePrefix, quotePrefix, invoiceStartNum, quoteStartNum,
     defaultInvTerms, defaultQuoteTerms, defaultPaymentTerms,
@@ -274,6 +278,7 @@ export default function App() {
     payments,    setPayments,
     customPayMethods, setCustomPayMethods,
     expenses,    setExpenses,
+    bills,       setBills,
     pdfTemplate, setPdfTemplate,
     companyLogo, setCompanyLogo,
     companyLogoSize,      setCompanyLogoSize,

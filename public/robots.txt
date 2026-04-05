@@ -6,6 +6,7 @@ Disallow: /quotes
 Disallow: /customers
 Disallow: /payments
 Disallow: /expenses
+Disallow: /bills
 Disallow: /ledger
 Disallow: /settings
 Disallow: /onboarding

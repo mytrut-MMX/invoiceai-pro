@@ -17,6 +17,7 @@ export const NAV = [
   { id:"invoices",  label:"Invoices",          Icon:Icons.Invoices, route:ROUTES.INVOICES,   match:"/invoices",  addRoute:ROUTES.INVOICES_NEW },
   { id:"payments",  label:"Payments Received", Icon:Icons.Payments, route:ROUTES.PAYMENTS,   match:"/payments",  addRoute:ROUTES.PAYMENTS_NEW },
   { id:"expenses",  label:"Expenses",          Icon:Icons.Expenses, route:ROUTES.EXPENSES,   match:"/expenses",  addRoute:ROUTES.EXPENSES_NEW },
+  { id:"bills",     label:"Bills",             Icon:Icons.Receipt,  route:ROUTES.BILLS,      match:"/bills",     addRoute:ROUTES.BILLS_NEW },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings, route:ROUTES.SETTINGS_GENERAL, match:"/settings" },
 ];
 

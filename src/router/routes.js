@@ -69,6 +69,12 @@ export const ROUTES = {
   EXPENSES:     '/expenses',
   EXPENSES_NEW: '/expenses/new',
 
+  // ─── Bills / Purchases ──────────────────────────────────────────────────────
+  BILLS:      '/bills',
+  BILLS_NEW:  '/bills/new',
+  BILL:       (id) => `/bills/${id}`,
+  BILL_EDIT:  (id) => `/bills/${id}/edit`,
+
   // ─── Ledger ──────────────────────────────────────────────────────────────────
   LEDGER:          '/ledger',
   LEDGER_JOURNAL:  '/ledger/journal',
