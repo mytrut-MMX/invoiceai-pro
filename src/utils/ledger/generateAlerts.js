@@ -16,8 +16,8 @@ const parseDate = (str) => {
 
 const daysBetween = (a, b) => Math.round((b - a) / 86400000);
 
-let _uid = 0;
-const uid = (prefix) => `${prefix}_${++_uid}`;
+// SEC-014: Use cryptographically secure random IDs
+const uid = (prefix = '') => `${prefix}_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 
 export function generateAlerts(invoices = [], payments = [], expenses = [], orgSettings = {}) {
   const alerts = [];

@@ -153,8 +153,9 @@ function writeStoragePayload(templates) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
+// SEC-014: Use cryptographically secure random IDs
 function generateTemplateId() {
-  return `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `tpl_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 }
 
 export function getTemplates() {
