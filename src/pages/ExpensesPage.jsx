@@ -45,13 +45,16 @@ const FILTER_GROUPS = [
   { key: "nonbillable", label: "Non-billable" },
   { key: "_sep2",       label: null },
   ...EXPENSE_STATUSES.map(s => ({ key: s, label: s })),
+  { key: "_sep3",         label: null },
+  { key: "subcontractor", label: "Subcontractors" },
 ];
 
 function filterExpenses(expenses, key) {
   if (key === "all")         return expenses;
-  if (key === "unbilled")    return expenses.filter(e => e.billable && e.status !== "Reimbursed");
-  if (key === "billable")    return expenses.filter(e => e.billable);
-  if (key === "nonbillable") return expenses.filter(e => !e.billable);
+  if (key === "unbilled")       return expenses.filter(e => e.billable && e.status !== "Reimbursed");
+  if (key === "billable")       return expenses.filter(e => e.billable);
+  if (key === "nonbillable")    return expenses.filter(e => !e.billable);
+  if (key === "subcontractor")  return expenses.filter(e => e.category === "Subcontractor Labour" || e.category === "Subcontractor Materials");
   return expenses.filter(e => e.status === key);
 }
 
@@ -217,6 +220,9 @@ export default function ExpensesPage({ initialShowForm = false }) {
                             <span style={{ fontSize: 11, color: "#0891b2", background: "#ecfeff", padding: "1px 6px", borderRadius: 10, fontWeight: 700 }}>Mileage</span>
                           )}
                           <span>{exp.category || <span style={{ color: "#c4c4c4" }}>—</span>}</span>
+                          {exp.is_cis_expense && (
+                            <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 700, color: "#92400e", background: "#fef3c7", borderRadius: 4, padding: "1px 5px" }}>CIS</span>
+                          )}
                         </div>
                         {exp.expense_type === "mileage" && exp.mileage_km > 0 && (
                           <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{exp.mileage_km} km · {exp.mileage_from} → {exp.mileage_to}</div>
