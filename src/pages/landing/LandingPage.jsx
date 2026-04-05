@@ -157,6 +157,20 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Trust bar */}
+      <div style={{ background:'#fff', borderTop:'1px solid #E8E6E0', borderBottom:'1px solid #E8E6E0', padding:'16px 2rem' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'center', gap:40, flexWrap:'wrap' }}>
+          {[
+            '✓ Free plan — no credit card',
+            '✓ Send your first invoice in 2 minutes',
+            '✓ PDF invoices with your branding',
+            '✓ Automatic payment reminders',
+          ].map((item) => (
+            <span key={item} style={{ fontSize:13, color:'#374151', fontWeight:500 }}>{item}</span>
+          ))}
+        </div>
+      </div>
+
       {/* Features */}
       <div style={s.sectionLight}>
         <div style={s.section}>
