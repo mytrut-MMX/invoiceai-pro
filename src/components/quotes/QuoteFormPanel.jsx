@@ -42,7 +42,7 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
   const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
   const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
 
-  const docData = { docNumber: quoteNumber, customer, issueDate, dueDate: expiryDate, paymentTerms: `Valid until ${fmtDate(expiryDate)}`, items, ...totals, notes, terms, status, poNumber, docType: "quote" };
+  const docData = { docNumber: quoteNumber, customer, issueDate, dueDate: expiryDate, paymentTerms: `Valid until ${fmtDate(expiryDate)}`, items, ...totals, cisDeduction: totals.cisEstimate || totals.cisDeduction || 0, total: totals.hasCISItems ? totals.grossTotal - (totals.cisEstimate || 0) : totals.total, notes, terms, status, poNumber, docType: "quote" };
 
   const handleShare = () => {
     const visibility = window.prompt("Share visibility: Public or Private and secure?", "Public");
