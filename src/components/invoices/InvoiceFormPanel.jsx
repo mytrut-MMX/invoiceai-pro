@@ -119,7 +119,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
             const oldEntry = await findEntryBySource('invoice', inv.id);
             if (oldEntry) await reverseEntry(oldEntry.id, userId);
           }
-          await postInvoiceEntry(savedInvoice, accounts, userId, orgSettings?.vatScheme || 'Standard');
+          await postInvoiceEntry(savedInvoice, accounts, userId, orgSettings?.vatScheme || 'Standard', orgSettings?.accountingBasis || 'Accrual');
         } catch (err) {
           console.error('[Ledger] invoice post failed:', err);
         }

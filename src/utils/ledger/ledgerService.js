@@ -133,8 +133,14 @@ async function insertEntry({ userId, date, description, sourceType, sourceId, li
  * @param {string} userId
  * @returns {Promise<{ success: boolean, entryId?: string, error?: string }>}
  */
-export async function postInvoiceEntry(invoice, accounts, userId, vatScheme = 'Standard') {
+export async function postInvoiceEntry(invoice, accounts, userId, vatScheme = 'Standard', accountingBasis = 'Accrual') {
   if (!supabaseReady) return { success: false, error: 'Supabase not configured' };
+
+  // Cash basis: no journal entry on invoice creation.
+  // Revenue and VAT are recognised when payment is received.
+  if (accountingBasis === 'Cash') {
+    return { success: true, entryId: null, deferred: true };
+  }
 
   try {
     const vatTotal     = (invoice.taxBreakdown || []).reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -193,23 +199,52 @@ export async function postInvoiceEntry(invoice, accounts, userId, vatScheme = 'S
  * @param {string}      userId
  * @returns {Promise<{ success: boolean, entryId?: string, error?: string }>}
  */
-export async function postPaymentEntry(payment, invoice, accounts, userId, vatScheme = 'Standard') {
+export async function postPaymentEntry(payment, invoice, accounts, userId, vatScheme = 'Standard', accountingBasis = 'Accrual') {
   if (!supabaseReady) return { success: false, error: 'Supabase not configured' };
 
   try {
     const bankAccount = findAccount(accounts, '1000');
-    const arAccount   = findAccount(accounts, '1100');
     const vatAccount  = findAccount(accounts, '2100');
 
     if (!bankAccount) return { success: false, error: 'Account 1000 (Bank Account) not found' };
-    if (!arAccount)   return { success: false, error: 'Account 1100 (Accounts Receivable) not found' };
+
+    // Cash basis: recognise full revenue + VAT at payment time (no AR involved)
+    if (accountingBasis === 'Cash' && invoice) {
+      const revAccount = findAccount(accounts, '4000');
+      if (!revAccount) return { success: false, error: 'Account 4000 (Sales Revenue) not found' };
+
+      const vatTotal = (invoice.taxBreakdown || []).reduce((s, t) => s + Number(t.amount || 0), 0);
+      const netAmount = Number(invoice.subtotal || 0);
+
+      const lines = [
+        { accountId: bankAccount.id, debit: Number(payment.amount), credit: 0 },
+        { accountId: revAccount.id, debit: 0, credit: netAmount },
+      ];
+
+      if (vatTotal > 0 && vatAccount) {
+        lines.push({ accountId: vatAccount.id, debit: 0, credit: vatTotal });
+      }
+
+      return await insertEntry({
+        userId,
+        date: payment.date,
+        description: `Cash receipt - ${invoice.invoice_number} - ${payment.customer_name ?? ''}`,
+        sourceType: 'payment',
+        sourceId: payment.id,
+        lines,
+      });
+    }
+
+    // Accrual basis: standard payment entry (Bank debit, AR credit)
+    const arAccount = findAccount(accounts, '1100');
+    if (!arAccount) return { success: false, error: 'Account 1100 (Accounts Receivable) not found' };
 
     const lines = [
       { accountId: bankAccount.id, debit: Number(payment.amount), credit: 0 },
       { accountId: arAccount.id,   debit: 0, credit: Number(payment.amount) },
     ];
 
-    // Cash Accounting: recognise VAT only when payment is received
+    // Cash Accounting VAT scheme: recognise VAT only when payment is received
     if (vatScheme === 'Cash Accounting' && invoice) {
       const invoiceVAT = (invoice.taxBreakdown || []).reduce((s, t) => s + Number(t.amount || 0), 0);
       if (invoiceVAT > 0 && vatAccount) {

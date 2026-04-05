@@ -1,6 +1,14 @@
+// ACCOUNTING RULE: All period filtering uses accounting_date (tax_point > issue_date).
+// NEVER filter on created_at — this would misattribute transactions to wrong periods.
 import { useState, useMemo } from "react";
 import { ff } from "../../constants";
 import { fmt } from "../../utils/helpers";
+
+/** Returns the correct accounting date for an invoice: tax_point if set, else issue_date. */
+const getAccountingDate = (inv) => {
+  const dateStr = inv.tax_point || inv.issue_date;
+  return dateStr ? new Date(dateStr) : null;
+};
 
 export default function ReportsCenter({ invoices, expenses, payments, orgSettings, currencySymbol }) {
   const [reportPeriod, setReportPeriod] = useState("this_month");
@@ -13,8 +21,7 @@ export default function ReportsCenter({ invoices, expenses, payments, orgSetting
     const startOfQuarter   = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
     const startOfYear      = new Date(now.getFullYear(), 0, 1);
 
-    const inRange = (invoiceDate) => {
-      const d = invoiceDate ? new Date(invoiceDate) : null;
+    const inRange = (d) => {
       if (!d || Number.isNaN(d.getTime())) return reportPeriod === "all_time";
       if (reportPeriod === "this_month")   return d >= startOfMonth && d < startOfNextMonth;
       if (reportPeriod === "last_month")   return d >= startOfLastMonth && d < startOfMonth;
@@ -23,7 +30,7 @@ export default function ReportsCenter({ invoices, expenses, payments, orgSetting
       return true;
     };
 
-    return invoices.filter(inv => inRange(inv.issue_date));
+    return invoices.filter(inv => inRange(getAccountingDate(inv)));
   }, [invoices, reportPeriod]);
 
   const reportSummary = useMemo(() => {

@@ -23,8 +23,9 @@ export default function HomePage() {
     const startOfCurr = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfNext = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const startOfPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const inCurr = inv => { const d = inv.issue_date ? new Date(inv.issue_date) : null; return !!d && d >= startOfCurr && d < startOfNext; };
-    const inPrev = inv => { const d = inv.issue_date ? new Date(inv.issue_date) : null; return !!d && d >= startOfPrev && d < startOfCurr; };
+    const getAccountingDate = (inv) => { const dateStr = inv.tax_point || inv.issue_date; return dateStr ? new Date(dateStr) : null; };
+    const inCurr = inv => { const d = getAccountingDate(inv); return !!d && d >= startOfCurr && d < startOfNext; };
+    const inPrev = inv => { const d = getAccountingDate(inv); return !!d && d >= startOfPrev && d < startOfCurr; };
     const sumAmt = (arr, pred) => arr.filter(pred).reduce((s, i) => s + Number(i.total || 0), 0);
 
     const calcTrend = (curr, prev, positiveUp) => {

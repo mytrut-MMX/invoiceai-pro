@@ -183,6 +183,24 @@ export function generateAlerts(invoices = [], payments = [], expenses = [], orgS
     });
   }
 
+  // ─── 7. INVOICES WITHOUT SUPPLY DATE ─────────────────────────────
+  if (orgSettings?.vatReg === "Yes") {
+    const missingSupplyDate = invoices.filter(
+      i => ["Sent", "Paid", "Partial"].includes(i.status) && !i.supply_date
+    );
+    if (missingSupplyDate.length > 0) {
+      alerts.push({
+        id: uid("missing_supply_date"),
+        severity: "info",
+        category: "compliance",
+        title: `${missingSupplyDate.length} invoice(s) missing supply date`,
+        description: "HMRC requires a supply date on all VAT invoices. Edit to add.",
+        actionPage: "invoices",
+        dismissable: true,
+      });
+    }
+  }
+
   // Sort: critical → warning → info
   const ORDER = { critical: 0, warning: 1, info: 2 };
   alerts.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
