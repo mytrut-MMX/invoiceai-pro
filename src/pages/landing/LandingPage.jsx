@@ -94,6 +94,16 @@ function FaqSection() {
 }
 
 export default function LandingPage() {
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+
+  function handleWaitlistSubmit(e) {
+    e.preventDefault();
+    if (!waitlistEmail.trim()) return;
+    localStorage.setItem('invoicesaga_waitlist_email', waitlistEmail.trim());
+    setWaitlistSubmitted(true);
+  }
+
   return (
     <div style={{ fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin:0 }}>
 
@@ -104,6 +114,31 @@ export default function LandingPage() {
 
       <SharedNav />
 
+      {/* Early access email capture */}
+      <div style={{ background:'#FEF3C7', borderBottom:'1px solid #FDE68A', padding:'20px 2rem' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'center', gap:10, flexWrap:'wrap' }}>
+          {waitlistSubmitted ? (
+            <span style={{ fontSize:15, color:'#92400E', fontWeight:500 }}>✓ You're on the list — we'll be in touch.</span>
+          ) : (
+            <>
+              <span style={{ fontSize:15, color:'#92400E', fontWeight:500 }}>You're early. Lock in 40% off Pro when we launch.</span>
+              <form onSubmit={handleWaitlistSubmit} style={{ display:'flex', gap:10, flexWrap:'wrap', justifyContent:'center' }}>
+                <input
+                  type="email"
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  style={{ width:280, border:'1px solid #FDE68A', borderRadius:6, padding:'9px 14px', fontSize:14, outline:'none', fontFamily:'inherit' }}
+                />
+                <button type="submit" style={{ background:'#D97706', color:'#fff', border:'none', borderRadius:6, padding:'9px 18px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                  Get early access
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Hero */}
       <section style={{ ...s.hero, textAlign:'left' }}>
         <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:64, alignItems:'center' }}>
@@ -113,8 +148,8 @@ export default function LandingPage() {
             <h1 style={s.heroH1}>Professional invoices. Sent in minutes. Get paid faster.</h1>
             <p style={s.heroSub}>No learning curve, no bloat. Just clean invoices you can send in minutes — so you can get back to the work you actually love.</p>
             <div style={{ ...s.heroBtns, justifyContent:'flex-start' }}>
-              <Link to={ROUTES.SIGNUP} style={s.btnPrimary}>Start for free →</Link>
-              <a href="#how-it-works" style={s.btnSecondary}>How it works →</a>
+              <Link to={ROUTES.SIGNUP} style={s.btnPrimary}>Start free — no card needed</Link>
+              <Link to={ROUTES.LOGIN} style={{ color:'#9A9A9A', fontSize:13, textDecoration:'none', fontWeight:400, alignSelf:'center' }}>Sign in</Link>
             </div>
           </div>
           {/* Right column — invoice mockup */}
@@ -156,6 +191,20 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Trust bar */}
+      <div style={{ background:'#fff', borderTop:'1px solid #E8E6E0', borderBottom:'1px solid #E8E6E0', padding:'16px 2rem' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'center', gap:40, flexWrap:'wrap' }}>
+          {[
+            '✓ Free plan — no credit card',
+            '✓ Send your first invoice in 2 minutes',
+            '✓ PDF invoices with your branding',
+            '✓ Automatic payment reminders',
+          ].map((item) => (
+            <span key={item} style={{ fontSize:13, color:'#374151', fontWeight:500 }}>{item}</span>
+          ))}
+        </div>
+      </div>
 
       {/* Features */}
       <div style={s.sectionLight}>
@@ -275,6 +324,30 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Social proof */}
+      <div style={{ background: '#F5F4F0', padding: '80px 2rem' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '1.5rem', fontWeight: 400, color: '#111110', textAlign: 'center', marginBottom: 40, letterSpacing: -0.5 }}>
+            Built for how freelancers actually work
+          </h2>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {[
+              { headline: '2 min', sub: 'Average time to send first invoice' },
+              { headline: 'Free', sub: 'Start invoicing with zero upfront cost' },
+              { headline: '0 bloat', sub: 'No accounting degree required' },
+            ].map(({ headline, sub }) => (
+              <div key={headline} style={{ background: '#FFFFFF', border: '1px solid #E8E6E0', borderRadius: 12, padding: '28px 24px', flex: '1 1 200px', maxWidth: 280, textAlign: 'center' }}>
+                <div style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '2.5rem', fontWeight: 400, color: '#D97706', marginBottom: 8, lineHeight: 1.1 }}>{headline}</div>
+                <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: 14, color: '#6B6B6B', lineHeight: 1.5 }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: 'center', fontSize: 14, color: '#9A9A9A', marginTop: 32, marginBottom: 0 }}>
+            Early access is open — no credit card required to start.
+          </p>
         </div>
       </div>
 

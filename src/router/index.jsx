@@ -40,6 +40,12 @@ const PrivacyPage        = lazy(() => import("../pages/landing/PrivacyPage"));
 const TermsPage          = lazy(() => import("../pages/landing/TermsPage"));
 const CookiePolicyPage   = lazy(() => import("../pages/landing/CookiePolicyPage"));
 const GdprPage           = lazy(() => import("../pages/landing/GdprPage"));
+const PricingPage        = lazy(() => import("../pages/landing/PricingPage"));
+const FeaturesPage       = lazy(() => import("../pages/landing/FeaturesPage"));
+const BlogPage           = lazy(() => import("../pages/landing/BlogPage"));
+const BlogInvoiceGuide   = lazy(() => import("../pages/landing/blog/HowToWriteFreelanceInvoice"));
+const BlogLatePayment    = lazy(() => import("../pages/landing/blog/ChaseLatePayment"));
+const BlogTemplate       = lazy(() => import("../pages/landing/blog/FreelanceInvoiceTemplate"));
 
 // App pages
 const HomePage           = lazy(() => import("../pages/HomePage"));
@@ -74,6 +80,12 @@ const router = createBrowserRouter([
   { path: ROUTES.TERMS,     element: <S><TermsPage /></S> },
   { path: ROUTES.COOKIES,   element: <S><CookiePolicyPage /></S> },
   { path: ROUTES.GDPR,      element: <S><GdprPage /></S> },
+  { path: ROUTES.PRICING,   element: <S><PricingPage /></S> },
+  { path: ROUTES.FEATURES,  element: <S><FeaturesPage /></S> },
+  { path: ROUTES.BLOG,      element: <S><BlogPage /></S> },
+  { path: ROUTES.BLOG_POST_INVOICE_GUIDE, element: <S><BlogInvoiceGuide /></S> },
+  { path: ROUTES.BLOG_POST_LATE_PAYMENT,  element: <S><BlogLatePayment /></S>  },
+  { path: ROUTES.BLOG_POST_TEMPLATE,      element: <S><BlogTemplate /></S>     },
 
   // ── Auth flows ──────────────────────────────────────────────────────────────
   {

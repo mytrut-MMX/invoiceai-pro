@@ -17,6 +17,12 @@ export const ROUTES = {
   TERMS:     '/terms',
   COOKIES:   '/cookies',
   GDPR:      '/gdpr',
+  PRICING:   '/pricing',
+  FEATURES:  '/features',
+  BLOG:      '/blog',
+  BLOG_POST_INVOICE_GUIDE: '/blog/how-to-write-a-freelance-invoice',
+  BLOG_POST_LATE_PAYMENT:  '/blog/how-to-chase-a-late-payment',
+  BLOG_POST_TEMPLATE:      '/blog/freelance-invoice-template',
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
   LOGIN:           '/login',
