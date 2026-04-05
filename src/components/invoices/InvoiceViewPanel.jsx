@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
 import { ff, STATUS_COLORS, CUR_SYM, PDF_TEMPLATES } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
@@ -9,6 +9,7 @@ import { fmt, fmtDate, markDocumentAsSent } from "../../utils/helpers";
 import { calcTotals } from "../../utils/calcTotals";
 import { useCISSettings } from "../../hooks/useCISSettings";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
+import { calculateLatePaymentClaim } from "../../utils/latePayment";
 
 const EmailIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 446" width="18" height="18" fill="currentColor">
@@ -32,6 +33,11 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  const latePayment = useMemo(
+    () => calculateLatePaymentClaim(invoice),
+    [invoice.total, invoice.due_date, invoice.status]
+  );
 
   const totals = calcTotals(
     invoice.line_items || [],
@@ -172,6 +178,27 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Late Payment panel — visible only for overdue invoices */}
+        {latePayment.eligible && (
+          <div style={{ margin: "16px 0", padding: "16px 18px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>
+              Late Payment — Statutory Rights
+            </div>
+            <div style={{ fontSize: 12, color: "#7f1d1d", lineHeight: 1.8 }}>
+              <div>Days overdue: <strong>{latePayment.daysOverdue}</strong></div>
+              <div>Statutory interest ({latePayment.annualRate}% p.a.): <strong>£{latePayment.interest.toFixed(2)}</strong></div>
+              <div>Daily rate: £{latePayment.dailyRate.toFixed(3)}/day</div>
+              <div>Fixed compensation: <strong>£{latePayment.compensation.toFixed(2)}</strong></div>
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #fecaca", fontSize: 13, fontWeight: 700 }}>
+                Total claimable: £{latePayment.totalClaim.toFixed(2)}
+              </div>
+              <div style={{ marginTop: 6, fontSize: 10, color: "#9f1d1d" }}>
+                Legal basis: {latePayment.legalBasis}
+              </div>
             </div>
           </div>
         )}
