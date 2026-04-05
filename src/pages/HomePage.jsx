@@ -12,6 +12,7 @@ import CashFlowForecast from "../components/home/CashFlowForecast";
 import CashFlowWidget from "../components/home/CashFlowWidget";
 import DebtorInsightsWidget from "../components/home/DebtorInsightsWidget";
 import QuickActionsBar from "../components/home/QuickActionsBar";
+import MonthEndChecklist from "../components/home/MonthEndChecklist";
 
 const STAT_FILTERS = { "Outstanding": "Sent,Partial", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
 const STAT_ROUTES = {
@@ -148,6 +149,7 @@ export default function HomePage() {
         </div>
       )}
 
+      <MonthEndChecklist />
       <SmartAlerts invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} bills={bills} />
       <CashFlowWidget />
       <DebtorInsightsWidget />
