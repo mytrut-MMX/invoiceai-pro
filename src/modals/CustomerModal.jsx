@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ff, CUR_SYM, PAYMENT_TERMS_OPTS } from "../constants";
 import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
+import { formatPhoneNumber, stripPhoneForStorage } from "../utils/helpers";
 import { useCISSettings } from "../hooks/useCISSettings";
 
 const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
@@ -17,7 +18,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [saved, setSaved] = useState(false);
   const { cisEnabled } = useCISSettings();
   const [custType, setCustType] = useState(existing?.type || "Business");
-  const [salutation, setSalutation] = useState("");
+  const [salutation, setSalutation] = useState(existing?.salutation || "");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
   const [lastName, setLastName] = useState(existing?.lastName || "");
   const [displayName, setDisplayName] = useState(existing?.name || "");
@@ -62,17 +63,22 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
     const customer = {
       id: existing?.id || Date.now(),
       type: custType,
+      salutation,
       name: displayName || `${firstName} ${lastName}`.trim(),
       firstName,
       lastName,
       company,
       email,
-      phone,
+      phone: stripPhoneForStorage(phone),
       website,
       currency,
       paymentTerms,
       remarks,
-      contactPersons,
+      contactPersons: (contactPersons || []).map(cp => ({
+        ...cp,
+        phone: stripPhoneForStorage(cp.phone),
+        mobile: stripPhoneForStorage(cp.mobile),
+      })),
       cis: {
         registered: cisRegistered,
         utr: cisUtr,
@@ -184,8 +190,8 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
               <Select
                 value={salutation}
                 onChange={setSalutation}
-                options={["Mr.", "Mrs.", "Ms.", "Dr.", "Prof."]}
-                placeholder="Select..."
+                options={["Mr", "Mrs", "Ms", "Dr", "Prof", "Mx", "Rev"]}
+                placeholder="— Select —"
               />
             </Field>
 <Field label="First Name">
@@ -220,7 +226,9 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <Field label="Phone">
-              <Input value={phone} onChange={setPhone} />
+              <input type="text" value={phone} onChange={e=>setPhone(e.target.value)} onBlur={()=>setPhone(formatPhoneNumber(phone))} placeholder="+44 …"
+                style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
+                onFocus={e=>e.target.style.borderColor="#1e6be0"} />
             </Field>
             <Field label="Website">
               <Input value={website} onChange={setWebsite} placeholder="https://" />
@@ -425,14 +433,44 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                         <tr key={i}>
                           {["salutation", "firstName", "lastName", "email", "phone", "mobile"].map((f) => (
                             <td key={f} style={{ padding: "6px 6px" }}>
-                              <Input
-                                value={cp[f] || ""}
-                                onChange={(v) => {
-                                  const arr = [...(contactPersons || [{}])];
-                                  arr[i] = { ...arr[i], [f]: v };
-                                  setContactPersons(arr);
-                                }}
-                              />
+                              {f === "salutation" ? (
+                                <Select
+                                  value={cp[f] || ""}
+                                  onChange={(v) => {
+                                    const arr = [...(contactPersons || [{}])];
+                                    arr[i] = { ...arr[i], [f]: v };
+                                    setContactPersons(arr);
+                                  }}
+                                  options={["Mr", "Mrs", "Ms", "Dr", "Prof", "Mx", "Rev"]}
+                                  placeholder="— Select —"
+                                />
+                              ) : (f === "phone" || f === "mobile") ? (
+                                <input
+                                  type="text"
+                                  value={cp[f] || ""}
+                                  onChange={(e) => {
+                                    const arr = [...(contactPersons || [{}])];
+                                    arr[i] = { ...arr[i], [f]: e.target.value };
+                                    setContactPersons(arr);
+                                  }}
+                                  onBlur={() => {
+                                    const arr = [...(contactPersons || [{}])];
+                                    arr[i] = { ...arr[i], [f]: formatPhoneNumber(cp[f]) };
+                                    setContactPersons(arr);
+                                  }}
+                                  style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
+                                  onFocus={e=>e.target.style.borderColor="#1e6be0"}
+                                />
+                              ) : (
+                                <Input
+                                  value={cp[f] || ""}
+                                  onChange={(v) => {
+                                    const arr = [...(contactPersons || [{}])];
+                                    arr[i] = { ...arr[i], [f]: v };
+                                    setContactPersons(arr);
+                                  }}
+                                />
+                              )}
                             </td>
                           ))}
                           <td style={{ padding: "6px 4px" }}>

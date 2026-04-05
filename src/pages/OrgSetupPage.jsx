@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ff, INDUSTRIES, COUNTRIES, CURRENCIES_LIST, TIMEZONES, UK_COUNTIES, CIS_RATES, normalizeCurrencyCode } from "../constants";
 import { Icons } from "../components/icons";
-import { Field, Input, Select, Toggle, Switch, SlideToggle, Checkbox, InfoBox } from "../components/atoms";
-import { validateVatNumber, formatPhoneNumber, validateUkCrn } from "../utils/helpers";
+import { Field, Input, Select, Toggle, Switch, SlideToggle, Checkbox, InfoBox, Btn } from "../components/atoms";
+import { validateVatNumber, formatPhoneNumber, stripPhoneForStorage, validateUkCrn } from "../utils/helpers";
 
 export default function OrgSetupPage({ onComplete, initialData }) {
   const [bType, setBType] = useState(initialData?.bType||"");
@@ -33,6 +33,38 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const [orgPhone, setOrgPhone] = useState(initialData?.phone||"");
   const [deliversItems, setDeliversItems] = useState(initialData?.deliversItems !== false);
 
+  // Postcode lookup
+  const [lookupPostcode, setLookupPostcode] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+  const [lookupResult, setLookupResult] = useState(null);
+
+  const handlePostcodeLookup = useCallback(async () => {
+    const pc = lookupPostcode.trim().replace(/\s+/g, "");
+    if (!pc) { setLookupError("Please enter a postcode."); return; }
+    setLookupLoading(true);
+    setLookupError("");
+    setLookupResult(null);
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
+      const json = await res.json();
+      if (json.status === 200 && json.result) {
+        const r = json.result;
+        setLookupResult(r);
+        setPostcode(r.postcode || pc);
+        setCity(r.admin_district || r.parish || "");
+        setState(r.admin_county || r.region || "");
+        // Street is not available from postcodes.io — leave for manual entry
+      } else {
+        setLookupError("No results found. Please check the postcode or enter your address manually.");
+      }
+    } catch {
+      setLookupError("Lookup failed. Please enter your address manually.");
+    } finally {
+      setLookupLoading(false);
+    }
+  }, [lookupPostcode]);
+
   const stateOpts = country==="United Kingdom" ? UK_COUNTIES : [];
   const isCIS = industry==="Construction / Tradesperson";
   const vatNumError = vatReg && vatNumTouched && !validateVatNumber(vatNum)
@@ -47,7 +79,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const handleComplete = () => {
     if(!canSubmit){ setVatNumTouched(true); return; }
     onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode,
-      currency: normalizeCurrencyCode(currency), timezone, email:orgEmail, phone:formatPhoneNumber(orgPhone),
+      currency: normalizeCurrencyCode(currency), timezone, email:orgEmail, phone:stripPhoneForStorage(orgPhone),
       deliversItems,
       vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
       cisReg: cisReg ? "Yes" : "No",
@@ -94,7 +126,11 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Field label="Email Address"><Input value={orgEmail} onChange={setOrgEmail} type="email" placeholder="invoices@company.com" /></Field>
-            <Field label="Phone Number"><Input value={orgPhone} onChange={v=>setOrgPhone(formatPhoneNumber(v))} placeholder="+44 20 7946 0000" /></Field>
+            <Field label="Phone Number">
+              <input type="text" value={orgPhone} onChange={e=>setOrgPhone(e.target.value)} onBlur={()=>setOrgPhone(formatPhoneNumber(orgPhone))} placeholder="+44 20 7946 0000"
+                style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
+                onFocus={e=>e.target.style.borderColor="#1e6be0"} />
+            </Field>
           </div>
 
           {/* Address toggle */}
@@ -108,6 +144,20 @@ export default function OrgSetupPage({ onComplete, initialData }) {
           </Field>
           {showAddr && (
             <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 2px", marginBottom:14, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+              {country === "United Kingdom" && (
+                <div style={{ marginBottom:12 }}>
+                  <Field label="Postcode Lookup">
+                    <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+                      <Input value={lookupPostcode} onChange={setLookupPostcode} placeholder="e.g. EC1A 1BB" />
+                      <Btn onClick={handlePostcodeLookup} variant="outline" disabled={lookupLoading} style={{ whiteSpace:"nowrap", flexShrink:0 }}>
+                        {lookupLoading ? "Searching…" : "Find address"}
+                      </Btn>
+                    </div>
+                  </Field>
+                  {lookupError && <div style={{ fontSize:12, color:"#dc2626", marginTop:-8, marginBottom:8 }}>{lookupError}</div>}
+                  {lookupResult && <div style={{ fontSize:12, color:"#16A34A", marginTop:-8, marginBottom:8 }}>Address found — fields updated below.</div>}
+                </div>
+              )}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 <Field label="Country" required>
                   <Select value={country} onChange={v=>{ setCountry(v); setState(""); }} options={COUNTRIES} />
