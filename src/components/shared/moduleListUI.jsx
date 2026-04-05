@@ -23,6 +23,7 @@ export const statusBadgeTheme = {
   Inactive: { color: "#64748b", bg: "#f1f5f9", border: "#cbd5e1" },
   Business: { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
   Individual: { color: "#6b7280", bg: "#f8fafc", border: "#dbe3ee" },
+  "Awaiting Approval": { color: "#b45309", bg: "#fffbeb", border: "#fde68a" },
 };
 
 export const moduleUi = {
