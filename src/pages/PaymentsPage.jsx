@@ -139,7 +139,7 @@ function PaymentModal({ existing, onClose, onSave }) {
         if (!linkedInvoice) return;
         const { accounts, userId } = await fetchUserAccounts();
         if (!userId) return;
-        await postPaymentEntry(newPmt, linkedInvoice, accounts, userId);
+        await postPaymentEntry(newPmt, linkedInvoice, accounts, userId, orgSettings?.vatScheme || 'Standard');
       } catch (err) {
         console.error('[Ledger] payment post failed:', err);
       }
