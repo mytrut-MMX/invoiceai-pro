@@ -8,6 +8,7 @@ import SmartAlerts from "../components/home/SmartAlerts";
 import AIChatPanel from "../components/home/AIChatPanel";
 import ReportsCenter from "../components/home/ReportsCenter";
 import CashFlowForecast from "../components/home/CashFlowForecast";
+import CashFlowWidget from "../components/home/CashFlowWidget";
 
 const STAT_FILTERS = { "Outstanding": "Sent", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
 const STAT_ROUTES = { "Subcontractors": ROUTES.EXPENSES };
@@ -135,6 +136,7 @@ export default function HomePage() {
       )}
 
       <SmartAlerts invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} bills={bills} />
+      <CashFlowWidget />
       <AIChatPanel user={user} />
       <ReportsCenter invoices={invoices} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
       <CashFlowForecast invoices={invoices} payments={payments} currencySymbol={currencySymbol} />
