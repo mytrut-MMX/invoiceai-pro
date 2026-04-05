@@ -242,21 +242,36 @@ export async function postExpenseEntry(expense, accounts, userId) {
     if (!expenseAccount) return { success: false, error: `Account ${expenseCode} not found for category "${expense.category}"` };
     if (!apAccount)      return { success: false, error: 'Account 2000 (Accounts Payable) not found' };
 
+    const isCisLabourExpense = expense.is_cis_expense === true && expense.category === 'Subcontractor Labour';
+    const cisPayableAccount = isCisLabourExpense ? findAccount(accounts, '2200') : null;
+
+    const cisRate = expense.cis_rate ?? 20;
+    const cisAmount = isCisLabourExpense
+      ? (expense.cis_deduction_amount ?? (Number(expense.amount) * cisRate / 100))
+      : 0;
+
     const taxAmount = Number(expense.tax_amount || 0);
+    const netPayable = Number(expense.total) - cisAmount;
 
     const lines = [
       { accountId: expenseAccount.id, debit: Number(expense.amount), credit: 0 },
     ];
     if (taxAmount > 0 && vatAccount) {
-      // Debit VAT Payable to reclaim input VAT (reduces the output VAT liability)
       lines.push({ accountId: vatAccount.id, debit: taxAmount, credit: 0 });
     }
-    lines.push({ accountId: apAccount.id, debit: 0, credit: Number(expense.total) });
+    if (isCisLabourExpense && cisAmount > 0 && cisPayableAccount) {
+      lines.push({ accountId: apAccount.id, debit: 0, credit: netPayable });
+      lines.push({ accountId: cisPayableAccount.id, debit: 0, credit: cisAmount });
+    } else {
+      lines.push({ accountId: apAccount.id, debit: 0, credit: Number(expense.total) });
+    }
 
     return await insertEntry({
       userId,
       date: expense.date,
-      description: `Expense - ${expense.category ?? ''} - ${expense.vendor ?? ''}`,
+      description: isCisLabourExpense
+        ? `Subcontractor - ${expense.vendor ?? ''} - CIS retained £${cisAmount.toFixed(2)}`
+        : `Expense - ${expense.category ?? ''} - ${expense.vendor ?? ''}`,
       sourceType: 'expense',
       sourceId: expense.id,
       lines,
