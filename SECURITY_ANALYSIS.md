@@ -91,7 +91,7 @@
       └─ /index.html (SPA) ◄────── All app state in localStorage (no server session)
                 │
                 ├── ai_invoice_users  → SHA-256 hashed passwords
-                ├── iai_settings      → anthropic_key (plaintext), emailjs keys
+                ├── iai_settings      → emailjs keys only (anthropic_key removed — SEC-005 fix)
                 ├── iai_invoices      → financial documents
                 ├── iai_clients       → PII (name, email, phone)
                 └── iai_company       → org data (VAT number, bank details)
@@ -186,18 +186,17 @@ res.setHeader('Access-Control-Allow-Origin', '*');
 
 ---
 
-#### SEC-005 — Anthropic API Key Stored in localStorage
-**File:** `src/store/index.js:39`, `src/pages/Dashboard.jsx:242`
+#### SEC-005 — Anthropic API Key Stored in localStorage — **FIXED**
+**File:** `src/store/index.js` (remediated)
 **CWE:** CWE-312 (Cleartext Storage of Sensitive Information), CWE-522 (Insufficiently Protected Credentials)
 
 ```javascript
 // settings object persisted to localStorage key 'iai_settings'
-{ emailjs_service: '', emailjs_template: '', emailjs_public: '', anthropic_key: '' }
+// FIXED: anthropic_key removed — only emailjs keys remain
+{ emailjs_service: '', emailjs_template: '', emailjs_public: '' }
 ```
 
-**Impact:** The Anthropic API key (format `sk-ant-...`) is stored in plaintext in `localStorage`. Any XSS vulnerability in the application can steal this key and use it to call the Anthropic API at the owner's expense. Browser extensions and DevTools can also trivially read it.
-
-**Recommendation:** Remove the `anthropic_key` from localStorage. The application already has a server-side `ANTHROPIC_API_KEY` env var used by `claude-proxy.js`. The frontend should call `/api/claude-proxy` directly (without transmitting the key), and the proxy should authenticate the caller via the existing session mechanism.
+**Status:** Resolved. The `anthropic_key` field has been removed from client-side storage and UI. All AI calls now go through `/api/claude-proxy` which uses the server-side `ANTHROPIC_API_KEY` env var. Legacy `anthropic_key` values are stripped on load.
 
 ---
 
