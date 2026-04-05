@@ -144,6 +144,7 @@ export default function App() {
   // ─── Business data hydration ───────────────────────────────────────────────
   const persistTimer  = useRef(null);
   const lastSavedLogo = useRef(companyLogo);
+  const lastSaveHash  = useRef("");
 
   useEffect(() => {
     if (authInitializing) return;
@@ -191,6 +192,17 @@ export default function App() {
     if (!user?.id || !businessDataHydrated) return;
     clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
+      // Quick length check to skip no-op saves
+      const currentHash = JSON.stringify({
+        invoices: invoices.length,
+        quotes: quotes.length,
+        payments: payments.length,
+        expenses: expenses.length,
+        bills: (bills || []).length,
+      });
+      if (currentHash === lastSaveHash.current) return;
+      lastSaveHash.current = currentHash;
+
       saveBusinessData(user.id, {
         org_settings:            orgSettings,
         onboarding_done:         onboardingDone,
@@ -249,7 +261,7 @@ export default function App() {
         ai_invoice_email_from:      emailFrom,
       });
       lastSavedLogo.current = companyLogo;
-    }, 800);
+    }, 2000);
     return () => clearTimeout(persistTimer.current);
   }, [
     user?.id, businessDataHydrated,
