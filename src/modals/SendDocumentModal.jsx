@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import html2pdf from "html2pdf.js";
 import { ff, PDF_TEMPLATES } from "../constants";
 import { Btn, Field, Input, Textarea } from "../components/atoms";
 import { Icons } from "../components/icons";
@@ -182,29 +183,37 @@ export default function SendDocumentModal({
     setSending(true);
     setError(null);
 
-    // Capture the hidden invoice element for PDF attachment
+    // Generate a real PDF from the hidden invoice element
     let attachmentBase64 = null;
     let attachmentFilename = null;
     if (docData) {
       try {
         const el = window.document.getElementById("send-modal-pdf-preview");
         if (el) {
-          // Sanitize clone (same approach as A4PrintModal.handlePrint)
-          const clone = el.cloneNode(true);
-          clone.querySelectorAll("script").forEach(s => s.remove());
-          clone.querySelectorAll("*").forEach(node => {
-            Array.from(node.attributes).forEach(attr => {
-              if (/^on[a-z]/i.test(attr.name)) node.removeAttribute(attr.name);
-            });
-          });
           const docNum = (document?.invoiceNumber || document?.quoteNumber || "").replace(/[^a-zA-Z0-9_-]/g, "");
-          const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${docNum}</title><style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{background:#fff;font-family:'Lato','DM Sans','Helvetica Neue',sans-serif}@page{size:A4;margin:0}</style></head><body>${clone.outerHTML}</body></html>`;
-          attachmentBase64 = btoa(unescape(encodeURIComponent(fullHtml)));
           const docTypeLabel = documentType === "quote" ? "Quote" : "Invoice";
-          attachmentFilename = `${docTypeLabel}-${docNum || "document"}.html`;
+          attachmentFilename = `${docTypeLabel}-${docNum || "document"}.pdf`;
+
+          const pdfBlob = await html2pdf()
+            .set({
+              margin: 0,
+              filename: attachmentFilename,
+              image: { type: "jpeg", quality: 0.95 },
+              html2canvas: { scale: 2, useCORS: true, logging: false },
+              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            })
+            .from(el)
+            .outputPdf("blob");
+
+          // Convert blob to base64
+          const arrayBuffer = await pdfBlob.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          attachmentBase64 = btoa(binary);
         }
       } catch {
-        // PDF capture failed — send email without attachment rather than blocking
+        // PDF generation failed — send email without attachment rather than blocking
       }
     }
 
@@ -346,7 +355,7 @@ export default function SendDocumentModal({
               </label>
               {docData && (
                 <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 5 }}>
-                  <Icons.Receipt /> A copy of your {documentType === "quote" ? "quote" : "invoice"} will be attached to this email.
+                  <Icons.Receipt /> A PDF copy of your {documentType === "quote" ? "quote" : "invoice"} will be attached to this email.
                 </div>
               )}
             </div>
