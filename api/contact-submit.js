@@ -22,22 +22,37 @@ async function handler(req, res) {
 
   res.setHeader('Cache-Control', 'no-store');
 
+  // SEC-013: Server-side input validation
   const { name, email, subject, message } = req.body || {};
 
-  if (!email || !message) {
+  // Required fields
+  if (!email || typeof email !== 'string' || !message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Email and message are required.' });
   }
+
+  // Email format validation (basic RFC 5322)
   if (!isValidEmail(email)) {
     return res.status(400).json({ error: 'Invalid email address.' });
   }
-  if (typeof message !== 'string' || message.trim().length === 0 || message.length > 5000) {
-    return res.status(400).json({ error: 'Message must be between 1 and 5000 characters.' });
+
+  // Length limits
+  if (typeof name === 'string' && name.length > 200) {
+    return res.status(400).json({ error: 'Name too long (max 200 chars).' });
   }
-  if (name && (typeof name !== 'string' || name.length > 100)) {
-    return res.status(400).json({ error: 'Name must be 100 characters or fewer.' });
+  if (typeof subject === 'string' && subject.length > 500) {
+    return res.status(400).json({ error: 'Subject too long (max 500 chars).' });
+  }
+  if (message.trim().length === 0 || message.length > 5000) {
+    return res.status(400).json({ error: 'Message too long (max 5000 chars).' });
   }
 
-  const safeSubject = ALLOWED_SUBJECTS.includes(subject) ? subject : 'General';
+  // Sanitize — trim whitespace, limit to safe string values
+  const sanitized = {
+    name: typeof name === 'string' ? name.trim().slice(0, 200) : null,
+    email: email.trim().toLowerCase().slice(0, 254),
+    subject: ALLOWED_SUBJECTS.includes(subject) ? subject : 'General',
+    message: message.trim().slice(0, 5000),
+  };
 
   const supabaseUrl = process.env.SUPABASE_URL || 'https://oecvlkllkpyfpgczqwii.supabase.co';
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -65,12 +80,7 @@ async function handler(req, res) {
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal',
       },
-      body: JSON.stringify({
-        name: name ? name.trim().slice(0, 100) : null,
-        email: email.toLowerCase().trim(),
-        subject: safeSubject,
-        message: message.trim(),
-      }),
+      body: JSON.stringify(sanitized),
     });
 
     if (!response.ok) {
