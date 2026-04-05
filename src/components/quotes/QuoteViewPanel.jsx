@@ -53,6 +53,8 @@ export default function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onC
     paymentTerms: quote.payment_terms || "Valid 30 days",
     items: quote.line_items || [],
     ...totals,
+    cisDeduction: totals.cisEstimate || totals.cisDeduction || 0,
+    total: totals.hasCISItems ? totals.grossTotal - (totals.cisEstimate || 0) : totals.total,
     notes: quote.notes || "",
     terms: quote.terms || "",
     status: quote.status,
