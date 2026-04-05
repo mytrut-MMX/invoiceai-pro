@@ -253,7 +253,7 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
 
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", marginTop: 6, borderTop: "2px solid #e8e8ec", fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>
                   <span>Quote Total</span>
-                  <span>{fmt(currSym, totals.subtotal + vatAmount)}</span>
+                  <span>{fmt(currSym, totals.subtotal + vatAmount - (totals.cisEstimate || 0))}</span>
                 </div>
 
                 {totals.hasCISItems && (

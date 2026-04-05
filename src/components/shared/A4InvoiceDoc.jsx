@@ -173,7 +173,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
           ...((discountAmount || 0) > 0 ? [["Discount", `− ${fmt(sym, discountAmount)}`, "#E86C4A"]] : []),
           ...(Number(shipping) > 0 ? [["Shipping", fmt(sym, shipping)]] : []),
           ...(isVat ? (taxBreakdown || []).map(tb => [`VAT ${tb.rate}%`, fmt(sym, tb.amount)]) : []),
-          ...((cisDeduction || 0) > 0 ? [["CIS Deduction", `− ${fmt(sym, cisDeduction)}`, "#D97706"]] : []),
+          ...((cisDeduction || 0) > 0 ? [[isQuote ? "CIS Deduction (Est.)" : "CIS Deduction", `− ${fmt(sym, cisDeduction)}`, "#D97706"]] : []),
         ].map(([l, v, c]) => (
           <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: "8mm", padding: "1.5mm 0", borderBottom: "1px solid #F4F4F4" }}>
             <span style={{ fontSize: "8.5pt", color: "#888" }}>{l}</span>
