@@ -78,7 +78,17 @@ export default function ReportsCenter({ invoices, expenses, payments, orgSetting
       .reduce((sum, e) => sum + Number(e.tax_amount || 0), 0);
     const netVAT = vat - inputVAT;
 
-    return { revenue, collected, vat, cis, reportByStatus, totalExpenses, netProfit, inputVAT, netVAT };
+    // Subcontractor costs (period-filtered)
+    const periodExpenses = (expenses || []).filter(e => inRange(e.date));
+    const subLabour = periodExpenses.filter(e => e.category === "Subcontractor Labour").reduce((s, e) => s + Number(e.total || 0), 0);
+    const subMaterials = periodExpenses.filter(e => e.category === "Subcontractor Materials").reduce((s, e) => s + Number(e.total || 0), 0);
+    const subTotal = subLabour + subMaterials;
+    const cisRetained = periodExpenses.filter(e => e.is_cis_expense).reduce((s, e) => {
+      const rate = e.cis_rate ?? 20;
+      return s + (e.cis_deduction_amount ?? (Number(e.amount || 0) * rate / 100));
+    }, 0);
+
+    return { revenue, collected, vat, cis, reportByStatus, totalExpenses, netProfit, inputVAT, netVAT, subLabour, subMaterials, subTotal, cisRetained };
   }, [periodInvoices, expenses, payments, reportPeriod]);
 
   return (
@@ -132,6 +142,26 @@ export default function ReportsCenter({ invoices, expenses, payments, orgSetting
           </div>
         ))}
       </div>
+
+      {orgSettings?.cisReg === "Yes" && reportSummary.subTotal > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#111110", marginBottom: 10 }}>Subcontractor Costs</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10 }}>
+            {[
+              { label: "Labour",    value: reportSummary.subLabour,    color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
+              { label: "Materials", value: reportSummary.subMaterials, color: "#92400E", bg: "#FFFBEB", border: "#FDE68A" },
+              { label: "Total",     value: reportSummary.subTotal,     color: "#D97706", bg: "#FEF3C7", border: "#FCD34D" },
+              ...(reportSummary.cisRetained > 0 ? [{ label: "CIS Retained", value: reportSummary.cisRetained, color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" }] : []),
+            ].map(card => (
+              <div key={card.label} title={card.label === "CIS Retained" ? "CIS deducted from subcontractor payments — due to HMRC by 19th of next month" : undefined}
+                style={{ border: `1px solid ${card.border}`, borderRadius: 10, padding: "10px 12px", background: card.bg, cursor: card.label === "CIS Retained" ? "help" : undefined }}>
+                <div style={{ fontSize: 11, color: card.color, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>{card.label}</div>
+                <div style={{ fontSize: 16, color: card.color, fontWeight: 800, marginTop: 5 }}>{fmt(currencySymbol, card.value)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {orgSettings?.vatReg === "Yes" && (
         <div style={{ marginTop: 16 }}>
