@@ -8,6 +8,8 @@ import { Btn } from "../components/atoms";
 import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 import ExpenseForm from "../components/expenses/ExpenseForm";
+import { usePagination } from "../hooks/usePagination";
+import Pagination from "../components/shared/Pagination";
 
 function expNextNum(expenses) {
   return nextNum("EXP", expenses.map(e => ({ invoice_number: e.expense_number })));
@@ -89,6 +91,8 @@ export default function ExpensesPage({ initialShowForm = false }) {
   }, [expenses, activeFilter, search, billableFilter]);
 
   const hasFilters       = search || activeFilter !== "all" || billableFilter !== "All";
+
+  const { page, setPage, totalPages, paginatedItems, totalItems, pageSize } = usePagination(sortedFiltered, 25);
   const totalExpenses    = expenses.reduce((s, e) => s + Number(e.total || 0), 0);
   const billableCount    = expenses.filter(e => e.billable).length;
   const withReceiptCount = expenses.filter(e => !!e.receipt_url || !!e.receipt).length;
@@ -205,7 +209,7 @@ export default function ExpensesPage({ initialShowForm = false }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedFiltered.map(exp => (
+                  {paginatedItems.map(exp => (
                     <tr key={exp.id}
                       onClick={() => { setEditingExp(exp); setShowForm(true); }}
                       style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}
@@ -269,6 +273,7 @@ export default function ExpensesPage({ initialShowForm = false }) {
                   )}
                 </tbody>
               </table>
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} pageSize={pageSize} />
             </div>
           </div>
 
