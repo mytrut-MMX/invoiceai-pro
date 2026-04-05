@@ -141,6 +141,8 @@ export default function SettingsPage() {
   const [industry,     setIndustry]     = useState(org.industry||"");
   const [vatReg,       setVatReg]       = useState(org.vatReg||"No");
   const [vatNum,       setVatNum]       = useState(org.vatNum||"");
+  const [vatScheme,    setVatScheme]    = useState(org.vatScheme||"Standard");
+  const [flatRatePct,  setFlatRatePct]  = useState(org.flatRatePct||"");
   const [cisRole,      setCisRole]      = useState(org.cisRole||"Contractor");
   const [cisRegistrationStatus, setCisRegistrationStatus] = useState(org.cisRegistrationStatus||"Net");
   const [cisEnabled,        setCisEnabled]        = useState(org.cis?.enabled ?? CIS_DEFAULT_SETTINGS.enabled);
@@ -192,6 +194,8 @@ export default function SettingsPage() {
     setIndustry(org.industry || "");
     setVatReg(org.vatReg || "No");
     setVatNum(org.vatNum || "");
+    setVatScheme(org.vatScheme || "Standard");
+    setFlatRatePct(org.flatRatePct || "");
     setCisEnabled(org.cis?.enabled ?? (org.cisReg === "Yes"));
     setCisContractorName(org.cis?.contractorName || "");
     setCisContractorUTR(org.cis?.contractorUTR || org.cisUtrNo || "");
@@ -228,7 +232,7 @@ export default function SettingsPage() {
     orgName, email, phone: stripPhoneForStorage(phone), website,
     street, city, postcode, country,
     currency: normalizeCurrencyCode(currency), timezone, industry,
-    vatReg, vatNum,
+    vatReg, vatNum, vatScheme, flatRatePct: vatScheme === "Flat Rate Scheme" ? flatRatePct : "",
     cisReg: cisEnabled ? "Yes" : "No",
     cisRole, cisRate: cisDefaultRate, cisUtrNo: cisContractorUTR, cisRegistrationStatus, crn,
     bankName, bankSort: stripSortCode(bankSort), bankAcc, bankIban, bankSwift,
@@ -432,6 +436,16 @@ export default function SettingsPage() {
                 </Btn>
               )}
             </div>
+          )}
+          {vatReg==="Yes" && (
+            <Field label="VAT Scheme" hint="Determines when VAT is due to HMRC">
+              <Select value={vatScheme} onChange={setVatScheme} options={["Standard", "Cash Accounting", "Flat Rate Scheme", "Annual Accounting"]} />
+            </Field>
+          )}
+          {vatReg==="Yes" && vatScheme === "Flat Rate Scheme" && (
+            <Field label="Flat Rate %" hint="Your sector flat rate percentage">
+              <Input value={flatRatePct} onChange={setFlatRatePct} type="number" placeholder="e.g. 12" />
+            </Field>
           )}
         </div>
 
