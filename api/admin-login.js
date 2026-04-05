@@ -5,6 +5,7 @@
  * Password comparison is constant-time to prevent timing attacks.
  */
 import { createHmac, timingSafeEqual } from 'crypto';
+import { withRateLimit } from './lib/with-rate-limit.js';
 
 const TOKEN_TTL_SECONDS = 3600; // 1 hour
 
@@ -19,7 +20,7 @@ function createAdminToken(secret) {
   return `${payloadB64}.${sig}`;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
@@ -52,3 +53,5 @@ export default async function handler(req, res) {
   const token = createAdminToken(adminPassword);
   res.status(200).json({ token });
 }
+
+export default withRateLimit(handler, { limit: 5, prefix: 'admin-login' });

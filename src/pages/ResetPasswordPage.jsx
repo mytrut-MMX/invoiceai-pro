@@ -13,10 +13,9 @@ function getStrength(password) {
   return score;
 }
 
+// SEC-008: Local password reset (ai_invoice_users) removed — Supabase Auth only
 export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
-  const [mode, setMode] = useState(null); // null | "local" | "supabase"
-  const [tokenEmail, setTokenEmail] = useState("");
-  const [localToken, setLocalToken] = useState("");
+  const [mode, setMode] = useState(null); // null | "supabase"
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -35,29 +34,6 @@ export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
     const search = new URLSearchParams(window.location.search);
     const hashStr = window.location.hash.replace(/^#/, "");
     const hash = new URLSearchParams(hashStr);
-
-    const isLocal = search.get("local") === "1";
-    const emailParam = search.get("email") || "";
-    const tokenParam = search.get("token") || "";
-
-    if (isLocal && emailParam && tokenParam) {
-      const stored = JSON.parse(localStorage.getItem("ai_invoice_reset_tokens") || "[]");
-      const entry = stored.find(
-        (r) =>
-          r.email === decodeURIComponent(emailParam) &&
-          r.token === tokenParam &&
-          r.expires > Date.now()
-      );
-      if (!entry) {
-        setStatus("invalid");
-        return;
-      }
-      setMode("local");
-      setTokenEmail(decodeURIComponent(emailParam));
-      setLocalToken(tokenParam);
-      window.history.replaceState({}, "", window.location.pathname);
-      return;
-    }
 
     const accessToken = hash.get("access_token");
     const type = hash.get("type");
@@ -127,53 +103,6 @@ export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
         setStatus("error");
         return;
       }
-      setStatus("success");
-      return;
-    }
-
-    if (mode === "local") {
-      const stored = JSON.parse(localStorage.getItem("ai_invoice_reset_tokens") || "[]");
-      const entry = stored.find(
-        (r) => r.email === tokenEmail && r.token === localToken && r.expires > Date.now()
-      );
-      if (!entry) {
-        setStatus("invalid");
-        return;
-      }
-
-      const salt = crypto.getRandomValues(new Uint8Array(16));
-      const saltHex = Array.from(salt)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      const keyMaterial = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(password),
-        "PBKDF2",
-        false,
-        ["deriveBits"]
-      );
-      const bits = await crypto.subtle.deriveBits(
-        { name: "PBKDF2", salt, iterations: 310000, hash: "SHA-256" },
-        keyMaterial,
-        256
-      );
-      const hashHex = Array.from(new Uint8Array(bits))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      const pwHash = `pbkdf2:310000:${saltHex}:${hashHex}`;
-
-      const users = JSON.parse(localStorage.getItem("ai_invoice_users") || "[]");
-      const updated = users.map((u) =>
-        u.email?.toLowerCase().trim() === tokenEmail ? { ...u, password: pwHash } : u
-      );
-      localStorage.setItem("ai_invoice_users", JSON.stringify(updated));
-
-      const remaining = stored.filter(
-        (r) => !(r.email === tokenEmail && r.token === localToken)
-      );
-      localStorage.setItem("ai_invoice_reset_tokens", JSON.stringify(remaining));
-
-      sessionStorage.removeItem("pending_local_reset");
       setStatus("success");
       return;
     }
@@ -269,7 +198,7 @@ export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
             Set new password
           </h1>
           <p style={{ fontSize: 14, color: "#6B6B6B", lineHeight: 1.6, margin: "0 0 20px", textAlign: "center" }}>
-            {mode === "local" ? `Resetting password for ${tokenEmail}` : "Choose a strong password for your account."}
+            Choose a strong password for your account.
           </p>
 
           <div style={{ marginBottom: 12 }}>

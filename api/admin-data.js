@@ -5,6 +5,7 @@
  * validated to be a legitimate supabase.co HTTPS endpoint before any fetch.
  */
 import { createHmac, timingSafeEqual } from 'crypto';
+import { withRateLimit } from './lib/with-rate-limit.js';
 
 function verifyAdminToken(token, secret) {
   if (!token || typeof token !== 'string') return false;
@@ -29,7 +30,7 @@ function verifyAdminToken(token, secret) {
   }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
@@ -97,3 +98,5 @@ res.status(200).json({
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export default withRateLimit(handler, { limit: 30, prefix: 'admin-data' });

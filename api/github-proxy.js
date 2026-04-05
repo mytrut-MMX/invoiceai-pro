@@ -5,6 +5,8 @@
  * and never stored server-side.
  */
 
+import { withRateLimit } from './lib/with-rate-limit.js';
+
 const ALLOWED_METHODS = ['GET', 'POST'];
 const ALLOWED_PATH_PREFIXES = [
   '/repos/',
@@ -14,7 +16,7 @@ const ALLOWED_PATH_PREFIXES = [
   '/search/code',
 ];
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
@@ -72,3 +74,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export default withRateLimit(handler, { limit: 30, prefix: 'github' });

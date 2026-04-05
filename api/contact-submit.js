@@ -1,40 +1,9 @@
 /**
- * Contact form submission endpoint — validates input, applies per-IP rate limiting
- * (5 requests per 10 minutes), and persists to Supabase contact_submissions.
- * Rate limiter is in-memory; resets on cold start (acceptable serverless trade-off).
+ * Contact form submission endpoint — validates input, applies rate limiting,
+ * and persists to Supabase contact_submissions.
  * SUPABASE_URL is validated to be a legitimate supabase.co HTTPS endpoint before use.
  */
-
-const rateLimitMap = new Map();
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-
-function isRateLimited(ip) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.reset) {
-    rateLimitMap.set(ip, { count: 1, reset: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  entry.count += 1;
-  rateLimitMap.set(ip, entry);
-
-  if (entry.count > RATE_LIMIT_MAX) {
-    console.warn(`[RateLimit] IP ${ip.substring(0, 8)}*** exceeded limit: ${entry.count} requests`);
-    return true;
-  }
-  return false;
-}
-
-// Periodically evict expired entries to prevent unbounded Map growth.
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap.entries()) {
-    if (now > entry.reset) rateLimitMap.delete(ip);
-  }
-}, 5 * 60 * 1000);
+import { withRateLimit } from './lib/with-rate-limit.js';
 
 const ALLOWED_SUBJECTS = ['Feedback', 'Bug Report', 'Complaint', 'Billing', 'General Inquiry', 'Other', 'General'];
 
@@ -42,7 +11,7 @@ function isValidEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) && email.length <= 254;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
@@ -53,32 +22,37 @@ export default async function handler(req, res) {
 
   res.setHeader('Cache-Control', 'no-store');
 
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-  if (isRateLimited(clientIp)) {
-    res.setHeader('X-RateLimit-Remaining', '0');
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-  const currentEntry = rateLimitMap.get(clientIp);
-  if (currentEntry) {
-    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, RATE_LIMIT_MAX - currentEntry.count)));
-  }
-
+  // SEC-013: Server-side input validation
   const { name, email, subject, message } = req.body || {};
 
-  if (!email || !message) {
+  // Required fields
+  if (!email || typeof email !== 'string' || !message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Email and message are required.' });
   }
+
+  // Email format validation (basic RFC 5322)
   if (!isValidEmail(email)) {
     return res.status(400).json({ error: 'Invalid email address.' });
   }
-  if (typeof message !== 'string' || message.trim().length === 0 || message.length > 5000) {
-    return res.status(400).json({ error: 'Message must be between 1 and 5000 characters.' });
+
+  // Length limits
+  if (typeof name === 'string' && name.length > 200) {
+    return res.status(400).json({ error: 'Name too long (max 200 chars).' });
   }
-  if (name && (typeof name !== 'string' || name.length > 100)) {
-    return res.status(400).json({ error: 'Name must be 100 characters or fewer.' });
+  if (typeof subject === 'string' && subject.length > 500) {
+    return res.status(400).json({ error: 'Subject too long (max 500 chars).' });
+  }
+  if (message.trim().length === 0 || message.length > 5000) {
+    return res.status(400).json({ error: 'Message too long (max 5000 chars).' });
   }
 
-  const safeSubject = ALLOWED_SUBJECTS.includes(subject) ? subject : 'General';
+  // Sanitize — trim whitespace, limit to safe string values
+  const sanitized = {
+    name: typeof name === 'string' ? name.trim().slice(0, 200) : null,
+    email: email.trim().toLowerCase().slice(0, 254),
+    subject: ALLOWED_SUBJECTS.includes(subject) ? subject : 'General',
+    message: message.trim().slice(0, 5000),
+  };
 
   const supabaseUrl = process.env.SUPABASE_URL || 'https://oecvlkllkpyfpgczqwii.supabase.co';
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -106,12 +80,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal',
       },
-      body: JSON.stringify({
-        name: name ? name.trim().slice(0, 100) : null,
-        email: email.toLowerCase().trim(),
-        subject: safeSubject,
-        message: message.trim(),
-      }),
+      body: JSON.stringify(sanitized),
     });
 
     if (!response.ok) {
@@ -123,3 +92,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export default withRateLimit(handler, { limit: 10, prefix: 'contact' });

@@ -5,22 +5,7 @@ import { supabase, supabaseReady } from "../lib/supabase";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-function readPendingLocalReset() {
-  try {
-    const raw = sessionStorage.getItem("pending_local_reset");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function makeHexToken32Bytes() {
-  const arr = crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+// SEC-008: Local password reset (ai_invoice_users) removed — Supabase Auth only
 
 export default function ForgotPasswordPage({ onBackToLogin }) {
   const [email, setEmail] = useState("");
@@ -29,11 +14,8 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
   const [status, setStatus] = useState("idle"); // idle | loading | error | sent
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPrimaryHovered, setIsPrimaryHovered] = useState(false);
-  const [pendingLocalReset, setPendingLocalReset] = useState(() => readPendingLocalReset());
 
   const resetToForm = () => {
-    sessionStorage.removeItem("pending_local_reset");
-    setPendingLocalReset(null);
     setEmail("");
     setError("");
     setStatus("idle");
@@ -70,56 +52,14 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
         return;
       }
 
-      const message = (sbError?.message || "").toLowerCase();
-      const userNotFound = message.includes("user not found") || sbError?.status === 400;
-
-      if (!userNotFound) {
+      if (sbError) {
         setError(sbError?.message || "Could not send reset email. Please try again.");
         setStatus("error");
         return;
       }
     }
 
-    let foundLocalUser = null;
-    try {
-      const users = JSON.parse(localStorage.getItem("ai_invoice_users") || "[]");
-      if (Array.isArray(users)) {
-        foundLocalUser = users.find(
-          (u) => u?.email?.toLowerCase().trim() === normalizedEmail
-        );
-      }
-    } catch {
-      foundLocalUser = null;
-    }
-
-    if (foundLocalUser) {
-      const token = makeHexToken32Bytes();
-      let existing = [];
-      try {
-        const parsed = JSON.parse(localStorage.getItem("ai_invoice_reset_tokens") || "[]");
-        existing = Array.isArray(parsed) ? parsed : [];
-      } catch {
-        existing = [];
-      }
-
-      const now = Date.now();
-      const filtered = existing.filter((r) => Number(r?.expires) > now);
-      filtered.push({
-        email: normalizedEmail,
-        token,
-        expires: now + 30 * 60 * 1000,
-      });
-      localStorage.setItem("ai_invoice_reset_tokens", JSON.stringify(filtered));
-
-      const resetUrl = `${window.location.origin}/reset-password?token=${token}&email=${encodeURIComponent(normalizedEmail)}&local=1`;
-      const pending = { email: normalizedEmail, token, resetUrl };
-      sessionStorage.setItem("pending_local_reset", JSON.stringify(pending));
-      setPendingLocalReset(pending);
-    } else {
-      sessionStorage.removeItem("pending_local_reset");
-      setPendingLocalReset(null);
-    }
-
+    // Always show success to avoid email enumeration
     setSentTo(normalizedEmail);
     setStatus("sent");
   };
@@ -206,24 +146,6 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
                 <div>• Check your spam / junk folder</div>
                 <div>• Link expires in 30 minutes</div>
               </div>
-
-              {pendingLocalReset?.resetUrl && (
-                <div style={{ background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 10, padding: "14px 16px", marginBottom: 12 }}>
-                  <div style={{ display: "inline-block", background: "#D97706", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 999, marginBottom: 8 }}>
-                    Local account
-                  </div>
-                  <div>
-                    <button
-                      onClick={() => {
-                        window.location.href = pendingLocalReset.resetUrl;
-                      }}
-                      style={{ background: "none", border: "none", padding: 0, color: "#92400E", cursor: "pointer", fontFamily: ff, fontWeight: 600, fontSize: 14 }}
-                    >
-                      Reset password now →
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <button
                 onClick={resetToForm}
