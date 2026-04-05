@@ -1,4 +1,5 @@
 import { useState, useContext } from "react";
+import DOMPurify from "dompurify";
 import { ff, PDF_TEMPLATES } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
@@ -23,16 +24,18 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
   const handlePrint = () => {
     const el = document.getElementById("a4-invoice-doc");
     if (!el) return;
-    // SEC-007: Sanitize cloned DOM before writing to new window — prevent XSS
-    // via stored invoice content (e.g. malicious client names, notes)
-    const clone = el.cloneNode(true);
-    clone.querySelectorAll('script').forEach(s => s.remove());
-    clone.querySelectorAll('*').forEach(node => {
-      Array.from(node.attributes).forEach(attr => {
-        if (/^on[a-z]/i.test(attr.name)) node.removeAttribute(attr.name);
-      });
+    // SEC-007: Sanitize HTML before writing to print window to prevent stored XSS
+    const safeHTML = DOMPurify.sanitize(el.outerHTML, {
+      ALLOWED_TAGS: ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                     'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'br', 'hr',
+                     'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li', 'a', 'pre', 'code',
+                     'svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon'],
+      ALLOWED_ATTR: ['style', 'class', 'id', 'width', 'height', 'src', 'alt',
+                     'colspan', 'rowspan', 'viewBox', 'xmlns', 'd', 'fill', 'stroke',
+                     'stroke-width', 'transform', 'cx', 'cy', 'r', 'x', 'y',
+                     'x1', 'y1', 'x2', 'y2', 'points'],
+      ALLOW_DATA_ATTR: false,
     });
-    const safeHTML = clone.outerHTML;
     const safeTitle = (data.docNumber || "").replace(/[<>"'&]/g, "");
     const w = window.open("", "_blank", "width=900,height=700");
     w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${safeTitle}</title>
