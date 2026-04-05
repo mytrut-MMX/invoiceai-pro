@@ -161,13 +161,8 @@ const router = createBrowserRouter([
     }],
   },
 
-  // ── Admin (role-gated) ──────────────────────────────────────────────────────
-  {
-    element: <ProtectedRoute requiredRole="admin" />,
-    children: [
-      { path: ROUTES.ADMIN, element: <S><AdminPage /></S> },
-    ],
-  },
+  // ── Admin (own password gate — no Supabase role check) ──────────────────────
+  { path: ROUTES.ADMIN, element: <S><AdminPage /></S> },
 
   // ── 404 ─────────────────────────────────────────────────────────────────────
   { path: ROUTES.NOT_FOUND, element: <S><NotFoundPage /></S> },
