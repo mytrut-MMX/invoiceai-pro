@@ -94,6 +94,16 @@ function FaqSection() {
 }
 
 export default function LandingPage() {
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+
+  function handleWaitlistSubmit(e) {
+    e.preventDefault();
+    if (!waitlistEmail.trim()) return;
+    localStorage.setItem('invoicesaga_waitlist_email', waitlistEmail.trim());
+    setWaitlistSubmitted(true);
+  }
+
   return (
     <div style={{ fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin:0 }}>
 
@@ -103,6 +113,31 @@ export default function LandingPage() {
       </div>
 
       <SharedNav />
+
+      {/* Early access email capture */}
+      <div style={{ background:'#FEF3C7', borderBottom:'1px solid #FDE68A', padding:'20px 2rem' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'center', gap:10, flexWrap:'wrap' }}>
+          {waitlistSubmitted ? (
+            <span style={{ fontSize:15, color:'#92400E', fontWeight:500 }}>✓ You're on the list — we'll be in touch.</span>
+          ) : (
+            <>
+              <span style={{ fontSize:15, color:'#92400E', fontWeight:500 }}>You're early. Lock in 40% off Pro when we launch.</span>
+              <form onSubmit={handleWaitlistSubmit} style={{ display:'flex', gap:10, flexWrap:'wrap', justifyContent:'center' }}>
+                <input
+                  type="email"
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  style={{ width:280, border:'1px solid #FDE68A', borderRadius:6, padding:'9px 14px', fontSize:14, outline:'none', fontFamily:'inherit' }}
+                />
+                <button type="submit" style={{ background:'#D97706', color:'#fff', border:'none', borderRadius:6, padding:'9px 18px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                  Get early access
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Hero */}
       <section style={{ ...s.hero, textAlign:'left' }}>
