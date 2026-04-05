@@ -86,6 +86,12 @@ export const EXPENSE_CATEGORIES = [
   { code:"999", name:"Other" },
 ];
 export const EXPENSE_STATUSES = ["Draft","Submitted","Approved","Reimbursed"];
+export const BILL_STATUSES = ["Draft", "Awaiting Approval", "Approved", "Paid", "Overdue", "Void"];
+export const BILL_CATEGORIES = [
+  "Cost of Goods", "Subcontractor", "Rent & Rates", "Utilities",
+  "Insurance", "Professional Services", "IT & Software", "Travel",
+  "Office Supplies", "Equipment", "Marketing", "Other",
+];
 
 // ─── EMPTY STARTING DATA ──────────────────────────────────────────────────────
 export const MOCK_CUSTOMERS = [];
