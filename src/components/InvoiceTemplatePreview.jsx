@@ -196,6 +196,11 @@ export default function InvoiceTemplatePreview({ template, invoiceData, scale = 
                   <strong>{FIELD_LABELS[key] || key}:</strong> {invoiceData?.from?.[key] || ""}
                 </div>
               ))}
+              {invoiceData?.from?.registrationNumber && (
+                <div style={{ fontSize: 9, color: "#888", marginTop: 1 }}>
+                  Company No: {invoiceData.from.registrationNumber}
+                </div>
+              )}
             </div>
           )}
 

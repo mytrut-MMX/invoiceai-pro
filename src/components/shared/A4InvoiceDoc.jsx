@@ -107,6 +107,11 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
           {fieldKey === "companyName" ? (fromData[fieldKey] || "Your Company") : <><strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {fromData[fieldKey] || "—"}</>}
         </div>
       ))}
+      {org.crn && (
+        <div style={{ fontSize: 9, color: dark ? "rgba(255,255,255,0.6)" : "#888", marginTop: 1 }}>
+          Company No: {org.crn}
+        </div>
+      )}
     </div>
   );
 
