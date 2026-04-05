@@ -90,7 +90,7 @@ export default function HomePage() {
     ];
   }, [invoices, expenses, bills, orgSettings, currencySymbol]);
 
-  const overdueInvoices = invoices.filter(i => i.status === "Overdue");
+  const overdueInvoices = useMemo(() => invoices.filter(i => i.status === "Overdue"), [invoices]);
 
   return (
     <div style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth: 1100, fontFamily: ff, background: "#f4f5f7", minHeight: "100vh" }}>
