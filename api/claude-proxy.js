@@ -4,6 +4,8 @@
  * and unknown fields are dropped before forwarding.
  */
 
+import { withRateLimit } from './lib/with-rate-limit.js';
+
 const ALLOWED_MODELS = [
   'claude-sonnet-4-6',
   'claude-haiku-4-5-20251001',
@@ -14,7 +16,7 @@ const ALLOWED_MODELS = [
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS_LIMIT = 8192;
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
@@ -61,3 +63,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export default withRateLimit(handler, { limit: 20, prefix: 'claude' });

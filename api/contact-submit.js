@@ -1,40 +1,9 @@
 /**
- * Contact form submission endpoint — validates input, applies per-IP rate limiting
- * (5 requests per 10 minutes), and persists to Supabase contact_submissions.
- * Rate limiter is in-memory; resets on cold start (acceptable serverless trade-off).
+ * Contact form submission endpoint — validates input, applies rate limiting,
+ * and persists to Supabase contact_submissions.
  * SUPABASE_URL is validated to be a legitimate supabase.co HTTPS endpoint before use.
  */
-
-const rateLimitMap = new Map();
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-
-function isRateLimited(ip) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.reset) {
-    rateLimitMap.set(ip, { count: 1, reset: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  entry.count += 1;
-  rateLimitMap.set(ip, entry);
-
-  if (entry.count > RATE_LIMIT_MAX) {
-    console.warn(`[RateLimit] IP ${ip.substring(0, 8)}*** exceeded limit: ${entry.count} requests`);
-    return true;
-  }
-  return false;
-}
-
-// Periodically evict expired entries to prevent unbounded Map growth.
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap.entries()) {
-    if (now > entry.reset) rateLimitMap.delete(ip);
-  }
-}, 5 * 60 * 1000);
+import { withRateLimit } from './lib/with-rate-limit.js';
 
 const ALLOWED_SUBJECTS = ['Feedback', 'Bug Report', 'Complaint', 'Billing', 'General Inquiry', 'Other', 'General'];
 
@@ -42,7 +11,7 @@ function isValidEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) && email.length <= 254;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
@@ -52,16 +21,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   res.setHeader('Cache-Control', 'no-store');
-
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-  if (isRateLimited(clientIp)) {
-    res.setHeader('X-RateLimit-Remaining', '0');
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-  const currentEntry = rateLimitMap.get(clientIp);
-  if (currentEntry) {
-    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, RATE_LIMIT_MAX - currentEntry.count)));
-  }
 
   const { name, email, subject, message } = req.body || {};
 
@@ -123,3 +82,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export default withRateLimit(handler, { limit: 10, prefix: 'contact' });

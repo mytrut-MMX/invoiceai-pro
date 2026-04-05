@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { withRateLimit } from './lib/with-rate-limit.js';
 
 function verifyAdminToken(token, secret) {
   if (!token || typeof token !== "string") return false;
@@ -24,7 +25,7 @@ function verifyAdminToken(token, secret) {
   }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -250,3 +251,5 @@ ${JSON.stringify(safeContext)}
     });
   }
 }
+
+export default withRateLimit(handler, { limit: 10, prefix: 'orchestrator' });
