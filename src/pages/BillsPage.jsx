@@ -8,6 +8,8 @@ import { Btn } from "../components/atoms";
 import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
 import BillFormPanel from "../components/bills/BillFormPanel";
+import { usePagination } from "../hooks/usePagination";
+import Pagination from "../components/shared/Pagination";
 
 const FILTER_OPTS = [{ key: "all", label: "All Bills" }, ...BILL_STATUSES.map(s => ({ key: s, label: s }))];
 
@@ -65,6 +67,8 @@ export default function BillsPage({ initialShowForm = false }) {
   const paidAmt    = bills.filter(b => b.status === "Paid").reduce((s, b) => s + Number(b.total || b.amount || 0), 0);
 
   const hasFilters = search || activeFilter !== "all";
+
+  const { page, setPage, totalPages, paginatedItems, totalItems, pageSize } = usePagination(sorted, 25);
 
   // ─── CRUD ──────────────────────────────────────────────────────────────────
   const onSave = bill => {
@@ -144,7 +148,7 @@ export default function BillsPage({ initialShowForm = false }) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map(bill => (
+              {paginatedItems.map(bill => (
                 <tr key={bill.id}
                   onClick={() => { setEditingBill(bill); setShowForm(true); }}
                   style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}
@@ -184,6 +188,7 @@ export default function BillsPage({ initialShowForm = false }) {
               )}
             </tbody>
           </table>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} pageSize={pageSize} />
         </div>
 
         <style>{`tr:hover .row-actions { opacity: 1 !important; }`}</style>

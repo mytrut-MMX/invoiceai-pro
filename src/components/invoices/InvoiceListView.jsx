@@ -9,6 +9,8 @@ import { fmt, fmtDate, getDocumentSentStatus, markDocumentAsSent } from "../../u
 import { calcTotals } from "../../utils/calcTotals";
 import { useCISSettings } from "../../hooks/useCISSettings";
 import { getDefaultTemplate } from "../../utils/InvoiceTemplateSchema";
+import { usePagination } from "../../hooks/usePagination";
+import Pagination from "../shared/Pagination";
 
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
@@ -114,6 +116,8 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
   }, [invoices]);
 
   const hasFilters = search || filterStatus !== "All";
+
+  const { page, setPage, totalPages, paginatedItems, totalItems, pageSize } = usePagination(filtered, 25);
 
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
@@ -278,7 +282,7 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
                     )}
                   </td>
                 </tr>
-              ) : filtered.map(inv => {
+              ) : paginatedItems.map(inv => {
                 const isOverdue = inv.status === "Overdue";
                 const av = avatarFor(inv.customer?.name || "");
                 const sentStatus = getDocumentSentStatus(inv.id);
@@ -370,6 +374,13 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div style={{ padding:"0 16px", borderTop:"1px solid #f0f0f4" }}>
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} pageSize={pageSize} />
+          </div>
+        )}
 
         {/* Footer */}
         {filtered.length > 0 && (
