@@ -11,8 +11,13 @@ import ReportsCenter from "../components/home/ReportsCenter";
 import CashFlowForecast from "../components/home/CashFlowForecast";
 import CashFlowWidget from "../components/home/CashFlowWidget";
 
-const STAT_FILTERS = { "Outstanding": "Sent", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
-const STAT_ROUTES = { "Subcontractors": ROUTES.EXPENSES };
+const STAT_FILTERS = { "Outstanding": "Sent,Partial", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
+const STAT_ROUTES = {
+  "Bills Due": ROUTES.BILLS,
+  "VAT Tracked": ROUTES.LEDGER_PL,
+  "CIS Tracked": ROUTES.EXPENSES + "?filter=subcontractor",
+  "Subcontractors": ROUTES.EXPENSES + "?filter=subcontractor",
+};
 
 export default function HomePage() {
   const { user, invoices, expenses, payments, orgSettings, bills } = useContext(AppCtx);
@@ -107,17 +112,20 @@ export default function HomePage() {
         {stats.map(s => {
           const filter = STAT_FILTERS[s.label];
           const route = STAT_ROUTES[s.label];
-          const isClickable = !!filter || !!route;
+          const isDisabled = s.value === "Disabled";
+          const isClickable = !isDisabled && (!!filter || !!route);
+          const isHovered = hoveredStat === s.label;
           return (
             <div key={s.label}
               onClick={isClickable ? () => navigate(route || `${ROUTES.INVOICES}?status=${filter}`) : undefined}
               onMouseEnter={isClickable ? () => setHoveredStat(s.label) : undefined}
               onMouseLeave={isClickable ? () => setHoveredStat(null) : undefined}
-              style={{ background: hoveredStat === s.label ? "#f8faff" : "#fff", borderRadius: 12, padding: "16px 18px", border: "1px solid #e8e8ec", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", cursor: isClickable ? "pointer" : "default", transition: "background 0.15s" }}>
+              style={{ position: "relative", background: isHovered ? "#f8faff" : "#fff", borderRadius: 12, padding: "16px 18px", border: `1px solid ${isHovered ? "#c5d8f0" : "#e8e8ec"}`, boxShadow: isHovered ? "0 2px 8px rgba(30,107,224,0.08)" : "0 1px 3px rgba(0,0,0,0.04)", cursor: isClickable ? "pointer" : "default", transition: "all 0.15s" }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", letterSpacing: "0.06em", marginBottom: 6 }}>{s.label}</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
               <div style={{ fontSize: 11, color: "#AAA", marginTop: 2 }}>{s.sub}</div>
               {s.trend && <div style={{ fontSize: 10, fontWeight: 600, color: s.trend.color, marginTop: 4 }}>{s.trend.text}</div>}
+              {isClickable && <span style={{ position: "absolute", bottom: 8, right: 10, fontSize: 11, color: isHovered ? "#1e6be0" : "#d0d0d0", transition: "color 0.15s" }}>→</span>}
             </div>
           );
         })}
