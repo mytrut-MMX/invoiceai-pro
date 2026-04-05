@@ -43,8 +43,10 @@ export function ProtectedRoute({ requiredRole } = {}) {
   const { user } = useContext(AppCtx);
   const location = useLocation();
 
-  // Heuristic: AppCtx hasn't received the session yet but a valid stored
-  // record exists → show loader to avoid a premature redirect to /login.
+  // Heuristic: AppCtx hasn't received the Supabase session yet but a valid
+  // stored record exists → show loader to avoid a premature redirect to /login.
+  // (authChecked is now in AppCtx but the localStorage heuristic is kept as an
+  //  additional fast-path that works before the first context update fires.)
   const stored    = lsGet("ai_invoice_user", null);
   const expired   = stored?.expiresAt && Date.now() > stored.expiresAt;
   const isPending = !user && stored && !expired;
@@ -70,15 +72,19 @@ export function ProtectedRoute({ requiredRole } = {}) {
  * Sits inside ProtectedRoute. Requires org setup + onboarding to be complete.
  * Redirects to /onboarding if either condition is unmet.
  *
- * TODO: Once App.jsx exposes `onboardingDone` via AppCtx, replace the
- *       localStorage read here with the context value.
+ * Reads onboardingDone from AppCtx (Supabase-sourced, set in App.jsx after
+ * business data hydration). Gates on businessDataHydrated to avoid a premature
+ * redirect before the Supabase row has been loaded — without this gate, users
+ * whose localStorage is absent/stale would always be bounced to onboarding.
  */
 export function OnboardedRoute({ redirectTo = ROUTES.ONBOARDING } = {}) {
-  const { orgSettings } = useContext(AppCtx);
-  // onboardingDone is not yet in AppCtx — read from localStorage directly.
-  const onboardingDone = lsGet("ai_invoice_onboarding_done", false);
+  const { onboardingDone, businessDataHydrated } = useContext(AppCtx);
 
-  if (!orgSettings || !onboardingDone) {
+  // Hold on the loader until Supabase data is ready — onboardingDone is
+  // always false during hydration; redirecting here would be premature.
+  if (!businessDataHydrated) return <PageLoader />;
+
+  if (!onboardingDone) {
     return <Navigate to={redirectTo} replace />;
   }
 
