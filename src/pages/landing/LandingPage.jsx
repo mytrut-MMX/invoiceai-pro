@@ -278,6 +278,30 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Social proof */}
+      <div style={{ background: '#F5F4F0', padding: '80px 2rem' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '1.5rem', fontWeight: 400, color: '#111110', textAlign: 'center', marginBottom: 40, letterSpacing: -0.5 }}>
+            Built for how freelancers actually work
+          </h2>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {[
+              { headline: '2 min', sub: 'Average time to send first invoice' },
+              { headline: 'Free', sub: 'Start invoicing with zero upfront cost' },
+              { headline: '0 bloat', sub: 'No accounting degree required' },
+            ].map(({ headline, sub }) => (
+              <div key={headline} style={{ background: '#FFFFFF', border: '1px solid #E8E6E0', borderRadius: 12, padding: '28px 24px', flex: '1 1 200px', maxWidth: 280, textAlign: 'center' }}>
+                <div style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '2.5rem', fontWeight: 400, color: '#D97706', marginBottom: 8, lineHeight: 1.1 }}>{headline}</div>
+                <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: 14, color: '#6B6B6B', lineHeight: 1.5 }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: 'center', fontSize: 14, color: '#9A9A9A', marginTop: 32, marginBottom: 0 }}>
+            Early access is open — no credit card required to start.
+          </p>
+        </div>
+      </div>
+
       {/* Pricing */}
       <div id="pricing" style={s.sectionLight}>
         <div style={s.section}>
