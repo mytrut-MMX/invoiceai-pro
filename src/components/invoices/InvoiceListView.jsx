@@ -93,7 +93,7 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
     const matchSearch = !search ||
       inv.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
       inv.customer?.name?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === "All" || inv.status === filterStatus;
+    const matchStatus = filterStatus === "All" || filterStatus.split(",").includes(inv.status);
     return matchSearch && matchStatus;
   }), [invoices, search, filterStatus]);
 
@@ -221,7 +221,7 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
 
           <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
             {["All", ...STATUSES].map(s => {
-              const active = filterStatus === s;
+              const active = filterStatus === s || filterStatus.split(",").includes(s);
               const cnt = statusCounts[s] || 0;
               return (
                 <button key={s} onClick={() => setFilterStatus(s)}
