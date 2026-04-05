@@ -21,11 +21,41 @@ async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   res.setHeader('Cache-Control', 'no-store');
+
+  // SEC-006: Verify caller is authenticated via Supabase JWT
+  const authHeader = req.headers['authorization'] || '';
+  const userToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!userToken) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return res.status(503).json({ error: 'Auth service not configured' });
+    }
+
+    const verifyRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        'Authorization': `Bearer ${userToken}`,
+        'apikey': supabaseServiceKey
+      }
+    });
+
+    if (!verifyRes.ok) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+  } catch {
+    return res.status(500).json({ error: 'Authentication check failed' });
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(503).json({ error: 'AI service not configured' });

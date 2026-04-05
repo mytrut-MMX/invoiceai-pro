@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 // SEC-005: apiKey prop removed — server-side ANTHROPIC_API_KEY used via /api/claude-proxy
 export default function AIChat({ company, clients, products, invoices, onCreateInvoice, onAction }) {
@@ -46,9 +47,17 @@ Always respond in valid JSON only, no text outside JSON.`
 
     try {
       // SEC-005: Use server-side proxy (no client API key transmitted)
+      // SEC-006: Send Supabase session token for server-side auth verification
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) throw new Error('Please sign in to use AI features.')
+
       const res = await fetch('/api/claude-proxy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
