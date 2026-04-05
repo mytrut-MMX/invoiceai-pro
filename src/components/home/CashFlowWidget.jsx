@@ -1,10 +1,13 @@
 import { useMemo, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppCtx } from "../../context/AppContext";
 import { projectCashFlow } from "../../utils/cashFlow";
 import { ff, CUR_SYM } from "../../constants";
+import { ROUTES } from "../../router/routes";
 
 export default function CashFlowWidget() {
   const { invoices, bills = [], payments, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
   const projection = useMemo(
@@ -33,45 +36,60 @@ export default function CashFlowWidget() {
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
-        <div style={{ padding: "8px 10px", background: "#f0fdf4", borderRadius: 8, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "#059669", fontWeight: 700 }}>EXPECTED IN</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#059669" }}>{currSym}{summary.totalInflow.toLocaleString()}</div>
-        </div>
-        <div style={{ padding: "8px 10px", background: "#fef2f2", borderRadius: 8, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 700 }}>EXPECTED OUT</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#dc2626" }}>{currSym}{summary.totalOutflow.toLocaleString()}</div>
-        </div>
-        <div style={{ padding: "8px 10px", background: summary.lowestPoint < 0 ? "#fef2f2" : "#f9fafb", borderRadius: 8, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700 }}>LOWEST POINT</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: summary.lowestPoint < 0 ? "#dc2626" : "#374151" }}>
-            {currSym}{Math.abs(summary.lowestPoint).toLocaleString()}
+      {projection.weeks.length === 0 || (summary.totalInflow === 0 && summary.totalOutflow === 0) ? (
+        <div style={{ padding: "24px 16px", textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e", marginBottom: 4 }}>
+            No cash flow data yet
           </div>
+          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16, lineHeight: 1.6 }}>
+            Cash flow projections appear when you have invoices with due dates
+            or bills to pay. Create your first invoice to see your projected cash flow.
+          </div>
+          <button
+            onClick={() => navigate(ROUTES.INVOICES_NEW)}
+            style={{ padding: "8px 16px", background: "#1e6be0", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: ff }}
+          >
+            Create Invoice
+          </button>
         </div>
-      </div>
-
-      {/* Bar chart */}
-      <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 80 }}>
-        {projection.weeks.slice(0, 13).map((w, i) => (
-          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 1, height: 60, justifyContent: "flex-end" }}>
-              {w.inflow > 0 && (
-                <div style={{ height: Math.max(2, (w.inflow / maxVal) * 50), background: "#34d399", borderRadius: 2 }} title={`In: ${currSym}${w.inflow}`} />
-              )}
-              {w.outflow > 0 && (
-                <div style={{ height: Math.max(2, (w.outflow / maxVal) * 50), background: "#f87171", borderRadius: 2 }} title={`Out: ${currSym}${w.outflow}`} />
-              )}
+      ) : (
+        <>
+          {/* Summary cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+            <div style={{ padding: "8px 10px", background: "#f0fdf4", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: "#059669", fontWeight: 700 }}>EXPECTED IN</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#059669" }}>{currSym}{summary.totalInflow.toLocaleString()}</div>
             </div>
-            <div style={{ fontSize: 8, color: "#9ca3af", whiteSpace: "nowrap" }}>{w.weekLabel}</div>
+            <div style={{ padding: "8px 10px", background: "#fef2f2", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 700 }}>EXPECTED OUT</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#dc2626" }}>{currSym}{summary.totalOutflow.toLocaleString()}</div>
+            </div>
+            <div style={{ padding: "8px 10px", background: summary.lowestPoint < 0 ? "#fef2f2" : "#f9fafb", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700 }}>LOWEST POINT</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: summary.lowestPoint < 0 ? "#dc2626" : "#374151" }}>
+                {currSym}{Math.abs(summary.lowestPoint).toLocaleString()}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {projection.weeks.length === 0 && (
-        <div style={{ padding: "20px 0", textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
-          No upcoming invoices or bills to project. Create invoices to see your cash flow forecast.
-        </div>
+          {/* Bar chart */}
+          <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 80 }}>
+            {projection.weeks.slice(0, 13).map((w, i) => (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 1, height: 60, justifyContent: "flex-end" }}>
+                  {w.inflow > 0 && (
+                    <div style={{ height: Math.max(2, (w.inflow / maxVal) * 50), background: "#34d399", borderRadius: 2 }} title={`In: ${currSym}${w.inflow}`} />
+                  )}
+                  {w.outflow > 0 && (
+                    <div style={{ height: Math.max(2, (w.outflow / maxVal) * 50), background: "#f87171", borderRadius: 2 }} title={`Out: ${currSym}${w.outflow}`} />
+                  )}
+                </div>
+                <div style={{ fontSize: 8, color: "#9ca3af", whiteSpace: "nowrap" }}>{w.weekLabel}</div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

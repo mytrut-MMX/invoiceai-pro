@@ -43,7 +43,15 @@ export default function SmartAlerts({ invoices, payments, expenses, orgSettings,
     saveDismissed(next);
   };
 
-  if (visibleAlerts.length === 0) return null;
+  if (visibleAlerts.length === 0) return (
+    <div style={{ marginBottom: 16, padding: "14px 18px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: 18 }}>✅</span>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#166534" }}>All clear</div>
+        <div style={{ fontSize: 12, color: "#15803d" }}>No outstanding alerts. Your finances look healthy.</div>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ marginBottom: 16, border: "1px solid #e8e8ec", borderRadius: 12, background: "#fff", overflow: "hidden" }}>

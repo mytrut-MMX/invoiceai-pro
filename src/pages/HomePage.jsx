@@ -10,6 +10,7 @@ import AIChatPanel from "../components/home/AIChatPanel";
 import ReportsCenter from "../components/home/ReportsCenter";
 import CashFlowForecast from "../components/home/CashFlowForecast";
 import CashFlowWidget from "../components/home/CashFlowWidget";
+import DebtorInsightsWidget from "../components/home/DebtorInsightsWidget";
 
 const STAT_FILTERS = { "Outstanding": "Sent,Partial", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
 const STAT_ROUTES = {
@@ -146,6 +147,7 @@ export default function HomePage() {
 
       <SmartAlerts invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} bills={bills} />
       <CashFlowWidget />
+      <DebtorInsightsWidget />
       <AIChatPanel user={user} />
       <ReportsCenter invoices={invoices} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
       <CashFlowForecast invoices={invoices} payments={payments} currencySymbol={currencySymbol} />

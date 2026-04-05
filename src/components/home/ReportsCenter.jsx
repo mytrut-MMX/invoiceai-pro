@@ -140,7 +140,9 @@ export default function ReportsCenter({ invoices, expenses, payments, orgSetting
           <span>Status</span><span style={{ textAlign: "center" }}>Count</span><span style={{ textAlign: "right" }}>Amount</span>
         </div>
         {Object.keys(reportSummary.reportByStatus).length === 0 ? (
-          <div style={{ padding: "12px", fontSize: 12, color: "#AAA", textAlign: "center" }}>No invoices in selected period.</div>
+          <div style={{ padding: "20px 12px", textAlign: "center" }}>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>No invoices in this period. Try a different date range or create a new invoice.</div>
+          </div>
         ) : Object.entries(reportSummary.reportByStatus).map(([status, row]) => (
           <div key={status} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", padding: "9px 12px", borderBottom: "1px solid #F7F7F7", fontSize: 12, color: "#333" }}>
             <span>{status}</span>
