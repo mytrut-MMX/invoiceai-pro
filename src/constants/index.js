@@ -70,6 +70,8 @@ export const EXPENSE_CATEGORIES = [
   { code:"510", name:"Rent & Rates" },
   { code:"520", name:"Repairs & Maintenance" },
   { code:"530", name:"Stationery" },
+  { code:"315", name:"Subcontractor Labour" },
+  { code:"316", name:"Subcontractor Materials" },
   { code:"540", name:"Subscriptions" },
   { code:"550", name:"Travel" },
   { code:"560", name:"Utilities" },

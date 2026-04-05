@@ -50,6 +50,8 @@ const CATEGORY_CODE_MAP = {
   'Rent & Rates':          '6500',
   'Repairs & Maintenance': '6500',
   'Stationery':            '6200',
+  'Subcontractor Labour':    '5100',
+  'Subcontractor Materials': '5200',
   'Subscriptions':         '6100',
   'Travel':                '6400',
   'Utilities':             '6500',
