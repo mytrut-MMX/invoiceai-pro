@@ -11,6 +11,7 @@ import ReportsCenter from "../components/home/ReportsCenter";
 import CashFlowForecast from "../components/home/CashFlowForecast";
 import CashFlowWidget from "../components/home/CashFlowWidget";
 import DebtorInsightsWidget from "../components/home/DebtorInsightsWidget";
+import QuickActionsBar from "../components/home/QuickActionsBar";
 
 const STAT_FILTERS = { "Outstanding": "Sent,Partial", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
 const STAT_ROUTES = {
@@ -107,6 +108,8 @@ export default function HomePage() {
         </h1>
         <p style={{ color: "#6b7280", fontSize: 12, margin: 0 }}>{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · Financial overview</p>
       </div>
+
+      <QuickActionsBar />
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 24 }}>
