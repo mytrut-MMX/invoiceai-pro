@@ -17,6 +17,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const [postcode, setPostcode] = useState(initialData?.postcode||"");
   const [currency, setCurrency] = useState(normalizeCurrencyCode(initialData?.currency)||"GBP");
   const [timezone, setTimezone] = useState(initialData?.timezone||"(UTC+00:00) London");
+  const [accountingBasis, setAccountingBasis] = useState(initialData?.accountingBasis||"Accrual");
   const [vatReg, setVatReg] = useState(initialData?.vatReg==="Yes"||false);
   const [vatNum, setVatNum] = useState(initialData?.vatNum||"");
   const [vatNumTouched, setVatNumTouched] = useState(false);
@@ -82,6 +83,7 @@ export default function OrgSetupPage({ onComplete, initialData }) {
     onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode,
       currency: normalizeCurrencyCode(currency), timezone, email:orgEmail, phone:stripPhoneForStorage(orgPhone),
       deliversItems,
+      accountingBasis,
       vatReg: vatReg ? "Yes" : "No", vatNum, vatScheme, importExport, flatRate, flatRatePct,
       cisReg: cisReg ? "Yes" : "No",
       cisContractor,
@@ -189,6 +191,13 @@ export default function OrgSetupPage({ onComplete, initialData }) {
             </div>
             <SlideToggle value={deliversItems} onChange={setDeliversItems} />
           </div>
+
+          {/* Accounting Basis — sole traders only */}
+          {bType === "Sole Trader / Freelancer" && (
+            <Field label="Accounting Basis" hint="Most sole traders use Cash Basis for simplicity">
+              <Toggle value={accountingBasis} onChange={setAccountingBasis} options={["Accrual","Cash"]} />
+            </Field>
+          )}
 
           {/* VAT */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:4 }}>

@@ -4,7 +4,7 @@ import { ROUTES } from "../router/routes";
 import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS, normalizeCurrencyCode } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Field, Input, Select, Btn, SlideToggle } from "../components/atoms";
+import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../components/atoms";
 import { A4PrintModal } from "../components/shared";
 import { validateUkCrn, formatPhoneNumber, stripPhoneForStorage, formatSortCode, stripSortCode } from "../utils/helpers";
 import { validateImageDataUrl } from "../utils/security";
@@ -139,6 +139,7 @@ export default function SettingsPage() {
   const [currency,     setCurrency]     = useState(normalizeCurrencyCode(org.currency||"GBP"));
   const [timezone,     setTimezone]     = useState(org.timezone||"(UTC+00:00) London");
   const [industry,     setIndustry]     = useState(org.industry||"");
+  const [accountingBasis, setAccountingBasis] = useState(org.accountingBasis||"Accrual");
   const [vatReg,       setVatReg]       = useState(org.vatReg||"No");
   const [vatNum,       setVatNum]       = useState(org.vatNum||"");
   const [vatScheme,    setVatScheme]    = useState(org.vatScheme||"Standard");
@@ -192,6 +193,7 @@ export default function SettingsPage() {
     setCurrency(normalizeCurrencyCode(org.currency || "GBP"));
     setTimezone(org.timezone || "(UTC+00:00) London");
     setIndustry(org.industry || "");
+    setAccountingBasis(org.accountingBasis || "Accrual");
     setVatReg(org.vatReg || "No");
     setVatNum(org.vatNum || "");
     setVatScheme(org.vatScheme || "Standard");
@@ -232,6 +234,7 @@ export default function SettingsPage() {
     orgName, email, phone: stripPhoneForStorage(phone), website,
     street, city, postcode, country,
     currency: normalizeCurrencyCode(currency), timezone, industry,
+    accountingBasis,
     vatReg, vatNum, vatScheme, flatRatePct: vatScheme === "Flat Rate Scheme" ? flatRatePct : "",
     cisReg: cisEnabled ? "Yes" : "No",
     cisRole, cisRate: cisDefaultRate, cisUtrNo: cisContractorUTR, cisRegistrationStatus, crn,
@@ -422,6 +425,14 @@ export default function SettingsPage() {
       {/* Tax */}
      {activeTab === "tax" && (<Section title="Tax Registration">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
+          <Field label="Accounting Basis" hint="Cash basis available for sole traders with turnover ≤ £150,000">
+            <Select value={accountingBasis} onChange={setAccountingBasis} options={["Accrual", "Cash"]} />
+          </Field>
+          {accountingBasis === "Cash" && org.bType !== "Sole Trader / Freelancer" && (
+            <div style={{ gridColumn:"1 / -1" }}>
+              <InfoBox color="#D97706">Cash basis is typically only available for sole traders and partnerships. Limited companies must use accrual accounting.</InfoBox>
+            </div>
+          )}
           <Field label="VAT Registered">
             <ChipToggle value={vatReg} onChange={setVatReg} options={["No", "Yes"]} />
           </Field>
