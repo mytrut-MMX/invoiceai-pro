@@ -90,7 +90,7 @@
       │
       └─ /index.html (SPA) ◄────── All app state in localStorage (no server session)
                 │
-                ├── ai_invoice_users  → SHA-256 hashed passwords
+                ├── ai_invoice_users  → REMOVED (SEC-008 fix — Supabase Auth only)
                 ├── iai_settings      → emailjs keys only (anthropic_key removed — SEC-005 fix)
                 ├── iai_invoices      → financial documents
                 ├── iai_clients       → PII (name, email, phone)
@@ -235,20 +235,11 @@ w.document.write(`<!DOCTYPE html><html>...<body>${el.outerHTML}</body></html>`);
 
 ---
 
-#### SEC-008 — Legacy Plaintext Password Comparison
-**File:** `src/pages/AuthPage.jsx:71,74`
+#### SEC-008 — Legacy Plaintext Password Comparison — **FIXED**
+**File:** `src/pages/AuthPage.jsx` (remediated), `src/pages/ResetPasswordPage.jsx` (remediated), `src/pages/ForgotPasswordPage.jsx` (remediated)
 **CWE:** CWE-312 (Cleartext Storage of Sensitive Information), CWE-261 (Weak Cryptography for Passwords)
 
-```javascript
-// login path
-const found = users.find(u => u.email === email && (u.password === pwHash || u.password === password));
-// migration path
-if(found.password === password) { /* upgrades to hash */ }
-```
-
-**Impact:** Accounts that were created before the SHA-256 migration still store passwords in plaintext. If localStorage is read (via XSS or physical access to the device), all legacy passwords are exposed in cleartext. The migration only runs on successful login, so dormant accounts are never upgraded.
-
-**Recommendation:** Run a migration on all accounts at app startup, re-hashing any plaintext passwords. Remove the `u.password === password` fallback after the migration window.
+**Status:** Resolved. All legacy localStorage password code (`ai_invoice_users`) has been removed. Authentication is now exclusively through Supabase Auth. The `ai_invoice_users` localStorage key is cleaned up at startup in `src/main.jsx`.
 
 ---
 
@@ -400,7 +391,7 @@ All authentication state (user session, role) is stored in `localStorage`, not i
 | SEC-005 | Anthropic key in localStorage | **HIGH** | Via XSS | API key theft / cost abuse |
 | SEC-006 | Unvalidated body passthrough to Claude | **HIGH** | Easy (no auth) | Quota exhaustion / model injection |
 | SEC-007 | XSS via document.write(outerHTML) | **HIGH** | Via stored XSS | Code execution in print window |
-| SEC-008 | Legacy plaintext password storage | **HIGH** | Via localStorage read | Credential exposure |
+| SEC-008 | ~~Legacy plaintext password storage~~ | ~~**HIGH**~~ | **FIXED** | Credential exposure eliminated |
 | SEC-009 | No rate limiting | **MEDIUM** | Easy | Brute-force / spam / quota burn |
 | SEC-010 | PII sent to Anthropic | **MEDIUM** | By design | Privacy / GDPR risk |
 | SEC-011 | unsafe-inline in CSP | **MEDIUM** | Reduces CSP effectiveness | CSS injection |
@@ -424,7 +415,7 @@ All authentication state (user session, role) is stored in `localStorage`, not i
    - SEC-005: Remove Anthropic key from localStorage; route all AI calls through authenticated server-side proxy
    - SEC-006: Add schema validation + authentication to claude-proxy
    - SEC-007: Replace `document.write(outerHTML)` with a sanitised approach
-   - SEC-008: Run password migration on app startup; remove plaintext fallback
+   - ~~SEC-008: Run password migration on app startup; remove plaintext fallback~~ (DONE)
 
 3. **Medium-term**
    - SEC-009: Add rate limiting to all API endpoints

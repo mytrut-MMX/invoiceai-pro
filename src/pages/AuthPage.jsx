@@ -104,13 +104,19 @@ export default function AuthPage({ onAuth }) {
       return;
     }
 
+    // SEC-008: Verify auth service is available before attempting login/register
+    if (!supabaseReady || !supabase) {
+      setError("Authentication service unavailable. Please try again later.");
+      return;
+    }
+
     setLoading(true);
     setTimeout(async () => {
       if(mode==="register") {
         if(!name.trim()) { setError("Full name is required."); setLoading(false); return; }
         if(password !== confirmPw) { setError("Passwords do not match."); setLoading(false); return; }
-        
-        if (supabaseReady && supabase) {
+
+        {
           const { data, error } = await supabase.auth.signUp({
             email: normalizedEmail,
             password,
@@ -142,12 +148,8 @@ export default function AuthPage({ onAuth }) {
           setLoading(false);
           return;
         }
-
-        setError("Supabase authentication is required. Configure Supabase to sign in.");
-        setLoading(false);
-        return;
       } else {
-        if (supabaseReady && supabase) {
+        {
           const { data, error } = await supabase.auth.signInWithPassword({
             email: normalizedEmail,
             password,
@@ -171,10 +173,6 @@ export default function AuthPage({ onAuth }) {
           setLoading(false);
           return;
         }
-
-        setError("Supabase authentication is required. Configure Supabase to sign in.");
-        setLoading(false);
-        return;
       }
       setLoading(false);
     }, 600);
