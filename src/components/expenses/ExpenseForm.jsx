@@ -91,9 +91,11 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
   const isSubLabour = category === "Subcontractor Labour";
   const isSubMaterial = category === "Subcontractor Materials";
   const isSubcontractorCategory = isSubLabour || isSubMaterial;
+  const is_drc = isSubLabour && cisEnabled && isVat;
 
   const net    = expType === "mileage" ? Number(mileageKm || 0) * Number(mileageRate || 0) : Number(amount || 0);
-  const taxAmt = isVat && expType !== "mileage" ? net * Number(taxRate) / 100 : 0;
+  const drcVatAmount = is_drc ? net * Number(taxRate) / 100 : 0;
+  const taxAmt = is_drc ? 0 : (isVat && expType !== "mileage" ? net * Number(taxRate) / 100 : 0);
   const total  = net + taxAmt;
   const allPay = [...PAYMENT_METHODS, ...(customPayMethods || [])];
 
@@ -118,6 +120,8 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
       mileage_rate: Number(mileageRate),
       vehicle,
       is_cis_expense: isSubLabour && cisEnabled,
+      is_drc,
+      drc_vat_amount: drcVatAmount,
       created_at: e.created_at || new Date().toISOString(),
     };
     onSave(expenseObj);
@@ -184,6 +188,11 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
             {isSubMaterial && (
               <div style={{ marginTop: 8, padding: "8px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, color: "#1e40af" }}>
                 ℹ Materials are not subject to CIS deduction (HMRC CISR15080).
+              </div>
+            )}
+            {is_drc && (
+              <div style={{ marginTop: 8, padding: "8px 12px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, fontSize: 12, color: "#166534" }}>
+                🔄 Domestic Reverse Charge applies (VAT Act 1994, s.55A). You self-account for VAT — subcontractor does not charge VAT. Both output and input VAT are recorded automatically.
               </div>
             )}
             <Field label={isSubcontractorCategory ? "Subcontractor / Vendor" : "Vendor / Merchant"}><Input value={vendor} onChange={setVendor} placeholder={isSubcontractorCategory ? "e.g. J Smith Bricklaying" : "e.g. Amazon, Screwfix"} /></Field>

@@ -251,27 +251,39 @@ export async function postExpenseEntry(expense, accounts, userId) {
       : 0;
 
     const taxAmount = Number(expense.tax_amount || 0);
-    const netPayable = Number(expense.total) - cisAmount;
+    const isDRC = expense.is_drc === true;
+    const drcVat = Number(expense.drc_vat_amount || 0);
 
     const lines = [
       { accountId: expenseAccount.id, debit: Number(expense.amount), credit: 0 },
     ];
-    if (taxAmount > 0 && vatAccount) {
+
+    if (isDRC && drcVat > 0 && vatAccount) {
+      // DRC self-accounting: both entries on 2100 — net cash effect zero
+      lines.push({ accountId: vatAccount.id, debit: drcVat, credit: 0, description: 'DRC Input VAT' });
+      lines.push({ accountId: vatAccount.id, debit: 0, credit: drcVat, description: 'DRC Output VAT' });
+    } else if (!isDRC && taxAmount > 0 && vatAccount) {
       lines.push({ accountId: vatAccount.id, debit: taxAmount, credit: 0 });
     }
+
+    // AP: only the net amount (DRC) or net+VAT (standard)
+    const apAmount = isDRC ? Number(expense.amount) : Number(expense.total);
+
     if (isCisLabourExpense && cisAmount > 0 && cisPayableAccount) {
-      lines.push({ accountId: apAccount.id, debit: 0, credit: netPayable });
+      lines.push({ accountId: apAccount.id, debit: 0, credit: apAmount - cisAmount });
       lines.push({ accountId: cisPayableAccount.id, debit: 0, credit: cisAmount });
     } else {
-      lines.push({ accountId: apAccount.id, debit: 0, credit: Number(expense.total) });
+      lines.push({ accountId: apAccount.id, debit: 0, credit: apAmount });
     }
 
     return await insertEntry({
       userId,
       date: expense.date,
-      description: isCisLabourExpense
-        ? `Subcontractor - ${expense.vendor ?? ''} - CIS retained £${cisAmount.toFixed(2)}`
-        : `Expense - ${expense.category ?? ''} - ${expense.vendor ?? ''}`,
+      description: isDRC
+        ? `Subcontractor DRC - ${expense.vendor ?? ''} - VAT self-accounted £${drcVat.toFixed(2)}`
+        : isCisLabourExpense
+          ? `Subcontractor - ${expense.vendor ?? ''} - CIS retained £${cisAmount.toFixed(2)}`
+          : `Expense - ${expense.category ?? ''} - ${expense.vendor ?? ''}`,
       sourceType: 'expense',
       sourceId: expense.id,
       lines,
