@@ -48,7 +48,7 @@ const buildActiveTemplate = (templateInput) => ({
 });
 
 export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor, template = "classic", footerText = "", templateConfig, invoiceTemplate, docId = "a4-invoice-doc" }) {
-  const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms, docType } = data;
+  const { docNumber, customer, issueDate, dueDate, paymentTerms, items, subtotal, discountAmount, shipping, taxBreakdown, cisDeduction, total, notes, terms, docType, supply_date, tax_point } = data;
   const isQuote = docType === "quote";
   const docLabel = isQuote ? "Quote" : "Invoice";
   const docLabelUpper = docLabel.toUpperCase();
@@ -107,13 +107,18 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
           {fieldKey === "companyName" ? (fromData[fieldKey] || "Your Company") : <><strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {fromData[fieldKey] || "—"}</>}
         </div>
       ))}
+      {org.crn && (
+        <div style={{ fontSize: 9, color: dark ? "rgba(255,255,255,0.6)" : "#888", marginTop: 1 }}>
+          Company No: {org.crn}
+        </div>
+      )}
     </div>
   );
 
   const InvoiceMetaBlock = ({ dark = false }) => (
     <div>
       <div style={{ fontSize: "7pt", fontWeight: 700, color: dark ? "rgba(255,255,255,0.5)" : "#AAA", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3mm" }}>{docLabel} Details</div>
-      {[[`${docLabel} No`, docNumber || "INV-0001"], ["Issue Date", fmtDate(issueDate)], [isQuote ? "Valid Until" : "Due Date", fmtDate(dueDate)], [isQuote ? "Validity" : "Payment Terms", paymentTerms || (isQuote ? "Valid 30 days" : "Net 30")]].map(([l, v]) => (
+      {[[`${docLabel} No`, docNumber || "INV-0001"], ["Issue Date", fmtDate(issueDate)], ...(supply_date && supply_date !== issueDate ? [["Supply Date", fmtDate(supply_date)]] : []), [isQuote ? "Valid Until" : "Due Date", fmtDate(dueDate)], ...(tax_point && isVat ? [["Tax Point", fmtDate(tax_point)]] : []), [isQuote ? "Validity" : "Payment Terms", paymentTerms || (isQuote ? "Valid 30 days" : "Net 30")]].map(([l, v]) => (
         <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "1.5mm 0", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.12)" : "#F0F0F0"}` }}>
           <span style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.6)" : "#888" }}>{l}</span>
           <span style={{ fontSize: "8.5pt", fontWeight: 700, color: dark ? "#fff" : "#1A1A1A" }}>{v}</span>

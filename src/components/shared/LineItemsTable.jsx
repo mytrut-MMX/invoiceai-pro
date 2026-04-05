@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ff, TAX_RATES } from "../../constants";
+import { ff, UK_VAT_RATES } from "../../constants";
 import { Icons } from "../icons";
 import { Btn, Input } from "../atoms";
 import { fmt, newLine } from "../../utils/helpers";
@@ -11,8 +11,9 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
 
   const upd = (id, f, v) => onChange(items.map(it => {
     if (it.id !== id) return it;
-    const u = { ...it, [f]: v };
-    if (f !== "cisApplicable") u.amount = Number(u.quantity) * Number(u.rate);
+    const patch = typeof f === 'object' ? f : { [f]: v };
+    const u = { ...it, ...patch };
+    if (!patch.cisApplicable) u.amount = Number(u.quantity) * Number(u.rate);
     return u;
   }));
 
@@ -27,8 +28,8 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
   );
 
   const cols = isVat
-    ? (isCISInvoice ? "1fr 68px 84px 76px 74px 44px 28px" : "1fr 68px 84px 76px 74px 28px")
-    : (isCISInvoice ? "1fr 68px 90px 80px 44px 28px"      : "1fr 68px 90px 80px 28px");
+    ? (isCISInvoice ? "1fr 68px 84px 120px 74px 44px 28px" : "1fr 68px 84px 120px 74px 28px")
+    : (isCISInvoice ? "1fr 68px 90px 80px 44px 28px"       : "1fr 68px 90px 80px 28px");
   const headers = isVat
     ? [["Description","left"],["Qty","center"],[`Rate (${currSymbol})`,"right"],["VAT","center"],["Amount","right"],...(isCISInvoice?[["CIS","center"]]:[]),["",""]]
     : [["Description","left"],["Qty","center"],[`Rate (${currSymbol})`,"right"],["Amount","right"],...(isCISInvoice?[["CIS","center"]]:[]),["",""]];
@@ -105,9 +106,14 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
           <Input value={it.quantity} onChange={v => upd(it.id, "quantity", v)} type="number" align="center" style={{ MozAppearance:"textfield" }} />
           <Input value={it.rate} onChange={v => upd(it.id, "rate", v)} type="number" align="right" style={{ MozAppearance:"textfield" }} />
           {isVat && (
-            <select value={it.tax_rate} onChange={e => upd(it.id, "tax_rate", Number(e.target.value))}
-              style={{ padding:"8px 4px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#FAFAFA", outline:"none", appearance:"none", textAlign:"center", cursor:"pointer", width:"100%" }}>
-              {TAX_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+            <select
+              value={it.tax_type === 'exempt' ? 'exempt' : it.tax_type === 'outside_scope' ? 'outside' : String(it.tax_rate || 0)}
+              onChange={e => {
+                const selected = UK_VAT_RATES.find(r => r.value === e.target.value);
+                if (selected) upd(it.id, { tax_rate: selected.rate, tax_type: selected.type });
+              }}
+              style={{ padding:"8px 2px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:11, fontFamily:ff, background:"#FAFAFA", outline:"none", cursor:"pointer", width:"100%" }}>
+              {UK_VAT_RATES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           )}
           <div style={{ textAlign:"right", fontSize:13, fontWeight:700, color:"#1A1A1A" }}>{fmt(currSymbol, it.amount)}</div>

@@ -17,10 +17,12 @@ export default function OrgSetupPage({ onComplete, initialData }) {
   const [postcode, setPostcode] = useState(initialData?.postcode||"");
   const [currency, setCurrency] = useState(normalizeCurrencyCode(initialData?.currency)||"GBP");
   const [timezone, setTimezone] = useState(initialData?.timezone||"(UTC+00:00) London");
+  const [accountingBasis, setAccountingBasis] = useState(initialData?.accountingBasis||"Accrual");
   const [vatReg, setVatReg] = useState(initialData?.vatReg==="Yes"||false);
   const [vatNum, setVatNum] = useState(initialData?.vatNum||"");
   const [vatNumTouched, setVatNumTouched] = useState(false);
   const [importExport, setImportExport] = useState(initialData?.importExport||false);
+  const [vatScheme, setVatScheme] = useState(initialData?.vatScheme||"Standard");
   const [flatRate, setFlatRate] = useState(initialData?.flatRate||false);
   const [flatRatePct, setFlatRatePct] = useState(initialData?.flatRatePct||"");
   const [cisReg, setCisReg] = useState(initialData?.cisReg==="Yes"||false);
@@ -81,7 +83,8 @@ export default function OrgSetupPage({ onComplete, initialData }) {
     onComplete({ bType, orgName, crn, industry, country, state, street, city, postcode,
       currency: normalizeCurrencyCode(currency), timezone, email:orgEmail, phone:stripPhoneForStorage(orgPhone),
       deliversItems,
-      vatReg: vatReg ? "Yes" : "No", vatNum, importExport, flatRate, flatRatePct,
+      accountingBasis,
+      vatReg: vatReg ? "Yes" : "No", vatNum, vatScheme, importExport, flatRate, flatRatePct,
       cisReg: cisReg ? "Yes" : "No",
       cisContractor,
       cisSub,
@@ -189,6 +192,13 @@ export default function OrgSetupPage({ onComplete, initialData }) {
             <SlideToggle value={deliversItems} onChange={setDeliversItems} />
           </div>
 
+          {/* Accounting Basis — sole traders only */}
+          {bType === "Sole Trader / Freelancer" && (
+            <Field label="Accounting Basis" hint="Most sole traders use Cash Basis for simplicity">
+              <Toggle value={accountingBasis} onChange={setAccountingBasis} options={["Accrual","Cash"]} />
+            </Field>
+          )}
+
           {/* VAT */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#F9F9F9", borderRadius:9, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:4 }}>
             <div>
@@ -207,9 +217,15 @@ export default function OrgSetupPage({ onComplete, initialData }) {
                   <Icons.Check /> VAT number format valid
                 </div>
               )}
+              <Field label="VAT Scheme" hint="Determines when VAT is due to HMRC">
+                <Select value={vatScheme} onChange={v=>{ setVatScheme(v); if(v==="Flat Rate Scheme") setFlatRate(true); else setFlatRate(false); }} options={["Standard", "Cash Accounting", "Flat Rate Scheme", "Annual Accounting"]} />
+              </Field>
+              {vatScheme === "Flat Rate Scheme" && (
+                <Field label="Flat Rate %" hint="Your sector flat rate percentage">
+                  <Input value={flatRatePct} onChange={setFlatRatePct} type="number" placeholder="e.g. 12.5" />
+                </Field>
+              )}
               <Checkbox checked={importExport} onChange={setImportExport} label="I import/export goods and services from other countries" />
-              <Checkbox checked={flatRate} onChange={setFlatRate} label="I've joined the VAT Flat Rate scheme" />
-              {flatRate && <Field label="Flat Rate %"><Input value={flatRatePct} onChange={setFlatRatePct} type="number" placeholder="e.g. 12.5" /></Field>}
             </div>
           )}
           {!vatReg && <InfoBox color="#D97706">Items and invoices will not include VAT. You cannot legally charge VAT to customers until VAT registered.</InfoBox>}

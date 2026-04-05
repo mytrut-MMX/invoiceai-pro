@@ -11,6 +11,7 @@ import { useCISSettings } from "../../hooks/useCISSettings";
 import { postInvoiceEntry, reverseEntry, findEntryBySource } from "../../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
+import { calculateTaxPoint, taxPointExplanation } from "../../utils/taxPoint";
 
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
@@ -26,6 +27,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   const [custSearch, setCustSearch] = useState(inv.customer?.name||"");
   const [custOpen, setCustOpen] = useState(false);
   const [issueDate, setIssueDate] = useState(inv.issue_date||todayStr());
+  const [supplyDate, setSupplyDate] = useState(inv.supply_date || inv.issue_date || todayStr());
   const [payTerms, setPayTerms] = useState(inv.payment_terms||customer?.paymentTerms||"Net 30");
   const [customDays, setCustomDays] = useState(inv.custom_payment_days||"");
   const [dueDate, setDueDate] = useState(inv.due_date||addDays(todayStr(),30));
@@ -61,6 +63,10 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,cisEnabled,cisDefaultRate),[items,discType,discVal,shipping,isVat,customer,showShipping,cisEnabled,cisDefaultRate]);
   const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
   const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
+  const taxPointResult = useMemo(
+    () => calculateTaxPoint(issueDate, supplyDate),
+    [issueDate, supplyDate]
+  );
 
   const handleTermsChange = (t, days) => {
     setPayTerms(t);
@@ -79,7 +85,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   const buildInvoice = (newStatus) => ({
     id: inv.id||crypto.randomUUID(),
     invoice_number: invNumber,
-    customer, issue_date:issueDate, due_date:dueDate,
+    customer, issue_date:issueDate, supply_date:supplyDate, tax_point:taxPointResult.taxPoint, due_date:dueDate,
     payment_terms:payTerms, custom_payment_days:customDays,
     line_items:items, discount_type:discType, discount_value:discVal,
     shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
@@ -113,7 +119,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
             const oldEntry = await findEntryBySource('invoice', inv.id);
             if (oldEntry) await reverseEntry(oldEntry.id, userId);
           }
-          await postInvoiceEntry(savedInvoice, accounts, userId);
+          await postInvoiceEntry(savedInvoice, accounts, userId, orgSettings?.vatScheme || 'Standard');
         } catch (err) {
           console.error('[Ledger] invoice post failed:', err);
         }
@@ -262,6 +268,19 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                 <input value={issueDate} onChange={e=>setIssueDate(e.target.value)} type="date"
                   style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
               </Field>
+              <Field label="Supply Date" hint="Date goods delivered or services completed">
+                <input value={supplyDate} onChange={e=>setSupplyDate(e.target.value)} type="date"
+                  style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+              </Field>
+              {isVat && (
+                <Field label="Tax Point" hint={taxPointExplanation(taxPointResult.rule)}>
+                  <input
+                    value={taxPointResult.taxPoint}
+                    readOnly
+                    style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box", background:"#f9fafb", color:"#6b7280" }}
+                  />
+                </Field>
+              )}
               <Field label="Payment Terms">
                 <PaymentTermsField value={payTerms} onChange={handleTermsChange} customDays={customDays} onCustomDaysChange={d=>{ setCustomDays(d); setDueDate(addDays(issueDate,Number(d)||30)); }} />
               </Field>

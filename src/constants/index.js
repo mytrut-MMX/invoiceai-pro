@@ -1,6 +1,13 @@
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 export const ff = "'Lato','DM Sans','Helvetica Neue',sans-serif";
 export const TAX_RATES = [0, 5, 12.5, 20];
+export const UK_VAT_RATES = [
+  { value: "20",       label: "Standard (20%)",     rate: 20,   type: "standard" },
+  { value: "5",        label: "Reduced (5%)",       rate: 5,    type: "reduced" },
+  { value: "0",        label: "Zero-rated (0%)",    rate: 0,    type: "zero_rated" },
+  { value: "exempt",   label: "Exempt",             rate: 0,    type: "exempt" },
+  { value: "outside",  label: "Outside scope",      rate: 0,    type: "outside_scope" },
+];
 export const CUR_SYM = { GBP:"£", USD:"$", EUR:"€", AUD:"A$", CAD:"C$", CHF:"Fr", JPY:"¥", INR:"₹" };
 export const PAYMENT_TERMS_OPTS = ["Due on Receipt","Net 7","Net 14","Net 30","Net 60","Net 90","Custom"];
 export const RECURRING_OPTS = ["Weekly","Monthly","Quarterly","Yearly"];
