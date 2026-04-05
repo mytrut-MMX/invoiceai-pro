@@ -7,6 +7,7 @@ import { Field, Input, Select, Textarea, Btn, Switch } from "../atoms";
 import { CustomerPicker } from "../shared";
 import { fmt, todayStr } from "../../utils/helpers";
 import { useCISSettings } from "../../hooks/useCISSettings";
+import { validateImageDataUrl } from "../../utils/security";
 
 const STATUS_STYLE = {
   Draft:       { color: "#6b7280", bg: "#f3f4f6" },
@@ -31,7 +32,10 @@ function ReceiptUpload({ value, onChange }) {
     if (!file || !file.type.startsWith("image/")) return;
     if (file.size > 3 * 1024 * 1024) { alert("Max 3 MB"); return; }
     const r = new FileReader();
-    r.onload = e => onChange(e.target.result);
+    r.onload = e => {
+      const result = e.target.result;
+      if (validateImageDataUrl(result)) onChange(result);
+    };
     r.readAsDataURL(file);
   }, [onChange]);
   return (
