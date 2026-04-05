@@ -19,7 +19,7 @@ const daysBetween = (a, b) => Math.round((b - a) / 86400000);
 // SEC-014: Use cryptographically secure random IDs
 const uid = (prefix = '') => `${prefix}_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 
-export function generateAlerts(invoices = [], payments = [], expenses = [], orgSettings = {}) {
+export function generateAlerts(invoices = [], payments = [], expenses = [], orgSettings = {}, bills = []) {
   const alerts = [];
   const today = todayMidnight();
   const currencyCode = normalizeCurrencyCode(orgSettings?.currency, "GBP");
@@ -199,6 +199,43 @@ export function generateAlerts(invoices = [], payments = [], expenses = [], orgS
         dismissable: true,
       });
     }
+  }
+
+  // ─── BILLS OVERDUE ──────────────────────────────────────────────
+  const overdueBills = (bills || []).filter(b => {
+    if (!["Approved", "Awaiting Approval"].includes(b.status)) return false;
+    return b.due_date && new Date(b.due_date) < new Date();
+  });
+  if (overdueBills.length > 0) {
+    const totalOverdue = overdueBills.reduce((s, b) => s + Number(b.total || 0), 0);
+    alerts.push({
+      id: uid("bills_overdue"),
+      severity: "warning",
+      category: "payables",
+      title: `${overdueBills.length} bill(s) overdue — ${Number(totalOverdue).toLocaleString("en-GB", { style: "currency", currency: currencyCode })}`,
+      description: "Pay overdue bills to maintain supplier relationships.",
+      actionPage: "bills",
+      dismissable: true,
+    });
+  }
+
+  // ─── BILLS DUE THIS WEEK ────────────────────────────────────────
+  const nextWeek = new Date(Date.now() + 7 * 86400000);
+  const dueSoon = (bills || []).filter(b => {
+    if (b.status === "Paid" || b.status === "Void") return false;
+    const d = b.due_date ? new Date(b.due_date) : null;
+    return d && d > new Date() && d <= nextWeek;
+  });
+  if (dueSoon.length > 0) {
+    alerts.push({
+      id: uid("bills_due_soon"),
+      severity: "info",
+      category: "payables",
+      title: `${dueSoon.length} bill(s) due within 7 days`,
+      description: "Review and schedule payments.",
+      actionPage: "bills",
+      dismissable: true,
+    });
   }
 
   // Sort: critical → warning → info

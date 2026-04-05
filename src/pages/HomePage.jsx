@@ -13,7 +13,7 @@ const STAT_FILTERS = { "Outstanding": "Sent", "Overdue": "Overdue", "Paid": "Pai
 const STAT_ROUTES = { "Subcontractors": ROUTES.EXPENSES };
 
 export default function HomePage() {
-  const { user, invoices, expenses, payments, orgSettings } = useContext(AppCtx);
+  const { user, invoices, expenses, payments, orgSettings, bills } = useContext(AppCtx);
   const navigate = useNavigate();
   const [hoveredStat, setHoveredStat] = useState(null);
   const currencySymbol = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -76,6 +76,8 @@ export default function HomePage() {
         trend: calcTrend(sumAmt(currInv, i => i.status === "Paid"), sumAmt(prevInv, i => i.status === "Paid"), true) },
       { label: "Draft",       value: fmt(currencySymbol, draft),        sub: "Needs action", color: "#6b7280",
         trend: calcTrend(sumAmt(currInv, i => i.status === "Draft"), sumAmt(prevInv, i => i.status === "Draft"), false) },
+      { label: "Bills Due",  value: fmt(currencySymbol, bills.filter(b => !["Paid","Void"].includes(b.status)).reduce((s,b) => s + Number(b.total||0), 0)),
+        sub: `${bills.filter(b => b.status === "Overdue").length} overdue`, color: "#dc2626" },
       { label: "VAT Tracked", value: orgSettings?.vatReg === "Yes" ? fmt(currencySymbol, vatDue) : "Disabled", sub: orgSettings?.vatReg === "Yes" ? "Output VAT" : "Enable VAT in Settings", color: "#2563EB" },
       { label: "CIS Tracked", value: orgSettings?.cisReg === "Yes" ? fmt(currencySymbol, cisTracked) : "Disabled", sub: orgSettings?.cisReg === "Yes" ? "CIS deductions" : "Enable CIS in Settings", color: "#7C3AED" },
       ...(orgSettings?.cisReg === "Yes" ? [{
@@ -85,7 +87,7 @@ export default function HomePage() {
         color: "#D97706",
       }] : []),
     ];
-  }, [invoices, orgSettings, currencySymbol]);
+  }, [invoices, expenses, bills, orgSettings, currencySymbol]);
 
   const overdueInvoices = invoices.filter(i => i.status === "Overdue");
 
@@ -132,7 +134,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <SmartAlerts invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} />
+      <SmartAlerts invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} bills={bills} />
       <AIChatPanel user={user} />
       <ReportsCenter invoices={invoices} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
       <CashFlowForecast invoices={invoices} payments={payments} currencySymbol={currencySymbol} />

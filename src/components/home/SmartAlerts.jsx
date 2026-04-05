@@ -9,6 +9,7 @@ const ALERT_PAGE_ROUTES = {
   "invoices:new": ROUTES.INVOICES_NEW,
   "payments":     ROUTES.PAYMENTS,
   "expenses":     ROUTES.EXPENSES,
+  "bills":        ROUTES.BILLS,
 };
 
 const LS_DISMISSED_KEY = "invoicesaga_dismissed_alerts";
@@ -21,14 +22,14 @@ const SEV = {
   info:     { bg: "#eff6ff", border: "#bfdbfe", dot: "#2563eb", label: "Info",     labelColor: "#2563eb" },
 };
 
-export default function SmartAlerts({ invoices, payments, expenses, orgSettings }) {
+export default function SmartAlerts({ invoices, payments, expenses, orgSettings, bills }) {
   const navigate = useNavigate();
   const [dismissedIds, setDismissedIds] = useState(() => getDismissed());
   const [alertsOpen, setAlertsOpen] = useState(true);
 
   const allAlerts = useMemo(
-    () => generateAlerts(invoices, payments, expenses, orgSettings),
-    [invoices, payments, expenses, orgSettings]
+    () => generateAlerts(invoices, payments, expenses, orgSettings, bills),
+    [invoices, payments, expenses, orgSettings, bills]
   );
 
   const visibleAlerts = useMemo(
