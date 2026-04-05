@@ -1,4 +1,6 @@
 import { useState, useContext, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../router/routes";
 import { ff, CUR_SYM, BILL_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
@@ -14,12 +16,13 @@ function filterBills(bills, key) {
   return bills.filter(b => b.status === key);
 }
 
-export default function BillsPage() {
+export default function BillsPage({ initialShowForm = false }) {
   const { bills, setBills, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
   const isVat   = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
-  const [showForm,     setShowForm]     = useState(false);
+  const [showForm,     setShowForm]     = useState(initialShowForm);
   const [editingBill,  setEditingBill]  = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [search,       setSearch]       = useState("");
@@ -70,6 +73,7 @@ export default function BillsPage() {
       if (idx >= 0) { const u = [...prev]; u[idx] = bill; return u; }
       return [bill, ...prev];
     });
+    if (initialShowForm) { navigate(ROUTES.BILLS, { replace: true }); return; }
     setShowForm(false);
     setEditingBill(null);
   };
@@ -83,7 +87,10 @@ export default function BillsPage() {
   if (showForm) return (
     <BillFormPanel
       existing={editingBill}
-      onClose={() => { setShowForm(false); setEditingBill(null); }}
+      onClose={() => {
+        if (initialShowForm) { navigate(ROUTES.BILLS, { replace: true }); return; }
+        setShowForm(false); setEditingBill(null);
+      }}
       onSave={onSave}
     />
   );

@@ -55,6 +55,7 @@ const InvoicesPage       = lazy(() => import("../pages/InvoicesPage"));
 const QuotesPage         = lazy(() => import("../pages/QuotesPage"));
 const PaymentsPage       = lazy(() => import("../pages/PaymentsPage"));
 const ExpensesPage       = lazy(() => import("../pages/ExpensesPage"));
+const BillsPage          = lazy(() => import("../pages/BillsPage"));
 const SettingsPage       = lazy(() => import("../pages/SettingsPage"));
 const InvoiceTemplatesPage = lazy(() => import("../pages/InvoiceTemplatesPage"));
 const LedgerPage         = lazy(() => import("../pages/LedgerPage"));
@@ -142,6 +143,10 @@ const router = createBrowserRouter([
           // Expenses
           { path: ROUTES.EXPENSES,     element: <ExpensesPage key="list" /> },
           { path: ROUTES.EXPENSES_NEW, element: <ExpensesPage key="new"  initialShowForm /> },
+
+          // Bills
+          { path: ROUTES.BILLS,     element: <BillsPage key="list" /> },
+          { path: ROUTES.BILLS_NEW, element: <BillsPage key="new"  initialShowForm /> },
 
           // Ledger
           { path: ROUTES.LEDGER,          element: <Navigate to={ROUTES.LEDGER_JOURNAL} replace /> },
