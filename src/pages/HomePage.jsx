@@ -10,6 +10,7 @@ import ReportsCenter from "../components/home/ReportsCenter";
 import CashFlowForecast from "../components/home/CashFlowForecast";
 
 const STAT_FILTERS = { "Outstanding": "Sent", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
+const STAT_ROUTES = { "Subcontractors": ROUTES.EXPENSES };
 
 export default function HomePage() {
   const { user, invoices, expenses, payments, orgSettings } = useContext(AppCtx);
@@ -47,6 +48,21 @@ export default function HomePage() {
       ? invoices.reduce((sum, inv) => sum + Number(inv.cisDeduction || (Number(inv.subtotal || 0) * cisRate)), 0)
       : 0;
 
+    // Subcontractor costs from expenses
+    const subLabourTotal = orgSettings?.cisReg === "Yes"
+      ? expenses.filter(e => e.category === "Subcontractor Labour").reduce((s, e) => s + Number(e.total || 0), 0)
+      : 0;
+    const subMaterialsTotal = orgSettings?.cisReg === "Yes"
+      ? expenses.filter(e => e.category === "Subcontractor Materials").reduce((s, e) => s + Number(e.total || 0), 0)
+      : 0;
+    const subContractorTotal = subLabourTotal + subMaterialsTotal;
+    const cisRetainedFromExpenses = orgSettings?.cisReg === "Yes"
+      ? expenses.filter(e => e.is_cis_expense).reduce((s, e) => {
+          const rate = e.cis_rate ?? 20;
+          return s + (e.cis_deduction_amount ?? (Number(e.amount || 0) * rate / 100));
+        }, 0)
+      : 0;
+
     const currInv = invoices.filter(inCurr);
     const prevInv = invoices.filter(inPrev);
 
@@ -61,6 +77,12 @@ export default function HomePage() {
         trend: calcTrend(sumAmt(currInv, i => i.status === "Draft"), sumAmt(prevInv, i => i.status === "Draft"), false) },
       { label: "VAT Tracked", value: orgSettings?.vatReg === "Yes" ? fmt(currencySymbol, vatDue) : "Disabled", sub: orgSettings?.vatReg === "Yes" ? "Output VAT" : "Enable VAT in Settings", color: "#2563EB" },
       { label: "CIS Tracked", value: orgSettings?.cisReg === "Yes" ? fmt(currencySymbol, cisTracked) : "Disabled", sub: orgSettings?.cisReg === "Yes" ? "CIS deductions" : "Enable CIS in Settings", color: "#7C3AED" },
+      ...(orgSettings?.cisReg === "Yes" ? [{
+        label: "Subcontractors",
+        value: fmt(currencySymbol, subContractorTotal),
+        sub: cisRetainedFromExpenses > 0 ? `CIS retained: ${fmt(currencySymbol, cisRetainedFromExpenses)}` : "Subcontractor costs",
+        color: "#D97706",
+      }] : []),
     ];
   }, [invoices, orgSettings, currencySymbol]);
 
@@ -79,10 +101,11 @@ export default function HomePage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 24 }}>
         {stats.map(s => {
           const filter = STAT_FILTERS[s.label];
-          const isClickable = !!filter;
+          const route = STAT_ROUTES[s.label];
+          const isClickable = !!filter || !!route;
           return (
             <div key={s.label}
-              onClick={isClickable ? () => navigate(`${ROUTES.INVOICES}?status=${filter}`) : undefined}
+              onClick={isClickable ? () => navigate(route || `${ROUTES.INVOICES}?status=${filter}`) : undefined}
               onMouseEnter={isClickable ? () => setHoveredStat(s.label) : undefined}
               onMouseLeave={isClickable ? () => setHoveredStat(null) : undefined}
               style={{ background: hoveredStat === s.label ? "#f8faff" : "#fff", borderRadius: 12, padding: "16px 18px", border: "1px solid #e8e8ec", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", cursor: isClickable ? "pointer" : "default", transition: "background 0.15s" }}>

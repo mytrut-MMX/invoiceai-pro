@@ -18,8 +18,10 @@ const DEFAULT_ACCOUNTS = [
   { code: '4100', name: 'Service Revenue',       type: 'revenue',   subtype: 'operating',   is_system: false },
 
   // EXPENSES
-  { code: '5000', name: 'Cost of Goods Sold',    type: 'expense',   subtype: 'cogs',        is_system: false },
-  { code: '6000', name: 'Advertising',           type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '5000', name: 'Cost of Goods Sold',       type: 'expense',   subtype: 'cogs',        is_system: false },
+  { code: '5100', name: 'Subcontractor Labour',   type: 'expense',   subtype: 'cogs',        is_system: false },
+  { code: '5200', name: 'Subcontractor Materials', type: 'expense',   subtype: 'cogs',        is_system: false },
+  { code: '6000', name: 'Advertising',             type: 'expense',   subtype: 'operating',   is_system: false },
   { code: '6100', name: 'IT & Software',         type: 'expense',   subtype: 'operating',   is_system: false },
   { code: '6200', name: 'Office Supplies',       type: 'expense',   subtype: 'operating',   is_system: false },
   { code: '6300', name: 'Professional Services', type: 'expense',   subtype: 'operating',   is_system: false },

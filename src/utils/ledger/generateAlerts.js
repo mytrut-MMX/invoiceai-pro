@@ -161,6 +161,28 @@ export function generateAlerts(invoices = [], payments = [], expenses = [], orgS
     });
   }
 
+  // ─── 6. CIS RETAINED THIS MONTH ─────────────────────────────────────────
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const cisLabourExpensesThisMonth = expenses.filter(e =>
+    e.is_cis_expense && (e.date || "").startsWith(currentMonth)
+  );
+  const totalCISRetained = cisLabourExpensesThisMonth.reduce((s, e) => {
+    const rate = e.cis_rate ?? 20;
+    return s + (e.cis_deduction_amount ?? (Number(e.amount || 0) * rate / 100));
+  }, 0);
+
+  if (totalCISRetained > 0) {
+    alerts.push({
+      id: uid("cis_retained"),
+      severity: "warning",
+      category: "tax",
+      title: `£${totalCISRetained.toFixed(2)} CIS retained this month`,
+      description: `CIS deducted from ${cisLabourExpensesThisMonth.length} subcontractor payment(s). Due to HMRC by 19th of next month.`,
+      actionPage: "expenses",
+      dismissable: false,
+    });
+  }
+
   // Sort: critical → warning → info
   const ORDER = { critical: 0, warning: 1, info: 2 };
   alerts.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);

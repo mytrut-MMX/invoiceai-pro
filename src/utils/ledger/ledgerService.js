@@ -50,6 +50,8 @@ const CATEGORY_CODE_MAP = {
   'Rent & Rates':          '6500',
   'Repairs & Maintenance': '6500',
   'Stationery':            '6200',
+  'Subcontractor Labour':    '5100',
+  'Subcontractor Materials': '5200',
   'Subscriptions':         '6100',
   'Travel':                '6400',
   'Utilities':             '6500',
@@ -240,21 +242,48 @@ export async function postExpenseEntry(expense, accounts, userId) {
     if (!expenseAccount) return { success: false, error: `Account ${expenseCode} not found for category "${expense.category}"` };
     if (!apAccount)      return { success: false, error: 'Account 2000 (Accounts Payable) not found' };
 
+    const isCisLabourExpense = expense.is_cis_expense === true && expense.category === 'Subcontractor Labour';
+    const cisPayableAccount = isCisLabourExpense ? findAccount(accounts, '2200') : null;
+
+    const cisRate = expense.cis_rate ?? 20;
+    const cisAmount = isCisLabourExpense
+      ? (expense.cis_deduction_amount ?? (Number(expense.amount) * cisRate / 100))
+      : 0;
+
     const taxAmount = Number(expense.tax_amount || 0);
+    const isDRC = expense.is_drc === true;
+    const drcVat = Number(expense.drc_vat_amount || 0);
 
     const lines = [
       { accountId: expenseAccount.id, debit: Number(expense.amount), credit: 0 },
     ];
-    if (taxAmount > 0 && vatAccount) {
-      // Debit VAT Payable to reclaim input VAT (reduces the output VAT liability)
+
+    if (isDRC && drcVat > 0 && vatAccount) {
+      // DRC self-accounting: both entries on 2100 — net cash effect zero
+      lines.push({ accountId: vatAccount.id, debit: drcVat, credit: 0, description: 'DRC Input VAT' });
+      lines.push({ accountId: vatAccount.id, debit: 0, credit: drcVat, description: 'DRC Output VAT' });
+    } else if (!isDRC && taxAmount > 0 && vatAccount) {
       lines.push({ accountId: vatAccount.id, debit: taxAmount, credit: 0 });
     }
-    lines.push({ accountId: apAccount.id, debit: 0, credit: Number(expense.total) });
+
+    // AP: only the net amount (DRC) or net+VAT (standard)
+    const apAmount = isDRC ? Number(expense.amount) : Number(expense.total);
+
+    if (isCisLabourExpense && cisAmount > 0 && cisPayableAccount) {
+      lines.push({ accountId: apAccount.id, debit: 0, credit: apAmount - cisAmount });
+      lines.push({ accountId: cisPayableAccount.id, debit: 0, credit: cisAmount });
+    } else {
+      lines.push({ accountId: apAccount.id, debit: 0, credit: apAmount });
+    }
 
     return await insertEntry({
       userId,
       date: expense.date,
-      description: `Expense - ${expense.category ?? ''} - ${expense.vendor ?? ''}`,
+      description: isDRC
+        ? `Subcontractor DRC - ${expense.vendor ?? ''} - VAT self-accounted £${drcVat.toFixed(2)}`
+        : isCisLabourExpense
+          ? `Subcontractor - ${expense.vendor ?? ''} - CIS retained £${cisAmount.toFixed(2)}`
+          : `Expense - ${expense.category ?? ''} - ${expense.vendor ?? ''}`,
       sourceType: 'expense',
       sourceId: expense.id,
       lines,
