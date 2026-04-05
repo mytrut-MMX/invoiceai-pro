@@ -94,6 +94,13 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
             setShowSendModal(false);
             markDocumentAsSent(invoice.id);
           }}
+          docData={docData}
+          currSymbol={currSym}
+          isVat={isVat}
+          pdfTemplate={activeTemplate}
+          accentColor={tplDef?.defaultAccent}
+          footerText={footerText || ""}
+          invoiceTemplate={activeInvoiceTemplate}
         />
       )}
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", fontFamily: ff, padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>

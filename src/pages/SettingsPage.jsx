@@ -196,6 +196,8 @@ export default function SettingsPage() {
     setCisContractorUTR(org.cis?.contractorUTR || org.cisUtrNo || "");
     setCisEmployerRef(org.cis?.employerRef || "");
     setCisDefaultRate(org.cis?.defaultRate || org.cisRate || CIS_DEFAULT_SETTINGS.defaultRate);
+    // Auto-populate contractor name from org name if not already set
+    if (!org.cis?.contractorName && org.orgName) setCisContractorName(org.orgName);
     setCrn(org.crn || "");
     setBankName(org.bankName || "");
     setBankSort(formatSortCode(org.bankSort || ""));
@@ -203,6 +205,13 @@ export default function SettingsPage() {
     setBankIban(org.bankIban || "");
     setBankSwift(org.bankSwift || "");
   }, [orgSettings]);
+
+  // When CIS is enabled and contractor name is blank, default it to the org name
+  useEffect(() => {
+    if (cisEnabled && !cisContractorName && orgName) {
+      setCisContractorName(orgName);
+    }
+  }, [cisEnabled]);
 
   const settingTabs = [
     { id:"org", label:"Organization Details" },

@@ -1,11 +1,14 @@
 import { useContext, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ff, CUR_SYM } from "../../constants";
+import { ff, CUR_SYM, PDF_TEMPLATES } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { Btn } from "../atoms";
 import SendDocumentModal from "../../modals/SendDocumentModal";
 import { fmt, fmtDate, getDocumentSentStatus, markDocumentAsSent } from "../../utils/helpers";
+import { calcTotals } from "../../utils/calcTotals";
+import { useCISSettings } from "../../hooks/useCISSettings";
+import { getDefaultTemplate } from "../../utils/InvoiceTemplateSchema";
 
 const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
 
@@ -67,8 +70,10 @@ const AVATARS = [
 const avatarFor = (name = "") => AVATARS[name.charCodeAt(0) % AVATARS.length];
 
 export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInvoice }) {
-  const { invoices, setInvoices, orgSettings } = useContext(AppCtx);
+  const { invoices, setInvoices, orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
+  const { cisEnabled, cisDefaultRate } = useCISSettings();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isVat = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
   const [showSendModal,    setShowSendModal]    = useState(false);
@@ -112,19 +117,56 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
 
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
-      {showSendModal && selectedDocument && (
-        <SendDocumentModal
-          documentType={sendDocumentType}
-          document={selectedDocument}
-          company={{ ...orgSettings, companyName: orgSettings?.companyName || orgSettings?.name }}
-          customer={selectedCustomer || {}}
-          onClose={() => setShowSendModal(false)}
-          onSent={() => {
-            setShowSendModal(false);
-            if (selectedDocument?.id) markDocumentAsSent(selectedDocument.id);
-          }}
-        />
-      )}
+      {showSendModal && selectedDocument && (() => {
+        const doc = selectedDocument;
+        const totals = calcTotals(
+          doc.line_items || [],
+          doc.discount_type || "percent",
+          doc.discount_value || "",
+          doc.shipping || "",
+          isVat,
+          doc.customer,
+          cisEnabled,
+          cisDefaultRate
+        );
+        const selectedDocData = {
+          docNumber: doc.invoice_number,
+          customer: doc.customer,
+          issueDate: doc.issue_date,
+          dueDate: doc.due_date,
+          paymentTerms: doc.payment_terms,
+          items: doc.line_items || [],
+          ...totals,
+          notes: doc.notes || "",
+          terms: doc.terms || "",
+          status: doc.status,
+          poNumber: doc.po_number || "",
+          docType: "invoice",
+        };
+        const activeTemplate = doc.template || pdfTemplate || "classic";
+        const tplDef = PDF_TEMPLATES.find(t => t.id === activeTemplate) || PDF_TEMPLATES[0];
+        return (
+          <SendDocumentModal
+            documentType={sendDocumentType}
+            document={{ ...doc, invoiceNumber: doc.invoice_number, dueDate: doc.due_date, currency: orgSettings?.currency || "GBP" }}
+            company={{ ...orgSettings, companyName: orgSettings?.companyName || orgSettings?.name }}
+            customer={selectedCustomer || {}}
+            onClose={() => setShowSendModal(false)}
+            onSent={() => {
+              setShowSendModal(false);
+              if (doc.id) markDocumentAsSent(doc.id);
+            }}
+            docData={selectedDocData}
+            currSymbol={currSym}
+            isVat={isVat}
+            pdfTemplate={activeTemplate}
+            accentColor={tplDef?.defaultAccent}
+            footerText={footerText || ""}
+            invoiceTemplate={getDefaultTemplate()}
+            orgSettings={{ ...orgSettings, logo: companyLogo, logoSize: Number(invoiceTemplateConfig?.logoSize || companyLogoSize || 52) }}
+          />
+        );
+      })()}
 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:20, flexWrap:"wrap" }}>
