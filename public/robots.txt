@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /invoices
+Disallow: /quotes
+Disallow: /customers
+Disallow: /payments
+Disallow: /expenses
+Disallow: /ledger
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /admin
+Sitemap: https://invoicesaga.com/sitemap.xml
