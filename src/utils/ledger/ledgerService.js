@@ -57,6 +57,10 @@ const CATEGORY_CODE_MAP = {
   'Utilities':             '6500',
   'Wages & Salaries':      '6600',
   'Other':                 '9000',
+  // Bill-specific categories
+  'Cost of Goods':         '5000',
+  'Subcontractor':         '5100',
+  'Marketing':             '6000',
 };
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -338,6 +342,98 @@ export async function postExpenseEntry(expense, accounts, userId) {
       sourceType: 'expense',
       sourceId: expense.id,
       lines,
+    });
+  } catch (err) {
+    return { success: false, error: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * Posts a journal entry for a supplier bill (purchase invoice).
+ *
+ * Debits:
+ *   Expense account (mapped from bill category)  ← bill.amount (net)
+ *   VAT Payable (2100)                           ← bill.tax_amount (input VAT to reclaim)
+ * Credits:
+ *   Accounts Payable (2000)                      ← bill.total (net + VAT)
+ *
+ * @param {object} bill
+ * @param {Array}  accounts
+ * @param {string} userId
+ * @returns {Promise<{ success: boolean, entryId?: string, error?: string }>}
+ */
+export async function postBillEntry(bill, accounts, userId) {
+  if (!supabaseReady) return { success: false, error: 'Supabase not configured' };
+
+  try {
+    const expenseCode = CATEGORY_CODE_MAP[bill.category] ?? '9000';
+    const expenseAccount = findAccount(accounts, expenseCode);
+    const vatAccount = findAccount(accounts, '2100');
+    const apAccount = findAccount(accounts, '2000');
+
+    if (!expenseAccount) return { success: false, error: `Account ${expenseCode} not found for category "${bill.category}"` };
+    if (!apAccount) return { success: false, error: 'Account 2000 (Accounts Payable) not found' };
+
+    const lines = [
+      { accountId: expenseAccount.id, debit: Number(bill.amount), credit: 0 },
+    ];
+
+    // Input VAT — debit VAT Payable to reduce the liability (reclaim)
+    const inputVAT = Number(bill.tax_amount || 0);
+    if (inputVAT > 0 && vatAccount) {
+      lines.push({ accountId: vatAccount.id, debit: inputVAT, credit: 0 });
+    }
+
+    // Credit AP for the full amount (net + VAT)
+    lines.push({ accountId: apAccount.id, debit: 0, credit: Number(bill.total) });
+
+    return await insertEntry({
+      userId,
+      date: bill.bill_date,
+      description: `Bill - ${bill.bill_number || ''} - ${bill.supplier_name ?? ''}`,
+      sourceType: 'bill',
+      sourceId: bill.id,
+      lines,
+    });
+  } catch (err) {
+    return { success: false, error: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * Posts a journal entry for paying a supplier bill.
+ *
+ * Debits:
+ *   Accounts Payable (2000)  ← payment amount
+ * Credits:
+ *   Bank Account (1000)      ← payment amount
+ *
+ * @param {object} bill
+ * @param {number} paymentAmount
+ * @param {Array}  accounts
+ * @param {string} userId
+ * @returns {Promise<{ success: boolean, entryId?: string, error?: string }>}
+ */
+export async function postBillPaymentEntry(bill, paymentAmount, accounts, userId) {
+  if (!supabaseReady) return { success: false, error: 'Supabase not configured' };
+
+  try {
+    const apAccount = findAccount(accounts, '2000');
+    const bankAccount = findAccount(accounts, '1000');
+
+    if (!apAccount) return { success: false, error: 'Account 2000 (Accounts Payable) not found' };
+    if (!bankAccount) return { success: false, error: 'Account 1000 (Bank Account) not found' };
+
+    return await insertEntry({
+      userId,
+      date: new Date().toISOString().split('T')[0],
+      description: `Bill payment - ${bill.bill_number || ''} - ${bill.supplier_name ?? ''}`,
+      sourceType: 'bill_payment',
+      sourceId: bill.id,
+      lines: [
+        { accountId: apAccount.id, debit: Number(paymentAmount), credit: 0 },
+        { accountId: bankAccount.id, debit: 0, credit: Number(paymentAmount) },
+      ],
     });
   } catch (err) {
     return { success: false, error: err?.message ?? String(err) };
