@@ -1,5 +1,5 @@
 import { PDF_TEMPLATES } from "../../constants";
-import { fmt, fmtDate, formatPhoneNumber } from "../../utils/helpers";
+import { fmt, fmtDate, formatPhoneNumber, formatSortCode } from "../../utils/helpers";
 import { DEFAULT_TEMPLATE, getDefaultTemplate } from "../../utils/InvoiceTemplateSchema";
 
 const FONT_MAP = {
@@ -89,7 +89,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     bankName: org.bankName || "",
     accountName: org.accountName || org.orgName || "",
     accountNumber: org.bankAcc || "",
-    sortCode: org.bankSort || "",
+    sortCode: formatSortCode(org.bankSort || ""),
     iban: org.bankIban || "",
     swift: org.bankSwift || "",
     routingNumber: org.routingNumber || "",
@@ -302,8 +302,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       <div style={{ padding: "8mm 18mm 14mm" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", marginBottom: "8mm", paddingBottom: "6mm", borderBottom: `2px solid ${accent}` }}>
           <div>
-            {activeSchemaTemplate.sections?.fromBlock && <FromBlock />}
-            {activeSchemaTemplate.sections?.toBlock && <div style={{ marginTop: "4mm" }}><BillToBlock /></div>}
+            {activeSchemaTemplate.sections?.toBlock && <BillToBlock />}
           </div>
           <InvoiceMetaBlock />
         </div>

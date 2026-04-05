@@ -7,6 +7,7 @@ import UserEditModal from "../../modals/UserEditModal";
 import { signOut } from "../../lib/supabase";
 import { ff } from "../../constants";
 import PageLoader from "../ui/PageLoader";
+import { useInactivityTimer } from "../../hooks/useInactivityTimer";
 
 function lsGet(key, fallback) {
   try {
@@ -51,10 +52,7 @@ export default function AppShell() {
     return () => window.removeEventListener("storage-error", handler);
   }, []);
 
-  const sessionExpiringSoon =
-    user?.expiresAt &&
-    user.expiresAt - Date.now() < 30 * 60 * 1000 &&
-    Date.now() < user.expiresAt;
+  const { inactive: showInactivityPrompt, dismiss: dismissInactivityPrompt } = useInactivityTimer();
 
   const sidebarBg =
     appTheme.type === "gradient"
@@ -85,10 +83,10 @@ export default function AppShell() {
         </div>
       )}
 
-      {sessionExpiringSoon && (
+      {showInactivityPrompt && (
         <div style={{ position: "fixed", top: storageError ? 44 : 0, left: 0, right: 0, zIndex: 9998, background: "#78350F", color: "#FEF3C7", fontSize: 13, fontWeight: 600, padding: "10px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontFamily: ff }}>
-          <span>⚠ Your session expires soon. Save your work.</span>
-          <button onClick={extendSession} style={{ background: "#FEF3C7", color: "#78350F", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: ff }}>Stay logged in</button>
+          <span>Still there? You've been inactive for a while.</span>
+          <button onClick={() => { extendSession(); dismissInactivityPrompt(); }} style={{ background: "#FEF3C7", color: "#78350F", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: ff }}>Stay logged in</button>
         </div>
       )}
 

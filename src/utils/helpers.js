@@ -64,30 +64,74 @@ export const parseCisRate = (value, fallback = 20) => {
 export const formatPhoneNumber = (phone) => {
   if (!phone) return "";
   const raw = String(phone).trim();
-  const normalized = raw.replace(/\s+/g, " ");
-  const hasPlus = normalized.startsWith("+");
-  const digits = normalized.replace(/\D/g, "");
-  if (!digits) return normalized;
+  if (!raw) return "";
+  const hasPlus = raw.startsWith("+");
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return raw;
 
-  let countryCode = "";
-  let remainder = digits;
-
-  if (hasPlus) {
-    const ccLen = digits.length > 10 ? Math.min(3, digits.length - 10) : 2;
-    countryCode = `+${digits.slice(0, ccLen)}`;
-    remainder = digits.slice(ccLen);
+  // International format: +44 7xxx xxxxxx or +44 20 xxxx xxxx
+  if (hasPlus && digits.length >= 10) {
+    // Assume +44 for UK
+    if (digits.startsWith("44") && digits.length >= 12) {
+      const national = digits.slice(2);
+      if (national.startsWith("7") && national.length === 10) {
+        // UK mobile: +44 7xxx xxxxxx
+        return `+44 ${national.slice(0, 4)} ${national.slice(4)}`;
+      }
+      if (national.startsWith("20") && national.length === 10) {
+        // London: +44 20 xxxx xxxx
+        return `+44 20 ${national.slice(2, 6)} ${national.slice(6)}`;
+      }
+      // Generic UK: +44 xxxx xxxxxx
+      return `+44 ${national.slice(0, 4)} ${national.slice(4)}`;
+    }
+    // Generic international: +CC remainder grouped
+    const ccLen = Math.min(3, digits.length - 9);
+    const cc = digits.slice(0, ccLen > 0 ? ccLen : 2);
+    const rest = digits.slice(cc.length);
+    return `+${cc} ${rest.slice(0, 4)} ${rest.slice(4)}`.trim();
   }
 
-  if (remainder.length <= 4) {
-    return [countryCode, remainder].filter(Boolean).join(" ").trim();
+  // UK mobile: 07xxx xxxxxx
+  if (digits.startsWith("07") && digits.length === 11) {
+    return `${digits.slice(0, 5)} ${digits.slice(5)}`;
   }
 
-  const mobileCodeLen = remainder.length > 10 ? 4 : 3;
-  const mobileCode = remainder.slice(0, mobileCodeLen);
-  const local = remainder.slice(mobileCodeLen);
-  const localGrouped = local.replace(/(\d{3})(?=\d)/g, "$1 ");
+  // UK London landline: 020 xxxx xxxx
+  if (digits.startsWith("020") && digits.length === 11) {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
+  }
 
-  return [countryCode, mobileCode, localGrouped].filter(Boolean).join(" ").trim();
+  // UK other landline: 01xxx xxxxxx or 0xxx xxxx xxxx
+  if (digits.startsWith("01") && digits.length === 11) {
+    return `${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+
+  // Fallback: group in chunks
+  if (digits.length <= 4) return hasPlus ? `+${digits}` : digits;
+  const prefix = hasPlus ? "+" : "";
+  return `${prefix}${digits.slice(0, 5)} ${digits.slice(5)}`.trim();
+};
+
+export const stripPhoneForStorage = (phone) => {
+  if (!phone) return "";
+  const raw = String(phone).trim();
+  const hasPlus = raw.startsWith("+");
+  const digits = raw.replace(/\D/g, "");
+  return hasPlus ? `+${digits}` : digits;
+};
+
+export const formatSortCode = (value) => {
+  if (!value) return "";
+  const digits = String(value).replace(/\D/g, "").slice(0, 6);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
+};
+
+export const stripSortCode = (value) => {
+  if (!value) return "";
+  return String(value).replace(/\D/g, "").slice(0, 6);
 };
 
 export function markDocumentAsSent(invoiceId) {

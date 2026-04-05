@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../router/routes";
 import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CURRENCIES_LIST, TIMEZONES, INDUSTRIES, COUNTRIES, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS, normalizeCurrencyCode } from "../constants";
@@ -6,7 +6,8 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Btn, SlideToggle } from "../components/atoms";
 import { A4PrintModal } from "../components/shared";
-import { validateUkCrn } from "../utils/helpers";
+import { validateUkCrn, formatPhoneNumber, stripPhoneForStorage, formatSortCode, stripSortCode } from "../utils/helpers";
+import { loadBusinessData } from "../lib/businessData";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }) {
@@ -112,6 +113,17 @@ export default function SettingsPage() {
     user, setUser,
   } = useContext(AppCtx);
 
+  // Always fetch fresh data on mount so Settings never shows stale data
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    loadBusinessData(user.id).then(({ data }) => {
+      if (cancelled || !data?.org_settings) return;
+      setOrgSettings(data.org_settings);
+    });
+    return () => { cancelled = true; };
+  }, [user?.id, setOrgSettings]);
+
   const org = orgSettings||{};
 
   // Organisation form state
@@ -158,6 +170,7 @@ export default function SettingsPage() {
   const [accentColor,  setAccentColor]  = useState(appTheme?.accent||"#E86C4A");
 
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [activeTab, setActiveTab] = useState("org");
   const [vatNumberLocked, setVatNumberLocked] = useState(Boolean(org.vatNum));
   const crnError = crn && !validateUkCrn(crn) ? "CRN must be 8 digits or 2 letters followed by 6 digits (e.g. 12345678, SC123456)." : "";
@@ -167,7 +180,7 @@ export default function SettingsPage() {
     const org = orgSettings;
     setOrgName(org.orgName || "");
     setEmail(org.email || "");
-    setPhone(org.phone || "");
+    setPhone(formatPhoneNumber(org.phone || ""));
     setWebsite(org.website || "");
     setStreet(org.street || "");
     setCity(org.city || "");
@@ -185,7 +198,7 @@ export default function SettingsPage() {
     setCisDefaultRate(org.cis?.defaultRate || org.cisRate || CIS_DEFAULT_SETTINGS.defaultRate);
     setCrn(org.crn || "");
     setBankName(org.bankName || "");
-    setBankSort(org.bankSort || "");
+    setBankSort(formatSortCode(org.bankSort || ""));
     setBankAcc(org.bankAcc || "");
     setBankIban(org.bankIban || "");
     setBankSwift(org.bankSwift || "");
@@ -202,13 +215,13 @@ export default function SettingsPage() {
   ];
 
   const buildOrgSettings = () => ({
-    orgName, email, phone, website,
+    orgName, email, phone: stripPhoneForStorage(phone), website,
     street, city, postcode, country,
     currency: normalizeCurrencyCode(currency), timezone, industry,
     vatReg, vatNum,
     cisReg: cisEnabled ? "Yes" : "No",
     cisRole, cisRate: cisDefaultRate, cisUtrNo: cisContractorUTR, cisRegistrationStatus, crn,
-    bankName, bankSort, bankAcc, bankIban, bankSwift,
+    bankName, bankSort: stripSortCode(bankSort), bankAcc, bankIban, bankSwift,
     cis: {
       enabled: cisEnabled,
       contractorName: cisContractorName,
@@ -220,24 +233,30 @@ export default function SettingsPage() {
 
   const handleSaveOrg = () => {
     if (crn && !validateUkCrn(crn)) {
-      window.alert("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
+      setSaveError("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
       return;
     }
     if (cisEnabled) {
       const utr = cisContractorUTR.replace(/\D/g, "");
       if (utr.length > 0 && utr.length !== 10) {
-        window.alert("Please enter a valid UTR number (10 digits).");
+        setSaveError("Please enter a valid UTR number (10 digits).");
         return;
       }
     }
-    setOrgSettings(buildOrgSettings());
-    setVatNumberLocked(Boolean(vatNum));
-    setPdfTemplate(selectedTpl);
-    setCompanyLogoSize(logoSize);
-    setFooterText(footer);
-    setAppTheme({ type:themeType, color:themeColor, color2:themeColor2, accent:accentColor });
-    setSaved(true);
-    setTimeout(()=>setSaved(false), 2500);
+    setSaveError("");
+    try {
+      const newSettings = buildOrgSettings();
+      setOrgSettings(newSettings);
+      setVatNumberLocked(Boolean(vatNum));
+      setPdfTemplate(selectedTpl);
+      setCompanyLogoSize(logoSize);
+      setFooterText(footer);
+      setAppTheme({ type:themeType, color:themeColor, color2:themeColor2, accent:accentColor });
+      setSaved(true);
+      setTimeout(()=>setSaved(false), 3000);
+    } catch (err) {
+      setSaveError("Something went wrong. Please try again.");
+    }
   };
 
   const handleLogoUpload = (e) => {
@@ -266,15 +285,22 @@ export default function SettingsPage() {
   const removePayMethod = (m) => setCustomPayMethods(p=>p.filter(x=>x!==m));
 
   const SaveActions = ({ label = "Save settings" }) => (
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:16 }}>
-      {saved && (
-        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
-          <Icons.Check /> Settings saved!
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, marginTop:16 }}>
+      {saveError && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#dc2626", fontWeight:600 }}>
+          <Icons.Alert /> {saveError}
         </div>
       )}
-      <Btn onClick={handleSaveOrg} variant="primary" icon={<Icons.Save />} style={{ background:saved?"#059669":"#1e6be0", color:"#fff" }}>
-        {label}
-      </Btn>
+      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        {saved && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
+            <Icons.Check /> Organisation details saved.
+          </div>
+        )}
+        <Btn onClick={handleSaveOrg} variant="primary" icon={<Icons.Save />} style={{ background:saved?"#059669":"#1e6be0", color:"#fff" }}>
+          {label}
+        </Btn>
+      </div>
     </div>
   );
 
@@ -333,7 +359,9 @@ export default function SettingsPage() {
             <Input value={email} onChange={setEmail} type="email" placeholder="hello@company.com" />
           </Field>
           <Field label="Phone">
-            <Input value={phone} onChange={setPhone} placeholder="+44 …" />
+            <input type="text" value={phone} onChange={e=>setPhone(e.target.value)} onBlur={()=>setPhone(formatPhoneNumber(phone))} placeholder="+44 …"
+              style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
+              onFocus={e=>e.target.style.borderColor="#1e6be0"} />
           </Field>
           <Field label="Website">
             <Input value={website} onChange={setWebsite} placeholder="https://…" />
@@ -446,7 +474,11 @@ export default function SettingsPage() {
       {activeTab === "bank" && (<Section title="Bank Details (shown on invoices)">
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
           <Field label="Bank Name"><Input value={bankName} onChange={setBankName} placeholder="e.g. Barclays" /></Field>
-          <Field label="Sort Code"><Input value={bankSort} onChange={setBankSort} placeholder="00-00-00" /></Field>
+          <Field label="Sort Code" error={bankSort && stripSortCode(bankSort).length !== 6 && stripSortCode(bankSort).length > 0 ? "Sort code must be exactly 6 digits." : ""}>
+            <input type="text" value={bankSort} onChange={e=>setBankSort(e.target.value.replace(/[^0-9-]/g, ""))} onBlur={()=>setBankSort(formatSortCode(bankSort))} placeholder="00-00-00" maxLength={8}
+              style={{ width:"100%", padding:"9px 11px", border:`1px solid ${bankSort && stripSortCode(bankSort).length !== 6 && stripSortCode(bankSort).length > 0 ? "#fca5a5" : "#e8e8ec"}`, borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
+              onFocus={e=>e.target.style.borderColor="#1e6be0"} />
+          </Field>
           <Field label="Account Number"><Input value={bankAcc} onChange={setBankAcc} placeholder="12345678" /></Field>
           <Field label="IBAN (optional)"><Input value={bankIban} onChange={setBankIban} /></Field>
           <Field label="SWIFT / BIC (optional)"><Input value={bankSwift} onChange={setBankSwift} /></Field>
