@@ -1,4 +1,5 @@
 import { useState, useMemo, useContext } from "react";
+import { useDashboardCache } from "../hooks/useDashboardCache";
 import { useNavigate } from "react-router-dom";
 import { ff, CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
@@ -19,7 +20,7 @@ export default function HomePage() {
   const [hoveredStat, setHoveredStat] = useState(null);
   const currencySymbol = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
-  const stats = useMemo(() => {
+  const stats = useDashboardCache(() => {
     const now = new Date();
     const startOfCurr = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfNext = new Date(now.getFullYear(), now.getMonth() + 1, 1);
