@@ -63,6 +63,9 @@ export const hasLegacyBusinessData = () =>
   LEGACY_BUSINESS_KEYS.some((k) => localStorage.getItem(k) !== null);
 
 const hasCoreRows = (row) =>
+  // Treat an existing row with onboarding completed as authoritative —
+  // prevents stale localStorage from overwriting Supabase's onboarding_done = true.
+  row?.onboarding_done === true ||
   Boolean(row?.org_settings) ||
   (Array.isArray(row?.customers) && row.customers.length > 0) ||
   (Array.isArray(row?.invoices) && row.invoices.length > 0) ||
