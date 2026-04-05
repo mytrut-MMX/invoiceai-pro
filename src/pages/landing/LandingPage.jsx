@@ -113,8 +113,8 @@ export default function LandingPage() {
             <h1 style={s.heroH1}>Professional invoices. Sent in minutes. Get paid faster.</h1>
             <p style={s.heroSub}>No learning curve, no bloat. Just clean invoices you can send in minutes — so you can get back to the work you actually love.</p>
             <div style={{ ...s.heroBtns, justifyContent:'flex-start' }}>
-              <Link to={ROUTES.SIGNUP} style={s.btnPrimary}>Start for free →</Link>
-              <a href="#how-it-works" style={s.btnSecondary}>How it works →</a>
+              <Link to={ROUTES.SIGNUP} style={s.btnPrimary}>Start free — no card needed</Link>
+              <Link to={ROUTES.LOGIN} style={{ color:'#9A9A9A', fontSize:13, textDecoration:'none', fontWeight:400, alignSelf:'center' }}>Sign in</Link>
             </div>
           </div>
           {/* Right column — invoice mockup */}
