@@ -153,8 +153,12 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     const expiresOn = window.prompt("Link expiration date (YYYY-MM-DD)", dueDate || addDays(todayStr(), 30));
     if (!expiresOn) return;
     const mode = visibility.toLowerCase().includes("private") ? "private" : "public";
+    // AUTH-005: Use full UUID (122 bits entropy) instead of truncated 8-char segment (32 bits)
     const token = crypto.randomUUID();
     const basePath = mode === "public" ? "public" : "secure";
+    // AUTH-006: Client-side expiry check — not tamper-proof.
+    // TODO: Move share link validation to a server-side API endpoint
+    // that verifies token + expiry from database before returning document.
     const shareUrl = `${window.location.origin}/${basePath}/invoice/${invNumber}?token=${token}&expires=${expiresOn}`;
     window.prompt(mode === "private"
       ? "Private link created. Customer will use one-time passcode. Copy link:"

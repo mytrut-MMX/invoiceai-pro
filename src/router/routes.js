@@ -87,6 +87,9 @@ export const ROUTES = {
   ADMIN: '/admin',
 
   // ─── Public document share (no auth required) ────────────────────────────────
+  // AUTH-005: Token is a full UUID (122-bit entropy).
+  // AUTH-006: Expiry is currently client-side only — not tamper-proof.
+  // TODO: Move share link validation to a server-side API endpoint.
   // Token and expiry are passed as search params: ?token=<uuid>&expires=<YYYY-MM-DD>
   PUBLIC_INVOICE: (number) => `/public/invoice/${number}`,
   PUBLIC_QUOTE:   (number) => `/public/quote/${number}`,
