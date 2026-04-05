@@ -1,5 +1,5 @@
 import { useState, useContext, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "../router/routes";
 import { ff, CUR_SYM, EXPENSE_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
@@ -63,12 +63,13 @@ function filterExpenses(expenses, key) {
 export default function ExpensesPage({ initialShowForm = false }) {
   const { expenses, setExpenses, orgSettings } = useContext(AppCtx);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isVat   = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
   const [showForm,       setShowForm]       = useState(initialShowForm);
   const [editingExp,     setEditingExp]     = useState(null);
-  const [activeFilter,   setActiveFilter]   = useState("all");
+  const [activeFilter,   setActiveFilter]   = useState(searchParams.get("filter") || "all");
   const [search,         setSearch]         = useState("");
   const [billableFilter, setBillableFilter] = useState("All");
 
