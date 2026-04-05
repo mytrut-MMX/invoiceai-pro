@@ -328,11 +328,7 @@ export default async function handler(req, res) {
       saved: insertedRows?.[0] || null
     });
   } catch (error) {
-    console.error("PRODUCT_WORKFLOW_LEAD_ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      error: error?.message || "Server error."
-    });
+    console.error('[product-workflow-lead] Error:', error.message);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }

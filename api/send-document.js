@@ -85,10 +85,7 @@ export default async function handler(req, res) {
       documentNumber,
     });
   } catch (error) {
-    console.error('send-document function error:', error);
-    return res.status(500).json({
-      error: 'A server error has occurred while sending email',
-      details: error.message,
-    });
+    console.error('[send-document] Error:', error.message);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
