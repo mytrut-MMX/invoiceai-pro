@@ -26,6 +26,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   const [custSearch, setCustSearch] = useState(inv.customer?.name||"");
   const [custOpen, setCustOpen] = useState(false);
   const [issueDate, setIssueDate] = useState(inv.issue_date||todayStr());
+  const [supplyDate, setSupplyDate] = useState(inv.supply_date || inv.issue_date || todayStr());
   const [payTerms, setPayTerms] = useState(inv.payment_terms||customer?.paymentTerms||"Net 30");
   const [customDays, setCustomDays] = useState(inv.custom_payment_days||"");
   const [dueDate, setDueDate] = useState(inv.due_date||addDays(todayStr(),30));
@@ -79,7 +80,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   const buildInvoice = (newStatus) => ({
     id: inv.id||crypto.randomUUID(),
     invoice_number: invNumber,
-    customer, issue_date:issueDate, due_date:dueDate,
+    customer, issue_date:issueDate, supply_date:supplyDate, due_date:dueDate,
     payment_terms:payTerms, custom_payment_days:customDays,
     line_items:items, discount_type:discType, discount_value:discVal,
     shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
@@ -261,6 +262,10 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
               <Field label="Issue Date">
                 <input value={issueDate} onChange={e=>setIssueDate(e.target.value)} type="date"
                   style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+              </Field>
+              <Field label="Supply Date" hint="Date goods delivered or services completed">
+                <input value={supplyDate} onChange={e=>setSupplyDate(e.target.value)} type="date"
+                  style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
               </Field>
               <Field label="Payment Terms">
                 <PaymentTermsField value={payTerms} onChange={handleTermsChange} customDays={customDays} onCustomDaysChange={d=>{ setCustomDays(d); setDueDate(addDays(issueDate,Number(d)||30)); }} />
