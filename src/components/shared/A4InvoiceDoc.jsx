@@ -122,17 +122,21 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     </div>
   );
 
-  const BillToBlock = ({ dark = false }) => (
+  const BillToBlock = ({ dark = false }) => {
+    const skipContact = toData.contactName && toData.companyName &&
+      toData.contactName.trim().toLowerCase() === toData.companyName.trim().toLowerCase();
+    return (
     <div>
       <div style={{ fontSize: "7pt", fontWeight: 700, color: dark ? "rgba(255,255,255,0.5)" : "#AAA", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3mm" }}>Bill To</div>
-      {customer ? toEntries.map(([fieldKey]) => (
+      {customer ? toEntries.filter(([fieldKey]) => !(fieldKey === "contactName" && skipContact)).map(([fieldKey]) => (
         <div key={fieldKey} style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 2 }}>
           <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong>{" "}
           {fieldKey === "phone" ? formatPhoneNumber(toData[fieldKey] || "") : (toData[fieldKey] || "—")}
         </div>
       )) : <div style={{ fontSize: "9pt", color: "#CCC", fontStyle: "italic" }}>No customer selected</div>}
     </div>
-  );
+    );
+  };
 
   const ItemsTable = ({ headerBg = accent, headerColor = "#fff", stripeBg = "#FAFAFA" }) => (
     <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "5mm" }}>
@@ -260,7 +264,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         </div>
       </div>
       <div style={{ height: 2, background: `linear-gradient(90deg,${accent},${accent}44)`, marginBottom: "7mm", borderRadius: 1 }} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", marginBottom: "7mm" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", marginBottom: "7mm", paddingTop: "1mm" }}>
         {activeSchemaTemplate.sections?.toBlock ? <BillToBlock /> : <div />}
         <InvoiceMetaBlock />
       </div>
@@ -281,7 +285,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
           </div>
         </div>
       </div>
-      <div style={{ background: tplDef.defaultBg || "#FFF7F4", padding: "6mm 18mm 5mm", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10mm", borderBottom: `3px solid ${accent}` }}>
+      <div style={{ background: tplDef.defaultBg || "#FFF7F4", padding: "8mm 18mm 5mm", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10mm", borderBottom: `3px solid ${accent}` }}>
         {activeSchemaTemplate.sections?.toBlock ? <BillToBlock /> : <div />}
         <InvoiceMetaBlock />
       </div>
@@ -305,7 +309,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       </div>
       <div style={{ padding: "8mm 18mm 14mm" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", marginBottom: "8mm", paddingBottom: "6mm", borderBottom: `2px solid ${accent}` }}>
-          <div>
+          <div style={{ marginTop: "4mm" }}>
             {activeSchemaTemplate.sections?.toBlock && <BillToBlock />}
           </div>
           <InvoiceMetaBlock />
