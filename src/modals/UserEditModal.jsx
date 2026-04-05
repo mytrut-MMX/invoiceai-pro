@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ff } from "../constants";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Toggle, Switch, SlideToggle, Btn } from "../components/atoms";
+import { validateImageDataUrl } from "../utils/security";
 
 const PRESET_THEMES = [
   { label:"Default",  type:"solid",    color:"#111110", color2:"#333330", accent:"#D97706" },
@@ -35,8 +36,7 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
     const reader = new FileReader();
     reader.onload = ev => {
       const result = ev.target.result;
-      // Double-check the data URL starts with image MIME type
-      if(typeof result === 'string' && result.startsWith('data:image/')) {
+      if (validateImageDataUrl(result)) {
         setLocalAvatar(result);
       }
     };

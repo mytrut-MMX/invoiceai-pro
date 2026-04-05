@@ -7,6 +7,7 @@ import { Icons } from "../components/icons";
 import { Field, Input, Select, Btn, SlideToggle } from "../components/atoms";
 import { A4PrintModal } from "../components/shared";
 import { validateUkCrn, formatPhoneNumber, stripPhoneForStorage, formatSortCode, stripSortCode } from "../utils/helpers";
+import { validateImageDataUrl } from "../utils/security";
 import { loadBusinessData } from "../lib/businessData";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
@@ -276,8 +277,10 @@ export default function SettingsPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target.result;
-      if(typeof result === 'string' && result.startsWith('data:image/')) {
+      if (validateImageDataUrl(result)) {
         setCompanyLogo(result);
+      } else {
+        setSaveError('Invalid image format. Please upload a PNG, JPEG, or WebP file under 2MB.');
       }
     };
     reader.readAsDataURL(file);

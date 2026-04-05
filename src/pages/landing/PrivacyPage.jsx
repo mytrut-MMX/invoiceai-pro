@@ -56,8 +56,23 @@ export default function PrivacyPage() {
           'Email delivery services (for sending invoices and notifications)',
           'Analytics providers (anonymised data only)',
           'Payment processors (if you use integrated payment features)',
+          'AI processing — Anthropic (Claude API) for the optional AI Assistant feature (see Section 5a below)',
         ]} />
         <P>We <strong>never</strong> sell your data to third parties or share it for advertising purposes.</P>
+      </Section>
+
+      <Section title="5a. AI Assistant Data Processing">
+        <P>InvoiceSaga offers an optional AI Assistant powered by Anthropic's Claude API. When you use this feature, the following <strong>minimised</strong> data is sent to Anthropic's servers:</P>
+        <UL items={[
+          'Your company name, currency, and tax rate',
+          'Client first names and internal IDs (no email addresses or full names)',
+          'Product/service names and units (no prices)',
+          'Recent invoice numbers, statuses, and dates (no financial amounts)',
+          'The text of your conversation with the assistant',
+        ]} />
+        <P><strong>Not shared:</strong> email addresses, phone numbers, bank details, full financial amounts, or any data from users who have not consented.</P>
+        <P>Anthropic processes this data solely to generate responses and does <strong>not</strong> use it for model training. Data is transmitted over encrypted connections and is not retained by Anthropic beyond the API request. You must provide explicit consent before using the AI Assistant for the first time. You can revoke this consent at any time, which will disable the AI feature.</P>
+        <P>Legal basis: <strong>Consent</strong> (Article 6(1)(a) GDPR). You can withdraw consent at any time by clearing your AI consent preference in the application.</P>
       </Section>
 
       <Section title="6. Data Retention">

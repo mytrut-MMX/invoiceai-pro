@@ -3,6 +3,7 @@ import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES } from "../co
 import { AppCtx } from "../context/AppContext";
 import { Field, Input, Select, SlideToggle, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
 import { useCISSettings } from "../hooks/useCISSettings";
+import { validateImageDataUrl } from "../utils/security";
 
 function UnitCombobox({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
@@ -107,7 +108,10 @@ function ImageUpload({ value, onChange }) {
     if (!file.type.startsWith("image/")) return;
     if (file.size > MAX_SIZE) { alert("Image must be under 2 MB"); return; }
     const reader = new FileReader();
-    reader.onload = e => onChange(e.target.result);
+    reader.onload = e => {
+      const result = e.target.result;
+      if (validateImageDataUrl(result)) onChange(result);
+    };
     reader.readAsDataURL(file);
   }, [onChange]);
 

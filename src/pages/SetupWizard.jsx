@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { validateUkCrn } from '../utils/helpers'
+import { validateImageDataUrl } from '../utils/security'
 
 const STEPS = [
   { title: 'Company Details' },
@@ -41,7 +42,7 @@ export default function SetupWizard({ onComplete }) {
     const reader = new FileReader()
     reader.onload = ev => {
       const result = ev.target.result
-      if (typeof result === 'string' && result.startsWith('data:image/')) {
+      if (validateImageDataUrl(result)) {
         setLogoPreview(result); set('logo', result)
       }
     }

@@ -245,10 +245,8 @@ ${JSON.stringify(safeContext)}
     });
 
   } catch (err) {
-    return res.status(500).json({
-      error: "Orchestrator failed",
-      details: err?.message || String(err)
-    });
+    console.error('[orchestrator] Error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
