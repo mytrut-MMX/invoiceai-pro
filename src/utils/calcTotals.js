@@ -9,10 +9,16 @@ export function calcTotals(items, discType, discVal, shipping, isVat, customer, 
   const ship = Number(shipping) || 0;
   const taxBreakdown = isVat
     ? Object.values(items.reduce((acc, it) => {
-        const r = Number(it.tax_rate || 0); if (!r) return acc;
-        if (!acc[r]) acc[r] = { rate: r, amount: 0 };
+        const taxType = it.tax_type || 'standard';
+        // Exempt and outside-scope items are excluded from VAT breakdown entirely
+        if (taxType === 'exempt' || taxType === 'outside_scope') return acc;
+        const r = Number(it.tax_rate || 0);
+        // Zero-rated items appear in breakdown (with £0) but non-zero standard/reduced are grouped by rate
+        const key = taxType === 'zero_rated' ? '0_zero_rated' : String(r);
+        if (!r && taxType !== 'zero_rated') return acc;
+        if (!acc[key]) acc[key] = { rate: r, amount: 0, type: taxType };
         const base = Number(it.amount || 0) - (subtotal > 0 ? discAmt * (Number(it.amount || 0) / subtotal) : 0);
-        acc[r].amount += base * (r / 100);
+        acc[key].amount += base * (r / 100);
         return acc;
       }, {}))
     : [];
