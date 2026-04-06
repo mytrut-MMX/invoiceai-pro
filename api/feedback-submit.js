@@ -3,7 +3,7 @@
  * and persists to Supabase feedback_submissions.
  * SUPABASE_URL is validated to be a legitimate supabase.co HTTPS endpoint before use.
  */
-import { withRateLimit } from './lib/with-rate-limit.js';
+import { withRateLimit } from './_lib/with-rate-limit.js';
 
 const ALLOWED_CATEGORIES = [
   'Feature Request', 'Bug Report', 'Complaint',

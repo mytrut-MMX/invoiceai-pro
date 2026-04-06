@@ -5,7 +5,7 @@
  * validated to be a legitimate supabase.co HTTPS endpoint before any fetch.
  */
 import { createHmac, timingSafeEqual } from 'crypto';
-import { withRateLimit } from './lib/with-rate-limit.js';
+import { withRateLimit } from './_lib/with-rate-limit.js';
 
 function verifyAdminToken(token, secret) {
   if (!token || typeof token !== 'string') return false;

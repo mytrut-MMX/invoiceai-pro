@@ -11,8 +11,8 @@
  */
 
 import { createCipheriv, createDecipheriv, randomBytes, createHmac } from 'crypto';
-import { withRateLimit } from './lib/with-rate-limit.js';
-import { buildFraudPreventionHeaders } from './lib/hmrc-headers.js';
+import { withRateLimit } from './_lib/with-rate-limit.js';
+import { buildFraudPreventionHeaders } from './_lib/hmrc-headers.js';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 

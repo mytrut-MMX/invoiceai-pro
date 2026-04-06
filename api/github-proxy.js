@@ -5,7 +5,7 @@
  * and never stored server-side.
  */
 
-import { withRateLimit } from './lib/with-rate-limit.js';
+import { withRateLimit } from './_lib/with-rate-limit.js';
 
 const ALLOWED_METHODS = ['GET', 'POST'];
 const ALLOWED_PATH_PREFIXES = [

@@ -5,7 +5,7 @@
  * Password comparison is constant-time to prevent timing attacks.
  */
 import { createHmac, timingSafeEqual } from 'crypto';
-import { withRateLimit } from './lib/with-rate-limit.js';
+import { withRateLimit } from './_lib/with-rate-limit.js';
 
 const TOKEN_TTL_SECONDS = 3600; // 1 hour
 

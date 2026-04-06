@@ -4,7 +4,7 @@
  * and unknown fields are dropped before forwarding.
  */
 
-import { withRateLimit } from './lib/with-rate-limit.js';
+import { withRateLimit } from './_lib/with-rate-limit.js';
 
 const ALLOWED_MODELS = [
   'claude-sonnet-4-6',
