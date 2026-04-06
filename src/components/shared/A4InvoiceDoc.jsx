@@ -103,7 +103,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     <div>
       {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight: (templateConfig?.logoSize || org.logoSize || 52), maxWidth: 200, objectFit: "contain", display: "block", marginBottom: 5, marginLeft: (templateConfig?.logoPosition || "left") === "right" ? "auto" : 0, marginRight: (templateConfig?.logoPosition || "left") === "center" ? "auto" : 0 }} />}
       {(activeSchemaTemplate.sections?.fromBlock ? fromEntries : [["companyName"]]).map(([fieldKey]) => (
-        <div key={fieldKey} style={{ fontSize: fieldKey === "companyName" ? "15pt" : "7.5pt", fontWeight: fieldKey === "companyName" ? 900 : 500, color: dark ? "#fff" : (fieldKey === "companyName" ? accent : "#666"), letterSpacing: fieldKey === "companyName" ? "-0.01em" : "normal", marginTop: fieldKey === "companyName" ? 0 : 2 }}>
+        <div key={fieldKey} style={{ fontSize: fieldKey === "companyName" ? "15pt" : "7.5pt", fontWeight: fieldKey === "companyName" ? 900 : 500, color: dark ? "#fff" : (fieldKey === "companyName" ? accent : "#666"), letterSpacing: fieldKey === "companyName" ? "-0.01em" : "normal", marginTop: fieldKey === "companyName" ? 0 : 4 }}>
           {fieldKey === "companyName" ? (fromData[fieldKey] || "Your Company") : <><strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {fromData[fieldKey] || "—"}</>}
         </div>
       ))}
@@ -134,7 +134,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     <div>
       <div style={{ fontSize: "7pt", fontWeight: 700, color: dark ? "rgba(255,255,255,0.5)" : "#AAA", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3mm" }}>Bill To</div>
       {customer ? toEntries.filter(([fieldKey]) => !(fieldKey === "contactName" && skipContact)).map(([fieldKey]) => (
-        <div key={fieldKey} style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 2 }}>
+        <div key={fieldKey} style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 4 }}>
           <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong>{" "}
           {fieldKey === "phone" ? formatPhoneNumber(toData[fieldKey] || "") : (toData[fieldKey] || "—")}
         </div>
@@ -218,7 +218,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     <div>
       <div style={{ fontSize: "7pt", fontWeight: 700, color: dark ? "rgba(255,255,255,0.5)" : "#AAA", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3mm" }}>From</div>
       {fromEntries.map(([fieldKey]) => (
-        <div key={fieldKey} style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 2 }}>
+        <div key={fieldKey} style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 4 }}>
           <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {fromData[fieldKey] || "—"}
         </div>
       ))}
@@ -314,7 +314,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
       </div>
       <div style={{ padding: "8mm 18mm 14mm" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", marginBottom: "8mm", paddingBottom: "6mm", borderBottom: `2px solid ${accent}` }}>
-          <div style={{ marginTop: "4mm" }}>
+          <div>
             {activeSchemaTemplate.sections?.toBlock && <BillToBlock />}
           </div>
           <InvoiceMetaBlock />
