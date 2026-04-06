@@ -434,6 +434,8 @@ export default function LandingPage() {
           {' · '}
           <Link to={ROUTES.CONTACT}   style={{ color:'#475569', textDecoration:'none' }}>Contact</Link>
           {' · '}
+          <Link to={ROUTES.FEEDBACK}  style={{ color:'#475569', textDecoration:'none' }}>Feedback</Link>
+          {' · '}
           <Link to={ROUTES.PRIVACY}   style={{ color:'#475569', textDecoration:'none' }}>Privacy Policy</Link>
           {' · '}
           <Link to={ROUTES.TERMS}     style={{ color:'#475569', textDecoration:'none' }}>Terms of Service</Link>
