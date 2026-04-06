@@ -1,5 +1,7 @@
 import { supabase, supabaseReady } from '../../lib/supabase.js';
 import { calculatePayslip } from './payeCalculator.js';
+import { fetchUserAccounts } from '../ledger/fetchUserAccounts.js';
+import { postPayrollEntry } from '../ledger/postPayrollEntry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -416,4 +418,166 @@ export async function approvePayrollRun(runId) {
   } catch (err) {
     return { error: err?.message ?? String(err) };
   }
+}
+
+// ---------------------------------------------------------------------------
+// submitPayrollRun
+// ---------------------------------------------------------------------------
+
+/**
+ * Submit an approved payroll run: posts the double-entry journal to the ledger,
+ * creates a bill to HMRC for the PAYE/NIC liability, and marks the run as submitted.
+ *
+ * @param {string} runId - payroll_runs.id (must have status 'approved')
+ * @returns {Promise<{ success?: boolean, run?: object, journalEntryId?: string, billId?: string, error?: string }>}
+ */
+export async function submitPayrollRun(runId) {
+  if (!supabaseReady) return { error: 'Supabase not configured' };
+
+  try {
+    // ── Fetch run ───────────────────────────────────────────────────────────
+
+    const { data: run, error: runErr } = await supabase
+      .from('payroll_runs')
+      .select('*')
+      .eq('id', runId)
+      .single();
+
+    if (runErr) throw runErr;
+    if (!run) return { error: 'Payroll run not found' };
+    if (run.status !== 'approved') {
+      return { error: `Cannot submit run with status '${run.status}' — must be 'approved'` };
+    }
+
+    // ── Fetch payslips ──────────────────────────────────────────────────────
+
+    const { data: payslips, error: slipErr } = await supabase
+      .from('payslips')
+      .select('*')
+      .eq('payroll_run_id', runId);
+
+    if (slipErr) throw slipErr;
+    if (!payslips || payslips.length === 0) {
+      return { error: 'No payslips found for this run' };
+    }
+
+    // ── Post to ledger ──────────────────────────────────────────────────────
+
+    const { accounts, userId } = await fetchUserAccounts();
+    if (!userId) return { error: 'Not authenticated' };
+    if (!accounts || accounts.length === 0) {
+      return { error: 'No chart of accounts found — cannot post journal' };
+    }
+
+    const ledgerResult = await postPayrollEntry(run, payslips, accounts, userId);
+
+    if (!ledgerResult.success) {
+      return { error: `Ledger posting failed: ${ledgerResult.error}` };
+    }
+
+    // ── Create HMRC PAYE bill ───────────────────────────────────────────────
+
+    const payeLiability = round2(
+      Number(run.total_tax || 0)
+      + Number(run.total_ni_employee || 0)
+      + Number(run.total_ni_employer || 0)
+      + Number(run.total_student_loan || 0)
+    );
+
+    const payeDueDate = calculatePAYEDueDate(run.pay_date);
+
+    const billRow = {
+      user_id: run.user_id,
+      bill_number: `PAYE-${run.tax_year}-${String(run.tax_month).padStart(2, '0')}`,
+      supplier_name: 'HMRC',
+      bill_date: run.pay_date,
+      due_date: payeDueDate,
+      category: 'Tax & Government',
+      description: `PAYE/NIC liability for ${run.period_start} to ${run.period_end}`,
+      reference: run.id,
+      amount: payeLiability,
+      tax_rate: 0,
+      tax_amount: 0,
+      total: payeLiability,
+      status: 'Draft',
+    };
+
+    const { data: bill, error: billErr } = await supabase
+      .from('bills')
+      .insert(billRow)
+      .select('id')
+      .single();
+
+    if (billErr) throw billErr;
+
+    // ── Update run status to 'submitted' ────────────────────────────────────
+
+    const { data: updatedRun, error: updateErr } = await supabase
+      .from('payroll_runs')
+      .update({ status: 'submitted' })
+      .eq('id', runId)
+      .select()
+      .single();
+
+    if (updateErr) throw updateErr;
+
+    return {
+      success: true,
+      run: updatedRun,
+      journalEntryId: ledgerResult.journalEntryId,
+      billId: bill.id,
+    };
+  } catch (err) {
+    return { error: err?.message ?? String(err) };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Calculate the PAYE payment due date for a given pay date.
+ *
+ * UK PAYE rules:
+ *   - PAYE/NIC collected in a tax month is due by the 22nd of the following month
+ *     (for electronic payments; 19th for cheque — we assume electronic).
+ *   - Tax months run from the 6th to the 5th of the next calendar month.
+ *     e.g. Tax month 1 = 6 April to 5 May; payment due 22 June.
+ *
+ * Logic:
+ *   - If pay_date is on or after the 6th → belongs to this calendar month's tax month
+ *     → PAYE due 22nd of NEXT calendar month
+ *   - If pay_date is before the 6th → belongs to the PREVIOUS calendar month's tax month
+ *     → PAYE due 22nd of THIS calendar month
+ *
+ * @param {string} payDate - YYYY-MM-DD
+ * @returns {string} YYYY-MM-DD due date
+ */
+function calculatePAYEDueDate(payDate) {
+  const d = new Date(payDate + 'T00:00:00');
+  const year = d.getFullYear();
+  const month = d.getMonth(); // 0-based
+  const day = d.getDate();
+
+  let dueYear, dueMonth;
+
+  if (day >= 6) {
+    // Pay date is on/after the 6th: tax month = this calendar month
+    // Due date = 22nd of the NEXT calendar month
+    dueMonth = month + 1;
+    dueYear = year;
+    if (dueMonth > 11) {
+      dueMonth = 0;
+      dueYear = year + 1;
+    }
+  } else {
+    // Pay date is before the 6th: tax month = previous calendar month
+    // Due date = 22nd of THIS calendar month
+    dueMonth = month;
+    dueYear = year;
+  }
+
+  const mm = String(dueMonth + 1).padStart(2, '0'); // back to 1-based
+  return `${dueYear}-${mm}-22`;
 }
