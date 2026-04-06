@@ -94,6 +94,32 @@ async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to save message.' });
     }
 
+    // Email notification (best-effort — don't fail the request if email fails)
+    const resendKey = process.env.RESEND_API_KEY;
+    const feedbackEmail = process.env.FEEDBACK_EMAIL || 'mytrut@gmail.com';
+    if (resendKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+          body: JSON.stringify({
+            from: 'InvoiceSaga Feedback <noreply@invoicesaga.com>',
+            to: [feedbackEmail],
+            reply_to: sanitized.email,
+            subject: `[${sanitized.category}] ${sanitized.subject || 'New feedback'}`,
+            html: [
+              `<h2 style="margin:0 0 12px">New feedback submission</h2>`,
+              `<p><strong>From:</strong> ${sanitized.name || 'Anonymous'} &lt;${sanitized.email}&gt;</p>`,
+              `<p><strong>Category:</strong> ${sanitized.category}</p>`,
+              sanitized.subject ? `<p><strong>Subject:</strong> ${sanitized.subject}</p>` : '',
+              `<hr style="border:none;border-top:1px solid #eee;margin:16px 0">`,
+              `<p style="white-space:pre-wrap">${sanitized.message}</p>`,
+            ].join(''),
+          }),
+        });
+      } catch { /* email is best-effort */ }
+    }
+
     res.status(200).json({ success: true });
   } catch {
     res.status(500).json({ error: 'Internal server error' });
