@@ -77,6 +77,9 @@ export const ROUTES = {
   BILL:       (id) => `/bills/${id}`,
   BILL_EDIT:  (id) => `/bills/${id}/edit`,
 
+  // ─── VAT Returns ─────────────────────────────────────────────────────────────
+  VAT_RETURN: '/vat-return',
+
   // ─── Ledger ──────────────────────────────────────────────────────────────────
   LEDGER:          '/ledger',
   LEDGER_JOURNAL:  '/ledger/journal',
