@@ -61,6 +61,7 @@ const BillsPage          = lazy(() => import("../pages/BillsPage"));
 const SettingsPage       = lazy(() => import("../pages/SettingsPage"));
 const InvoiceTemplatesPage = lazy(() => import("../pages/InvoiceTemplatesPage"));
 const VATReturnPage      = lazy(() => import("../pages/VATReturnPage"));
+const ITSAPage           = lazy(() => import("../pages/ITSAPage"));
 const LedgerPage         = lazy(() => import("../pages/LedgerPage"));
 const AdminPage          = lazy(() => import("../pages/AdminPage"));
 const NotFoundPage       = lazy(() => import("../pages/NotFoundPage"));
@@ -155,6 +156,9 @@ const router = createBrowserRouter([
 
           // VAT Returns
           { path: ROUTES.VAT_RETURN, element: <VATReturnPage /> },
+
+          // ITSA (Self Assessment)
+          { path: ROUTES.ITSA, element: <ITSAPage /> },
 
           // Ledger
           { path: ROUTES.LEDGER,          element: <Navigate to={ROUTES.LEDGER_JOURNAL} replace /> },
