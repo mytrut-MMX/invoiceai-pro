@@ -425,8 +425,11 @@ export function calculateNI(
 /**
  * Calculate student loan repayment for a pay period.
  *
+ * Accepts a single plan type or an array of plan types for concurrent plans
+ * (e.g. ['plan2', 'postgrad']). Returns the total deduction across all plans.
+ *
  * @param {number} grossPay
- * @param {string} planType - 'none' | 'plan1' | 'plan2' | 'plan4' | 'plan5' | 'postgrad'
+ * @param {string|string[]} planType - 'none' | 'plan1' | 'plan2' | 'plan4' | 'plan5' | 'postgrad' or array
  * @param {string} payFrequency
  * @param {object} [taxTables=DEFAULT_TAX_TABLES]
  * @returns {number}
@@ -437,25 +440,29 @@ export function calculateStudentLoan(
   payFrequency = 'monthly',
   taxTables = DEFAULT_TAX_TABLES
 ) {
-  if (!planType || planType === 'none') {
-    return 0;
-  }
+  // Normalise to array for uniform handling
+  const plans = Array.isArray(planType) ? planType : [planType];
 
-  const plan = taxTables.studentLoan[planType];
-  if (!plan) {
-    return 0;
-  }
-
+  let total = 0;
   const periodsPerYear = taxTables.periodsPerYear[payFrequency] || 12;
-  const periodThreshold = plan.annualThreshold / periodsPerYear;
 
-  if (grossPay <= periodThreshold) {
-    return 0;
+  for (const pt of plans) {
+    if (!pt || pt === 'none') continue;
+
+    const plan = taxTables.studentLoan[pt];
+    if (!plan) continue;
+
+    // HMRC publishes period thresholds as annual / periods, rounded DOWN to nearest pound
+    const periodThreshold = Math.floor(plan.annualThreshold / periodsPerYear);
+
+    if (grossPay <= periodThreshold) continue;
+
+    // HMRC rounds student loan repayments DOWN to nearest whole pound
+    const repayment = (grossPay - periodThreshold) * plan.rate;
+    total += Math.floor(repayment);
   }
 
-  // HMRC rounds student loan DOWN (floor to nearest penny)
-  const repayment = (grossPay - periodThreshold) * plan.rate;
-  return Math.floor(repayment * 100) / 100;
+  return total;
 }
 
 // ---------------------------------------------------------------------------
@@ -493,8 +500,9 @@ export function calculatePension(
   }
 
   const periodsPerYear = taxTables.periodsPerYear[payFrequency] || 12;
-  const periodLower = taxTables.pension.qualifyingEarningsLower / periodsPerYear;
-  const periodUpper = taxTables.pension.qualifyingEarningsUpper / periodsPerYear;
+  // HMRC publishes period thresholds as annual / periods, rounded DOWN to nearest pound
+  const periodLower = Math.floor(taxTables.pension.qualifyingEarningsLower / periodsPerYear);
+  const periodUpper = Math.floor(taxTables.pension.qualifyingEarningsUpper / periodsPerYear);
 
   const qualifyingEarnings = Math.max(0, Math.min(grossPay, periodUpper) - periodLower);
 
@@ -585,10 +593,11 @@ export function calculatePayslip(
     taxTables
   );
 
-  // 4. Calculate student loan
+  // 4. Calculate student loan (supports single plan or array of concurrent plans)
+  const studentLoanPlans = employee.studentLoanPlans || employee.studentLoanPlan || 'none';
   const studentLoan = calculateStudentLoan(
     grossPay,
-    employee.studentLoanPlan || 'none',
+    studentLoanPlans,
     payFrequency,
     taxTables
   );
