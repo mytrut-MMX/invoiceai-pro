@@ -1,13 +1,11 @@
 -- Payroll schema for UK small business payroll.
 --
 -- Supports PAYE, NIC, student loan, pension auto-enrolment, and
--- HMRC RTI (Real Time Information) FPS submissions.
+-- HMRC RTI (Real Time Information) FPS/EPS submissions.
 --
 -- Chart of accounts integration:
---   6600 — Wages & Salaries (expense)
---   2100 — VAT Payable (liability, existing)
---   New ledger accounts for PAYE/NIC liability should be added
---   via the settings UI or a subsequent migration.
+--   2300 — PAYE/NIC Liability
+--   6000 — Wages & Salaries (expense)
 
 -- =============================================================================
 -- employees — staff records for payroll
@@ -54,8 +52,7 @@ CREATE TABLE IF NOT EXISTS employees (
   -- Sensitive — encrypted at application layer before storage
   bank_details          JSONB,                            -- { bank_name, sort_code, account_number }
 
-  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_employees_user_status
@@ -74,7 +71,7 @@ CREATE TABLE IF NOT EXISTS payroll_runs (
   -- Period
   tax_year                  VARCHAR(10) NOT NULL,         -- e.g. '2026-27'
   tax_month                 INTEGER NOT NULL CHECK (tax_month BETWEEN 1 AND 12),
-  tax_week                  INTEGER CHECK (tax_week BETWEEN 1 AND 54),
+  tax_week                  INTEGER CHECK (tax_week BETWEEN 1 AND 52),
   period_start              DATE NOT NULL,
   period_end                DATE NOT NULL,
   pay_date                  DATE NOT NULL,
@@ -84,14 +81,14 @@ CREATE TABLE IF NOT EXISTS payroll_runs (
                               CHECK (status IN ('draft', 'approved', 'submitted', 'paid')),
 
   -- Totals (aggregated from payslips)
-  total_gross               DECIMAL(15,2) NOT NULL DEFAULT 0,
-  total_tax                 DECIMAL(15,2) NOT NULL DEFAULT 0,
-  total_ni_employee         DECIMAL(15,2) NOT NULL DEFAULT 0,
-  total_ni_employer         DECIMAL(15,2) NOT NULL DEFAULT 0,
-  total_pension_employee    DECIMAL(15,2) NOT NULL DEFAULT 0,
-  total_pension_employer    DECIMAL(15,2) NOT NULL DEFAULT 0,
-  total_student_loan        DECIMAL(15,2) NOT NULL DEFAULT 0,
-  total_net                 DECIMAL(15,2) NOT NULL DEFAULT 0,
+  total_gross               DECIMAL(15,2),
+  total_tax                 DECIMAL(15,2),
+  total_ni_employee         DECIMAL(15,2),
+  total_ni_employer         DECIMAL(15,2),
+  total_pension_employee    DECIMAL(15,2),
+  total_pension_employer    DECIMAL(15,2),
+  total_student_loan        DECIMAL(15,2),
+  total_net                 DECIMAL(15,2),
 
   -- HMRC RTI FPS
   fps_submitted             BOOLEAN NOT NULL DEFAULT false,
@@ -99,8 +96,7 @@ CREATE TABLE IF NOT EXISTS payroll_runs (
 
   created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  CONSTRAINT ck_payroll_runs_dates CHECK (period_end >= period_start),
-  CONSTRAINT uq_payroll_runs_period UNIQUE (user_id, tax_year, tax_month, pay_date)
+  CONSTRAINT ck_payroll_runs_dates CHECK (period_end >= period_start)
 );
 
 CREATE INDEX IF NOT EXISTS idx_payroll_runs_user_year
@@ -115,58 +111,30 @@ CREATE INDEX IF NOT EXISTS idx_payroll_runs_status
 CREATE TABLE IF NOT EXISTS payslips (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   payroll_run_id            UUID NOT NULL REFERENCES payroll_runs(id) ON DELETE CASCADE,
-  employee_id               UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-  user_id                   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-
-  -- Pay period
-  tax_year                  VARCHAR(10) NOT NULL,
-  tax_month                 INTEGER NOT NULL,
-  tax_week                  INTEGER,
-
-  -- Gross pay
-  basic_pay                 DECIMAL(15,2) NOT NULL DEFAULT 0,
-  overtime_pay              DECIMAL(15,2) NOT NULL DEFAULT 0,
-  bonus                     DECIMAL(15,2) NOT NULL DEFAULT 0,
-  commission                DECIMAL(15,2) NOT NULL DEFAULT 0,
-  gross_pay                 DECIMAL(15,2) NOT NULL DEFAULT 0,
-
-  -- Deductions
-  tax                       DECIMAL(15,2) NOT NULL DEFAULT 0,        -- PAYE income tax
-  ni_employee               DECIMAL(15,2) NOT NULL DEFAULT 0,        -- Employee NIC
-  ni_employer               DECIMAL(15,2) NOT NULL DEFAULT 0,        -- Employer NIC
-  pension_employee          DECIMAL(15,2) NOT NULL DEFAULT 0,        -- Employee pension contribution
-  pension_employer          DECIMAL(15,2) NOT NULL DEFAULT 0,        -- Employer pension contribution
-  student_loan              DECIMAL(15,2) NOT NULL DEFAULT 0,        -- Student loan repayment
-  other_deductions          DECIMAL(15,2) NOT NULL DEFAULT 0,
-  other_deductions_detail   JSONB,                                    -- [{ name, amount }]
-
-  -- Net pay
-  net_pay                   DECIMAL(15,2) NOT NULL DEFAULT 0,
-
-  -- Cumulative YTD figures (for PAYE calculation)
-  ytd_gross                 DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ytd_tax                   DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ytd_ni_employee           DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ytd_ni_employer           DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ytd_pension_employee      DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ytd_pension_employer      DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ytd_student_loan          DECIMAL(15,2) NOT NULL DEFAULT 0,
-
-  -- Employee snapshot at time of payslip (tax code, NI cat may change)
-  tax_code                  VARCHAR(20),
-  ni_category               CHAR(1),
+  employee_id               UUID NOT NULL REFERENCES employees(id),
 
   -- Hours (for hourly employees)
-  hours_worked              DECIMAL(8,2),
-  hourly_rate               DECIMAL(10,2),
-  overtime_hours            DECIMAL(8,2),
-  overtime_rate             DECIMAL(10,2),
+  hours_worked              DECIMAL(10,2),
 
-  -- Status
-  status                    VARCHAR(20) NOT NULL DEFAULT 'draft'
-                              CHECK (status IN ('draft', 'approved', 'paid')),
+  -- Pay
+  gross_pay                 DECIMAL(15,2) NOT NULL,
+  taxable_pay               DECIMAL(15,2),
+  tax_deducted              DECIMAL(15,2) NOT NULL DEFAULT 0,
+  ni_employee               DECIMAL(15,2) NOT NULL DEFAULT 0,
+  ni_employer               DECIMAL(15,2) NOT NULL DEFAULT 0,
+  pension_employee          DECIMAL(15,2) NOT NULL DEFAULT 0,
+  pension_employer          DECIMAL(15,2) NOT NULL DEFAULT 0,
+  student_loan              DECIMAL(15,2) NOT NULL DEFAULT 0,
+  other_deductions          DECIMAL(15,2) NOT NULL DEFAULT 0,
+  other_additions           DECIMAL(15,2) NOT NULL DEFAULT 0,
+  net_pay                   DECIMAL(15,2) NOT NULL,
 
-  created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Cumulative year-to-date
+  gross_ytd                 DECIMAL(15,2),
+  tax_ytd                   DECIMAL(15,2),
+  ni_ytd                    DECIMAL(15,2),
+
+  notes                     TEXT,
 
   CONSTRAINT uq_payslips_run_employee UNIQUE (payroll_run_id, employee_id)
 );
@@ -175,58 +143,65 @@ CREATE INDEX IF NOT EXISTS idx_payslips_run
   ON payslips (payroll_run_id);
 
 CREATE INDEX IF NOT EXISTS idx_payslips_employee
-  ON payslips (employee_id, tax_year, tax_month);
-
-CREATE INDEX IF NOT EXISTS idx_payslips_user_year
-  ON payslips (user_id, tax_year DESC, tax_month DESC);
+  ON payslips (employee_id);
 
 -- =============================================================================
 -- payroll_ytd — running year-to-date totals per employee per tax year
 --
--- Denormalised for fast PAYE lookups. Updated after each payroll run.
+-- Denormalised for fast cumulative PAYE lookups.
+-- Updated after each payroll run is finalised.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS payroll_ytd (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id                   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   employee_id               UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
   tax_year                  VARCHAR(10) NOT NULL,
 
-  gross                     DECIMAL(15,2) NOT NULL DEFAULT 0,
-  tax                       DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ni_employee               DECIMAL(15,2) NOT NULL DEFAULT 0,
-  ni_employer               DECIMAL(15,2) NOT NULL DEFAULT 0,
-  pension_employee          DECIMAL(15,2) NOT NULL DEFAULT 0,
-  pension_employer          DECIMAL(15,2) NOT NULL DEFAULT 0,
-  student_loan              DECIMAL(15,2) NOT NULL DEFAULT 0,
+  gross_ytd                 DECIMAL(15,2) NOT NULL DEFAULT 0,
+  tax_ytd                   DECIMAL(15,2) NOT NULL DEFAULT 0,
+  ni_ytd                    DECIMAL(15,2) NOT NULL DEFAULT 0,
+  pension_ytd               DECIMAL(15,2) NOT NULL DEFAULT 0,
+  student_loan_ytd          DECIMAL(15,2) NOT NULL DEFAULT 0,
 
-  last_updated              TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT uq_payroll_ytd_emp_year UNIQUE (employee_id, tax_year)
 );
 
-CREATE INDEX IF NOT EXISTS idx_payroll_ytd_user
-  ON payroll_ytd (user_id, tax_year);
+CREATE INDEX IF NOT EXISTS idx_payroll_ytd_employee
+  ON payroll_ytd (employee_id, tax_year);
 
 -- =============================================================================
--- payroll_fps_log — audit trail for HMRC RTI FPS submissions
+-- rti_submissions — HMRC Real Time Information submissions (FPS / EPS)
 -- =============================================================================
-CREATE TABLE IF NOT EXISTS payroll_fps_log (
+CREATE TABLE IF NOT EXISTS rti_submissions (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id                   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  payroll_run_id            UUID NOT NULL REFERENCES payroll_runs(id) ON DELETE CASCADE,
+  payroll_run_id            UUID REFERENCES payroll_runs(id) ON DELETE SET NULL,
 
-  payload_sent              JSONB,                         -- full FPS XML/JSON sent to HMRC
-  hmrc_response             JSONB,                         -- HMRC acknowledgement
-  response_code             INTEGER,
-  error_message             TEXT,
-  submitted_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+  submission_type           VARCHAR(5) NOT NULL
+                              CHECK (submission_type IN ('FPS', 'EPS')),
+  xml_payload               TEXT,                          -- full RTI XML sent to HMRC
+  hmrc_response             TEXT,                          -- HMRC acknowledgement / error
+  status                    VARCHAR(20) NOT NULL DEFAULT 'draft'
+                              CHECK (status IN ('draft', 'submitted', 'accepted', 'rejected')),
+  submitted_at              TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_payroll_fps_log_run
-  ON payroll_fps_log (payroll_run_id);
+CREATE INDEX IF NOT EXISTS idx_rti_submissions_user
+  ON rti_submissions (user_id, submitted_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_payroll_fps_log_user
-  ON payroll_fps_log (user_id, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_rti_submissions_run
+  ON rti_submissions (payroll_run_id);
+
+-- =============================================================================
+-- paye_reference — employer PAYE registration (one per user)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS paye_reference (
+  user_id                   UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  employer_paye_ref         VARCHAR(20),                   -- e.g. '123/AB456'
+  accounts_office_ref       VARCHAR(20),
+  tax_office_number         VARCHAR(5)
+);
 
 -- =============================================================================
 -- RLS policies — all tables scoped to owner
@@ -235,7 +210,8 @@ ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payroll_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payslips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payroll_ytd ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payroll_fps_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rti_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE paye_reference ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY employees_owner ON employees
   FOR ALL USING (auth.uid() = user_id)
@@ -245,14 +221,45 @@ CREATE POLICY payroll_runs_owner ON payroll_runs
   FOR ALL USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+-- payslips: RLS via the payroll_run's user_id joined through the run
+-- Since payslips don't have user_id, we use a subquery policy
 CREATE POLICY payslips_owner ON payslips
-  FOR ALL USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM payroll_runs pr
+      WHERE pr.id = payslips.payroll_run_id
+        AND pr.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM payroll_runs pr
+      WHERE pr.id = payslips.payroll_run_id
+        AND pr.user_id = auth.uid()
+    )
+  );
 
+-- payroll_ytd: RLS via employee's user_id
 CREATE POLICY payroll_ytd_owner ON payroll_ytd
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM employees e
+      WHERE e.id = payroll_ytd.employee_id
+        AND e.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM employees e
+      WHERE e.id = payroll_ytd.employee_id
+        AND e.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY rti_submissions_owner ON rti_submissions
   FOR ALL USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY payroll_fps_log_owner ON payroll_fps_log
+CREATE POLICY paye_reference_owner ON paye_reference
   FOR ALL USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
