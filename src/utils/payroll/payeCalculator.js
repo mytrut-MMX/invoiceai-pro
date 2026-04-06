@@ -261,6 +261,16 @@ export function calculateTax(
     annualAllowance = annualAllowance * 0.9;
   }
 
+  // PA taper: reduce by £1 for every £2 of income over the taper threshold
+  // Estimate annual income from cumulative gross to date
+  if (!parsedTaxCode.isK && taxTables.personalAllowanceTaper) {
+    const estimatedAnnualIncome = (cumulativeGross / effectivePeriod) * periodsPerYear;
+    if (estimatedAnnualIncome > taxTables.personalAllowanceTaper) {
+      const reduction = (estimatedAnnualIncome - taxTables.personalAllowanceTaper) / 2;
+      annualAllowance = Math.max(0, annualAllowance - reduction);
+    }
+  }
+
   // Calculate cumulative taxable pay
   let cumulativeTaxable;
 
