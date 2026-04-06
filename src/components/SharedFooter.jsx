@@ -15,6 +15,7 @@ export default function SharedFooter({ links = 'full' }) {
     { href: '/',          label: 'Home' },
     { href: '/templates', label: 'Templates' },
     { href: '/contact',   label: 'Contact' },
+    { href: '/feedback',  label: 'Feedback' },
     { href: '/privacy',   label: 'Privacy Policy' },
     { href: '/terms',     label: 'Terms of Service' },
     { href: '/cookies',   label: 'Cookie Policy' },
