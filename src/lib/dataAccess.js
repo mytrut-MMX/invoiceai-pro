@@ -678,6 +678,82 @@ export async function saveCatalogItem(userId, item) {
 // Delete functions — remove from normalised table + update JSONB
 // =============================================================================
 
+// =============================================================================
+// Bulk sync — used by the debounced persistence in App.jsx to push full
+// entity arrays into normalised tables.  Each call upserts headers only
+// (child tables like invoice_line_items are managed by individual save*
+// functions at the page level).  Fires concurrently and never throws —
+// errors are logged so they don't break the debounced save cycle.
+// =============================================================================
+
+export async function syncEntitiesToNormalised(userId, {
+  invoices: invArr,
+  payments: payArr,
+  expenses: expArr,
+  bills: bilArr,
+  customers: custArr,
+  catalogItems: catArr,
+} = {}) {
+  if (!supabase || !userId) return;
+
+  const jobs = [];
+
+  if (invArr && invArr.length > 0) {
+    jobs.push(
+      supabase
+        .from("invoices")
+        .upsert(invArr.map((i) => invoiceToRow(userId, i)), { onConflict: "id", ignoreDuplicates: false })
+        .then(({ error }) => { if (error) console.warn("[sync] invoices:", error.message); })
+    );
+  }
+  if (payArr && payArr.length > 0) {
+    jobs.push(
+      supabase
+        .from("payments")
+        .upsert(payArr.map((p) => paymentToRow(userId, p)), { onConflict: "id", ignoreDuplicates: false })
+        .then(({ error }) => { if (error) console.warn("[sync] payments:", error.message); })
+    );
+  }
+  if (expArr && expArr.length > 0) {
+    jobs.push(
+      supabase
+        .from("expenses")
+        .upsert(expArr.map((e) => expenseToRow(userId, e)), { onConflict: "id", ignoreDuplicates: false })
+        .then(({ error }) => { if (error) console.warn("[sync] expenses:", error.message); })
+    );
+  }
+  if (bilArr && bilArr.length > 0) {
+    jobs.push(
+      supabase
+        .from("bills")
+        .upsert(bilArr.map((b) => billToRow(userId, b)), { onConflict: "id", ignoreDuplicates: false })
+        .then(({ error }) => { if (error) console.warn("[sync] bills:", error.message); })
+    );
+  }
+  if (custArr && custArr.length > 0) {
+    jobs.push(
+      supabase
+        .from("customers")
+        .upsert(custArr.map((c) => customerToRow(userId, c)), { onConflict: "id", ignoreDuplicates: false })
+        .then(({ error }) => { if (error) console.warn("[sync] customers:", error.message); })
+    );
+  }
+  if (catArr && catArr.length > 0) {
+    jobs.push(
+      supabase
+        .from("catalog_items")
+        .upsert(catArr.map((i) => catalogItemToRow(userId, i)), { onConflict: "id", ignoreDuplicates: false })
+        .then(({ error }) => { if (error) console.warn("[sync] catalog_items:", error.message); })
+    );
+  }
+
+  await Promise.all(jobs);
+}
+
+// =============================================================================
+// Delete functions — remove from normalised table + update JSONB
+// =============================================================================
+
 export async function deleteInvoice(userId, invoiceId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
