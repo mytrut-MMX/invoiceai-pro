@@ -48,13 +48,13 @@ export const DEFAULT_TAX_TABLES = {
     annual: { LEL: 6500, PT: 12570, ST: 5000, UEL: 50270, UST: 50270 },
     rates: {
       A: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
-      B: { employeePTtoUEL: 0.0585, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
+      B: { employeePTtoUEL: 0.0185, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
       C: { employeePTtoUEL: 0, employeeAboveUEL: 0, employerAboveST: 0.15 },
-      F: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
-      H: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
+      F: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
+      H: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
       J: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
-      M: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
-      Z: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0 },
+      M: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
+      Z: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
     },
   },
   studentLoan: {
@@ -378,6 +378,7 @@ export function calculateNI(
       PT: taxTables.ni.weekly.PT * 2,
       ST: taxTables.ni.weekly.ST * 2,
       UEL: taxTables.ni.weekly.UEL * 2,
+      UST: taxTables.ni.weekly.UST * 2,
     };
   } else {
     // Monthly
@@ -396,9 +397,19 @@ export function calculateNI(
   }
 
   // Employer NI
+  // Categories F/H/M/Z: 0% from ST to UST, then employerAboveUST above UST
   let niEmployer = 0;
   if (grossPay > thresholds.ST) {
-    niEmployer = (grossPay - thresholds.ST) * rates.employerAboveST;
+    if (rates.employerAboveUST !== undefined && thresholds.UST) {
+      // Two-tier: 0% (employerAboveST) up to UST, then employerAboveUST above UST
+      const earningsToUST = Math.min(grossPay, thresholds.UST) - thresholds.ST;
+      niEmployer += Math.max(0, earningsToUST) * rates.employerAboveST;
+      if (grossPay > thresholds.UST) {
+        niEmployer += (grossPay - thresholds.UST) * rates.employerAboveUST;
+      }
+    } else {
+      niEmployer = (grossPay - thresholds.ST) * rates.employerAboveST;
+    }
   }
 
   return {
