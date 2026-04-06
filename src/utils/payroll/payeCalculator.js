@@ -32,35 +32,35 @@ export const DEFAULT_TAX_TABLES = {
       { name: 'additional', rate: 0.45, from: 125140, to: Infinity },
     ],
     scotland: [
-      { name: 'starter', rate: 0.19, from: 0, to: 2162 },
-      { name: 'basic', rate: 0.20, from: 2162, to: 13118 },
-      { name: 'intermediate', rate: 0.21, from: 13118, to: 31092 },
-      { name: 'higher', rate: 0.42, from: 31092, to: 125140 },
-      { name: 'advanced', rate: 0.45, from: 125140, to: 150000 },
-      { name: 'top', rate: 0.48, from: 150000, to: Infinity },
+      { name: 'starter', rate: 0.19, from: 0, to: 2827 },
+      { name: 'basic', rate: 0.20, from: 2827, to: 14921 },
+      { name: 'intermediate', rate: 0.21, from: 14921, to: 31092 },
+      { name: 'higher', rate: 0.42, from: 31092, to: 62430 },
+      { name: 'advanced', rate: 0.45, from: 62430, to: 112570 },
+      { name: 'top', rate: 0.48, from: 112570, to: Infinity },
     ],
     wales: null, // Same as England for 2025/26
   },
   ni: {
     // Weekly thresholds for 2025/26
-    weekly: { LEL: 123, PT: 242, ST: 175, UEL: 967 },
-    monthly: { LEL: 533, PT: 1048, ST: 758, UEL: 4189 },
-    annual: { LEL: 6396, PT: 12570, ST: 9100, UEL: 50270 },
+    weekly: { LEL: 125, PT: 242, ST: 96, UEL: 967, UST: 967 },
+    monthly: { LEL: 542, PT: 1048, ST: 417, UEL: 4189, UST: 4189 },
+    annual: { LEL: 6500, PT: 12570, ST: 5000, UEL: 50270, UST: 50270 },
     rates: {
-      A: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0.138 },
-      B: { employeePTtoUEL: 0.0585, employeeAboveUEL: 0.02, employerAboveST: 0.138 },
-      C: { employeePTtoUEL: 0, employeeAboveUEL: 0, employerAboveST: 0.138 },
+      A: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
+      B: { employeePTtoUEL: 0.0585, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
+      C: { employeePTtoUEL: 0, employeeAboveUEL: 0, employerAboveST: 0.15 },
       F: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
       H: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
-      J: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0.138 },
+      J: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
       M: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
       Z: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0 },
     },
   },
   studentLoan: {
-    plan1: { rate: 0.09, annualThreshold: 24990 },
-    plan2: { rate: 0.09, annualThreshold: 27295 },
-    plan4: { rate: 0.09, annualThreshold: 31395 },
+    plan1: { rate: 0.09, annualThreshold: 26065 },
+    plan2: { rate: 0.09, annualThreshold: 28470 },
+    plan4: { rate: 0.09, annualThreshold: 32745 },
     plan5: { rate: 0.09, annualThreshold: 25000 },
     postgrad: { rate: 0.06, annualThreshold: 21000 },
   },
@@ -622,7 +622,7 @@ TEST CASES:
    - Taxable: 3000 - 1047.50 = 1952.50
    - Tax: 1952.50 * 0.20 = 390.50
    - NI employee: (3000 - 1048) * 0.08 = 156.16
-   - NI employer: (3000 - 758) * 0.138 = 309.40
+   - NI employer: (3000 - 417) * 0.15 = 387.45
    - Net (before pension): 3000 - 390.50 - 156.16 = 2453.34
 
 2. K code: K500, Cat A, monthly, £2000/month
@@ -638,8 +638,8 @@ TEST CASES:
    - Uses Scottish bands with starter rate at 19%
 
 5. Student loan plan 2: £3000/month
-   - Monthly threshold: 27295/12 = 2274.58
-   - Repayment: (3000 - 2274.58) * 0.09 = 65.28 (floor to 65.28)
+   - Monthly threshold: 28470/12 = 2372.50
+   - Repayment: (3000 - 2372.50) * 0.09 = 56.48 (floor to 56.47)
 
 6. Pension auto-enrolment: £3000/month, 5%/3%
    - Monthly lower: 6240/12 = 520
@@ -668,5 +668,5 @@ TEST CASES:
 
 10. NI Category B (married women reduced rate):
     - Employee rate PT to UEL: 5.85% instead of 8%
-    - Employer rate unchanged at 13.8%
+    - Employer rate unchanged at 15%
 */
