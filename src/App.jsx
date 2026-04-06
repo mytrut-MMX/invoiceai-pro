@@ -7,6 +7,15 @@ import { saveAll } from "./utils/storage";
 import { getSession, supabase } from "./lib/supabase";
 import AppRouter from "./router";
 import { loadBusinessData, saveBusinessData, migrateLegacyBusinessDataIfNeeded } from "./lib/businessData";
+import {
+  loadInvoices   as daLoadInvoices,
+  loadPayments   as daLoadPayments,
+  loadExpenses   as daLoadExpenses,
+  loadBills      as daLoadBills,
+  loadCustomers  as daLoadCustomers,
+  loadCatalogItems as daLoadCatalogItems,
+  syncEntitiesToNormalised,
+} from "./lib/dataAccess";
 
 // ─── localStorage helpers ──────────────────────────────────────────────────
 const LS = {
@@ -153,22 +162,18 @@ export default function App() {
     let cancelled = false;
     (async () => {
       setBusinessDataHydrated(false);
+
+      // 1. Load business_profiles row for settings + legacy migration check
       const { data, error } = await loadBusinessData(user.id);
       if (error) console.warn("[Data] Failed to load business data from Supabase.", error);
       const merged = await migrateLegacyBusinessDataIfNeeded(user.id, data);
       if (cancelled) return;
+
+      // 2. Settings (non-entity) — still read from business_profiles
       setOrgSettingsState(merged?.org_settings ?? null);
-      // Treat as done if the flag is explicitly true OR if org_settings is present
-      // (covers users whose row predates the onboarding_done field).
       setOnboardingDoneState(Boolean(merged?.onboarding_done) || Boolean(merged?.org_settings));
-      setCustomers(Array.isArray(merged?.customers) ? merged.customers : []);
-      setCatalogItems(Array.isArray(merged?.catalog_items) ? merged.catalog_items : []);
-      setInvoices(Array.isArray(merged?.invoices) ? merged.invoices : []);
       setQuotes(Array.isArray(merged?.quotes) ? merged.quotes : []);
-      setPayments(Array.isArray(merged?.payments) ? merged.payments : []);
       setCustomPayMethods(Array.isArray(merged?.custom_pay_methods) ? merged.custom_pay_methods : []);
-      setExpenses(Array.isArray(merged?.expenses) ? merged.expenses : []);
-      setBills(Array.isArray(merged?.bills) ? merged.bills : []);
       setPdfTemplate(merged?.pdf_template || "classic");
       setCompanyLogo(merged?.company_logo ?? null);
       setCompanyLogoSize(Number(merged?.company_logo_size || 52));
@@ -181,6 +186,24 @@ export default function App() {
       setDefaultPaymentTerms(merged?.default_payment_terms || "Net 30");
       setFooterText(merged?.footer_text || "");
       setInvoiceTemplateConfig(merged?.invoice_template_config ?? null);
+
+      // 3. Entities — load from normalised tables (with JSONB fallback)
+      const [inv, pay, exp, bil, cust, cat] = await Promise.all([
+        daLoadInvoices(user.id),
+        daLoadPayments(user.id),
+        daLoadExpenses(user.id),
+        daLoadBills(user.id),
+        daLoadCustomers(user.id),
+        daLoadCatalogItems(user.id),
+      ]);
+      if (cancelled) return;
+      setInvoices(inv);
+      setPayments(pay);
+      setExpenses(exp);
+      setBills(bil);
+      setCustomers(cust);
+      setCatalogItems(cat);
+
       setBusinessDataHydrated(true);
     })();
 
@@ -203,6 +226,7 @@ export default function App() {
       if (currentHash === lastSaveHash.current) return;
       lastSaveHash.current = currentHash;
 
+      // Write settings + JSONB entity arrays to business_profiles (backward compat)
       saveBusinessData(user.id, {
         org_settings:            orgSettings,
         onboarding_done:         onboardingDone,
@@ -228,6 +252,18 @@ export default function App() {
         invoice_template_config: invoiceTemplateConfig,
       }).then(({ error }) => {
         if (error) console.warn("[Data] Failed to persist business data to Supabase.", error);
+      });
+      // Sync entity arrays to normalised tables (headers only; child rows
+      // like invoice_line_items are managed by individual save* calls).
+      syncEntitiesToNormalised(user.id, {
+        invoices,
+        payments,
+        expenses,
+        bills,
+        customers,
+        catalogItems,
+      }).catch((err) => {
+        console.warn("[Data] Failed to sync entities to normalised tables.", err);
       });
       saveAll({
         ai_invoice_user:            user,
