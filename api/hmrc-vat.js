@@ -12,7 +12,7 @@
 
 import { createCipheriv, createDecipheriv, randomBytes, createHmac } from 'crypto';
 import { withRateLimit } from './lib/with-rate-limit.js';
-import { buildFraudPreventionHeaders } from './hmrc-headers.js';
+import { buildFraudPreventionHeaders } from './lib/hmrc-headers.js';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
