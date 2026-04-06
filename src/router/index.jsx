@@ -40,6 +40,7 @@ const PrivacyPage        = lazy(() => import("../pages/landing/PrivacyPage"));
 const TermsPage          = lazy(() => import("../pages/landing/TermsPage"));
 const CookiePolicyPage   = lazy(() => import("../pages/landing/CookiePolicyPage"));
 const GdprPage           = lazy(() => import("../pages/landing/GdprPage"));
+const RefundPolicyPage   = lazy(() => import("../pages/landing/RefundPolicyPage"));
 const PricingPage        = lazy(() => import("../pages/landing/PricingPage"));
 const FeaturesPage       = lazy(() => import("../pages/landing/FeaturesPage"));
 const BlogPage           = lazy(() => import("../pages/landing/BlogPage"));
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
   { path: ROUTES.TERMS,     element: <S><TermsPage /></S> },
   { path: ROUTES.COOKIES,   element: <S><CookiePolicyPage /></S> },
   { path: ROUTES.GDPR,      element: <S><GdprPage /></S> },
+  { path: ROUTES.REFUND,    element: <S><RefundPolicyPage /></S> },
   { path: ROUTES.PRICING,   element: <S><PricingPage /></S> },
   { path: ROUTES.FEATURES,  element: <S><FeaturesPage /></S> },
   { path: ROUTES.BLOG,      element: <S><BlogPage /></S> },

@@ -19,6 +19,7 @@ export default function SharedFooter({ links = 'full' }) {
     { href: '/terms',     label: 'Terms of Service' },
     { href: '/cookies',   label: 'Cookie Policy' },
     { href: '/gdpr',      label: 'GDPR' },
+    { href: '/refund-policy', label: 'Refund Policy' },
 
 
   ];

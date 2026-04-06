@@ -441,6 +441,8 @@ export default function LandingPage() {
           <Link to={ROUTES.COOKIES}   style={{ color:'#475569', textDecoration:'none' }}>Cookie Policy</Link>
           {' · '}
           <Link to={ROUTES.GDPR}      style={{ color:'#475569', textDecoration:'none' }}>GDPR</Link>
+          {' · '}
+          <Link to={ROUTES.REFUND}    style={{ color:'#475569', textDecoration:'none' }}>Refund Policy</Link>
         </div>
         <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
       </footer>
