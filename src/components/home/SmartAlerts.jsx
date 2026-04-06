@@ -1,8 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { ff } from "../../constants";
 import { generateAlerts } from "../../utils/ledger/generateAlerts";
 import { ROUTES } from "../../router/routes";
+import { AppCtx } from "../../context/AppContext";
+import { supabase, supabaseReady } from "../../lib/supabase";
 
 const ALERT_PAGE_ROUTES = {
   "invoices":     ROUTES.INVOICES,
@@ -10,6 +12,8 @@ const ALERT_PAGE_ROUTES = {
   "payments":     ROUTES.PAYMENTS,
   "expenses":     ROUTES.EXPENSES,
   "bills":        ROUTES.BILLS,
+  "payroll":      ROUTES.PAYROLL || "/payroll",           // TODO: add ROUTES.PAYROLL in prompt 20
+  "payroll:new":  ROUTES.PAYROLL_NEW || "/payroll/new",   // TODO: add ROUTES.PAYROLL_NEW in prompt 20
 };
 
 const LS_DISMISSED_KEY = "invoicesaga_dismissed_alerts";
@@ -22,15 +26,187 @@ const SEV = {
   info:     { bg: "#eff6ff", border: "#bfdbfe", dot: "#2563eb", label: "Info",     labelColor: "#2563eb" },
 };
 
+// ─── Payroll alert helpers ────────────────────────────────────────────────────
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+function daysUntil(dateStr) {
+  if (!dateStr) return Infinity;
+  const d = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.round((d - now) / 86400000);
+}
+
+function fmtGBP(n) {
+  return Number(n).toLocaleString("en-GB", { style: "currency", currency: "GBP" });
+}
+
+function fmtDateShort(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function generatePayrollAlerts(employees, payrollRuns, bills) {
+  const alerts = [];
+  if (!employees || employees.length === 0) return alerts;
+
+  const today = todayStr();
+  const activeCount = employees.filter(e => e.status === "active").length;
+
+  // ── Alert A: Payroll run due ────────────────────────────────────────────
+  // Check if any employee's next pay date is within 3 days and no run exists
+  // For monthly employees, the next pay date is roughly the end of the current month
+  // We approximate by checking if there's a run covering the current month
+  const now = new Date();
+  const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const currentMonthEnd = lastDay.toISOString().slice(0, 10);
+
+  const hasRunThisMonth = (payrollRuns || []).some(r =>
+    r.period_start <= currentMonthEnd && r.period_end >= currentMonthStart
+  );
+
+  if (!hasRunThisMonth && activeCount > 0) {
+    // Assume pay date is last working day — check if month end is within 3 days
+    const daysToMonthEnd = daysUntil(currentMonthEnd);
+    if (daysToMonthEnd >= 0 && daysToMonthEnd <= 3) {
+      const label = daysToMonthEnd === 0 ? "today" : `in ${daysToMonthEnd} day${daysToMonthEnd !== 1 ? "s" : ""}`;
+      alerts.push({
+        id: `payroll_due_${currentMonthStart}`,
+        severity: "warning",
+        category: "payroll",
+        title: `Payroll run due ${label}`,
+        description: `Your next payroll for ${activeCount} employee${activeCount !== 1 ? "s" : ""} is due ${fmtDateShort(currentMonthEnd)}.`,
+        actionPage: "payroll:new",
+        dismissable: true,
+      });
+    }
+  }
+
+  // ── Alert B: PAYE payment due to HMRC ──────────────────────────────────
+  const hmrcBills = (bills || []).filter(b =>
+    b.supplier_name === "HMRC"
+    && b.category === "Tax & Government"
+    && b.status !== "Paid"
+    && b.status !== "Void"
+    && b.due_date
+  );
+
+  for (const bill of hmrcBills) {
+    const days = daysUntil(bill.due_date);
+    if (days > 7) continue;
+
+    const isOverdue = days < 0;
+    const amt = fmtGBP(bill.total || bill.amount || 0);
+
+    alerts.push({
+      id: `paye_due_${bill.id}`,
+      severity: isOverdue ? "critical" : "warning",
+      category: "payroll",
+      title: `PAYE payment of ${amt} due to HMRC`,
+      description: isOverdue
+        ? `Was due by ${fmtDateShort(bill.due_date)}. Late payment incurs HMRC penalties.`
+        : `Due by ${fmtDateShort(bill.due_date)}. Late payment incurs HMRC penalties.`,
+      actionPage: "bills",
+      dismissable: false,
+    });
+  }
+
+  // ── Alert C: FPS submission overdue ────────────────────────────────────
+  const overdueRuns = (payrollRuns || []).filter(r =>
+    r.status === "approved" && r.pay_date && r.pay_date <= today
+  );
+
+  for (const run of overdueRuns) {
+    alerts.push({
+      id: `fps_overdue_${run.id}`,
+      severity: "critical",
+      category: "payroll",
+      title: `FPS submission overdue for payroll ${fmtDateShort(run.pay_date)}`,
+      description: "HMRC requires Real Time Information on or before pay day.",
+      actionPage: "payroll",
+      dismissable: false,
+    });
+  }
+
+  return alerts;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function SmartAlerts({ invoices, payments, expenses, orgSettings, bills }) {
   const navigate = useNavigate();
+  const { user } = useContext(AppCtx);
   const [dismissedIds, setDismissedIds] = useState(() => getDismissed());
   const [alertsOpen, setAlertsOpen] = useState(true);
 
-  const allAlerts = useMemo(
+  // ── Load payroll data locally (not in AppCtx yet) ──────────────────────
+  const [employees, setEmployees] = useState(null);
+  const [payrollRuns, setPayrollRuns] = useState(null);
+
+  useEffect(() => {
+    if (!supabaseReady || !user?.id) return;
+
+    let cancelled = false;
+
+    // Only fetch if user might have employees — do a quick count first
+    (async () => {
+      const { count, error: cErr } = await supabase
+        .from("employees")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      if (cancelled || cErr || count === 0) {
+        if (!cancelled) {
+          setEmployees([]);
+          setPayrollRuns([]);
+        }
+        return;
+      }
+
+      // Fetch employees + recent payroll runs in parallel
+      const [empRes, runRes] = await Promise.all([
+        supabase
+          .from("employees")
+          .select("id, status, pay_frequency, leave_date")
+          .eq("user_id", user.id)
+          .eq("status", "active"),
+        supabase
+          .from("payroll_runs")
+          .select("id, status, period_start, period_end, pay_date, tax_year, tax_month")
+          .eq("user_id", user.id)
+          .order("pay_date", { ascending: false })
+          .limit(20),
+      ]);
+
+      if (!cancelled) {
+        setEmployees(empRes.data || []);
+        setPayrollRuns(runRes.data || []);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  // ── Merge existing + payroll alerts ────────────────────────────────────
+  const baseAlerts = useMemo(
     () => generateAlerts(invoices, payments, expenses, orgSettings, bills),
     [invoices, payments, expenses, orgSettings, bills]
   );
+
+  const allAlerts = useMemo(() => {
+    if (!employees || employees.length === 0) return baseAlerts;
+    const payrollAlerts = generatePayrollAlerts(employees, payrollRuns, bills);
+    if (payrollAlerts.length === 0) return baseAlerts;
+
+    const merged = [...baseAlerts, ...payrollAlerts];
+    const ORDER = { critical: 0, warning: 1, info: 2 };
+    merged.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
+    return merged;
+  }, [baseAlerts, employees, payrollRuns, bills]);
 
   const visibleAlerts = useMemo(
     () => allAlerts.filter(a => !dismissedIds.includes(a.id)),
