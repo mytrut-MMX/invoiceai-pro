@@ -17,6 +17,7 @@ export const ROUTES = {
   TERMS:     '/terms',
   COOKIES:   '/cookies',
   GDPR:      '/gdpr',
+  REFUND:    '/refund-policy',
   PRICING:   '/pricing',
   FEATURES:  '/features',
   BLOG:      '/blog',
