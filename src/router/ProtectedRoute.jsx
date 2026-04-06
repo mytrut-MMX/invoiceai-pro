@@ -56,8 +56,7 @@ export function ProtectedRoute({ requiredRole } = {}) {
   }
 
   if (!user) {
-    // Preserve the full location so we can redirect back post-login.
-    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+    return <Navigate to={ROUTES.LANDING} replace />;
   }
 
   if (requiredRole && user.role?.toLowerCase() !== requiredRole.toLowerCase()) {
