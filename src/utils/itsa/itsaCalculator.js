@@ -9,6 +9,11 @@
  *   - Accrual: income = invoices issued in period; expenses = incurred in period
  */
 
+import { SA_CATEGORY_MAP, SA_CATEGORY_LABELS, mapExpenseToHMRC } from './hmrcCategoryMap.js';
+
+// Re-export for consumers that imported from here previously
+export { SA_CATEGORY_LABELS as SA_BOX_LABELS };
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -24,65 +29,6 @@ function inPeriod(dateStr, periodStart, periodEnd) {
   const d = dateStr.slice(0, 10);
   return d >= periodStart && d <= periodEnd;
 }
-
-// ---------------------------------------------------------------------------
-// HMRC SA box mapping for self-employment (SE) expenses
-// ---------------------------------------------------------------------------
-
-/**
- * Maps InvoiceSaga expense category codes to HMRC Self Assessment
- * self-employment supplementary page (SA103S) expense categories.
- *
- * SA103S boxes:
- *   costOfGoods          – Box 10: Cost of goods bought for resale
- *   constructionCosts    – Box 11: Construction industry subcontractor costs
- *   staffCosts           – Box 12: Wages, salaries, other staff costs
- *   premisesCosts        – Box 13: Car, van, travel expenses
- *   repairsAndMaintenance– Box 14: Rent, rates, power, insurance
- *   generalAdmin         – Box 15: Repairs and maintenance
- *   advertising          – Box 16: Phone, fax, stationery, other office costs
- *   entertainment        – Box 17: Advertising and business entertainment
- *   interest             – Box 18: Interest on bank/other loans
- *   otherExpenses        – Box 19: Other allowable business expenses
- */
-const SA_BOX_MAP = {
-  '100': 'advertising',          // Advertising
-  '110': 'travelAndMotor',       // Automobile
-  '404': 'generalAdmin',         // Bank Charges
-  '420': 'advertising',          // Client Entertainment (SA groups with advertising)
-  '300': 'otherExpenses',        // Equipment (capital → AIA; revenue → other)
-  '430': 'travelAndMotor',       // Fuel
-  '440': 'premisesCosts',        // Insurance
-  '460': 'generalAdmin',         // IT & Software
-  '261': 'travelAndMotor',       // Meals & Subsistence
-  '480': 'generalAdmin',         // Office Supplies
-  '490': 'generalAdmin',         // Postage & Courier
-  '500': 'otherExpenses',        // Professional Services
-  '510': 'premisesCosts',        // Rent & Rates
-  '520': 'repairsAndMaintenance',// Repairs & Maintenance
-  '530': 'generalAdmin',         // Stationery
-  '315': 'constructionCosts',    // Subcontractor Labour
-  '316': 'constructionCosts',    // Subcontractor Materials
-  '540': 'generalAdmin',         // Subscriptions
-  '550': 'travelAndMotor',       // Travel
-  '560': 'premisesCosts',        // Utilities
-  '570': 'staffCosts',           // Wages & Salaries
-  '999': 'otherExpenses',        // Other
-};
-
-/** Human-readable labels for each SA box key. */
-export const SA_BOX_LABELS = {
-  costOfGoods:           'Cost of goods bought for resale',
-  constructionCosts:     'Construction industry subcontractor costs',
-  staffCosts:            'Wages, salaries & other staff costs',
-  travelAndMotor:        'Car, van & travel expenses',
-  premisesCosts:         'Rent, rates, power & insurance',
-  repairsAndMaintenance: 'Repairs & maintenance of property and equipment',
-  generalAdmin:          'Phone, fax, stationery & other office costs',
-  advertising:           'Advertising & business entertainment',
-  interest:              'Interest on bank & other loans',
-  otherExpenses:         'Other allowable business expenses',
-};
 
 // ---------------------------------------------------------------------------
 // Income calculators
@@ -136,9 +82,8 @@ function calcCashExpenses(expenses, periodStart, periodEnd) {
     const amount = Number(exp.amount || 0);
     totalExpenses += amount;
 
-    const categoryCode = exp.category_code || exp.code || '';
-    const saBox = SA_BOX_MAP[categoryCode] || 'otherExpenses';
-    breakdown[saBox] = (breakdown[saBox] || 0) + amount;
+    const { hmrcCode } = mapExpenseToHMRC(exp);
+    breakdown[hmrcCode] = (breakdown[hmrcCode] || 0) + amount;
   }
 
   return { totalExpenses, breakdown };
@@ -155,9 +100,8 @@ function calcAccrualExpenses(expenses, periodStart, periodEnd) {
     const amount = Number(exp.amount || 0);
     totalExpenses += amount;
 
-    const categoryCode = exp.category_code || exp.code || '';
-    const saBox = SA_BOX_MAP[categoryCode] || 'otherExpenses';
-    breakdown[saBox] = (breakdown[saBox] || 0) + amount;
+    const { hmrcCode } = mapExpenseToHMRC(exp);
+    breakdown[hmrcCode] = (breakdown[hmrcCode] || 0) + amount;
   }
 
   return { totalExpenses, breakdown };

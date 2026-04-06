@@ -1,5 +1,6 @@
 import { useState, useContext, useRef, useCallback } from "react";
 import { ff, CUR_SYM, TAX_RATES, EXPENSE_CATEGORIES, EXPENSE_STATUSES, PAYMENT_METHODS } from "../../constants";
+import { SA_CATEGORY_LABELS, SA_CATEGORY_MAP } from "../../utils/itsa/hmrcCategoryMap";
 import { postExpenseEntry } from "../../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../../context/AppContext";
@@ -184,6 +185,16 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
                   options={EXPENSE_CATEGORIES.map(c => ({ value: c.name, label: `${c.code} · ${c.name}` }))} placeholder="Select…" />
               </Field>
             </>)}
+            {category && (() => {
+              const catEntry = EXPENSE_CATEGORIES.find(c => c.name === category);
+              const saCode = catEntry ? SA_CATEGORY_MAP[catEntry.code] : null;
+              const saLabel = saCode ? SA_CATEGORY_LABELS[saCode] : null;
+              return saLabel ? (
+                <div style={{ marginTop: 4, marginBottom: 4, display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 11, color: "#64748b" }}>
+                  <span style={{ fontWeight: 700, color: "#475569" }}>HMRC SA:</span> {saLabel}
+                </div>
+              ) : null;
+            })()}
             {isSubLabour && cisEnabled && (
               <div style={{ marginTop: 8, padding: "8px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, fontSize: 12, color: "#92400e" }}>
                 ⚠ CIS applies to labour. Deduction tracked on payment, not on expense.

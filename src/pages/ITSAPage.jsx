@@ -8,8 +8,9 @@ import {
 } from "../components/shared/moduleListUI";
 import { fmt, fmtDate } from "../utils/helpers";
 import {
-  calculateITSAQuarter, generateITSAPeriods, getITSATaxYears, SA_BOX_LABELS,
+  calculateITSAQuarter, generateITSAPeriods, getITSATaxYears,
 } from "../utils/itsa/itsaCalculator";
+import { SA_CATEGORY_LABELS } from "../utils/itsa/hmrcCategoryMap";
 import { supabase } from "../lib/supabase";
 
 // ─── Status mapping ─────────────────────────────────────────────────────────
@@ -318,7 +319,7 @@ export default function ITSAPage() {
                       .map(([key, val]) => (
                         <tr key={key} style={{ borderBottom: "1px solid #f3f4f6" }}>
                           <td style={{ padding: "10px 16px", fontSize: 13, color: "#374151" }}>
-                            {SA_BOX_LABELS[key] || key}
+                            {SA_CATEGORY_LABELS[key] || key}
                           </td>
                           <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600, color: "#1a1a2e", textAlign: "right" }}>
                             {fmt(currSym, val)}
