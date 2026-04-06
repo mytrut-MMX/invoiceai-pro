@@ -94,6 +94,10 @@ export const DEFAULT_TAX_TABLES = {
 export function parseTaxCode(taxCode) {
   let code = (taxCode || '').trim().toUpperCase();
 
+  if (!code) {
+    throw new Error('Tax code is required');
+  }
+
   const result = {
     number: 0,
     suffix: '',
@@ -155,13 +159,14 @@ export function parseTaxCode(taxCode) {
   }
 
   // Standard code: numeric portion followed by suffix letter (L, M, N, T)
-  const match = code.match(/^(\d+)([A-Z]?)$/);
+  const match = code.match(/^(\d+)([A-Z])$/);
   if (match) {
     result.number = parseInt(match[1], 10) || 0;
-    result.suffix = match[2] || '';
+    result.suffix = match[2];
+    return result;
   }
 
-  return result;
+  throw new Error(`Unrecognised tax code: ${(taxCode || '').trim()}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -212,20 +217,24 @@ export function calculateTax(
   }
 
   // Flat-rate codes: BR, D0, D1, D2
+  // Scottish codes (SBR, SD0, SD1, SD2) use different rates from rUK
   if (parsedTaxCode.isBR) {
     const tax = round2(grossThisPeriod * 0.20);
     return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD0) {
-    const tax = round2(grossThisPeriod * 0.40);
+    const rate = parsedTaxCode.isScottish ? 0.21 : 0.40;
+    const tax = round2(grossThisPeriod * rate);
     return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD1) {
-    const tax = round2(grossThisPeriod * 0.45);
+    const rate = parsedTaxCode.isScottish ? 0.42 : 0.45;
+    const tax = round2(grossThisPeriod * rate);
     return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD2) {
-    const tax = round2(grossThisPeriod * 0.48);
+    const rate = parsedTaxCode.isScottish ? 0.45 : 0.48;
+    const tax = round2(grossThisPeriod * rate);
     return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
 
