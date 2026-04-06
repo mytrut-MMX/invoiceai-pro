@@ -80,6 +80,9 @@ export const ROUTES = {
   // ─── VAT Returns ─────────────────────────────────────────────────────────────
   VAT_RETURN: '/vat-return',
 
+  // ─── ITSA (Self Assessment) ────────────────────────────────────────────────
+  ITSA: '/self-assessment',
+
   // ─── Ledger ──────────────────────────────────────────────────────────────────
   LEDGER:          '/ledger',
   LEDGER_JOURNAL:  '/ledger/journal',
