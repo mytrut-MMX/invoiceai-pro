@@ -14,29 +14,60 @@
 -- =============================================================================
 
 -- =============================================================================
--- PREAMBLE: Drop stale tables from earlier attempts
+-- PREAMBLE: Drop ALL tables this script creates, to avoid schema conflicts
 -- =============================================================================
--- Your production DB has 'invoices' and 'customers' tables created outside
--- these migrations, with a different schema (missing user_id etc.).
--- CREATE TABLE IF NOT EXISTS silently skips them, then RLS policies fail.
+-- Any pre-existing table with a wrong schema will cause CREATE TABLE IF NOT
+-- EXISTS to silently skip creation, then later RLS policies fail with
+-- "column user_id does not exist".
 --
--- These tables should be EMPTY — the app stores all data in
--- business_profiles JSONB columns.  Migration 016 will repopulate them
--- from that JSONB data.
---
--- Drop order matters: child tables first (FK constraints).
+-- Drop order: child tables first (FK constraints), then parents.
+-- CASCADE handles any remaining dependencies.
+-- All real data lives in business_profiles JSONB — migration 016 repopulates.
 -- =============================================================================
+
+-- 021 — payroll (child tables first)
+DROP TABLE IF EXISTS public.rti_submissions CASCADE;
+DROP TABLE IF EXISTS public.paye_reference CASCADE;
+DROP TABLE IF EXISTS public.payroll_ytd CASCADE;
+DROP TABLE IF EXISTS public.payslips CASCADE;
+DROP TABLE IF EXISTS public.payroll_runs CASCADE;
+DROP TABLE IF EXISTS public.employees CASCADE;
+
+-- 020 — ITSA
+DROP TABLE IF EXISTS public.itsa_final_declarations CASCADE;
+DROP TABLE IF EXISTS public.itsa_quarterly_updates CASCADE;
+DROP TABLE IF EXISTS public.itsa_periods CASCADE;
+
+-- 019 — HMRC API log
+DROP TABLE IF EXISTS public.hmrc_api_log CASCADE;
+
+-- 018 — HMRC tokens
+DROP TABLE IF EXISTS public.hmrc_tokens CASCADE;
+
+-- 017 — VAT
+DROP TABLE IF EXISTS public.vat_return_submissions CASCADE;
+DROP TABLE IF EXISTS public.vat_periods CASCADE;
+
+-- 015 — catalog items
+DROP TABLE IF EXISTS public.catalog_items CASCADE;
+
+-- 014 — bills
+DROP TABLE IF EXISTS public.bill_line_items CASCADE;
+DROP TABLE IF EXISTS public.bills CASCADE;
+
+-- 013 — customers
+DROP TABLE IF EXISTS public.customers CASCADE;
+
+-- 012 — expenses
+DROP TABLE IF EXISTS public.expenses CASCADE;
+
+-- 011 — payments
+DROP TABLE IF EXISTS public.payments CASCADE;
+
+-- 010 — invoices
 DROP TABLE IF EXISTS public.invoice_tax_breakdown CASCADE;
 DROP TABLE IF EXISTS public.invoice_line_items CASCADE;
 DROP TABLE IF EXISTS public.invoices CASCADE;
-DROP TABLE IF EXISTS public.customers CASCADE;
-
--- Also drop any other stale normalised tables that might exist with wrong schemas
-DROP TABLE IF EXISTS public.bill_line_items CASCADE;
-DROP TABLE IF EXISTS public.bills CASCADE;
-DROP TABLE IF EXISTS public.payments CASCADE;
-DROP TABLE IF EXISTS public.expenses CASCADE;
-DROP TABLE IF EXISTS public.catalog_items CASCADE;
 
 
 -- =============================================================================
