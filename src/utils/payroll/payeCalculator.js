@@ -197,7 +197,7 @@ export function parseTaxCode(taxCode) {
  * @param {string} payFrequency - 'weekly' | 'fortnightly' | 'monthly'
  * @param {{ grossYtd: number, taxYtd: number }} ytd - year-to-date figures BEFORE this period
  * @param {object} [taxTables=DEFAULT_TAX_TABLES]
- * @returns {{ taxDue: number, cumulativeTaxable: number, cumulativeTaxDue: number }}
+ * @returns {{ taxDue: number, taxableThisPeriod: number, cumulativeTaxable: number, cumulativeTaxDue: number }}
  */
 export function calculateTax(
   grossThisPeriod,
@@ -213,29 +213,29 @@ export function calculateTax(
 
   // NT code: no tax
   if (parsedTaxCode.isNT) {
-    return { taxDue: 0, cumulativeTaxable: 0, cumulativeTaxDue: 0 };
+    return { taxDue: 0, taxableThisPeriod: 0, cumulativeTaxable: 0, cumulativeTaxDue: 0 };
   }
 
   // Flat-rate codes: BR, D0, D1, D2
   // Scottish codes (SBR, SD0, SD1, SD2) use different rates from rUK
   if (parsedTaxCode.isBR) {
     const tax = round2(grossThisPeriod * 0.20);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD0) {
     const rate = parsedTaxCode.isScottish ? 0.21 : 0.40;
     const tax = round2(grossThisPeriod * rate);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD1) {
     const rate = parsedTaxCode.isScottish ? 0.42 : 0.45;
     const tax = round2(grossThisPeriod * rate);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD2) {
     const rate = parsedTaxCode.isScottish ? 0.45 : 0.48;
     const tax = round2(grossThisPeriod * rate);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
 
   // Determine effective period number and gross for cumulative vs non-cumulative
@@ -697,12 +697,12 @@ TEST CASES:
    - Uses Scottish bands with starter rate at 19%
 
 5. Student loan plan 2: £3000/month
-   - Monthly threshold: 28470/12 = 2372.50
-   - Repayment: (3000 - 2372.50) * 0.09 = 56.48 (floor to 56.47)
+   - Monthly threshold: floor(28470/12) = 2372
+   - Repayment: (3000 - 2372) * 0.09 = 56.52 (floor to £56)
 
 6. Pension auto-enrolment: £3000/month, 5%/3%
-   - Monthly lower: 6240/12 = 520
-   - Monthly upper: 50270/12 = 4189.17
+   - Monthly lower: floor(6240/12) = 520
+   - Monthly upper: floor(50270/12) = 4189
    - Qualifying: 3000 - 520 = 2480
    - Employee: 2480 * 0.05 = 124.00
    - Employer: 2480 * 0.03 = 74.40
