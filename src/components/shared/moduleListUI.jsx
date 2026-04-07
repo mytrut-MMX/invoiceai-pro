@@ -24,6 +24,7 @@ export const statusBadgeTheme = {
   Business: { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
   Individual: { color: "#6b7280", bg: "#f8fafc", border: "#dbe3ee" },
   "Awaiting Approval": { color: "#b45309", bg: "#fffbeb", border: "#fde68a" },
+  Leaver: { color: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
 };
 
 export const moduleUi = {

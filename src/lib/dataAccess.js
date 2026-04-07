@@ -855,3 +855,32 @@ export async function deleteCatalogItem(userId, itemId) {
 
   return { error: null };
 }
+
+// =============================================================================
+// Employees
+// =============================================================================
+
+export async function loadEmployees(userId) {
+  if (!supabase || !userId) return [];
+
+  const { data, error } = await supabase
+    .from("employees")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (!error && data) return data;
+  return [];
+}
+
+export async function deleteEmployee(userId, employeeId) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const { error } = await supabase
+    .from("employees")
+    .delete()
+    .eq("id", employeeId)
+    .eq("user_id", userId);
+
+  return { error: error || null };
+}
