@@ -873,6 +873,22 @@ export async function loadEmployees(userId) {
   return [];
 }
 
+export async function saveEmployee(userId, employee) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const row = { ...employee, user_id: userId };
+  delete row.bank_details; // encrypted at app layer — stored separately if needed
+
+  const { data, error } = await supabase
+    .from("employees")
+    .upsert(row, { onConflict: "id" })
+    .select()
+    .single();
+
+  if (error) return { error };
+  return { data, error: null };
+}
+
 export async function deleteEmployee(userId, employeeId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 

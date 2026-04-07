@@ -5,9 +5,10 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
 import { StatusBadge } from "../components/shared/moduleListUI";
-import { fmt } from "../utils/helpers";
+import { upsert, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import * as dataAccess from "../lib/dataAccess";
+import EmployeeForm from "../modals/EmployeeModal";
 
 // ─── DESIGN TOKENS (matches CustomersPage) ───────────────────────────────────
 const T = {
@@ -115,6 +116,8 @@ export default function EmployeesPage() {
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [showForm, setShowForm] = useState(false);
 
   // Load employees on mount via dataAccess
   useEffect(() => {
@@ -143,8 +146,10 @@ export default function EmployeesPage() {
     }
   };
 
-  const openNew  = () => window.alert("Employee form coming soon.");
-  const openEdit = () => window.alert("Employee form coming soon.");
+  const openNew  = () => { setEditingEmployee(null); setShowForm(true); };
+  const openEdit = (emp) => { setEditingEmployee(emp); setShowForm(true); };
+  const closeForm = () => { setShowForm(false); setEditingEmployee(null); };
+  const onSave = (emp) => { setEmployees(p => upsert(p, emp)); closeForm(); };
 
   // ─── filtered list ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -177,6 +182,17 @@ export default function EmployeesPage() {
   }, [employees]);
 
   const hasSearch = search.length > 0;
+
+  // ─── form ──────────────────────────────────────────────────────────────────
+  if (showForm) {
+    return (
+      <EmployeeForm
+        existing={editingEmployee}
+        onClose={closeForm}
+        onSave={onSave}
+      />
+    );
+  }
 
   // ─── loading state ─────────────────────────────────────────────────────────
   if (loading) {
