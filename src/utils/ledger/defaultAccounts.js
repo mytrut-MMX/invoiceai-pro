@@ -23,16 +23,17 @@ const DEFAULT_ACCOUNTS = [
 
   // EXPENSES
   { code: '5000', name: 'Cost of Goods Sold',       type: 'expense',   subtype: 'cogs',        is_system: false },
-  { code: '5100', name: 'Subcontractor Labour',   type: 'expense',   subtype: 'cogs',        is_system: false },
-  { code: '5200', name: 'Subcontractor Materials', type: 'expense',   subtype: 'cogs',        is_system: false },
-  { code: '6000', name: 'Advertising',             type: 'expense',   subtype: 'operating',   is_system: false },
-  { code: '6100', name: 'IT & Software',         type: 'expense',   subtype: 'operating',   is_system: false },
-  { code: '6200', name: 'Office Supplies',       type: 'expense',   subtype: 'operating',   is_system: false },
-  { code: '6300', name: 'Professional Services', type: 'expense',   subtype: 'operating',   is_system: false },
-  { code: '6400', name: 'Travel',                type: 'expense',   subtype: 'operating',   is_system: false },
-  { code: '6500', name: 'Utilities',             type: 'expense',   subtype: 'operating',   is_system: false },
-  { code: '6600', name: 'Wages & Salaries',      type: 'expense',   subtype: 'operating',   is_system: false },
-  { code: '6700', name: 'Bank Charges',          type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '5100', name: 'Subcontractor Labour',     type: 'expense',   subtype: 'cogs',        is_system: false },
+  { code: '5200', name: 'Subcontractor Materials',  type: 'expense',   subtype: 'cogs',        is_system: false },
+  { code: '6000', name: 'Wages & Salaries',         type: 'expense',   subtype: 'operating',   is_system: true  },
+  { code: '6100', name: 'Rent & Rates',             type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '6200', name: 'Office Supplies',          type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '6300', name: 'Professional Services',    type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '6400', name: 'Marketing & Advertising',  type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '6500', name: 'Travel',                   type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '6600', name: 'IT & Software',            type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '6700', name: 'Utilities',                type: 'expense',   subtype: 'operating',   is_system: false },
+  { code: '6800', name: 'Bank Charges',             type: 'expense',   subtype: 'operating',   is_system: false },
   { code: '9000', name: 'Suspense Account',      type: 'asset',     subtype: 'control',     is_system: true },
 ];
 
