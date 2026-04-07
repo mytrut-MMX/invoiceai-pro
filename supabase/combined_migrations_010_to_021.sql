@@ -13,6 +13,31 @@
 -- The original JSONB columns in business_profiles are NOT touched.
 -- =============================================================================
 
+-- =============================================================================
+-- PREAMBLE: Drop stale tables from earlier attempts
+-- =============================================================================
+-- Your production DB has 'invoices' and 'customers' tables created outside
+-- these migrations, with a different schema (missing user_id etc.).
+-- CREATE TABLE IF NOT EXISTS silently skips them, then RLS policies fail.
+--
+-- These tables should be EMPTY — the app stores all data in
+-- business_profiles JSONB columns.  Migration 016 will repopulate them
+-- from that JSONB data.
+--
+-- Drop order matters: child tables first (FK constraints).
+-- =============================================================================
+DROP TABLE IF EXISTS public.invoice_tax_breakdown CASCADE;
+DROP TABLE IF EXISTS public.invoice_line_items CASCADE;
+DROP TABLE IF EXISTS public.invoices CASCADE;
+DROP TABLE IF EXISTS public.customers CASCADE;
+
+-- Also drop any other stale normalised tables that might exist with wrong schemas
+DROP TABLE IF EXISTS public.bill_line_items CASCADE;
+DROP TABLE IF EXISTS public.bills CASCADE;
+DROP TABLE IF EXISTS public.payments CASCADE;
+DROP TABLE IF EXISTS public.expenses CASCADE;
+DROP TABLE IF EXISTS public.catalog_items CASCADE;
+
 
 -- =============================================================================
 -- 010_normalise_invoices.sql
