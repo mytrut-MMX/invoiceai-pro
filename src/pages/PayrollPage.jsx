@@ -9,6 +9,7 @@ import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 import * as dataAccess from "../lib/dataAccess";
 import { createPayrollRun } from "../utils/payroll/payrollService";
+import PayrollRunDetailPage from "./PayrollRunDetailPage";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
@@ -118,6 +119,7 @@ export default function PayrollPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [viewRunId, setViewRunId] = useState(null);
 
   // ─── Load data ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -179,7 +181,7 @@ export default function PayrollPage() {
     if (result.error) { setCreateError(result.error); return; }
     setRuns(prev => [result.run, ...prev]);
     setShowNewModal(false);
-    console.log("Created payroll run:", result.run?.id, "— detail view coming in 16D");
+    if (result.run?.id) setViewRunId(result.run.id);
   };
 
   const handleDelete = (run) => {
@@ -189,9 +191,17 @@ export default function PayrollPage() {
     if (user?.id) dataAccess.deletePayrollRun?.(user.id, run.id);
   };
 
-  const handleViewRun = (run) => {
-    console.log("Navigate to payroll run detail:", run.id, "— view coming in 16D");
-  };
+  const handleViewRun = (run) => setViewRunId(run.id);
+
+  // ─── Detail view ────────────────────────────────────────────────────────────
+  if (viewRunId) {
+    return (
+      <PayrollRunDetailPage
+        runId={viewRunId}
+        onBack={() => setViewRunId(null)}
+      />
+    );
+  }
 
   // ─── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
