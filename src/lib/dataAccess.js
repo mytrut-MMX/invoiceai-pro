@@ -900,3 +900,38 @@ export async function deleteEmployee(userId, employeeId) {
 
   return { error: error || null };
 }
+
+// =============================================================================
+// Payroll Runs
+// =============================================================================
+
+export async function loadPayrollRuns(userId) {
+  if (!supabase || !userId) return [];
+
+  const { data, error } = await supabase
+    .from("payroll_runs")
+    .select("*, payslips(count)")
+    .eq("user_id", userId)
+    .order("pay_date", { ascending: false });
+
+  if (!error && data) {
+    return data.map(r => ({
+      ...r,
+      payslip_count: r.payslips?.[0]?.count ?? 0,
+    }));
+  }
+  return [];
+}
+
+export async function deletePayrollRun(userId, runId) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const { error } = await supabase
+    .from("payroll_runs")
+    .delete()
+    .eq("id", runId)
+    .eq("user_id", userId)
+    .eq("status", "draft");
+
+  return { error: error || null };
+}

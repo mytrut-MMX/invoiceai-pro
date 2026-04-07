@@ -83,6 +83,10 @@ export const ROUTES = {
   EMPLOYEE:      (id) => `/employees/${id}`,
   EMPLOYEE_EDIT: (id) => `/employees/${id}/edit`,
 
+  // ─── Payroll Runs ──────────────────────────────────────────────────────────
+  PAYROLL:     '/payroll',
+  PAYROLL_RUN: (id) => `/payroll/${id}`,
+
   // ─── VAT Returns ─────────────────────────────────────────────────────────────
   VAT_RETURN: '/vat-return',
 
