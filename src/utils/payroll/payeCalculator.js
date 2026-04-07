@@ -289,6 +289,25 @@ export function calculateTax(
     cumulativeTaxable = 0;
   }
 
+  // Compute taxable pay THIS period (delta from prior period's cumulative taxable)
+  let taxableThisPeriod;
+  if (parsedTaxCode.isNonCumulative || effectivePeriod <= 1) {
+    taxableThisPeriod = cumulativeTaxable;
+  } else {
+    // Prior period's cumulative taxable using same allowance/K-addition
+    let priorCumulativeTaxable;
+    if (parsedTaxCode.isK) {
+      const annualKAddition = parsedTaxCode.number * 10;
+      const priorKAddition = (annualKAddition / periodsPerYear) * (effectivePeriod - 1);
+      priorCumulativeTaxable = grossYtd + priorKAddition;
+    } else {
+      const priorAllowance = (annualAllowance / periodsPerYear) * (effectivePeriod - 1);
+      priorCumulativeTaxable = grossYtd - priorAllowance;
+    }
+    if (priorCumulativeTaxable < 0) priorCumulativeTaxable = 0;
+    taxableThisPeriod = cumulativeTaxable - priorCumulativeTaxable;
+  }
+
   // Select tax bands
   let bands;
   if (parsedTaxCode.isScottish) {
@@ -336,6 +355,7 @@ export function calculateTax(
 
   return {
     taxDue,
+    taxableThisPeriod: round2(taxableThisPeriod),
     cumulativeTaxable: round2(cumulativeTaxable),
     cumulativeTaxDue,
   };
@@ -638,7 +658,7 @@ export function calculatePayslip(
 
   return {
     grossPay,
-    taxablePayThisPeriod: round2(taxResult.cumulativeTaxable - (safeYtd.grossYtd - (parsed.isNonCumulative ? safeYtd.grossYtd : 0))),
+    taxablePayThisPeriod: taxResult.taxableThisPeriod,
     taxDeducted: taxResult.taxDue,
     niEmployee: niResult.niEmployee,
     niEmployer: niResult.niEmployer,
