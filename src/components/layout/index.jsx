@@ -21,6 +21,7 @@ export const NAV = [
   { id:"employees", label:"Employees",         Icon:Icons.Customers,route:ROUTES.EMPLOYEES,  match:"/employees" },
   { id:"payroll",   label:"Payroll",           Icon:Icons.Payments, route:ROUTES.PAYROLL,    match:"/payroll" },
   { id:"vat-return",label:"VAT Returns",       Icon:Icons.Invoices, route:ROUTES.VAT_RETURN, match:"/vat-return" },
+  { id:"itsa",      label:"Self Assessment",   Icon:Icons.Receipt,  route:ROUTES.ITSA,       match:"/self-assessment" },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings, route:ROUTES.SETTINGS_GENERAL, match:"/settings" },
 ];
 

@@ -12,8 +12,10 @@ const ALERT_PAGE_ROUTES = {
   "payments":     ROUTES.PAYMENTS,
   "expenses":     ROUTES.EXPENSES,
   "bills":        ROUTES.BILLS,
-  "payroll":      ROUTES.PAYROLL || "/payroll",           // TODO: add ROUTES.PAYROLL in prompt 20
-  "payroll:new":  ROUTES.PAYROLL_NEW || "/payroll/new",   // TODO: add ROUTES.PAYROLL_NEW in prompt 20
+  "payroll":      ROUTES.PAYROLL || "/payroll",
+  "payroll:new":  ROUTES.PAYROLL_NEW || "/payroll/new",
+  "vat":          ROUTES.VAT_RETURN,
+  "itsa":         ROUTES.ITSA,
 };
 
 const LS_DISMISSED_KEY = "invoicesaga_dismissed_alerts";
@@ -136,22 +138,30 @@ function generatePayrollAlerts(employees, payrollRuns, bills) {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function SmartAlerts({ invoices, payments, expenses, orgSettings, bills }) {
+export default function SmartAlerts({
+  invoices, payments, expenses, orgSettings, bills,
+  vatPeriods, itsaPeriods, payrollRuns: propsPayrollRuns,
+  employees: propsEmployees, hmrcBills, hasEmployees,
+}) {
   const navigate = useNavigate();
   const { user } = useContext(AppCtx);
   const [dismissedIds, setDismissedIds] = useState(() => getDismissed());
   const [alertsOpen, setAlertsOpen] = useState(true);
 
-  // ── Load payroll data locally (not in AppCtx yet) ──────────────────────
-  const [employees, setEmployees] = useState(null);
-  const [payrollRuns, setPayrollRuns] = useState(null);
+  // ── Load payroll data locally as fallback (if not passed via props) ─────
+  const [localEmployees, setLocalEmployees] = useState(null);
+  const [localPayrollRuns, setLocalPayrollRuns] = useState(null);
+
+  const employees = propsEmployees ?? localEmployees;
+  const payrollRuns = propsPayrollRuns ?? localPayrollRuns;
 
   useEffect(() => {
+    // Skip local loading if data was passed via props
+    if (propsEmployees !== undefined) return;
     if (!supabaseReady || !user?.id) return;
 
     let cancelled = false;
 
-    // Only fetch if user might have employees — do a quick count first
     (async () => {
       const { count, error: cErr } = await supabase
         .from("employees")
@@ -160,14 +170,10 @@ export default function SmartAlerts({ invoices, payments, expenses, orgSettings,
         .eq("status", "active");
 
       if (cancelled || cErr || count === 0) {
-        if (!cancelled) {
-          setEmployees([]);
-          setPayrollRuns([]);
-        }
+        if (!cancelled) { setLocalEmployees([]); setLocalPayrollRuns([]); }
         return;
       }
 
-      // Fetch employees + recent payroll runs in parallel
       const [empRes, runRes] = await Promise.all([
         supabase
           .from("employees")
@@ -183,13 +189,13 @@ export default function SmartAlerts({ invoices, payments, expenses, orgSettings,
       ]);
 
       if (!cancelled) {
-        setEmployees(empRes.data || []);
-        setPayrollRuns(runRes.data || []);
+        setLocalEmployees(empRes.data || []);
+        setLocalPayrollRuns(runRes.data || []);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, propsEmployees]);
 
   // ── Merge existing + payroll alerts ────────────────────────────────────
   const baseAlerts = useMemo(
@@ -198,15 +204,83 @@ export default function SmartAlerts({ invoices, payments, expenses, orgSettings,
   );
 
   const allAlerts = useMemo(() => {
-    if (!employees || employees.length === 0) return baseAlerts;
-    const payrollAlerts = generatePayrollAlerts(employees, payrollRuns, bills);
-    if (payrollAlerts.length === 0) return baseAlerts;
+    const extra = [];
 
-    const merged = [...baseAlerts, ...payrollAlerts];
+    // Payroll alerts (existing)
+    if (employees && employees.length > 0) {
+      extra.push(...generatePayrollAlerts(employees, payrollRuns, bills));
+    }
+
+    // ── VAT Return Due ──────────────────────────────────────────────────
+    if (vatPeriods?.length > 0 && orgSettings?.vatReg === "Yes") {
+      const openPeriod = vatPeriods.find(p => p.status === "open" || p.status === "draft");
+      if (openPeriod) {
+        const days = daysUntil(openPeriod.due_date);
+        if (days <= 30) {
+          extra.push({
+            id: `vat_due_${openPeriod.id}`,
+            severity: days < 0 ? "critical" : days <= 7 ? "warning" : "info",
+            category: "vat",
+            title: days < 0
+              ? `VAT Return overdue by ${Math.abs(days)} days`
+              : `VAT Return due in ${days} days`,
+            description: `Period ${fmtDateShort(openPeriod.period_start)} to ${fmtDateShort(openPeriod.period_end)}`,
+            actionPage: "vat",
+            dismissable: days > 7,
+          });
+        }
+      }
+    }
+
+    // ── ITSA Quarterly Update Due ───────────────────────────────────────
+    if (itsaPeriods?.length > 0 && orgSettings?.bType === "Sole Trader / Freelancer") {
+      const openItsaPeriod = itsaPeriods.find(
+        p => p.status !== "submitted" && new Date(p.period_end) <= new Date()
+      );
+      if (openItsaPeriod) {
+        const days = daysUntil(openItsaPeriod.submission_deadline);
+        if (days <= 30) {
+          extra.push({
+            id: `itsa_due_${openItsaPeriod.id}`,
+            severity: days < 0 ? "critical" : days <= 7 ? "warning" : "info",
+            category: "itsa",
+            title: days < 0
+              ? `ITSA submission overdue by ${Math.abs(days)} days`
+              : `ITSA quarterly update due in ${days} days`,
+            description: `${openItsaPeriod.quarter} ${openItsaPeriod.tax_year}`,
+            actionPage: "itsa",
+            dismissable: days > 7,
+          });
+        }
+      }
+    }
+
+    // ── Missing supply date (VAT compliance) ─────────────────────────────
+    if (orgSettings?.vatReg === "Yes" && invoices?.length > 0) {
+      const missingSupplyDate = invoices.filter(inv => {
+        if (inv.supply_date) return false;
+        const hasVat = (inv.taxBreakdown || []).some(t => Number(t.amount) > 0);
+        return hasVat && inv.status !== "Draft" && inv.status !== "Void";
+      });
+      if (missingSupplyDate.length > 0) {
+        extra.push({
+          id: "vat_missing_supply_date",
+          severity: "warning",
+          category: "vat",
+          title: `${missingSupplyDate.length} invoice${missingSupplyDate.length === 1 ? "" : "s"} missing supply date`,
+          description: "HMRC requires supply date on all VAT invoices for accurate tax point reporting",
+          actionPage: "invoices",
+          dismissable: true,
+        });
+      }
+    }
+
+    if (extra.length === 0) return baseAlerts;
+    const merged = [...baseAlerts, ...extra];
     const ORDER = { critical: 0, warning: 1, info: 2 };
     merged.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
     return merged;
-  }, [baseAlerts, employees, payrollRuns, bills]);
+  }, [baseAlerts, employees, payrollRuns, bills, vatPeriods, itsaPeriods, orgSettings, invoices]);
 
   const visibleAlerts = useMemo(
     () => allAlerts.filter(a => !dismissedIds.includes(a.id)),
