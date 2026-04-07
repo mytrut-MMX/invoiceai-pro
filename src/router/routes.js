@@ -77,6 +77,16 @@ export const ROUTES = {
   BILL:       (id) => `/bills/${id}`,
   BILL_EDIT:  (id) => `/bills/${id}/edit`,
 
+  // ─── Employees / Payroll ───────────────────────────────────────────────────
+  EMPLOYEES:     '/employees',
+  EMPLOYEES_NEW: '/employees/new',
+  EMPLOYEE:      (id) => `/employees/${id}`,
+  EMPLOYEE_EDIT: (id) => `/employees/${id}/edit`,
+
+  // ─── Payroll Runs ──────────────────────────────────────────────────────────
+  PAYROLL:     '/payroll',
+  PAYROLL_RUN: (id) => `/payroll/${id}`,
+
   // ─── VAT Returns ─────────────────────────────────────────────────────────────
   VAT_RETURN: '/vat-return',
 

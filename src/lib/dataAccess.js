@@ -855,3 +855,83 @@ export async function deleteCatalogItem(userId, itemId) {
 
   return { error: null };
 }
+
+// =============================================================================
+// Employees
+// =============================================================================
+
+export async function loadEmployees(userId) {
+  if (!supabase || !userId) return [];
+
+  const { data, error } = await supabase
+    .from("employees")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (!error && data) return data;
+  return [];
+}
+
+export async function saveEmployee(userId, employee) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const row = { ...employee, user_id: userId };
+  delete row.bank_details; // encrypted at app layer — stored separately if needed
+
+  const { data, error } = await supabase
+    .from("employees")
+    .upsert(row, { onConflict: "id" })
+    .select()
+    .single();
+
+  if (error) return { error };
+  return { data, error: null };
+}
+
+export async function deleteEmployee(userId, employeeId) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const { error } = await supabase
+    .from("employees")
+    .delete()
+    .eq("id", employeeId)
+    .eq("user_id", userId);
+
+  return { error: error || null };
+}
+
+// =============================================================================
+// Payroll Runs
+// =============================================================================
+
+export async function loadPayrollRuns(userId) {
+  if (!supabase || !userId) return [];
+
+  const { data, error } = await supabase
+    .from("payroll_runs")
+    .select("*, payslips(count)")
+    .eq("user_id", userId)
+    .order("pay_date", { ascending: false });
+
+  if (!error && data) {
+    return data.map(r => ({
+      ...r,
+      payslip_count: r.payslips?.[0]?.count ?? 0,
+    }));
+  }
+  return [];
+}
+
+export async function deletePayrollRun(userId, runId) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const { error } = await supabase
+    .from("payroll_runs")
+    .delete()
+    .eq("id", runId)
+    .eq("user_id", userId)
+    .eq("status", "draft");
+
+  return { error: error || null };
+}

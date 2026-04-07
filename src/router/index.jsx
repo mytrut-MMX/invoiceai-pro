@@ -63,6 +63,8 @@ const InvoiceTemplatesPage = lazy(() => import("../pages/InvoiceTemplatesPage"))
 const VATReturnPage      = lazy(() => import("../pages/VATReturnPage"));
 const ITSAPage           = lazy(() => import("../pages/ITSAPage"));
 const LedgerPage         = lazy(() => import("../pages/LedgerPage"));
+const EmployeesPage      = lazy(() => import("../pages/EmployeesPage"));
+const PayrollPage        = lazy(() => import("../pages/PayrollPage"));
 const AdminPage          = lazy(() => import("../pages/AdminPage"));
 const NotFoundPage       = lazy(() => import("../pages/NotFoundPage"));
 
@@ -153,6 +155,13 @@ const router = createBrowserRouter([
           // Bills
           { path: ROUTES.BILLS,     element: <BillsPage key="list" /> },
           { path: ROUTES.BILLS_NEW, element: <BillsPage key="new"  initialShowForm /> },
+
+          // Employees
+          { path: ROUTES.EMPLOYEES,     element: <EmployeesPage key="list" /> },
+
+          // Payroll
+          { path: ROUTES.PAYROLL,          element: <PayrollPage key="list" /> },
+          { path: "/payroll/:runId",       element: <PayrollPage key="detail" /> },
 
           // VAT Returns
           { path: ROUTES.VAT_RETURN, element: <VATReturnPage /> },
