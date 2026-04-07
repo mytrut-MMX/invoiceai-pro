@@ -266,7 +266,15 @@ export default function HomePage() {
       )}
 
       <MonthEndChecklist />
-      <SmartAlerts invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} bills={bills} />
+      <SmartAlerts
+        invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} bills={bills}
+        vatPeriods={moduleData.vatPeriods}
+        itsaPeriods={moduleData.itsaPeriods}
+        payrollRuns={moduleData.payrollRuns}
+        employees={moduleData.employees}
+        hmrcBills={moduleData.hmrcBills}
+        hasEmployees={moduleData.hasEmployees}
+      />
       <CashFlowWidget />
       <DebtorInsightsWidget />
       <AIChatPanel user={user} />
