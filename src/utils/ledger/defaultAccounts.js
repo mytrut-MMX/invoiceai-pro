@@ -8,6 +8,10 @@ const DEFAULT_ACCOUNTS = [
   { code: '2000', name: 'Accounts Payable',      type: 'liability', subtype: 'current',     is_system: true },
   { code: '2100', name: 'VAT Payable',           type: 'liability', subtype: 'tax',         is_system: true },
   { code: '2200', name: 'CIS Payable',           type: 'liability', subtype: 'tax',         is_system: true },
+  // Payroll liabilities
+  { code: '2300', name: 'PAYE/NIC Liability',    type: 'liability', subtype: 'tax',         is_system: true },
+  { code: '2310', name: 'Net Wages Payable',     type: 'liability', subtype: 'current',     is_system: true },
+  { code: '2350', name: 'Pension Liability',     type: 'liability', subtype: 'current',     is_system: true },
 
   // EQUITY
   { code: '3000', name: 'Owner Equity',          type: 'equity',    subtype: null,          is_system: true },
