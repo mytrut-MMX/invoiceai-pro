@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.bills (
   due_date        DATE,
   category        VARCHAR(100),
   status          VARCHAR(20) NOT NULL DEFAULT 'Draft'
-                    CHECK (status IN ('Draft','Received','Paid','Partial','Overdue','Void')),
+                    CHECK (status IN ('Draft','Awaiting Approval','Approved','Paid','Overdue','Void')),
   description     TEXT,
   reference       VARCHAR(200),
   amount          DECIMAL(15,2),
