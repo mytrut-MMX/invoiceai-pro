@@ -24,7 +24,36 @@ const STAT_ROUTES = {
   "Subcontractors": ROUTES.EXPENSES + "?filter=subcontractor",
   "Next VAT Return": ROUTES.VAT_RETURN,
   "ITSA Quarter": ROUTES.ITSA,
+  "Next Payroll": ROUTES.PAYROLL,
+  "PAYE Due": ROUTES.PAYROLL,
 };
+
+/** Estimate next pay date from frequency + pay day setting (monthly only for now). */
+function calculateNextPayDate(lastPayDate, frequency, payDay) {
+  // TODO: handle weekly/fortnightly — currently falls back to monthly
+  const today = new Date();
+  let next = new Date(today.getFullYear(), today.getMonth() + 1, 0); // last day of current month
+  if (payDay === "last-working" || payDay === "last-working-day") {
+    while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() - 1);
+  } else if (payDay === "last-friday") {
+    while (next.getDay() !== 5) next.setDate(next.getDate() - 1);
+  } else if (payDay === "25th") {
+    next = new Date(today.getFullYear(), today.getMonth(), 25);
+  }
+  // If already passed this month, move to next month
+  if (next < today) {
+    const nm = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    if (payDay === "last-working" || payDay === "last-working-day") {
+      while (nm.getDay() === 0 || nm.getDay() === 6) nm.setDate(nm.getDate() - 1);
+    } else if (payDay === "last-friday") {
+      while (nm.getDay() !== 5) nm.setDate(nm.getDate() - 1);
+    } else if (payDay === "25th") {
+      nm.setDate(25);
+    }
+    return nm;
+  }
+  return next;
+}
 
 export default function HomePage() {
   const { user, invoices, expenses, payments, orgSettings, bills } = useContext(AppCtx);
@@ -126,6 +155,40 @@ export default function HomePage() {
       }
     }
 
+    // ─── Next Payroll KPI ───────────────────────────────────────────────────
+    let nextPayrollStat = null;
+    if (moduleData.hasEmployees) {
+      const lastRun = moduleData.payrollRuns?.[0];
+      const nextPayDate = calculateNextPayDate(
+        lastRun?.pay_date,
+        orgSettings?.defaultPayFrequency || "monthly",
+        orgSettings?.defaultPayDay || "last-friday"
+      );
+      const daysUntilPayDate = Math.ceil((nextPayDate - new Date()) / 86400000);
+      const estimatedNet = lastRun?.total_net || 0;
+      nextPayrollStat = {
+        label: "Next Payroll",
+        value: estimatedNet > 0 ? fmt(currencySymbol, estimatedNet) : "Pending",
+        sub: daysUntilPayDate <= 0 ? "Due now" : `In ${daysUntilPayDate} days`,
+        color: daysUntilPayDate <= 3 ? "#d97706" : "#7c3aed",
+      };
+    }
+
+    // ─── PAYE Due KPI ───────────────────────────────────────────────────────
+    let payeDueStat = null;
+    if (moduleData.hmrcBills.length > 0) {
+      const totalPayeDue = moduleData.hmrcBills.reduce((sum, b) => sum + Number(b.total || 0), 0);
+      const earliestDue = moduleData.hmrcBills[0];
+      const daysUntilDue = Math.ceil((new Date(earliestDue.due_date) - new Date()) / 86400000);
+      const isOverdue = daysUntilDue < 0;
+      payeDueStat = {
+        label: "PAYE Due",
+        value: fmt(currencySymbol, totalPayeDue),
+        sub: isOverdue ? `Overdue by ${Math.abs(daysUntilDue)} days` : `Due in ${daysUntilDue} days`,
+        color: isOverdue ? "#dc2626" : daysUntilDue <= 7 ? "#d97706" : "#0891b2",
+      };
+    }
+
     return [
       { label: "Outstanding", value: fmt(currencySymbol, outstanding), sub: `${invoices.filter(i => ["Sent", "Partial"].includes(i.status)).length} invoices`, color: "#1e6be0",
         trend: calcTrend(sumAmt(currInv, i => ["Sent", "Partial"].includes(i.status)), sumAmt(prevInv, i => ["Sent", "Partial"].includes(i.status)), false) },
@@ -147,8 +210,10 @@ export default function HomePage() {
       }] : []),
       ...(vatStat ? [vatStat] : []),
       ...(itsaStat ? [itsaStat] : []),
+      ...(nextPayrollStat ? [nextPayrollStat] : []),
+      ...(payeDueStat ? [payeDueStat] : []),
     ];
-  }, [invoices, expenses, bills, orgSettings, currencySymbol, moduleData.vatPeriods, moduleData.itsaPeriods, moduleData.isVatRegistered, moduleData.isSoleTrader]);
+  }, [invoices, expenses, bills, orgSettings, currencySymbol, moduleData.vatPeriods, moduleData.itsaPeriods, moduleData.isVatRegistered, moduleData.isSoleTrader, moduleData.hasEmployees, moduleData.payrollRuns, moduleData.hmrcBills, orgSettings?.defaultPayFrequency, orgSettings?.defaultPayDay]);
 
   const overdueInvoices = useMemo(() => invoices.filter(i => i.status === "Overdue"), [invoices]);
 
