@@ -1,13 +1,27 @@
+import { useState } from "react";
 import { ff, CUR_SYM } from "../../constants";
 import { Btn } from "../atoms";
 import { fmtDate, fmt } from "../../utils/helpers";
+import { generatePayslipPdf } from "../../utils/payroll/generatePayslipPdf";
 
 // ─── PAYSLIP DETAIL MODAL ────────────────────────────────────────────────────
 
-export default function PayslipDetailModal({ payslip, employee, run, currSym = "£", onClose }) {
+export default function PayslipDetailModal({ payslip, employee, run, employer, currSym = "£", onClose }) {
   const s = payslip || {};
   const emp = employee || {};
   const name = `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || "Employee";
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState("");
+
+  const handleDownloadPdf = async () => {
+    setPdfBusy(true);
+    setPdfMsg("");
+    const result = await generatePayslipPdf(s, emp, run, employer || {});
+    setPdfBusy(false);
+    if (result.success) setPdfMsg("Downloaded " + result.filename);
+    else setPdfMsg("Error: " + (result.error || "Failed"));
+    if (result.success) setTimeout(() => setPdfMsg(""), 3000);
+  };
 
   const totalDeductions = Number(s.tax_deducted || 0) + Number(s.ni_employee || 0) + Number(s.pension_employee || 0) + Number(s.student_loan || 0) + Number(s.other_deductions || 0);
 
@@ -110,8 +124,11 @@ export default function PayslipDetailModal({ payslip, employee, run, currSym = "
         </div>
 
         {/* Footer */}
-        <div style={{ padding:"14px 24px", borderTop:"1px solid #e8e8ec", display:"flex", justifyContent:"flex-end", gap:8 }}>
-          <Btn variant="outline" onClick={() => console.log("Download payslip PDF — coming in prompt 17", s.id)}>Download PDF</Btn>
+        <div style={{ padding:"14px 24px", borderTop:"1px solid #e8e8ec", display:"flex", justifyContent:"flex-end", alignItems:"center", gap:8 }}>
+          {pdfMsg && <span style={{ fontSize:12, color: pdfMsg.startsWith("Error") ? "#dc2626" : "#16A34A", marginRight:"auto" }}>{pdfMsg}</span>}
+          <Btn variant="outline" onClick={handleDownloadPdf} disabled={pdfBusy}>
+            {pdfBusy ? "Generating…" : "Download PDF"}
+          </Btn>
           <Btn variant="primary" onClick={onClose}>Close</Btn>
         </div>
       </div>

@@ -357,6 +357,7 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
           payslip={viewPayslip}
           employee={employees[viewPayslip.employee_id]}
           run={run}
+          employer={{ name: orgSettings?.companyName, payeRef: orgSettings?.payeRef, address: orgSettings?.address, logo: orgSettings?.logo }}
           currSym={currSym}
           onClose={() => setViewPayslip(null)}
         />
