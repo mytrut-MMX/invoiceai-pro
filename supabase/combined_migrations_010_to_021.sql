@@ -69,6 +69,18 @@ DROP TABLE IF EXISTS public.invoice_tax_breakdown CASCADE;
 DROP TABLE IF EXISTS public.invoice_line_items CASCADE;
 DROP TABLE IF EXISTS public.invoices CASCADE;
 
+-- Stale tables from earlier development (not part of 010-021 but may exist)
+DROP TABLE IF EXISTS public.quote_line_items CASCADE;
+DROP TABLE IF EXISTS public.quotes CASCADE;
+
+-- =============================================================================
+-- PREREQUISITE: Ensure business_profiles has the 'bills' column (migration 007)
+-- =============================================================================
+-- Migration 016 reads business_profiles.bills — if the column doesn't exist,
+-- the data migration function will fail.
+ALTER TABLE public.business_profiles
+  ADD COLUMN IF NOT EXISTS bills jsonb NOT NULL DEFAULT '[]'::jsonb;
+
 
 -- =============================================================================
 -- 010_normalise_invoices.sql
