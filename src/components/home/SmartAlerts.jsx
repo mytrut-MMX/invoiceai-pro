@@ -255,12 +255,32 @@ export default function SmartAlerts({
       }
     }
 
+    // ── Missing supply date (VAT compliance) ─────────────────────────────
+    if (orgSettings?.vatReg === "Yes" && invoices?.length > 0) {
+      const missingSupplyDate = invoices.filter(inv => {
+        if (inv.supply_date) return false;
+        const hasVat = (inv.taxBreakdown || []).some(t => Number(t.amount) > 0);
+        return hasVat && inv.status !== "Draft" && inv.status !== "Void";
+      });
+      if (missingSupplyDate.length > 0) {
+        extra.push({
+          id: "vat_missing_supply_date",
+          severity: "warning",
+          category: "vat",
+          title: `${missingSupplyDate.length} invoice${missingSupplyDate.length === 1 ? "" : "s"} missing supply date`,
+          description: "HMRC requires supply date on all VAT invoices for accurate tax point reporting",
+          actionPage: "invoices",
+          dismissable: true,
+        });
+      }
+    }
+
     if (extra.length === 0) return baseAlerts;
     const merged = [...baseAlerts, ...extra];
     const ORDER = { critical: 0, warning: 1, info: 2 };
     merged.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
     return merged;
-  }, [baseAlerts, employees, payrollRuns, bills, vatPeriods, itsaPeriods, orgSettings]);
+  }, [baseAlerts, employees, payrollRuns, bills, vatPeriods, itsaPeriods, orgSettings, invoices]);
 
   const visibleAlerts = useMemo(
     () => allAlerts.filter(a => !dismissedIds.includes(a.id)),
