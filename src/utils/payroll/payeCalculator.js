@@ -32,35 +32,35 @@ export const DEFAULT_TAX_TABLES = {
       { name: 'additional', rate: 0.45, from: 125140, to: Infinity },
     ],
     scotland: [
-      { name: 'starter', rate: 0.19, from: 0, to: 2162 },
-      { name: 'basic', rate: 0.20, from: 2162, to: 13118 },
-      { name: 'intermediate', rate: 0.21, from: 13118, to: 31092 },
-      { name: 'higher', rate: 0.42, from: 31092, to: 125140 },
-      { name: 'advanced', rate: 0.45, from: 125140, to: 150000 },
-      { name: 'top', rate: 0.48, from: 150000, to: Infinity },
+      { name: 'starter', rate: 0.19, from: 0, to: 2827 },
+      { name: 'basic', rate: 0.20, from: 2827, to: 14921 },
+      { name: 'intermediate', rate: 0.21, from: 14921, to: 31092 },
+      { name: 'higher', rate: 0.42, from: 31092, to: 62430 },
+      { name: 'advanced', rate: 0.45, from: 62430, to: 112570 },
+      { name: 'top', rate: 0.48, from: 112570, to: Infinity },
     ],
     wales: null, // Same as England for 2025/26
   },
   ni: {
     // Weekly thresholds for 2025/26
-    weekly: { LEL: 123, PT: 242, ST: 175, UEL: 967 },
-    monthly: { LEL: 533, PT: 1048, ST: 758, UEL: 4189 },
-    annual: { LEL: 6396, PT: 12570, ST: 9100, UEL: 50270 },
+    weekly: { LEL: 125, PT: 242, ST: 96, UEL: 967, UST: 967 },
+    monthly: { LEL: 542, PT: 1048, ST: 417, UEL: 4189, UST: 4189 },
+    annual: { LEL: 6500, PT: 12570, ST: 5000, UEL: 50270, UST: 50270 },
     rates: {
-      A: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0.138 },
-      B: { employeePTtoUEL: 0.0585, employeeAboveUEL: 0.02, employerAboveST: 0.138 },
-      C: { employeePTtoUEL: 0, employeeAboveUEL: 0, employerAboveST: 0.138 },
-      F: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
-      H: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
-      J: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0.138 },
-      M: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0 },
-      Z: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0 },
+      A: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
+      B: { employeePTtoUEL: 0.0185, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
+      C: { employeePTtoUEL: 0, employeeAboveUEL: 0, employerAboveST: 0.15 },
+      F: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
+      H: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
+      J: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0.15 },
+      M: { employeePTtoUEL: 0.08, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
+      Z: { employeePTtoUEL: 0.02, employeeAboveUEL: 0.02, employerAboveST: 0, employerAboveUST: 0.15 },
     },
   },
   studentLoan: {
-    plan1: { rate: 0.09, annualThreshold: 24990 },
-    plan2: { rate: 0.09, annualThreshold: 27295 },
-    plan4: { rate: 0.09, annualThreshold: 31395 },
+    plan1: { rate: 0.09, annualThreshold: 26065 },
+    plan2: { rate: 0.09, annualThreshold: 28470 },
+    plan4: { rate: 0.09, annualThreshold: 32745 },
     plan5: { rate: 0.09, annualThreshold: 25000 },
     postgrad: { rate: 0.06, annualThreshold: 21000 },
   },
@@ -93,6 +93,10 @@ export const DEFAULT_TAX_TABLES = {
  */
 export function parseTaxCode(taxCode) {
   let code = (taxCode || '').trim().toUpperCase();
+
+  if (!code) {
+    throw new Error('Tax code is required');
+  }
 
   const result = {
     number: 0,
@@ -155,13 +159,14 @@ export function parseTaxCode(taxCode) {
   }
 
   // Standard code: numeric portion followed by suffix letter (L, M, N, T)
-  const match = code.match(/^(\d+)([A-Z]?)$/);
+  const match = code.match(/^(\d+)([A-Z])$/);
   if (match) {
     result.number = parseInt(match[1], 10) || 0;
-    result.suffix = match[2] || '';
+    result.suffix = match[2];
+    return result;
   }
 
-  return result;
+  throw new Error(`Unrecognised tax code: ${(taxCode || '').trim()}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +197,7 @@ export function parseTaxCode(taxCode) {
  * @param {string} payFrequency - 'weekly' | 'fortnightly' | 'monthly'
  * @param {{ grossYtd: number, taxYtd: number }} ytd - year-to-date figures BEFORE this period
  * @param {object} [taxTables=DEFAULT_TAX_TABLES]
- * @returns {{ taxDue: number, cumulativeTaxable: number, cumulativeTaxDue: number }}
+ * @returns {{ taxDue: number, taxableThisPeriod: number, cumulativeTaxable: number, cumulativeTaxDue: number }}
  */
 export function calculateTax(
   grossThisPeriod,
@@ -208,25 +213,29 @@ export function calculateTax(
 
   // NT code: no tax
   if (parsedTaxCode.isNT) {
-    return { taxDue: 0, cumulativeTaxable: 0, cumulativeTaxDue: 0 };
+    return { taxDue: 0, taxableThisPeriod: 0, cumulativeTaxable: 0, cumulativeTaxDue: 0 };
   }
 
   // Flat-rate codes: BR, D0, D1, D2
+  // Scottish codes (SBR, SD0, SD1, SD2) use different rates from rUK
   if (parsedTaxCode.isBR) {
     const tax = round2(grossThisPeriod * 0.20);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD0) {
-    const tax = round2(grossThisPeriod * 0.40);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    const rate = parsedTaxCode.isScottish ? 0.21 : 0.40;
+    const tax = round2(grossThisPeriod * rate);
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD1) {
-    const tax = round2(grossThisPeriod * 0.45);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    const rate = parsedTaxCode.isScottish ? 0.42 : 0.45;
+    const tax = round2(grossThisPeriod * rate);
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
   if (parsedTaxCode.isD2) {
-    const tax = round2(grossThisPeriod * 0.48);
-    return { taxDue: tax, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
+    const rate = parsedTaxCode.isScottish ? 0.45 : 0.48;
+    const tax = round2(grossThisPeriod * rate);
+    return { taxDue: tax, taxableThisPeriod: grossThisPeriod, cumulativeTaxable: grossThisPeriod, cumulativeTaxDue: taxYtd + tax };
   }
 
   // Determine effective period number and gross for cumulative vs non-cumulative
@@ -252,6 +261,16 @@ export function calculateTax(
     annualAllowance = annualAllowance * 0.9;
   }
 
+  // PA taper: reduce by £1 for every £2 of income over the taper threshold
+  // Estimate annual income from cumulative gross to date
+  if (!parsedTaxCode.isK && taxTables.personalAllowanceTaper) {
+    const estimatedAnnualIncome = (cumulativeGross / effectivePeriod) * periodsPerYear;
+    if (estimatedAnnualIncome > taxTables.personalAllowanceTaper) {
+      const reduction = (estimatedAnnualIncome - taxTables.personalAllowanceTaper) / 2;
+      annualAllowance = Math.max(0, annualAllowance - reduction);
+    }
+  }
+
   // Calculate cumulative taxable pay
   let cumulativeTaxable;
 
@@ -268,6 +287,25 @@ export function calculateTax(
   // Taxable pay cannot be negative (but tax can be negative via refund)
   if (cumulativeTaxable < 0) {
     cumulativeTaxable = 0;
+  }
+
+  // Compute taxable pay THIS period (delta from prior period's cumulative taxable)
+  let taxableThisPeriod;
+  if (parsedTaxCode.isNonCumulative || effectivePeriod <= 1) {
+    taxableThisPeriod = cumulativeTaxable;
+  } else {
+    // Prior period's cumulative taxable using same allowance/K-addition
+    let priorCumulativeTaxable;
+    if (parsedTaxCode.isK) {
+      const annualKAddition = parsedTaxCode.number * 10;
+      const priorKAddition = (annualKAddition / periodsPerYear) * (effectivePeriod - 1);
+      priorCumulativeTaxable = grossYtd + priorKAddition;
+    } else {
+      const priorAllowance = (annualAllowance / periodsPerYear) * (effectivePeriod - 1);
+      priorCumulativeTaxable = grossYtd - priorAllowance;
+    }
+    if (priorCumulativeTaxable < 0) priorCumulativeTaxable = 0;
+    taxableThisPeriod = cumulativeTaxable - priorCumulativeTaxable;
   }
 
   // Select tax bands
@@ -317,6 +355,7 @@ export function calculateTax(
 
   return {
     taxDue,
+    taxableThisPeriod: round2(taxableThisPeriod),
     cumulativeTaxable: round2(cumulativeTaxable),
     cumulativeTaxDue,
   };
@@ -359,6 +398,7 @@ export function calculateNI(
       PT: taxTables.ni.weekly.PT * 2,
       ST: taxTables.ni.weekly.ST * 2,
       UEL: taxTables.ni.weekly.UEL * 2,
+      UST: taxTables.ni.weekly.UST * 2,
     };
   } else {
     // Monthly
@@ -377,9 +417,19 @@ export function calculateNI(
   }
 
   // Employer NI
+  // Categories F/H/M/Z: 0% from ST to UST, then employerAboveUST above UST
   let niEmployer = 0;
   if (grossPay > thresholds.ST) {
-    niEmployer = (grossPay - thresholds.ST) * rates.employerAboveST;
+    if (rates.employerAboveUST !== undefined && thresholds.UST) {
+      // Two-tier: 0% (employerAboveST) up to UST, then employerAboveUST above UST
+      const earningsToUST = Math.min(grossPay, thresholds.UST) - thresholds.ST;
+      niEmployer += Math.max(0, earningsToUST) * rates.employerAboveST;
+      if (grossPay > thresholds.UST) {
+        niEmployer += (grossPay - thresholds.UST) * rates.employerAboveUST;
+      }
+    } else {
+      niEmployer = (grossPay - thresholds.ST) * rates.employerAboveST;
+    }
   }
 
   return {
@@ -395,8 +445,11 @@ export function calculateNI(
 /**
  * Calculate student loan repayment for a pay period.
  *
+ * Accepts a single plan type or an array of plan types for concurrent plans
+ * (e.g. ['plan2', 'postgrad']). Returns the total deduction across all plans.
+ *
  * @param {number} grossPay
- * @param {string} planType - 'none' | 'plan1' | 'plan2' | 'plan4' | 'plan5' | 'postgrad'
+ * @param {string|string[]} planType - 'none' | 'plan1' | 'plan2' | 'plan4' | 'plan5' | 'postgrad' or array
  * @param {string} payFrequency
  * @param {object} [taxTables=DEFAULT_TAX_TABLES]
  * @returns {number}
@@ -407,25 +460,29 @@ export function calculateStudentLoan(
   payFrequency = 'monthly',
   taxTables = DEFAULT_TAX_TABLES
 ) {
-  if (!planType || planType === 'none') {
-    return 0;
-  }
+  // Normalise to array for uniform handling
+  const plans = Array.isArray(planType) ? planType : [planType];
 
-  const plan = taxTables.studentLoan[planType];
-  if (!plan) {
-    return 0;
-  }
-
+  let total = 0;
   const periodsPerYear = taxTables.periodsPerYear[payFrequency] || 12;
-  const periodThreshold = plan.annualThreshold / periodsPerYear;
 
-  if (grossPay <= periodThreshold) {
-    return 0;
+  for (const pt of plans) {
+    if (!pt || pt === 'none') continue;
+
+    const plan = taxTables.studentLoan[pt];
+    if (!plan) continue;
+
+    // HMRC publishes period thresholds as annual / periods, rounded DOWN to nearest pound
+    const periodThreshold = Math.floor(plan.annualThreshold / periodsPerYear);
+
+    if (grossPay <= periodThreshold) continue;
+
+    // HMRC rounds student loan repayments DOWN to nearest whole pound
+    const repayment = (grossPay - periodThreshold) * plan.rate;
+    total += Math.floor(repayment);
   }
 
-  // HMRC rounds student loan DOWN (floor to nearest penny)
-  const repayment = (grossPay - periodThreshold) * plan.rate;
-  return Math.floor(repayment * 100) / 100;
+  return total;
 }
 
 // ---------------------------------------------------------------------------
@@ -463,8 +520,9 @@ export function calculatePension(
   }
 
   const periodsPerYear = taxTables.periodsPerYear[payFrequency] || 12;
-  const periodLower = taxTables.pension.qualifyingEarningsLower / periodsPerYear;
-  const periodUpper = taxTables.pension.qualifyingEarningsUpper / periodsPerYear;
+  // HMRC publishes period thresholds as annual / periods, rounded DOWN to nearest pound
+  const periodLower = Math.floor(taxTables.pension.qualifyingEarningsLower / periodsPerYear);
+  const periodUpper = Math.floor(taxTables.pension.qualifyingEarningsUpper / periodsPerYear);
 
   const qualifyingEarnings = Math.max(0, Math.min(grossPay, periodUpper) - periodLower);
 
@@ -555,10 +613,11 @@ export function calculatePayslip(
     taxTables
   );
 
-  // 4. Calculate student loan
+  // 4. Calculate student loan (supports single plan or array of concurrent plans)
+  const studentLoanPlans = employee.studentLoanPlans || employee.studentLoanPlan || 'none';
   const studentLoan = calculateStudentLoan(
     grossPay,
-    employee.studentLoanPlan || 'none',
+    studentLoanPlans,
     payFrequency,
     taxTables
   );
@@ -599,7 +658,7 @@ export function calculatePayslip(
 
   return {
     grossPay,
-    taxablePayThisPeriod: round2(taxResult.cumulativeTaxable - (safeYtd.grossYtd - (parsed.isNonCumulative ? safeYtd.grossYtd : 0))),
+    taxablePayThisPeriod: taxResult.taxableThisPeriod,
     taxDeducted: taxResult.taxDue,
     niEmployee: niResult.niEmployee,
     niEmployer: niResult.niEmployer,
@@ -622,7 +681,7 @@ TEST CASES:
    - Taxable: 3000 - 1047.50 = 1952.50
    - Tax: 1952.50 * 0.20 = 390.50
    - NI employee: (3000 - 1048) * 0.08 = 156.16
-   - NI employer: (3000 - 758) * 0.138 = 309.40
+   - NI employer: (3000 - 417) * 0.15 = 387.45
    - Net (before pension): 3000 - 390.50 - 156.16 = 2453.34
 
 2. K code: K500, Cat A, monthly, £2000/month
@@ -638,12 +697,12 @@ TEST CASES:
    - Uses Scottish bands with starter rate at 19%
 
 5. Student loan plan 2: £3000/month
-   - Monthly threshold: 27295/12 = 2274.58
-   - Repayment: (3000 - 2274.58) * 0.09 = 65.28 (floor to 65.28)
+   - Monthly threshold: floor(28470/12) = 2372
+   - Repayment: (3000 - 2372) * 0.09 = 56.52 (floor to £56)
 
 6. Pension auto-enrolment: £3000/month, 5%/3%
-   - Monthly lower: 6240/12 = 520
-   - Monthly upper: 50270/12 = 4189.17
+   - Monthly lower: floor(6240/12) = 520
+   - Monthly upper: floor(50270/12) = 4189
    - Qualifying: 3000 - 520 = 2480
    - Employee: 2480 * 0.05 = 124.00
    - Employer: 2480 * 0.03 = 74.40
@@ -668,5 +727,5 @@ TEST CASES:
 
 10. NI Category B (married women reduced rate):
     - Employee rate PT to UEL: 5.85% instead of 8%
-    - Employer rate unchanged at 13.8%
+    - Employer rate unchanged at 15%
 */
