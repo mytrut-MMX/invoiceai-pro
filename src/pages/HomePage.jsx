@@ -1,10 +1,12 @@
 import { useState, useMemo, useContext } from "react";
 import { useDashboardCache } from "../hooks/useDashboardCache";
+import { useDashboardModuleData } from "../hooks/useDashboardModuleData";
 import { useNavigate } from "react-router-dom";
 import { ff, CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { fmt, parseCisRate } from "../utils/helpers";
 import { ROUTES } from "../router/routes";
+import { calculateVATReturn } from "../utils/vat/vatReturnCalculator";
 import SmartAlerts from "../components/home/SmartAlerts";
 import AIChatPanel from "../components/home/AIChatPanel";
 import ReportsCenter from "../components/home/ReportsCenter";
@@ -20,6 +22,8 @@ const STAT_ROUTES = {
   "VAT Tracked": ROUTES.LEDGER_PL,
   "CIS Tracked": ROUTES.EXPENSES + "?filter=subcontractor",
   "Subcontractors": ROUTES.EXPENSES + "?filter=subcontractor",
+  "Next VAT Return": ROUTES.VAT_RETURN,
+  "ITSA Quarter": ROUTES.ITSA,
 };
 
 export default function HomePage() {
@@ -27,6 +31,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [hoveredStat, setHoveredStat] = useState(null);
   const currencySymbol = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
+  const moduleData = useDashboardModuleData(user?.id, orgSettings);
 
   const stats = useDashboardCache(() => {
     const now = new Date();
@@ -77,6 +82,50 @@ export default function HomePage() {
     const currInv = invoices.filter(inCurr);
     const prevInv = invoices.filter(inPrev);
 
+    // ─── Next VAT Return KPI ────────────────────────────────────────────────
+    let vatStat = null;
+    if (moduleData.isVatRegistered && moduleData.vatPeriods) {
+      const nextVatPeriod = moduleData.vatPeriods.find(p => p.status === "open" || p.status === "draft");
+      if (nextVatPeriod) {
+        let vatValue = "—";
+        try {
+          const vatCalc = calculateVATReturn(
+            invoices, bills, expenses,
+            { periodStart: nextVatPeriod.period_start, periodEnd: nextVatPeriod.period_end },
+            nextVatPeriod.scheme || "Standard"
+          );
+          vatValue = fmt(currencySymbol, Math.abs(vatCalc.box5));
+        } catch { /* calculator may fail with incomplete data */ }
+        const daysUntilDue = Math.ceil((new Date(nextVatPeriod.due_date) - new Date()) / 86400000);
+        const isOverdue = daysUntilDue < 0;
+        const isUrgent = daysUntilDue <= 14 && daysUntilDue >= 0;
+        vatStat = {
+          label: "Next VAT Return",
+          value: vatValue,
+          sub: isOverdue ? `Overdue by ${Math.abs(daysUntilDue)} days` : `Due in ${daysUntilDue} days`,
+          color: isOverdue ? "#dc2626" : isUrgent ? "#d97706" : "#2563eb",
+        };
+      }
+    }
+
+    // ─── ITSA Quarter KPI ───────────────────────────────────────────────────
+    let itsaStat = null;
+    if (moduleData.isSoleTrader && moduleData.itsaPeriods) {
+      const today = new Date();
+      const currentItsaPeriod = moduleData.itsaPeriods.find(p =>
+        new Date(p.period_start) <= today && new Date(p.period_end) >= today
+      );
+      if (currentItsaPeriod) {
+        const daysUntilDeadline = Math.ceil((new Date(currentItsaPeriod.submission_deadline) - today) / 86400000);
+        itsaStat = {
+          label: "ITSA Quarter",
+          value: currentItsaPeriod.quarter || "—",
+          sub: currentItsaPeriod.status === "submitted" ? "Submitted ✓" : `Due in ${daysUntilDeadline} days`,
+          color: currentItsaPeriod.status === "submitted" ? "#059669" : daysUntilDeadline < 14 ? "#d97706" : "#7c3aed",
+        };
+      }
+    }
+
     return [
       { label: "Outstanding", value: fmt(currencySymbol, outstanding), sub: `${invoices.filter(i => ["Sent", "Partial"].includes(i.status)).length} invoices`, color: "#1e6be0",
         trend: calcTrend(sumAmt(currInv, i => ["Sent", "Partial"].includes(i.status)), sumAmt(prevInv, i => ["Sent", "Partial"].includes(i.status)), false) },
@@ -96,8 +145,10 @@ export default function HomePage() {
         sub: cisRetainedFromExpenses > 0 ? `CIS retained: ${fmt(currencySymbol, cisRetainedFromExpenses)}` : "Subcontractor costs",
         color: "#D97706",
       }] : []),
+      ...(vatStat ? [vatStat] : []),
+      ...(itsaStat ? [itsaStat] : []),
     ];
-  }, [invoices, expenses, bills, orgSettings, currencySymbol]);
+  }, [invoices, expenses, bills, orgSettings, currencySymbol, moduleData.vatPeriods, moduleData.itsaPeriods, moduleData.isVatRegistered, moduleData.isSoleTrader]);
 
   const overdueInvoices = useMemo(() => invoices.filter(i => i.status === "Overdue"), [invoices]);
 
