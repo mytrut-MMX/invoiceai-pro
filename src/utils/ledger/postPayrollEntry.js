@@ -14,7 +14,8 @@ import { findAccount } from './ledgerService.js';
  *   2300 PAYE/NIC Liability ← total_student_loan
  *   2350 Pension Liability  ← total_pension_employee + total_pension_employer
  *     (falls back to 2300 if 2350 does not exist)
- *   1000 Bank               ← total_net
+ *   2310 Net Wages Payable  ← total_net
+ *     (cleared to bank when payment is recorded via recordPayrollPayment)
  *
  * The entry is idempotent — a second call for the same payroll run returns
  * the existing journal entry without inserting a duplicate.
@@ -53,14 +54,14 @@ export async function postPayrollEntry(payrollRun, payslips, accounts, userId) {
 
     // ── Resolve accounts ──────────────────────────────────────────────────────
 
-    const wagesAccount   = findAccount(accounts, '6000');
-    const payeAccount    = findAccount(accounts, '2300');
-    const pensionAccount = findAccount(accounts, '2350') || findAccount(accounts, '2300');
-    const bankAccount    = findAccount(accounts, '1000');
+    const wagesAccount           = findAccount(accounts, '6000');
+    const payeAccount            = findAccount(accounts, '2300');
+    const pensionAccount         = findAccount(accounts, '2350') || findAccount(accounts, '2300');
+    const netWagesPayableAccount = findAccount(accounts, '2310');
 
-    if (!wagesAccount) return { success: false, error: 'Account 6000 (Wages & Salaries) not found' };
-    if (!payeAccount)  return { success: false, error: 'Account 2300 (PAYE/NIC Liability) not found' };
-    if (!bankAccount)  return { success: false, error: 'Account 1000 (Bank Account) not found' };
+    if (!wagesAccount)           return { success: false, error: 'Account 6000 (Wages & Salaries) not found' };
+    if (!payeAccount)            return { success: false, error: 'Account 2300 (PAYE/NIC Liability) not found' };
+    if (!netWagesPayableAccount) return { success: false, error: 'Account 2310 (Net Wages Payable) not found. Run the payroll accounts migration.' };
 
     // ── Build journal lines ───────────────────────────────────────────────────
 
@@ -124,13 +125,13 @@ export async function postPayrollEntry(payrollRun, payslips, accounts, userId) {
       });
     }
 
-    // Credits: net pay to bank
+    // Credits: net pay to Net Wages Payable (liability cleared when payment is recorded)
     if (netPay > 0) {
       lines.push({
-        accountId: bankAccount.id,
+        accountId: netWagesPayableAccount.id,
         debit: 0,
         credit: r2(netPay),
-        description: `Net pay — ${payslips.length} employee${payslips.length !== 1 ? 's' : ''}`,
+        description: `Net wages payable — ${payslips.length} employee${payslips.length !== 1 ? 's' : ''}`,
       });
     }
 
