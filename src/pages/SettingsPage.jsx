@@ -298,10 +298,10 @@ export default function SettingsPage() {
     },
   });
 
-  /** Merge partial settings from a sub-component save into orgSettings. */
-  const handleComponentSave = (partialSettings) => {
-    const newSettings = { ...orgSettings, ...partialSettings };
-    setOrgSettings(newSettings);
+  // ─── Partial save handler (used by extracted tab components) ────────────
+  const handleSavePartial = (partial) => {
+    const merged = { ...(orgSettings || {}), ...partial };
+    setOrgSettings(merged);
   };
 
   const handleSaveOrg = () => {
@@ -421,7 +421,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Organisation (extracted to sub-component) */}
-      {activeTab === "org" && <SettingsOrganization orgSettings={orgSettings} onSave={handleComponentSave} />}
+      {activeTab === "org" && <SettingsOrganization orgSettings={orgSettings} onSave={handleSavePartial} />}
 
       {/* Tax */}
      {activeTab === "tax" && (<Section title="Tax Registration">
@@ -509,7 +509,7 @@ export default function SettingsPage() {
       {activeTab === "tax" && <SaveActions label="Save tax settings" />}
       
       {/* Bank (extracted to sub-component) */}
-      {activeTab === "bank" && <SettingsBank orgSettings={orgSettings} onSave={handleComponentSave} />}
+      {activeTab === "bank" && <SettingsBank orgSettings={orgSettings} onSave={handleSavePartial} />}
 
       {/* PDF Templates */}
       {activeTab === "templates" && (<Section title="PDF Invoice Templates">
