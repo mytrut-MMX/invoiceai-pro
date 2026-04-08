@@ -6,8 +6,10 @@ import { Btn } from "../components/atoms";
 import { StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate } from "../utils/helpers";
 import { supabase } from "../lib/supabase";
-import { approvePayrollRun, submitPayrollRun } from "../utils/payroll/payrollService";
+import { approvePayrollRun, submitPayrollRun, recordPayrollPayment } from "../utils/payroll/payrollService";
+import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import PayslipDetailModal from "../components/payroll/PayslipDetailModal";
+import RecordPaymentModal from "../components/payroll/RecordPaymentModal";
 
 // ─── AVATAR (same palette as CustomersPage / EmployeesPage) ──────────────────
 const AVATAR_PALETTES = [
@@ -73,6 +75,8 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
   const [confirmAction, setConfirmAction] = useState(null); // {type, ...}
   const [viewPayslip, setViewPayslip] = useState(null);
   const [showEmployerCosts, setShowEmployerCosts] = useState(false);
+  const [accounts, setAccounts] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // ─── Load run + payslips + employees ───────────────────────────────────────
   useEffect(() => {
@@ -101,6 +105,9 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
             }
           }
         }
+        // Fetch chart of accounts for payment modal and paid info display
+        const { accounts: accts } = await fetchUserAccounts();
+        if (!cancelled && accts) setAccounts(accts);
       } catch (err) {
         if (!cancelled) setError(err?.message || "Failed to load payroll run");
       }
@@ -131,9 +138,6 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
         result = err ? { error: err.message } : { success: true, run: data };
       } else if (type === "submit") {
         result = await submitPayrollRun(runId);
-      } else if (type === "markPaid") {
-        const { data, error: err } = await supabase.from("payroll_runs").update({ status: "paid" }).eq("id", runId).select().single();
-        result = err ? { error: err.message } : { success: true, run: data };
       } else if (type === "discard") {
         const { error: err } = await supabase.from("payroll_runs").delete().eq("id", runId);
         if (err) { result = { error: err.message }; } else { setBusy(false); setConfirmAction(null); onBack?.(); return; }
@@ -145,6 +149,21 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
     setConfirmAction(null);
     if (result?.error) { setActionError(typeof result.error === "string" ? result.error : "Action failed"); }
     else if (result?.run) { setRun(result.run); }
+  };
+
+  // ─── Record payment handler ─────────────────────────────────────────────────
+  const handleRecordPayment = async (paymentDetails) => {
+    setBusy(true);
+    setActionError("");
+    const result = await recordPayrollPayment(runId, paymentDetails);
+    setBusy(false);
+    if (result?.error) {
+      setActionError(typeof result.error === "string" ? result.error : "Payment failed");
+      setShowPaymentModal(false);
+      return;
+    }
+    if (result?.run) setRun(result.run);
+    setShowPaymentModal(false);
   };
 
   // ─── Loading / Error ───────────────────────────────────────────────────────
@@ -199,7 +218,7 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
           {run.status === "submitted" && (
             <>
               <Btn variant="outline" onClick={() => console.log("Download FPS XML — not yet implemented")}>Download FPS XML</Btn>
-              <Btn variant="primary" onClick={() => setConfirmAction({ type:"markPaid", title:"Mark as Paid", message:"Mark this payroll run as paid?", confirmLabel:"Mark Paid" })}>Mark as Paid</Btn>
+              <Btn variant="primary" onClick={() => { setActionError(""); setShowPaymentModal(true); }}>Record Payment</Btn>
             </>
           )}
           {run.status === "paid" && (
@@ -244,6 +263,20 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
           <div><span style={{ color:"#94a3b8", fontWeight:600 }}>Tax Month: </span><span style={{ color:"#1a1a2e", fontWeight:600 }}>Month {run.tax_month}{taxMonthName ? ` (${taxMonthName})` : ""}</span></div>
           <div><span style={{ color:"#94a3b8", fontWeight:600 }}>Employees: </span><span style={{ color:"#1a1a2e", fontWeight:600 }}>{payslips.length}</span></div>
         </div>
+
+        {/* Paid info */}
+        {run.status === "paid" && (
+          <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"12px 18px", marginBottom:20, display:"flex", gap:24, flexWrap:"wrap", fontSize:13 }}>
+            <div><span style={{ color:"#15803d", fontWeight:700 }}>&#10003; Paid</span></div>
+            <div><span style={{ color:"#166534", fontWeight:600 }}>Date: </span>{fmtDate(run.paid_date)}</div>
+            <div><span style={{ color:"#166534", fontWeight:600 }}>Method: </span>{run.payment_method || "\u2014"}</div>
+            {run.payment_reference && <div><span style={{ color:"#166534", fontWeight:600 }}>Ref: </span>{run.payment_reference}</div>}
+            {run.bank_account_id && (() => {
+              const acc = accounts.find(a => a.id === run.bank_account_id);
+              return acc ? <div><span style={{ color:"#166534", fontWeight:600 }}>From: </span>{acc.code} &middot; {acc.name}</div> : null;
+            })()}
+          </div>
+        )}
 
         {/* Payslips table */}
         <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e2e8f0", boxShadow:"0 4px 16px rgba(15,23,42,0.05)", overflow:"hidden", marginBottom:20 }}>
@@ -348,6 +381,16 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
           busy={busy}
           onCancel={() => setConfirmAction(null)}
           onConfirm={() => handleAction(confirmAction.type)}
+        />
+      )}
+
+      {/* Record payment modal */}
+      {showPaymentModal && (
+        <RecordPaymentModal
+          run={run}
+          accounts={accounts}
+          onClose={() => setShowPaymentModal(false)}
+          onConfirm={handleRecordPayment}
         />
       )}
 
