@@ -1,6 +1,7 @@
 import { supabase, supabaseReady } from '../../lib/supabase.js';
 import { calculatePayslip } from './payeCalculator.js';
 import { fetchUserAccounts } from '../ledger/fetchUserAccounts.js';
+import { findAccount } from '../ledger/ledgerService.js';
 import { postPayrollEntry } from '../ledger/postPayrollEntry.js';
 
 // ---------------------------------------------------------------------------
@@ -527,6 +528,170 @@ export async function submitPayrollRun(runId) {
       journalEntryId: ledgerResult.journalEntryId,
       billId: bill.id,
     };
+  } catch (err) {
+    return { error: err?.message ?? String(err) };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// recordPayrollPayment
+// ---------------------------------------------------------------------------
+
+/**
+ * Records the actual bank payment of net wages to employees.
+ *
+ * Moves the liability from 2310 Net Wages Payable to the chosen bank account
+ * via a balanced double-entry journal:
+ *   Dr 2310 Net Wages Payable  ← total_net
+ *   Cr {bankAccountId}         ← total_net
+ *
+ * Idempotent: returns the existing payment journal if one already exists for this run.
+ *
+ * @param {string} runId - payroll_runs.id (must have status 'submitted')
+ * @param {{
+ *   paidDate: string,        // YYYY-MM-DD
+ *   bankAccountId: string,   // accounts.id (must be type 'asset')
+ *   paymentMethod: string,   // 'BACS' | 'Faster Payments' | 'CHAPS' | 'Cheque' | 'Cash' | 'Other'
+ *   reference?: string,      // optional payment reference
+ * }} paymentDetails
+ * @returns {Promise<{ success?: boolean, run?: object, journalEntryId?: string, error?: string }>}
+ */
+export async function recordPayrollPayment(runId, paymentDetails) {
+  if (!supabaseReady) return { error: 'Supabase not configured' };
+
+  try {
+    // ── Validate inputs ─────────────────────────────────────────────────────
+
+    if (!runId) return { error: 'runId is required' };
+    if (!paymentDetails?.paidDate) return { error: 'paidDate is required' };
+    if (!paymentDetails.bankAccountId) return { error: 'bankAccountId is required' };
+    if (!paymentDetails.paymentMethod) return { error: 'paymentMethod is required' };
+
+    const validMethods = ['BACS', 'Faster Payments', 'CHAPS', 'Cheque', 'Cash', 'Other'];
+    if (!validMethods.includes(paymentDetails.paymentMethod)) {
+      return { error: `Invalid payment method '${paymentDetails.paymentMethod}'. Must be one of: ${validMethods.join(', ')}` };
+    }
+
+    // ── Fetch the payroll run ───────────────────────────────────────────────
+
+    const { data: run, error: runErr } = await supabase
+      .from('payroll_runs')
+      .select('*')
+      .eq('id', runId)
+      .single();
+
+    if (runErr) throw runErr;
+    if (!run) return { error: 'Payroll run not found' };
+    if (run.status === 'paid') return { error: 'This payroll run has already been paid' };
+    if (run.status !== 'submitted') {
+      return { error: `Cannot record payment for run with status '${run.status}' — must be 'submitted'` };
+    }
+
+    // ── Idempotency check ───────────────────────────────────────────────────
+
+    if (run.payment_journal_entry_id) {
+      return { success: true, run, journalEntryId: run.payment_journal_entry_id };
+    }
+
+    const { data: existingEntry } = await supabase
+      .from('journal_entries')
+      .select('id')
+      .eq('source_type', 'payroll_payment')
+      .eq('source_id', runId)
+      .maybeSingle();
+
+    if (existingEntry?.id) {
+      return { success: true, run, journalEntryId: existingEntry.id };
+    }
+
+    // ── Fetch and validate accounts ─────────────────────────────────────────
+
+    const { accounts, userId } = await fetchUserAccounts();
+    if (!userId) return { error: 'Not authenticated' };
+
+    const netWagesPayableAccount = findAccount(accounts, '2310');
+    if (!netWagesPayableAccount) {
+      return { error: 'Account 2310 (Net Wages Payable) not found. Run the payroll accounts migration.' };
+    }
+
+    const bankAccount = accounts.find(a => a.id === paymentDetails.bankAccountId);
+    if (!bankAccount) return { error: 'Bank account not found in your chart of accounts' };
+    if (bankAccount.type !== 'asset') return { error: 'Selected account is not an asset account' };
+
+    // ── Validate run total ──────────────────────────────────────────────────
+
+    const netPay = Number(run.total_net || 0);
+    if (netPay <= 0) return { error: 'Payroll run has no net pay to record' };
+
+    // ── Insert journal entry ────────────────────────────────────────────────
+
+    const reference = `PAYRUN-PAYMENT-${runId.slice(0, 8)}`;
+
+    const { data: entry, error: entryErr } = await supabase
+      .from('journal_entries')
+      .insert({
+        user_id: userId,
+        date: paymentDetails.paidDate,
+        description: `Payroll payment for period ${run.period_start} to ${run.period_end}`,
+        reference,
+        source_type: 'payroll_payment',
+        source_id: runId,
+      })
+      .select('id')
+      .single();
+
+    if (entryErr) throw entryErr;
+
+    // ── Insert journal lines ────────────────────────────────────────────────
+
+    const lineRows = [
+      {
+        journal_entry_id: entry.id,
+        account_id: netWagesPayableAccount.id,
+        debit: round2(netPay),
+        credit: 0,
+        description: `Clear net wages payable — payroll ${runId.slice(0, 8)}`,
+      },
+      {
+        journal_entry_id: entry.id,
+        account_id: bankAccount.id,
+        debit: 0,
+        credit: round2(netPay),
+        description: `Net pay to employees via ${paymentDetails.paymentMethod}`,
+      },
+    ];
+
+    const { error: linesErr } = await supabase.from('journal_lines').insert(lineRows);
+
+    if (linesErr) {
+      await supabase.from('journal_entries').delete().eq('id', entry.id);
+      throw linesErr;
+    }
+
+    // ── Update payroll_runs row ─────────────────────────────────────────────
+
+    const { data: updatedRun, error: updateErr } = await supabase
+      .from('payroll_runs')
+      .update({
+        status: 'paid',
+        paid_date: paymentDetails.paidDate,
+        paid_amount: round2(netPay),
+        bank_account_id: paymentDetails.bankAccountId,
+        payment_method: paymentDetails.paymentMethod,
+        payment_reference: paymentDetails.reference || null,
+        payment_journal_entry_id: entry.id,
+      })
+      .eq('id', runId)
+      .select()
+      .single();
+
+    if (updateErr) {
+      await supabase.from('journal_lines').delete().eq('journal_entry_id', entry.id);
+      await supabase.from('journal_entries').delete().eq('id', entry.id);
+      throw updateErr;
+    }
+
+    return { success: true, run: updatedRun, journalEntryId: entry.id };
   } catch (err) {
     return { error: err?.message ?? String(err) };
   }
