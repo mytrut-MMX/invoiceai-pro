@@ -3,6 +3,7 @@ import { ff } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../../components/icons";
 import { Field, Input, Btn } from "../../components/atoms";
+import Section from "../../components/settings/Section";
 
 const ACCENT_PRESETS = ["#E86C4A","#2563EB","#16A34A","#D97706","#9333EA","#0891B2","#E11D48","#1A1A1A"];
 const SIDEBAR_PRESETS = [
@@ -13,18 +14,6 @@ const SIDEBAR_PRESETS = [
   { label:"Plum",    color:"#2D1B3D" },
   { label:"White",   color:"#FFFFFF" },
 ];
-
-// ─── Section wrapper (local copy — will be shared in Refactor-4) ──────────
-function Section({ title, children }) {
-  return (
-    <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:18, overflow:"hidden" }}>
-      <div style={{ padding:"14px 22px 12px", borderBottom:"1px solid #f0f0f4" }}>
-        <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:"#1a1a2e" }}>{title}</h3>
-      </div>
-      <div style={{ padding:"18px 22px" }}>{children}</div>
-    </div>
-  );
-}
 
 export default function SettingsAppearance() {
   const { appTheme, setAppTheme } = useContext(AppCtx);
