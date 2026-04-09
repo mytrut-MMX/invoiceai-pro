@@ -1,8 +1,10 @@
+import { useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ff } from "../../constants";
 import { Ic, Icons } from "../icons";
 import InvoiceSagaLogo from "../InvoiceSagaLogo";
 import { ROUTES } from "../../router/routes";
+import { AppCtx } from "../../context/AppContext";
 
 // ─── NAVIGATION DEFINITION ────────────────────────────────────────────────────
 // Each entry maps a sidebar item to its route(s).
@@ -54,6 +56,14 @@ function isActive(pathname, match) {
   return pathname.startsWith(match);
 }
 
+// Hide VAT-only entries from the sidebar when the company is not VAT registered.
+// Mirrors the pattern used across the app (orgSettings?.vatReg === "Yes").
+function useVisibleNav() {
+  const ctx = useContext(AppCtx);
+  const isVatRegistered = ctx?.orgSettings?.vatReg === "Yes";
+  return isVatRegistered ? NAV : NAV.filter(item => item.id !== "vat-return");
+}
+
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 export function Sidebar({
   user, onUserClick, onLogout,
@@ -65,6 +75,7 @@ export function Sidebar({
 }) {
   const navigate  = useNavigate();
   const { pathname } = useLocation();
+  const navItems = useVisibleNav();
   const toggleCollapsed = () => onCollapsedChange?.(!collapsed);
   const dark = isDark(sidebarBg);
   const txt     = dark ? "rgba(255,255,255,0.82)" : "#374151";
@@ -114,7 +125,7 @@ export function Sidebar({
 
       {/* Nav */}
       <nav style={{ flex:1, padding: collapsed ? "8px 0" : "10px 8px", overflowY:"auto" }}>
-        {NAV.map(({ id, label, Icon, route, match, addRoute }) => {
+        {navItems.map(({ id, label, Icon, route, match, addRoute }) => {
           const on = isActive(pathname, match);
           const onAdd = addRoute && pathname === addRoute;
           return collapsed ? (
@@ -191,7 +202,8 @@ export function Sidebar({
 // ─── MOBILE TOP BAR ───────────────────────────────────────────────────────────
 export function MobileTopBar({ onMenuOpen, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick }) {
   const { pathname } = useLocation();
-  const page = NAV.find(n => isActive(pathname, n.match));
+  const navItems = useVisibleNav();
+  const page = navItems.find(n => isActive(pathname, n.match));
   return (
     <div className="mobile-topbar" style={{
       display: "flex",
@@ -252,6 +264,7 @@ export function MobileBottomNav({ accent="#E86C4A" }) {
 export function MobileDrawer({ onClose, sidebarBg="rgb(33, 38, 60)", accent="#E86C4A", user, userAvatar, onUserClick, onLogout }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const navItems = useVisibleNav();
   return (
     <>
       <div onClick={onClose}
@@ -269,7 +282,7 @@ export function MobileDrawer({ onClose, sidebarBg="rgb(33, 38, 60)", accent="#E8
           </button>
         </div>
         <nav style={{ flex:1, padding:"10px 8px", overflowY:"auto" }}>
-          {NAV.map(({ id, label, Icon, route, match }) => {
+          {navItems.map(({ id, label, Icon, route, match }) => {
             const on = isActive(pathname, match);
             return (
               <button key={id} onClick={() => { navigate(route); onClose(); }}
