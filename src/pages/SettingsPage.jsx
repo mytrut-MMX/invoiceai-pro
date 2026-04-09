@@ -1,12 +1,10 @@
-import { useState, useContext, useEffect, useCallback } from "react";
+import { useState, useContext, useEffect } from "react";
 import { ff, PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../components/atoms";
+import { Btn } from "../components/atoms";
 import { A4PrintModal } from "../components/shared";
-import { fmtDate } from "../utils/helpers";
 import { loadBusinessData } from "../lib/businessData";
-import { supabase } from "../lib/supabase";
 import SettingsOrganization from "./settings/SettingsOrganization";
 import SettingsBank from "./settings/SettingsBank";
 import SettingsTax from "./settings/SettingsTax";
@@ -15,6 +13,7 @@ import SettingsAppearance from "./settings/SettingsAppearance";
 import SettingsPayments from "./settings/SettingsPayments";
 import SettingsLedger from "./settings/SettingsLedger";
 import SettingsPayroll from "./settings/SettingsPayroll";
+import SettingsHMRC from "./settings/SettingsHMRC";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }) {
@@ -133,14 +132,7 @@ export default function SettingsPage() {
 
 
 
-  // HMRC / MTD
-  const [hmrcStatus,           setHmrcStatus]           = useState("loading");
-  const [hmrcTokenInfo,        setHmrcTokenInfo]        = useState(null);
-  const [hmrcLoadError,        setHmrcLoadError]        = useState("");
-  const [hmrcBanner,           setHmrcBanner]           = useState("");
-  const [vatStagger,           setVatStagger]           = useState(org.vatStagger||1);
-  const [autoGenerateVatPeriods, setAutoGenerateVatPeriods] = useState(org.autoGenerateVatPeriods!==false);
-  const [itsaQuarterlyReminders, setItsaQuarterlyReminders] = useState(org.itsaQuarterlyReminders!==false);
+
 
   const [previewTpl,   setPreviewTpl]   = useState(null); // template id when preview open (kept for TemplatePreviewModal in parent)
 
@@ -152,60 +144,17 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("org");
 
 
-  useEffect(() => {
-    if (!orgSettings) return;
-    const org = orgSettings;
-    setVatStagger(org.vatStagger || 1);
-    setAutoGenerateVatPeriods(org.autoGenerateVatPeriods !== false);
-    setItsaQuarterlyReminders(org.itsaQuarterlyReminders !== false);
-  }, [orgSettings]);
 
 
 
-  // HMRC connection status loader
-  const loadHMRCStatus = useCallback(async () => {
-    if (!user?.id || !supabase) return;
-    setHmrcStatus("loading");
-    setHmrcLoadError("");
-    try {
-      const { data, error } = await supabase
-        .from("hmrc_tokens")
-        .select("vrn, expires_at, scope, created_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (error) throw error;
-      if (data) { setHmrcTokenInfo(data); setHmrcStatus("connected"); }
-      else { setHmrcStatus("disconnected"); }
-    } catch (err) {
-      setHmrcLoadError(err.message || "Failed to check HMRC status");
-      setHmrcStatus("error");
-    }
-  }, [user?.id]);
 
-  useEffect(() => {
-    if (activeTab === "hmrc") loadHMRCStatus();
-  }, [activeTab, loadHMRCStatus]);
-
-  // Handle OAuth return redirect (?tab=hmrc&connected=1)
+  // Handle OAuth return redirect — activate HMRC tab when returning from OAuth
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("tab") === "hmrc") {
       setActiveTab("hmrc");
-      if (params.get("connected") === "1") {
-        setHmrcBanner("Successfully connected to HMRC");
-        setTimeout(() => setHmrcBanner(""), 5000);
-      }
-      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleConnectHMRC = () => { window.location.href = "/api/hmrc-auth?action=initiate"; };
-  const handleDisconnectHMRC = async () => {
-    if (!window.confirm("Disconnect from HMRC? You will need to reconnect before your next VAT or ITSA submission.")) return;
-    if (supabase) await supabase.from("hmrc_tokens").delete().eq("user_id", user.id);
-    setHmrcStatus("disconnected");
-    setHmrcTokenInfo(null);
-  };
 
   const settingTabs = [
     { id:"org", label:"Organization Details" },
@@ -220,8 +169,7 @@ export default function SettingsPage() {
   ];
 
   const buildOrgSettings = () => ({
-    ...orgSettings, // preserves org + bank + tax + payroll fields saved by their sub-components
-    vatStagger: Number(vatStagger), autoGenerateVatPeriods, itsaQuarterlyReminders,
+    ...orgSettings, // preserves org + bank + tax + payroll + hmrc fields saved by their sub-components
   });
 
   // ─── Partial save handler (used by extracted tab components) ────────────
@@ -320,105 +268,8 @@ export default function SettingsPage() {
       {/* Payroll (extracted to sub-component) */}
       {activeTab === "payroll" && <SettingsPayroll orgSettings={orgSettings} onSave={handleSavePartial} />}
 
-      {/* HMRC / MTD */}
-      {activeTab === "hmrc" && hmrcBanner && (
-        <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:8, padding:"10px 14px", marginBottom:16, fontSize:13, color:"#16A34A", fontWeight:600 }}>{hmrcBanner}</div>
-      )}
-      {activeTab === "hmrc" && (
-        <Section title="HMRC Connection">
-          {hmrcStatus === "loading" && (
-            <div style={{ padding:"20px 0", textAlign:"center", color:"#6b7280", fontSize:13 }}>Checking connection status…</div>
-          )}
-          {hmrcStatus === "disconnected" && (<>
-            <InfoBox style={{ marginBottom:14, borderColor:"#fde68a", background:"#fffbeb", color:"#92400e" }}>
-              Connect your InvoiceSaga account to HMRC to submit VAT returns and ITSA quarterly updates digitally.
-            </InfoBox>
-            <Btn variant="primary" onClick={handleConnectHMRC}>Connect to HMRC →</Btn>
-          </>)}
-          {hmrcStatus === "connected" && (<>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-              <div style={{ width:10, height:10, borderRadius:"50%", background:"#16A34A" }} />
-              <span style={{ fontSize:14, fontWeight:700, color:"#16A34A" }}>Connected to HMRC</span>
-            </div>
-            <div style={{ background:"#f9fafb", borderRadius:8, border:"1px solid #e8e8ec", padding:"12px 16px", marginBottom:16 }}>
-              {[
-                { label:"VAT Number", value: org.vatNum || "—" },
-                { label:"HMRC VRN", value: hmrcTokenInfo?.vrn || "—" },
-                { label:"Connected since", value: hmrcTokenInfo?.created_at ? fmtDate(hmrcTokenInfo.created_at) : "—" },
-                { label:"Token expires", value: hmrcTokenInfo?.expires_at ? fmtDate(hmrcTokenInfo.expires_at) : "—" },
-                { label:"Scope", value: hmrcTokenInfo?.scope || "—" },
-              ].map(r => (
-                <div key={r.label} style={{ display:"flex", padding:"6px 0", borderBottom:"1px solid #f0f0f4" }}>
-                  <div style={{ width:160, fontSize:12, color:"#6b7280", fontWeight:500 }}>{r.label}</div>
-                  <div style={{ fontSize:12, color:"#1a1a2e", fontWeight:600, fontFamily: r.label === "HMRC VRN" ? "'Courier New', monospace" : "inherit" }}>{r.value}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <Btn variant="outline" onClick={handleDisconnectHMRC}>Disconnect</Btn>
-              <span style={{ fontSize:11, color:"#6b7280" }}>Disconnecting will require re-authorisation before your next submission.</span>
-            </div>
-          </>)}
-          {hmrcStatus === "error" && (<>
-            <InfoBox style={{ borderColor:"#fecaca", background:"#fef2f2", color:"#b91c1c" }}>
-              {hmrcLoadError || "Failed to check HMRC connection status."}
-            </InfoBox>
-            <Btn variant="outline" onClick={loadHMRCStatus} style={{ marginTop:10 }}>Retry</Btn>
-          </>)}
-        </Section>
-      )}
-      {activeTab === "hmrc" && (
-        (org.vatReg || "No") === "Yes" ? (
-          <Section title="MTD VAT Configuration">
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
-              <Field label="VAT Stagger Group" hint="Assigned by HMRC — printed on your VAT certificate">
-                <Select value={String(vatStagger)} onChange={v => setVatStagger(Number(v))}
-                  options={[
-                    { value:"1", label:"Stagger 1 — Jan / Apr / Jul / Oct" },
-                    { value:"2", label:"Stagger 2 — Feb / May / Aug / Nov" },
-                    { value:"3", label:"Stagger 3 — Mar / Jun / Sep / Dec" },
-                  ]} />
-              </Field>
-            </div>
-            <div style={{ marginBottom:14 }}>
-              <Field label="Auto-generate VAT periods">
-                <SlideToggle value={autoGenerateVatPeriods} onChange={setAutoGenerateVatPeriods} />
-              </Field>
-              <div style={{ fontSize:11, color:"#6b7280", marginTop:4 }}>Automatically create VAT period records each quarter.</div>
-            </div>
-          </Section>
-        ) : (
-          <Section title="MTD VAT Configuration">
-            <InfoBox>MTD VAT requires VAT registration. Enable VAT in the Tax tab first.</InfoBox>
-          </Section>
-        )
-      )}
-      {activeTab === "hmrc" && (
-        org.bType === "Sole Trader / Freelancer" ? (
-          <Section title="MTD ITSA Configuration">
-            <div style={{ marginBottom:14 }}>
-              <Field label="UTR Number" hint="Set in the Tax tab under CIS settings">
-                <Input value={org.cis?.contractorUTR || org.cisUtrNo || ""} readOnly />
-              </Field>
-            </div>
-            <div style={{ marginBottom:14 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:"#1a1a2e", marginBottom:6 }}>Qualifying Income Thresholds</div>
-              <div style={{ fontSize:12, color:"#6b7280", lineHeight:1.8 }}>
-                From April 2026: <strong>£50,000</strong> · From April 2027: <strong>£30,000</strong> · From April 2028: <strong>£20,000</strong>
-              </div>
-            </div>
-            <Field label="Quarterly Submission Reminders">
-              <SlideToggle value={itsaQuarterlyReminders} onChange={setItsaQuarterlyReminders} />
-            </Field>
-            <div style={{ fontSize:11, color:"#6b7280", marginTop:4 }}>Get reminded 7 days before each quarterly deadline.</div>
-          </Section>
-        ) : (
-          <Section title="MTD ITSA Configuration">
-            <InfoBox>MTD ITSA applies to sole traders and landlords.</InfoBox>
-          </Section>
-        )
-      )}
-      {activeTab === "hmrc" && <SaveActions label="Save HMRC settings" />}
+      {/* HMRC / MTD (extracted to sub-component) */}
+      {activeTab === "hmrc" && <SettingsHMRC orgSettings={orgSettings} onSave={handleSavePartial} />}
 
       {/* Template Preview Modal */}
       {previewTpl && (
