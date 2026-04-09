@@ -4,18 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../../components/atoms";
 import { fmtDate } from "../../utils/helpers";
-
-// ─── Section wrapper (local copy — will be shared in Refactor-4c2) ────────
-function Section({ title, children }) {
-  return (
-    <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:18, overflow:"hidden" }}>
-      <div style={{ padding:"14px 22px 12px", borderBottom:"1px solid #f0f0f4" }}>
-        <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:"#1a1a2e" }}>{title}</h3>
-      </div>
-      <div style={{ padding:"18px 22px" }}>{children}</div>
-    </div>
-  );
-}
+import Section from "../../components/settings/Section";
 
 export default function SettingsHMRC({ orgSettings, onSave }) {
   const { user } = useContext(AppCtx);

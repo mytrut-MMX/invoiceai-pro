@@ -1,8 +1,6 @@
 import { useState, useContext, useEffect } from "react";
 import { ff, PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
-import { Icons } from "../components/icons";
-import { Btn } from "../components/atoms";
 import { A4PrintModal } from "../components/shared";
 import { loadBusinessData } from "../lib/businessData";
 import SettingsOrganization from "./settings/SettingsOrganization";
@@ -14,52 +12,6 @@ import SettingsPayments from "./settings/SettingsPayments";
 import SettingsLedger from "./settings/SettingsLedger";
 import SettingsPayroll from "./settings/SettingsPayroll";
 import SettingsHMRC from "./settings/SettingsHMRC";
-
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-function Section({ title, children }) {
-  return (
-    <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", marginBottom:18, overflow:"hidden" }}>
-      <div style={{ padding:"14px 22px 12px", borderBottom:"1px solid #f0f0f4" }}>
-        <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:"#1a1a2e" }}>{title}</h3>
-      </div>
-      <div style={{ padding:"18px 22px" }}>{children}</div>
-    </div>
-  );
-}
-
-function ChipToggle({ value, onChange, options }) {
-  return (
-    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-      {options.map(option=>{
-        const selected = value===option;
-        return (
-          <button
-            key={option}
-            type="button"
-            onClick={()=>onChange(option)}
-            style={{
-              border: `1px solid ${selected?"#1e6be0":"#e8e8ec"}`,
-              background: selected?"#1e6be0":"#fff",
-              color: selected?"#fff":"#374151",
-              borderRadius:999,
-              padding:"7px 12px",
-              fontSize:13,
-              fontWeight:700,
-              display:"inline-flex",
-              alignItems:"center",
-              gap:6,
-              cursor:"pointer",
-              transition:"all 0.15s ease",
-            }}
-          >
-            {selected && <Icons.Check />}
-            <span>{option}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, orgSettings, companyLogo, companyLogoSize, footerText, onClose }) {
@@ -126,27 +78,8 @@ export default function SettingsPage() {
     return () => { cancelled = true; };
   }, [user?.id, setOrgSettings]);
 
-  const org = orgSettings||{};
-
-
-
-
-
-
-
-  const [previewTpl,   setPreviewTpl]   = useState(null); // template id when preview open (kept for TemplatePreviewModal in parent)
-
-
-
-
-  const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState("");
+  const [previewTpl, setPreviewTpl] = useState(null); // template id when preview open (kept for TemplatePreviewModal in parent)
   const [activeTab, setActiveTab] = useState("org");
-
-
-
-
-
 
   // Handle OAuth return redirect — activate HMRC tab when returning from OAuth
   useEffect(() => {
@@ -168,51 +101,11 @@ export default function SettingsPage() {
     { id:"hmrc", label:"HMRC / MTD" },
   ];
 
-  const buildOrgSettings = () => ({
-    ...orgSettings, // preserves org + bank + tax + payroll + hmrc fields saved by their sub-components
-  });
-
   // ─── Partial save handler (used by extracted tab components) ────────────
   const handleSavePartial = (partial) => {
     const merged = { ...(orgSettings || {}), ...partial };
     setOrgSettings(merged);
   };
-
-  const handleSaveOrg = () => {
-    setSaveError("");
-    try {
-      const newSettings = buildOrgSettings();
-      setOrgSettings(newSettings);
-      setSaved(true);
-      setTimeout(()=>setSaved(false), 3000);
-    } catch (err) {
-      setSaveError("Something went wrong. Please try again.");
-    }
-  };
-
-
-
-  const SaveActions = ({ label = "Save settings" }) => (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, marginTop:16 }}>
-      {saveError && (
-        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#dc2626", fontWeight:600 }}>
-          <Icons.Alert /> {saveError}
-        </div>
-      )}
-      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-        {saved && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
-            <Icons.Check /> Organisation details saved.
-          </div>
-        )}
-        <Btn onClick={handleSaveOrg} variant="primary" icon={<Icons.Save />} style={{ background:saved?"#059669":"#1e6be0", color:"#fff" }}>
-          {label}
-        </Btn>
-      </div>
-    </div>
-  );
-
-
 
   return (
     <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:860, background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
