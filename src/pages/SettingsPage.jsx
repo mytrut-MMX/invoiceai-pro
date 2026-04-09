@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { ff, PDF_TEMPLATES, PAYMENT_METHODS, CIS_RATES, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../constants";
+import { ff, PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../components/atoms";
@@ -12,6 +12,7 @@ import { loadBusinessData } from "../lib/businessData";
 import { supabase } from "../lib/supabase";
 import SettingsOrganization from "./settings/SettingsOrganization";
 import SettingsBank from "./settings/SettingsBank";
+import SettingsTax from "./settings/SettingsTax";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }) {
@@ -130,19 +131,7 @@ export default function SettingsPage() {
 
   const org = orgSettings||{};
 
-  // Tax / CIS form state (org + bank fields are now in sub-components)
-  const [accountingBasis, setAccountingBasis] = useState(org.accountingBasis||"Accrual");
-  const [vatReg,       setVatReg]       = useState(org.vatReg||"No");
-  const [vatNum,       setVatNum]       = useState(org.vatNum||"");
-  const [vatScheme,    setVatScheme]    = useState(org.vatScheme||"Standard");
-  const [flatRatePct,  setFlatRatePct]  = useState(org.flatRatePct||"");
-  const [cisRole,      setCisRole]      = useState(org.cisRole||"Contractor");
-  const [cisRegistrationStatus, setCisRegistrationStatus] = useState(org.cisRegistrationStatus||"Net");
-  const [cisEnabled,        setCisEnabled]        = useState(org.cis?.enabled ?? CIS_DEFAULT_SETTINGS.enabled);
-  const [cisContractorName, setCisContractorName] = useState(org.cis?.contractorName ?? CIS_DEFAULT_SETTINGS.contractorName);
-  const [cisContractorUTR,  setCisContractorUTR]  = useState(org.cis?.contractorUTR ?? org.cisUtrNo ?? CIS_DEFAULT_SETTINGS.contractorUTR);
-  const [cisEmployerRef,    setCisEmployerRef]    = useState(org.cis?.employerRef ?? CIS_DEFAULT_SETTINGS.employerRef);
-  const [cisDefaultRate,    setCisDefaultRate]    = useState(org.cis?.defaultRate ?? org.cisRate ?? CIS_DEFAULT_SETTINGS.defaultRate);
+
 
   // Payroll
   const [payeRef,              setPayeRef]              = useState(org.payeRef||"");
@@ -183,23 +172,11 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [activeTab, setActiveTab] = useState("org");
-  const [vatNumberLocked, setVatNumberLocked] = useState(Boolean(org.vatNum));
+
 
   useEffect(() => {
     if (!orgSettings) return;
     const org = orgSettings;
-    setAccountingBasis(org.accountingBasis || "Accrual");
-    setVatReg(org.vatReg || "No");
-    setVatNum(org.vatNum || "");
-    setVatScheme(org.vatScheme || "Standard");
-    setFlatRatePct(org.flatRatePct || "");
-    setCisEnabled(org.cis?.enabled ?? (org.cisReg === "Yes"));
-    setCisContractorName(org.cis?.contractorName || "");
-    setCisContractorUTR(org.cis?.contractorUTR || org.cisUtrNo || "");
-    setCisEmployerRef(org.cis?.employerRef || "");
-    setCisDefaultRate(org.cis?.defaultRate || org.cisRate || CIS_DEFAULT_SETTINGS.defaultRate);
-    // Auto-populate contractor name from org name if not already set
-    if (!org.cis?.contractorName && org.orgName) setCisContractorName(org.orgName);
     setPayeRef(org.payeRef || "");
     setAccountsOfficeRef(org.accountsOfficeRef || "");
     setTaxOfficeNumber(org.taxOfficeNumber || "");
@@ -214,12 +191,7 @@ export default function SettingsPage() {
     setItsaQuarterlyReminders(org.itsaQuarterlyReminders !== false);
   }, [orgSettings]);
 
-  // When CIS is enabled and contractor name is blank, default it to the org name
-  useEffect(() => {
-    if (cisEnabled && !cisContractorName && org.orgName) {
-      setCisContractorName(org.orgName);
-    }
-  }, [cisEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // HMRC connection status loader
   const loadHMRCStatus = useCallback(async () => {
@@ -279,23 +251,12 @@ export default function SettingsPage() {
   ];
 
   const buildOrgSettings = () => ({
-    ...orgSettings, // preserves org + bank fields saved by their sub-components
-    accountingBasis,
-    vatReg, vatNum, vatScheme, flatRatePct: vatScheme === "Flat Rate Scheme" ? flatRatePct : "",
-    cisReg: cisEnabled ? "Yes" : "No",
-    cisRole, cisRate: cisDefaultRate, cisUtrNo: cisContractorUTR, cisRegistrationStatus,
+    ...orgSettings, // preserves org + bank + tax fields saved by their sub-components
     payeRef, accountsOfficeRef, taxOfficeNumber, pensionProvider,
     defaultPensionEmployeePct: Number(defaultPensionEmployeePct),
     defaultPensionEmployerPct: Number(defaultPensionEmployerPct),
     autoEnrolmentStagingDate, defaultPayFrequency, defaultPayDay,
     vatStagger: Number(vatStagger), autoGenerateVatPeriods, itsaQuarterlyReminders,
-    cis: {
-      enabled: cisEnabled,
-      contractorName: cisContractorName,
-      contractorUTR: cisContractorUTR,
-      employerRef: cisEmployerRef,
-      defaultRate: cisDefaultRate,
-    },
   });
 
   // ─── Partial save handler (used by extracted tab components) ────────────
@@ -305,18 +266,10 @@ export default function SettingsPage() {
   };
 
   const handleSaveOrg = () => {
-    if (cisEnabled) {
-      const utr = cisContractorUTR.replace(/\D/g, "");
-      if (utr.length > 0 && utr.length !== 10) {
-        setSaveError("Please enter a valid UTR number (10 digits).");
-        return;
-      }
-    }
     setSaveError("");
     try {
       const newSettings = buildOrgSettings();
       setOrgSettings(newSettings);
-      setVatNumberLocked(Boolean(vatNum));
       setPdfTemplate(selectedTpl);
       setCompanyLogoSize(logoSize);
       setFooterText(footer);
@@ -375,11 +328,6 @@ export default function SettingsPage() {
     </div>
   );
 
-  const requestTaxNumberEdit = (unlockField) => {
-    const shouldUnlock = window.confirm("Are you sure this is the correct number?");
-    if (shouldUnlock) unlockField(false);
-  };
-
   const ACCENT_PRESETS = ["#E86C4A","#2563EB","#16A34A","#D97706","#9333EA","#0891B2","#E11D48","#1A1A1A"];
   const SIDEBAR_PRESETS = [
     { label:"Dark",    color:"#1A1A1A" },
@@ -423,90 +371,8 @@ export default function SettingsPage() {
       {/* Organisation (extracted to sub-component) */}
       {activeTab === "org" && <SettingsOrganization orgSettings={orgSettings} onSave={handleSavePartial} />}
 
-      {/* Tax */}
-     {activeTab === "tax" && (<Section title="Tax Registration">
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
-          <Field label="Accounting Basis" hint="Cash basis available for sole traders with turnover ≤ £150,000">
-            <Select value={accountingBasis} onChange={setAccountingBasis} options={["Accrual", "Cash"]} />
-          </Field>
-          {accountingBasis === "Cash" && org.bType !== "Sole Trader / Freelancer" && (
-            <div style={{ gridColumn:"1 / -1" }}>
-              <InfoBox color="#D97706">Cash basis is typically only available for sole traders and partnerships. Limited companies must use accrual accounting.</InfoBox>
-            </div>
-          )}
-          <Field label="VAT Registered">
-            <ChipToggle value={vatReg} onChange={setVatReg} options={["No", "Yes"]} />
-          </Field>
-          {vatReg==="Yes" && (
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              <Field label="VAT Number">
-                <Input value={vatNum} onChange={setVatNum} placeholder="GB123456789" readOnly={vatNumberLocked} />
-              </Field>
-              {vatNumberLocked && (
-                <Btn type="button" variant="outline" onClick={()=>requestTaxNumberEdit(setVatNumberLocked)}>
-                  Edit Tax no
-                </Btn>
-              )}
-            </div>
-          )}
-          {vatReg==="Yes" && (
-            <Field label="VAT Scheme" hint="Determines when VAT is due to HMRC">
-              <Select value={vatScheme} onChange={setVatScheme} options={["Standard", "Cash Accounting", "Flat Rate Scheme", "Annual Accounting"]} />
-            </Field>
-          )}
-          {vatReg==="Yes" && vatScheme === "Flat Rate Scheme" && (
-            <Field label="Flat Rate %" hint="Your sector flat rate percentage">
-              <Input value={flatRatePct} onChange={setFlatRatePct} type="number" placeholder="e.g. 12" />
-            </Field>
-          )}
-        </div>
-
-        <div style={{ marginTop:14, paddingTop:16, borderTop:"1px solid #f0f0f4" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, marginBottom: cisEnabled ? 20 : 0 }}>
-            <div>
-              <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>Enable CIS</div>
-              <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>
-                Activates Construction Industry Scheme deductions on invoices.
-              </div>
-            </div>
-            <SlideToggle value={cisEnabled} onChange={setCisEnabled} />
-          </div>
-
-          {cisEnabled && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, padding:"16px 0 0", borderTop:"1px solid #f3f4f6" }}>
-              <Field label="Contractor Name">
-                <Input value={cisContractorName} onChange={setCisContractorName} placeholder="Your company name" />
-              </Field>
-
-              <Field label="CIS Role">
-                <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
-              </Field>
-
-              <Field label="UTR Number" error={cisContractorUTR && cisContractorUTR.replace(/\D/g,"").length !== 10 ? "UTR must be 10 digits" : ""}>
-                <Input value={cisContractorUTR} onChange={setCisContractorUTR} placeholder="10-digit UTR number" maxLength={10} />
-              </Field>
-
-              <Field label="CIS Registration Status">
-                <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Gross","Net"]} />
-              </Field>
-
-              <Field label="Employer's PAYE Reference">
-                <Input value={cisEmployerRef} onChange={setCisEmployerRef} placeholder="e.g. 123/AB456" />
-              </Field>
-
-              <Field label="Default Deduction Rate">
-                <Select
-                  value={String(cisDefaultRate)}
-                  onChange={v=>setCisDefaultRate(Number(v))}
-                  options={CIS_DEDUCTION_RATES}
-                />
-              </Field>
-
-            </div>
-          )}
-        </div>
-       </Section>)}
-      {activeTab === "tax" && <SaveActions label="Save tax settings" />}
+      {/* Tax (extracted to sub-component) */}
+      {activeTab === "tax" && <SettingsTax orgSettings={orgSettings} onSave={handleSavePartial} />}
       
       {/* Bank (extracted to sub-component) */}
       {activeTab === "bank" && <SettingsBank orgSettings={orgSettings} onSave={handleSavePartial} />}
@@ -801,7 +667,7 @@ export default function SettingsPage() {
         </Section>
       )}
       {activeTab === "hmrc" && (
-        vatReg === "Yes" ? (
+        (org.vatReg || "No") === "Yes" ? (
           <Section title="MTD VAT Configuration">
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
               <Field label="VAT Stagger Group" hint="Assigned by HMRC — printed on your VAT certificate">
