@@ -14,6 +14,7 @@ import SettingsTemplates from "./settings/SettingsTemplates";
 import SettingsAppearance from "./settings/SettingsAppearance";
 import SettingsPayments from "./settings/SettingsPayments";
 import SettingsLedger from "./settings/SettingsLedger";
+import SettingsPayroll from "./settings/SettingsPayroll";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }) {
@@ -130,17 +131,7 @@ export default function SettingsPage() {
 
 
 
-  // Payroll
-  const [payeRef,              setPayeRef]              = useState(org.payeRef||"");
-  const [accountsOfficeRef,    setAccountsOfficeRef]    = useState(org.accountsOfficeRef||"");
-  const [taxOfficeNumber,      setTaxOfficeNumber]      = useState(org.taxOfficeNumber||"");
-  const [pensionProvider,      setPensionProvider]      = useState(org.pensionProvider||"");
-  const [defaultPensionEmployeePct, setDefaultPensionEmployeePct] = useState(org.defaultPensionEmployeePct??5);
-  const [defaultPensionEmployerPct, setDefaultPensionEmployerPct] = useState(org.defaultPensionEmployerPct??3);
-  const [autoEnrolmentStagingDate, setAutoEnrolmentStagingDate] = useState(org.autoEnrolmentStagingDate||"");
-  const [defaultPayFrequency,  setDefaultPayFrequency]  = useState(org.defaultPayFrequency||"monthly");
-  const [defaultPayDay,        setDefaultPayDay]        = useState(org.defaultPayDay||"last-friday");
-  const [payeRefError,         setPayeRefError]         = useState("");
+
 
   // HMRC / MTD
   const [hmrcStatus,           setHmrcStatus]           = useState("loading");
@@ -164,15 +155,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!orgSettings) return;
     const org = orgSettings;
-    setPayeRef(org.payeRef || "");
-    setAccountsOfficeRef(org.accountsOfficeRef || "");
-    setTaxOfficeNumber(org.taxOfficeNumber || "");
-    setPensionProvider(org.pensionProvider || "");
-    setDefaultPensionEmployeePct(org.defaultPensionEmployeePct ?? 5);
-    setDefaultPensionEmployerPct(org.defaultPensionEmployerPct ?? 3);
-    setAutoEnrolmentStagingDate(org.autoEnrolmentStagingDate || "");
-    setDefaultPayFrequency(org.defaultPayFrequency || "monthly");
-    setDefaultPayDay(org.defaultPayDay || "last-friday");
     setVatStagger(org.vatStagger || 1);
     setAutoGenerateVatPeriods(org.autoGenerateVatPeriods !== false);
     setItsaQuarterlyReminders(org.itsaQuarterlyReminders !== false);
@@ -238,11 +220,7 @@ export default function SettingsPage() {
   ];
 
   const buildOrgSettings = () => ({
-    ...orgSettings, // preserves org + bank + tax fields saved by their sub-components
-    payeRef, accountsOfficeRef, taxOfficeNumber, pensionProvider,
-    defaultPensionEmployeePct: Number(defaultPensionEmployeePct),
-    defaultPensionEmployerPct: Number(defaultPensionEmployerPct),
-    autoEnrolmentStagingDate, defaultPayFrequency, defaultPayDay,
+    ...orgSettings, // preserves org + bank + tax + payroll fields saved by their sub-components
     vatStagger: Number(vatStagger), autoGenerateVatPeriods, itsaQuarterlyReminders,
   });
 
@@ -339,68 +317,8 @@ export default function SettingsPage() {
       {/* General Ledger (extracted to sub-component) */}
       {activeTab === "ledger" && <SettingsLedger />}
 
-      {/* Payroll */}
-      {activeTab === "payroll" && (
-        <Section title="Employer Details">
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
-            <Field label="PAYE Reference" hint="Format: 123/AB456" error={payeRefError}>
-              <input value={payeRef} onChange={e => { setPayeRef(e.target.value); if (payeRefError) setPayeRefError(""); }}
-                placeholder="123/AB456"
-                onBlur={() => { if (payeRef && !/^\d{3}\/[A-Z0-9]{1,10}$/i.test(payeRef)) setPayeRefError("Invalid format (e.g. 123/AB456)"); else setPayeRefError(""); }}
-                style={{ width:"100%", padding:"9px 11px", border:`1px solid ${payeRefError?"#fca5a5":"#e8e8ec"}`, borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-                onFocus={e => e.target.style.borderColor = payeRefError ? "#dc2626" : "#1e6be0"}
-              />
-            </Field>
-            <Field label="Accounts Office Reference" hint="13 characters">
-              <Input value={accountsOfficeRef} onChange={setAccountsOfficeRef} placeholder="123PA00012345" />
-            </Field>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            <Field label="Tax Office Number" hint="3 digits">
-              <Input value={taxOfficeNumber} onChange={v => setTaxOfficeNumber(v.replace(/\D/g,"").slice(0,3))} placeholder="123" />
-            </Field>
-          </div>
-        </Section>
-      )}
-      {activeTab === "payroll" && (
-        <Section title="Pension Provider">
-          <div style={{ marginBottom:14 }}>
-            <Field label="Provider Name">
-              <Input value={pensionProvider} onChange={setPensionProvider} placeholder="e.g. NEST, NOW: Pensions, The People's Pension" />
-            </Field>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
-            <Field label="Default Employee Contribution %" hint="Auto-enrolment minimum is 5%">
-              <Input value={defaultPensionEmployeePct} onChange={setDefaultPensionEmployeePct} type="number" placeholder="5" />
-            </Field>
-            <Field label="Default Employer Contribution %" hint="Auto-enrolment minimum is 3%">
-              <Input value={defaultPensionEmployerPct} onChange={setDefaultPensionEmployerPct} type="number" placeholder="3" />
-            </Field>
-          </div>
-          <Field label="Auto-enrolment Staging Date" hint="Date your auto-enrolment duties started">
-            <Input value={autoEnrolmentStagingDate} onChange={setAutoEnrolmentStagingDate} type="date" />
-          </Field>
-        </Section>
-      )}
-      {activeTab === "payroll" && (
-        <Section title="Pay Schedule">
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
-            <Field label="Default Pay Frequency">
-              <Select value={defaultPayFrequency} onChange={v => { setDefaultPayFrequency(v); setDefaultPayDay(v === "weekly" ? "friday" : "last-friday"); }}
-                options={[{ value:"weekly", label:"Weekly" }, { value:"fortnightly", label:"Fortnightly" }, { value:"monthly", label:"Monthly" }]} />
-            </Field>
-            <Field label="Default Pay Day">
-              <Select value={defaultPayDay} onChange={setDefaultPayDay}
-                options={defaultPayFrequency === "weekly" || defaultPayFrequency === "fortnightly"
-                  ? [{ value:"friday", label:"Friday" }, { value:"thursday", label:"Thursday" }, { value:"custom", label:"Custom" }]
-                  : [{ value:"last-friday", label:"Last Friday" }, { value:"last-working", label:"Last Working Day" }, { value:"25th", label:"25th" }, { value:"custom", label:"Custom" }]
-                } />
-            </Field>
-          </div>
-          <InfoBox>These settings provide defaults when creating new payroll runs. You can override them per run.</InfoBox>
-        </Section>
-      )}
-      {activeTab === "payroll" && <SaveActions label="Save payroll settings" />}
+      {/* Payroll (extracted to sub-component) */}
+      {activeTab === "payroll" && <SettingsPayroll orgSettings={orgSettings} onSave={handleSavePartial} />}
 
       {/* HMRC / MTD */}
       {activeTab === "hmrc" && hmrcBanner && (
