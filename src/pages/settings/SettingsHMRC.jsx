@@ -110,9 +110,11 @@ export default function SettingsHMRC({ orgSettings, onSave }) {
           <div style={{ padding:"20px 0", textAlign:"center", color:"#6b7280", fontSize:13 }}>Checking connection status…</div>
         )}
         {hmrcStatus === "disconnected" && (<>
-          <InfoBox style={{ marginBottom:14, borderColor:"#fde68a", background:"#fffbeb", color:"#92400e" }}>
-            Connect your InvoiceSaga account to HMRC to submit VAT returns and ITSA quarterly updates digitally.
-          </InfoBox>
+          <div style={{ marginBottom:14 }}>
+              <InfoBox color="#D97706">
+                Connect your InvoiceSaga account to HMRC to submit VAT returns and ITSA quarterly updates digitally.
+              </InfoBox>
+            </div>
           <Btn variant="primary" onClick={handleConnectHMRC}>Connect to HMRC →</Btn>
         </>)}
         {hmrcStatus === "connected" && (<>
@@ -140,9 +142,9 @@ export default function SettingsHMRC({ orgSettings, onSave }) {
           </div>
         </>)}
         {hmrcStatus === "error" && (<>
-          <InfoBox style={{ borderColor:"#fecaca", background:"#fef2f2", color:"#b91c1c" }}>
-            {hmrcLoadError || "Failed to check HMRC connection status."}
-          </InfoBox>
+          <InfoBox color="#dc2626">
+              {hmrcLoadError || "Failed to check HMRC connection status."}
+            </InfoBox>
           <Btn variant="outline" onClick={loadHMRCStatus} style={{ marginTop:10 }}>Retry</Btn>
         </>)}
       </Section>
