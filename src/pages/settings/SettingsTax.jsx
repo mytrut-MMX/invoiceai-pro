@@ -1,6 +1,5 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { ff, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../../constants";
-import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../../components/atoms";
 
@@ -52,7 +51,6 @@ function ChipToggle({ value, onChange, options }) {
 }
 
 export default function SettingsTax({ orgSettings, onSave }) {
-  const { user } = useContext(AppCtx);
   const org = orgSettings || {};
 
   // ─── Local state ─────────────────────────────────────────────────────────
