@@ -108,7 +108,7 @@ export default function EmploymentAllowanceSection() {
   if (loadError) {
     return (
       <Section title="Employment Allowance">
-        <InfoBox style={{ borderColor:"#fecaca", background:"#fef2f2", color:"#b91c1c" }}>
+        <InfoBox color="#dc2626">
           {loadError}
         </InfoBox>
       </Section>
@@ -157,7 +157,7 @@ export default function EmploymentAllowanceSection() {
       {/* Warnings */}
       {warnings.map((w, i) => (
         <div key={i} style={{ marginBottom:12 }}>
-          <InfoBox style={{ borderColor:"#fde68a", background:"#fffbeb", color:"#92400e" }}>
+          <InfoBox color="#D97706">
             {w.msg}
           </InfoBox>
         </div>
