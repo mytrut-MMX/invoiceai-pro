@@ -93,6 +93,7 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
   const [salaryType, setSalaryType] = useState(existing?.salary_type || "annual");
   const [salaryAmount, setSalaryAmount] = useState(existing?.salary_amount ?? "");
   const [payFrequency, setPayFrequency] = useState(existing?.pay_frequency || "monthly");
+  const [isDirector, setIsDirector] = useState(existing?.is_director ?? false);
 
   // Pension
   const [pensionEnrolled, setPensionEnrolled] = useState(existing?.pension_enrolled ?? false);
@@ -162,6 +163,7 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
       start_date: startDate,
       leave_date: leaveDate || null,
       status,
+      is_director: isDirector,
       pension_enrolled: pensionEnrolled,
       pension_employee_pct: Number(pensionEmployee),
       pension_employer_pct: Number(pensionEmployer),
@@ -333,6 +335,15 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
                   <Select value={payFrequency} onChange={setPayFrequency}
                     options={[{ value:"weekly", label:"Weekly" }, { value:"fortnightly", label:"Fortnightly" }, { value:"monthly", label:"Monthly" }]} />
                 </Field>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, marginBottom:14, padding:"8px 0" }}>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>Company Director</div>
+                  <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>
+                    Mark if this employee is a director of the company (used for Employment Allowance eligibility checks).
+                  </div>
+                </div>
+                <SlideToggle value={isDirector} onChange={setIsDirector} />
               </div>
             </SectionBody>
           )}
