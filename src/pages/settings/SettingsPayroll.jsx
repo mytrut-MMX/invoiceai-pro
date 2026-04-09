@@ -3,6 +3,7 @@ import { ff } from "../../constants";
 import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn, InfoBox } from "../../components/atoms";
 import Section from "../../components/settings/Section";
+import EmploymentAllowanceSection from "./EmploymentAllowanceSection";
 
 export default function SettingsPayroll({ orgSettings, onSave }) {
   const org = orgSettings || {};
@@ -126,6 +127,8 @@ export default function SettingsPayroll({ orgSettings, onSave }) {
         </div>
         <InfoBox>These settings provide defaults when creating new payroll runs. You can override them per run.</InfoBox>
       </Section>
+
+      <EmploymentAllowanceSection />
 
       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, marginTop:16 }}>
         {saveError && (
