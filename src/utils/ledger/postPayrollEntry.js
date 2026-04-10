@@ -37,9 +37,14 @@ import { findAccount } from './ledgerService.js';
  * @param {Array} payslips - payslip records (used for line-level descriptions)
  * @param {Array} accounts - chart of accounts from fetchUserAccounts()
  * @param {string} userId  - auth.users.id
+ * @param {number} [eaAbsorbed=0] - Employment Allowance absorbed against employer NI
+ *   for this run. Reduces both the 6000 Wages & Salaries debit line AND the 2300
+ *   PAYE/NIC Liability credit line by the same amount. Journal stays balanced.
+ *   Must be <= payrollRun.total_ni_employer. Caller is responsible for consuming
+ *   EA via consumeEA() BEFORE calling this function.
  * @returns {Promise<{ success: boolean, journalEntryId?: string, error?: string }>}
  */
-export async function postPayrollEntry(payrollRun, payslips, accounts, userId) {
+export async function postPayrollEntry(payrollRun, payslips, accounts, userId, eaAbsorbed = 0) {
   if (!supabaseReady) return { success: false, error: 'Supabase not configured' };
 
   try {
@@ -47,6 +52,14 @@ export async function postPayrollEntry(payrollRun, payslips, accounts, userId) {
     const tax             = Number(payrollRun.total_tax || 0);
     const niEmployee      = Number(payrollRun.total_ni_employee || 0);
     const niEmployer      = Number(payrollRun.total_ni_employer || 0);
+
+    // Employment Allowance absorption: clamp to [0, niEmployer] for safety.
+    // Caller (submitPayrollRun) is responsible for calling consumeEA() first and
+    // passing the actual absorbed amount. We clamp here as defensive double-check
+    // to guarantee we never debit a negative value or absorb more than niEmployer.
+    const eaClamped = Math.max(0, Math.min(Number(eaAbsorbed || 0), niEmployer));
+    const niEmployerNet = niEmployer - eaClamped;
+
     const pensionEmployee = Number(payrollRun.total_pension_employee || 0);
     const pensionEmployer = Number(payrollRun.total_pension_employer || 0);
     const studentLoan     = Number(payrollRun.total_student_loan || 0);
@@ -78,12 +91,14 @@ export async function postPayrollEntry(payrollRun, payslips, accounts, userId) {
         description: 'Gross wages and salaries',
       });
     }
-    if (niEmployer > 0) {
+    if (niEmployerNet > 0) {
       lines.push({
         accountId: wagesAccount.id,
-        debit: r2(niEmployer),
+        debit: r2(niEmployerNet),
         credit: 0,
-        description: "Employer's National Insurance",
+        description: eaClamped > 0
+          ? `Employer's National Insurance (net of Employment Allowance £${r2(eaClamped).toFixed(2)})`
+          : "Employer's National Insurance",
       });
     }
     if (pensionEmployer > 0) {
@@ -96,13 +111,17 @@ export async function postPayrollEntry(payrollRun, payslips, accounts, userId) {
     }
 
     // Credits: PAYE/NIC liability
-    const payeLiability = tax + niEmployee + niEmployer;
+    // Uses niEmployerNet (not niEmployer) so that EA-absorbed employer NI is
+    // NOT pushed to HMRC liability. Tax + employee NI are always owed in full.
+    const payeLiability = tax + niEmployee + niEmployerNet;
     if (payeLiability > 0) {
       lines.push({
         accountId: payeAccount.id,
         debit: 0,
         credit: r2(payeLiability),
-        description: 'PAYE income tax + employee NIC + employer NIC',
+        description: eaClamped > 0
+          ? `PAYE income tax + employee NIC + employer NIC (net of EA £${r2(eaClamped).toFixed(2)})`
+          : 'PAYE income tax + employee NIC + employer NIC',
       });
     }
     if (studentLoan > 0) {
