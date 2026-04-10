@@ -9,6 +9,7 @@ import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 import * as dataAccess from "../lib/dataAccess";
 import { createPayrollRun } from "../utils/payroll/payrollService";
+import { getEAStatus } from "../lib/employmentAllowance";
 import PayrollRunDetailPage from "./PayrollRunDetailPage";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -120,6 +121,7 @@ export default function PayrollPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [viewRunId, setViewRunId] = useState(null);
+  const [eaStatus, setEaStatus] = useState(null);
 
   // ─── Load data ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -127,13 +129,15 @@ export default function PayrollPage() {
     (async () => {
       if (!user?.id) { setLoading(false); return; }
       try {
-        const [runsData, empsData] = await Promise.all([
+        const [runsData, empsData, eaData] = await Promise.all([
           dataAccess.loadPayrollRuns?.(user.id) ?? [],
           dataAccess.loadEmployees?.(user.id) ?? [],
+          getEAStatus(user.id, currentTaxYear()).catch(() => null),
         ]);
         if (!cancelled) {
           setRuns(runsData || []);
           setEmployeeCount((empsData || []).filter(e => (e.status || "active") === "active").length);
+          setEaStatus(eaData);
         }
       } catch { /* no-op */ }
       if (!cancelled) setLoading(false);
@@ -233,16 +237,35 @@ export default function PayrollPage() {
         />
 
         {/* Stats */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginTop:16, marginBottom:10 }}>
+        <div style={{ display:"grid", gridTemplateColumns:`repeat(auto-fit,minmax(150px,1fr))`, gap:12, marginTop:16, marginBottom:10 }}>
           {[
             { label: "This Month Gross", value: fmt(currSym, metrics.monthGross), color: "#0f172a" },
             { label: "This Month Net",   value: fmt(currSym, metrics.monthNet),   color: "#059669" },
             { label: "PAYE Due to HMRC", value: fmt(currSym, metrics.payeDue),    color: "#dc2626" },
             { label: "Active Employees", value: employeeCount,                     color: "#1d4ed8" },
+            ...(eaStatus?.enabled ? [(() => {
+              const used = Number(eaStatus.used_amount || 0);
+              const limit = Number(eaStatus.annual_limit || 0);
+              const remaining = Math.max(0, limit - used);
+              const pctUsed = limit > 0 ? (used / limit) * 100 : 0;
+              const lowRemaining = pctUsed >= 80;
+              return {
+                label: `EA ${eaStatus.tax_year || currentTaxYear()}`,
+                value: fmt(currSym, remaining),
+                color: lowRemaining ? "#b45309" : "#15803d",
+                sub: `${fmt(currSym, used)} used of ${fmt(currSym, limit)}`,
+                lowRemaining,
+              };
+            })()] : []),
           ].map(c => (
             <div key={c.label} style={moduleUi.summaryCard}>
               <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{c.label}</div>
               <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:c.color }}>{c.value}</div>
+              {c.sub && (
+                <div style={{ fontSize:11, marginTop:2, color: c.lowRemaining ? "#b45309" : "#64748b", fontWeight:500 }}>
+                  {c.lowRemaining ? "⚠ " : ""}{c.sub}
+                </div>
+              )}
             </div>
           ))}
         </div>
