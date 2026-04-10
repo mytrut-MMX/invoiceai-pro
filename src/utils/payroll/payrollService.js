@@ -3,6 +3,12 @@ import { calculatePayslip } from './payeCalculator.js';
 import { fetchUserAccounts } from '../ledger/fetchUserAccounts.js';
 import { findAccount } from '../ledger/ledgerService.js';
 import { postPayrollEntry } from '../ledger/postPayrollEntry.js';
+import {
+  getEAStatus,
+  computeEAAbsorption,
+  consumeEA,
+  releaseEA,
+} from '../../lib/employmentAllowance.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -462,17 +468,41 @@ export async function submitPayrollRun(runId) {
       return { error: 'No payslips found for this run' };
     }
 
+    // ── Fetch EA status & compute absorption ────────────────────────────────
+
+    const eaState = await getEAStatus(run.user_id, run.tax_year);
+    const niEmployer = Number(run.total_ni_employer || 0);
+    const { absorbed: requested } = computeEAAbsorption({
+      enabled: !!eaState?.enabled,
+      annualLimit: Number(eaState?.annual_limit || 0),
+      usedAmount: Number(eaState?.used_amount || 0),
+      niEmployer,
+    });
+
+    // ── Consume EA atomically (may return < requested on race) ──────────────
+
+    const { absorbed: actuallyAbsorbed, error: consumeErr } =
+      await consumeEA(run.user_id, run.tax_year, requested, run.id);
+    if (consumeErr) return { error: `EA consume failed: ${consumeErr}` };
+
     // ── Post to ledger ──────────────────────────────────────────────────────
 
     const { accounts, userId } = await fetchUserAccounts();
-    if (!userId) return { error: 'Not authenticated' };
+    if (!userId) {
+      await releaseEA(run.user_id, run.tax_year, actuallyAbsorbed, run.id);
+      return { error: 'Not authenticated' };
+    }
     if (!accounts || accounts.length === 0) {
+      await releaseEA(run.user_id, run.tax_year, actuallyAbsorbed, run.id);
       return { error: 'No chart of accounts found — cannot post journal' };
     }
 
-    const ledgerResult = await postPayrollEntry(run, payslips, accounts, userId);
+    const ledgerResult = await postPayrollEntry(
+      run, payslips, accounts, userId, actuallyAbsorbed
+    );
 
     if (!ledgerResult.success) {
+      await releaseEA(run.user_id, run.tax_year, actuallyAbsorbed, run.id);
       return { error: `Ledger posting failed: ${ledgerResult.error}` };
     }
 
@@ -483,6 +513,7 @@ export async function submitPayrollRun(runId) {
       + Number(run.total_ni_employee || 0)
       + Number(run.total_ni_employer || 0)
       + Number(run.total_student_loan || 0)
+      - actuallyAbsorbed
     );
 
     const payeDueDate = calculatePAYEDueDate(run.pay_date);
@@ -494,7 +525,9 @@ export async function submitPayrollRun(runId) {
       bill_date: run.pay_date,
       due_date: payeDueDate,
       category: 'Tax & Government',
-      description: `PAYE/NIC liability for ${run.period_start} to ${run.period_end}`,
+      description: actuallyAbsorbed > 0
+        ? `PAYE/NIC liability for ${run.period_start} to ${run.period_end} — Employment Allowance applied: £${actuallyAbsorbed.toFixed(2)} absorbed`
+        : `PAYE/NIC liability for ${run.period_start} to ${run.period_end}`,
       reference: run.id,
       amount: payeLiability,
       tax_rate: 0,
@@ -509,13 +542,21 @@ export async function submitPayrollRun(runId) {
       .select('id')
       .single();
 
-    if (billErr) throw billErr;
+    if (billErr) {
+      // Reverse the journal we just posted, then release EA
+      await supabase.from('journal_lines')
+        .delete().eq('journal_entry_id', ledgerResult.journalEntryId);
+      await supabase.from('journal_entries')
+        .delete().eq('id', ledgerResult.journalEntryId);
+      await releaseEA(run.user_id, run.tax_year, actuallyAbsorbed, run.id);
+      throw billErr;
+    }
 
     // ── Update run status to 'submitted' ────────────────────────────────────
 
     const { data: updatedRun, error: updateErr } = await supabase
       .from('payroll_runs')
-      .update({ status: 'submitted' })
+      .update({ status: 'submitted', ea_absorbed: actuallyAbsorbed })
       .eq('id', runId)
       .select()
       .single();
