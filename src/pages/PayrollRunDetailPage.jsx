@@ -7,6 +7,7 @@ import { StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate } from "../utils/helpers";
 import { supabase } from "../lib/supabase";
 import { approvePayrollRun, submitPayrollRun, recordPayrollPayment } from "../utils/payroll/payrollService";
+import { getEAStatus } from "../lib/employmentAllowance";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import PayslipDetailModal from "../components/payroll/PayslipDetailModal";
 import RecordPaymentModal from "../components/payroll/RecordPaymentModal";
@@ -76,6 +77,7 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
   const [viewPayslip, setViewPayslip] = useState(null);
   const [showEmployerCosts, setShowEmployerCosts] = useState(false);
   const [accounts, setAccounts] = useState([]);
+  const [eaStatus, setEaStatus] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // ─── Load run + payslips + employees ───────────────────────────────────────
@@ -108,6 +110,14 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
         // Fetch chart of accounts for payment modal and paid info display
         const { accounts: accts } = await fetchUserAccounts();
         if (!cancelled && accts) setAccounts(accts);
+
+        // Fetch EA status for this run's tax year (for banner)
+        if (!cancelled && runRes.data?.tax_year && user?.id) {
+          try {
+            const ea = await getEAStatus(user.id, runRes.data.tax_year);
+            if (!cancelled) setEaStatus(ea);
+          } catch (_) { /* banner hidden on fetch error — non-critical */ }
+        }
       } catch (err) {
         if (!cancelled) setError(err?.message || "Failed to load payroll run");
       }
@@ -263,6 +273,59 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
           <div><span style={{ color:"#94a3b8", fontWeight:600 }}>Tax Month: </span><span style={{ color:"#1a1a2e", fontWeight:600 }}>Month {run.tax_month}{taxMonthName ? ` (${taxMonthName})` : ""}</span></div>
           <div><span style={{ color:"#94a3b8", fontWeight:600 }}>Employees: </span><span style={{ color:"#1a1a2e", fontWeight:600 }}>{payslips.length}</span></div>
         </div>
+
+        {/* Employment Allowance banner — 3 states */}
+        {eaStatus?.enabled && (() => {
+          const absorbed = Number(run.ea_absorbed || 0);
+          const used = Number(eaStatus.used_amount || 0);
+          const limit = Number(eaStatus.annual_limit || 0);
+          const remaining = Math.max(0, limit - used);
+          const pctUsed = limit > 0 ? (used / limit) * 100 : 0;
+          const lowRemaining = pctUsed >= 80;
+          const capReached = remaining === 0;
+
+          // State 1: Applied on this run
+          if (absorbed > 0) {
+            const bg = lowRemaining ? "#fffbeb" : "#f0fdf4";
+            const border = lowRemaining ? "#fde68a" : "#bbf7d0";
+            const fg = lowRemaining ? "#92400e" : "#15803d";
+            const fgDim = lowRemaining ? "#b45309" : "#166534";
+            return (
+              <div style={{ background:bg, border:`1px solid ${border}`, borderRadius:10, padding:"12px 18px", marginBottom:20, fontSize:13 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:4 }}>
+                  <span style={{ color:fg, fontWeight:700 }}>✓ Employment Allowance applied</span>
+                  <span style={{ color:fgDim, fontWeight:600 }}>
+                    {fmt(currSym, absorbed)} of employer NI absorbed this run
+                  </span>
+                </div>
+                <div style={{ color:fgDim, fontSize:12 }}>
+                  {fmt(currSym, remaining)} remaining of {fmt(currSym, limit)} for tax year {run.tax_year}
+                  {" · "}
+                  <span style={{ color:"#64748b" }}>Employer cost unchanged — HMRC bill reduced by {fmt(currSym, absorbed)}</span>
+                </div>
+                {lowRemaining && !capReached && (
+                  <div style={{ color:"#92400e", fontSize:12, marginTop:4, fontWeight:600 }}>
+                    ⚠ EA running low: {pctUsed.toFixed(0)}% of annual limit used
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // State 2: Enabled but not applied (cap reached or no NI)
+          const reason = capReached
+            ? `EA cap reached for ${run.tax_year} — ${fmt(currSym, limit)} fully used`
+            : Number(run.total_ni_employer || 0) === 0
+              ? "No employer NI to absorb this period"
+              : "EA could not be applied to this run";
+          return (
+            <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:10, padding:"10px 18px", marginBottom:20, fontSize:12, color:"#64748b" }}>
+              <span style={{ fontWeight:600, color:"#475569" }}>Employment Allowance enabled</span>
+              {" · "}{reason}
+              {!capReached && ` · ${fmt(currSym, remaining)} remaining of ${fmt(currSym, limit)}`}
+            </div>
+          );
+        })()}
 
         {/* Paid info */}
         {run.status === "paid" && (
