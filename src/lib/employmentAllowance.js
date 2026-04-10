@@ -225,3 +225,113 @@ export async function getEAEligibility(userId, taxYear) {
     eligible,
   };
 }
+
+// ─── EA Absorption (EA-3a) ──────────────────────────────────────────────────
+
+/**
+ * Compute how much employer NI can be absorbed by Employment Allowance for a single run.
+ * Pure function — no DB, no side effects. Caller passes the EA state it already fetched.
+ *
+ * @param {object} params
+ * @param {boolean} params.enabled         - from employment_allowance_usage.enabled
+ * @param {number}  params.annualLimit     - e.g. 10500
+ * @param {number}  params.usedAmount      - current used_amount for the tax year
+ * @param {number}  params.niEmployer      - employer NI for THIS run (payroll_runs.total_ni_employer)
+ * @returns {{ absorbed: number, remaining: number }}
+ *          absorbed  = amount to absorb against this run (0 if EA disabled/exhausted)
+ *          remaining = EA remaining AFTER this absorption (for logging/debugging)
+ */
+export function computeEAAbsorption({ enabled, annualLimit, usedAmount, niEmployer }) {
+  if (!enabled) return { absorbed: 0, remaining: Math.max(0, annualLimit - usedAmount) };
+  if (niEmployer <= 0) return { absorbed: 0, remaining: Math.max(0, annualLimit - usedAmount) };
+
+  const remainingBefore = Math.max(0, annualLimit - usedAmount);
+  const absorbed = Math.min(niEmployer, remainingBefore);
+  const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+
+  return {
+    absorbed: round2(absorbed),
+    remaining: round2(remainingBefore - absorbed),
+  };
+}
+
+/**
+ * Atomically consume EA capacity for a payroll run.
+ *
+ * Uses a conditional UPDATE (WHERE used_amount + $amount <= annual_limit) so two
+ * concurrent payroll submissions cannot over-claim. If the primary update returns
+ * no rows (cap would be breached), re-reads current state, computes actual
+ * remaining, and retries once with the capped amount. Logs a warning on race.
+ *
+ * Returns the amount actually absorbed — may be less than `requestedAmount`.
+ * Callers MUST use the returned `absorbed` value when posting the journal and bill,
+ * not the originally requested amount.
+ *
+ * @param {string} userId
+ * @param {string} taxYear          - e.g. '2026-27'
+ * @param {number} requestedAmount  - what computeEAAbsorption returned
+ * @param {string} payrollRunId     - for log correlation only
+ * @returns {Promise<{ absorbed: number, newState: object|null, error?: string }>}
+ */
+export async function consumeEA(userId, taxYear, requestedAmount, payrollRunId) {
+  if (!supabase) return { absorbed: 0, newState: null, error: 'Supabase not configured' };
+  if (requestedAmount <= 0) return { absorbed: 0, newState: null };
+
+  const { data, error } = await supabase.rpc('consume_ea', {
+    p_user_id: userId,
+    p_tax_year: taxYear,
+    p_amount: requestedAmount,
+  });
+
+  if (error) {
+    console.warn('[EA] consumeEA failed', { payrollRunId, requestedAmount, error: error.message });
+    return { absorbed: 0, newState: null, error: error.message };
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    return { absorbed: 0, newState: null };
+  }
+
+  const absorbed = Number(row.absorbed || 0);
+  if (absorbed < requestedAmount) {
+    console.warn('[EA] Race or cap reached — partial absorption', {
+      payrollRunId,
+      requested: requestedAmount,
+      absorbed,
+      reason: 'EA_CAP_RACE_OR_EXHAUSTED',
+    });
+  }
+
+  return { absorbed, newState: row.new_state };
+}
+
+/**
+ * Release EA capacity previously consumed by consumeEA.
+ * Called by submitPayrollRun if postPayrollEntry or bill insert fails AFTER consumption.
+ * Clamped at 0 so a bug can never push used_amount negative (DB CHECK would reject anyway).
+ *
+ * @param {string} userId
+ * @param {string} taxYear
+ * @param {number} amount
+ * @param {string} payrollRunId - for log correlation
+ * @returns {Promise<{ success: boolean, error?: string }>}
+ */
+export async function releaseEA(userId, taxYear, amount, payrollRunId) {
+  if (!supabase) return { success: false, error: 'Supabase not configured' };
+  if (amount <= 0) return { success: true };
+
+  const { error } = await supabase.rpc('release_ea', {
+    p_user_id: userId,
+    p_tax_year: taxYear,
+    p_amount: amount,
+  });
+
+  if (error) {
+    console.error('[EA] releaseEA FAILED — manual reconciliation may be needed', {
+      payrollRunId, amount, error: error.message,
+    });
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
