@@ -99,3 +99,20 @@ export const MOCK_ITEMS_INIT = [];
 export const MOCK_INV_LIST = [];
 export const MOCK_QUOTES_LIST = [];
 export const MOCK_PAYMENTS = [];
+
+// ─── Suppliers (Phase 1) ──────────────────────────────────────────────────
+
+export const SUPPLIER_TYPES = ["Business", "Individual"];
+
+export const CIS_RATES_SUPPLIER = [
+  { value: "gross_0",       label: "Gross (0%)",       rate: 0  },
+  { value: "standard_20",   label: "Standard (20%)",   rate: 20 },
+  { value: "unverified_30", label: "Unverified (30%)", rate: 30 },
+];
+
+export const CIS_TRADER_TYPES = [
+  { value: "sole_trader", label: "Sole Trader" },
+  { value: "company",     label: "Limited Company" },
+  { value: "partnership", label: "Partnership" },
+  { value: "trust",       label: "Trust" },
+];
