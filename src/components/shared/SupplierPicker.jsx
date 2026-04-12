@@ -53,7 +53,7 @@ export function SupplierPicker({ suppliers = [], value, onChange, onClear }) {
             <div style={{ flex: 1, minWidth: 0, padding: "0 8px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value.name}</span>
-                {value.is_cis_subcontractor === true && (
+                {value.cis?.is_subcontractor === true && (
                   <span style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.04em", background: "#fde68a", color: "#92400e", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>CIS</span>
                 )}
               </div>

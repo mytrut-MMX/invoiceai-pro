@@ -38,7 +38,7 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
 
   // ─── Derived calculations ───
-  const isCis = !!supplier?.is_cis_subcontractor;
+  const isCis = !!supplier?.cis?.is_subcontractor;
 
   const effectiveLabour    = isCis ? (Number(labourAmount) || 0) : 0;
   const effectiveMaterials = isCis ? (Number(materialsAmount) || 0) : 0;
@@ -48,7 +48,7 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
     labourAmount:    isCis ? effectiveLabour    : 0,
     materialsAmount: isCis ? effectiveMaterials : legacyAmount,
     taxRate:         Number(taxRate) || 0,
-    cisRate:         isCis ? (supplier?.cis_rate || null) : null,
+    cisRate:         isCis ? (supplier?.cis?.rate || null) : null,
     isReverseCharge: reverseCharge,
     vatRegistered:   isVat,
   });
@@ -112,8 +112,8 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
       labour_amount:    isCis ? calc.labourAmount    : 0,
       materials_amount: isCis ? calc.materialsAmount : 0,
       cis_deduction:    calc.cisDeduction,
-      cis_rate_at_posting:         isCis ? (supplier?.cis_rate || null) : null,
-      cis_verification_at_posting: isCis ? (supplier?.cis_verification_number || null) : null,
+      cis_rate_at_posting:         isCis ? (supplier?.cis?.rate || null) : null,
+      cis_verification_at_posting: isCis ? (supplier?.cis?.verification_number || null) : null,
 
       // DRC columns (migration 026)
       reverse_charge_applied:    isVat && reverseCharge,
@@ -147,10 +147,10 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
               if (typeof s?.default_reverse_charge === 'boolean') {
                 setReverseCharge(s.default_reverse_charge);
               }
-              if (s?.is_cis_subcontractor && s?.cis_labour_only && !materialsAmount) {
+              if (s?.cis?.is_subcontractor && s?.cis?.labour_only && !materialsAmount) {
                 setMaterialsAmount("0");
               }
-              if (s?.is_cis_subcontractor && category !== "Subcontractor") {
+              if (s?.cis?.is_subcontractor && category !== "Subcontractor") {
                 setCategory("Subcontractor");
               }
             }}
@@ -260,8 +260,8 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
             <div>
               <div style={{ color: "#9ca3af", fontSize: 11 }}>CIS rate</div>
               <div style={{ fontWeight: 600, color: "#1a1a2e" }}>
-                {supplier?.cis_rate
-                  ? (CIS_RATES_SUPPLIER.find(r => r.value === supplier.cis_rate)?.label || supplier.cis_rate)
+                {supplier?.cis?.rate
+                  ? (CIS_RATES_SUPPLIER.find(r => r.value === supplier.cis?.rate)?.label || supplier.cis?.rate)
                   : "—"}
               </div>
             </div>
@@ -278,13 +278,13 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
               <div style={{ fontWeight: 700, color: "#059669" }}>{currSym}{calc.amountPayable.toFixed(2)}</div>
             </div>
           </div>
-          {supplier?.cis_verification_date && (() => {
-            const d = new Date(supplier.cis_verification_date);
+          {supplier?.cis?.verification_date && (() => {
+            const d = new Date(supplier.cis.verification_date);
             const twoYearsAgo = new Date();
             twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
             return d < twoYearsAgo ? (
               <div style={{ marginTop: 10, fontSize: 12, color: "#92400e" }}>
-                ⚠ Supplier CIS verification is over 2 years old ({supplier.cis_verification_date}). HMRC recommends re-verification.
+                ⚠ Supplier CIS verification is over 2 years old ({supplier.cis.verification_date}). HMRC recommends re-verification.
               </div>
             ) : null;
           })()}
