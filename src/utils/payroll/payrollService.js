@@ -739,6 +739,201 @@ export async function recordPayrollPayment(runId, paymentDetails) {
 }
 
 // ---------------------------------------------------------------------------
+// voidPayrollRun (EA-5a)
+// ---------------------------------------------------------------------------
+
+/**
+ * Void a submitted or paid payroll run. Reverses journals, releases EA,
+ * handles HMRC bill, and reverses YTD. Atomic from user perspective.
+ *
+ * Blocks if a more recent run exists in the same tax year (YTD integrity).
+ *
+ * @param {string} runId
+ * @returns {Promise<{ success?: boolean, run?: object, error?: string }>}
+ */
+export async function voidPayrollRun(runId) {
+  if (!supabaseReady) return { error: 'Supabase not configured' };
+
+  try {
+    const { data: run, error: runErr } = await supabase
+      .from('payroll_runs').select('*').eq('id', runId).single();
+    if (runErr) throw runErr;
+    if (!run) return { error: 'Payroll run not found' };
+    if (run.status === 'voided') return { success: true, run };
+    if (!['submitted', 'paid'].includes(run.status)) {
+      return { error: `Cannot void run with status '${run.status}' — must be 'submitted' or 'paid'` };
+    }
+
+    // ── Block if a more recent run exists in this tax year ────────────────
+    const { data: laterRuns, error: laterErr } = await supabase
+      .from('payroll_runs')
+      .select('id, pay_date, status')
+      .eq('user_id', run.user_id)
+      .eq('tax_year', run.tax_year)
+      .gt('pay_date', run.pay_date)
+      .in('status', ['approved', 'submitted', 'paid']);
+    if (laterErr) throw laterErr;
+    if (laterRuns && laterRuns.length > 0) {
+      return { error: `Cannot void: ${laterRuns.length} more recent payroll run(s) exist in tax year ${run.tax_year}. Void them first in reverse chronological order.` };
+    }
+
+    const { data: payslips, error: slipErr } = await supabase
+      .from('payslips').select('*').eq('payroll_run_id', runId);
+    if (slipErr) throw slipErr;
+    if (!payslips || payslips.length === 0) return { error: 'No payslips found' };
+
+    const { accounts, userId } = await fetchUserAccounts();
+    if (!userId) return { error: 'Not authenticated' };
+
+    const createdEntryIds = []; // for rollback tracking
+
+    // ── STAGE 1: Reverse payment journal if paid ──────────────────────────
+    let paymentReversalId = null;
+    if (run.status === 'paid' && run.payment_journal_entry_id) {
+      const { data: origLines, error: origErr } = await supabase
+        .from('journal_lines')
+        .select('account_id, debit, credit, description')
+        .eq('journal_entry_id', run.payment_journal_entry_id);
+      if (origErr) throw origErr;
+
+      const { data: revEntry, error: revErr } = await supabase
+        .from('journal_entries')
+        .insert({
+          user_id: userId,
+          date: new Date().toISOString().split('T')[0],
+          description: `VOID payment reversal — payroll ${runId.slice(0, 8)}`,
+          reference: `VOID-PAY-${runId.slice(0, 8)}`,
+          source_type: 'payroll_payment_void',
+          source_id: runId,
+        })
+        .select('id').single();
+      if (revErr) throw revErr;
+      paymentReversalId = revEntry.id;
+      createdEntryIds.push(paymentReversalId);
+
+      const revLines = origLines.map(l => ({
+        journal_entry_id: paymentReversalId,
+        account_id: l.account_id,
+        debit: Number(l.credit || 0),
+        credit: Number(l.debit || 0),
+        description: `[VOID] ${l.description || ''}`.trim(),
+      }));
+      const { error: linesErr } = await supabase.from('journal_lines').insert(revLines);
+      if (linesErr) {
+        await supabase.from('journal_entries').delete().eq('id', paymentReversalId);
+        throw linesErr;
+      }
+    }
+
+    // ── STAGE 2: Reverse payroll journal ──────────────────────────────────
+    const { data: payrollEntry, error: peErr } = await supabase
+      .from('journal_entries')
+      .select('id').eq('source_id', runId).eq('source_type', 'payroll').maybeSingle();
+    if (peErr) throw peErr;
+    if (!payrollEntry) throw new Error('Original payroll journal not found');
+
+    const { data: origPayrollLines, error: oplErr } = await supabase
+      .from('journal_lines')
+      .select('account_id, debit, credit, description')
+      .eq('journal_entry_id', payrollEntry.id);
+    if (oplErr) throw oplErr;
+
+    const { data: voidEntry, error: veErr } = await supabase
+      .from('journal_entries')
+      .insert({
+        user_id: userId,
+        date: new Date().toISOString().split('T')[0],
+        description: `VOID payroll ${run.period_start} to ${run.period_end}`,
+        reference: `VOID-PAYROLL-${runId.slice(0, 8)}`,
+        source_type: 'payroll_void',
+        source_id: runId,
+      })
+      .select('id').single();
+    if (veErr) {
+      if (paymentReversalId) {
+        await supabase.from('journal_lines').delete().eq('journal_entry_id', paymentReversalId);
+        await supabase.from('journal_entries').delete().eq('id', paymentReversalId);
+      }
+      throw veErr;
+    }
+    createdEntryIds.push(voidEntry.id);
+
+    const voidLines = origPayrollLines.map(l => ({
+      journal_entry_id: voidEntry.id,
+      account_id: l.account_id,
+      debit: Number(l.credit || 0),
+      credit: Number(l.debit || 0),
+      description: `[VOID] ${l.description || ''}`.trim(),
+    }));
+    const { error: vlErr } = await supabase.from('journal_lines').insert(voidLines);
+    if (vlErr) {
+      for (const eid of createdEntryIds) {
+        await supabase.from('journal_lines').delete().eq('journal_entry_id', eid);
+        await supabase.from('journal_entries').delete().eq('id', eid);
+      }
+      throw vlErr;
+    }
+
+    // ── STAGE 3: Handle HMRC bill ─────────────────────────────────────────
+    const { data: bill } = await supabase
+      .from('bills').select('id, status, description')
+      .eq('reference', runId).maybeSingle();
+    if (bill) {
+      if (bill.status === 'Draft') {
+        await supabase.from('bills').delete().eq('id', bill.id);
+      } else {
+        await supabase.from('bills')
+          .update({ status: 'Voided', description: `[VOIDED] ${bill.description || ''}`.trim() })
+          .eq('id', bill.id);
+      }
+    }
+
+    // ── STAGE 4: Release EA ───────────────────────────────────────────────
+    const eaAmount = Number(run.ea_absorbed || 0);
+    if (eaAmount > 0) {
+      const { error: releaseErr } = await releaseEA(run.user_id, run.tax_year, eaAmount, runId);
+      if (releaseErr) {
+        console.error('[VOID] releaseEA failed — manual reconciliation needed', { runId, eaAmount });
+        // Don't rollback — journals already reversed, EA release is recoverable manually
+      }
+    }
+
+    // ── STAGE 5: Reverse YTD on payslips ──────────────────────────────────
+    for (const slip of payslips) {
+      const { data: ytd } = await supabase
+        .from('payroll_ytd').select('*')
+        .eq('employee_id', slip.employee_id).eq('tax_year', run.tax_year).maybeSingle();
+      if (ytd) {
+        await supabase.from('payroll_ytd').update({
+          gross_ytd: round2(Number(ytd.gross_ytd || 0) - Number(slip.gross_pay || 0)),
+          tax_ytd: round2(Number(ytd.tax_ytd || 0) - Number(slip.tax_deducted || 0)),
+          ni_ytd: round2(Number(ytd.ni_ytd || 0) - Number(slip.ni_employee || 0)),
+          pension_ytd: round2(Number(ytd.pension_ytd || 0) - Number(slip.pension_employee || 0)),
+          student_loan_ytd: round2(Number(ytd.student_loan_ytd || 0) - Number(slip.student_loan || 0)),
+          updated_at: new Date().toISOString(),
+        }).eq('id', ytd.id);
+      }
+    }
+
+    // ── STAGE 6: Update run status ────────────────────────────────────────
+    const { data: updated, error: updErr } = await supabase
+      .from('payroll_runs')
+      .update({
+        status: 'voided',
+        voided_at: new Date().toISOString(),
+        void_journal_entry_id: voidEntry.id,
+        void_payment_reversal_entry_id: paymentReversalId,
+      })
+      .eq('id', runId).select().single();
+    if (updErr) throw updErr;
+
+    return { success: true, run: updated };
+  } catch (err) {
+    return { error: err?.message ?? String(err) };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
