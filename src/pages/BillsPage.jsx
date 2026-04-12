@@ -8,6 +8,7 @@ import { Btn } from "../components/atoms";
 import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
 import BillFormPanel from "../components/bills/BillFormPanel";
+import { deleteBill } from "../lib/dataAccess";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 
@@ -19,7 +20,7 @@ function filterBills(bills, key) {
 }
 
 export default function BillsPage({ initialShowForm = false }) {
-  const { bills, setBills, orgSettings } = useContext(AppCtx);
+  const { bills, setBills, orgSettings, user } = useContext(AppCtx);
   const navigate = useNavigate();
   const isVat   = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -82,9 +83,17 @@ export default function BillsPage({ initialShowForm = false }) {
     setEditingBill(null);
   };
 
-  const onDelete = id => {
+  const onDelete = async (id) => {
     if (!window.confirm("Delete this bill?")) return;
+    if (!user?.id) return alert("You must be logged in to delete.");
+    const snapshot = bills;
     setBills(prev => prev.filter(b => b.id !== id));
+    const { error } = await deleteBill(user.id, id);
+    if (error) {
+      console.error("[BillsPage] deleteBill failed:", error);
+      setBills(snapshot);
+      alert("Failed to delete bill: " + (error.message || "Unknown error"));
+    }
   };
 
   // ─── Form mode ─────────────────────────────────────────────────────────────
