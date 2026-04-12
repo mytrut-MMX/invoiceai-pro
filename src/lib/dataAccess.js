@@ -174,6 +174,58 @@ function rowToCustomer(row) {
   };
 }
 
+function rowToSupplier(row) {
+  const addr = row.billing_address;
+  return {
+    id: row.id,
+    name: row.name,
+    legal_name: row.legal_name,
+    trading_name: row.trading_name,
+    type: row.type,
+    email: row.email,
+    phone: row.phone,
+    website: row.website,
+    billingAddress: addr
+      ? {
+          street1: addr.street || addr.street1 || "",
+          street2: addr.street2 || "",
+          city: addr.city || "",
+          state: addr.county || addr.state || "",
+          zip: addr.postcode || addr.zip || "",
+          country: addr.country || "",
+        }
+      : null,
+    company_number: row.company_number,
+    utr: row.utr,
+    vat_number: row.vat_number,
+    is_vat_registered: row.is_vat_registered || false,
+    cis: {
+      is_subcontractor: row.is_cis_subcontractor || false,
+      verification_number: row.cis_verification_number,
+      verification_date: row.cis_verification_date,
+      rate: row.cis_rate,
+      trader_type: row.cis_trader_type,
+      labour_only: row.cis_labour_only || false,
+    },
+    self_billing: {
+      enabled: row.self_billing_enabled || false,
+      agreement_start: row.self_billing_agreement_start,
+      agreement_end: row.self_billing_agreement_end,
+      invoice_series: row.self_billing_invoice_series,
+    },
+    default_reverse_charge: row.default_reverse_charge || false,
+    payment_terms: row.payment_terms,
+    currency: row.currency,
+    notes: row.notes,
+    is_active: row.is_active !== false,
+    total_billed: row.total_billed ?? 0,
+    total_paid: row.total_paid ?? 0,
+    last_contacted_at: row.last_contacted_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
 function rowToCatalogItem(row) {
   return {
     id: row.id,
@@ -349,6 +401,50 @@ function customerToRow(userId, cust) {
   };
 }
 
+function supplierToRow(userId, sup) {
+  const addr = sup.billingAddress;
+  return {
+    id: sup.id,
+    user_id: userId,
+    name: sup.name || "Unknown",
+    legal_name: sup.legal_name || null,
+    trading_name: sup.trading_name || null,
+    type: sup.type || "Business",
+    email: sup.email || null,
+    phone: sup.phone || null,
+    website: sup.website || null,
+    billing_address: addr
+      ? {
+          street: addr.street1 || addr.street || "",
+          street2: addr.street2 || "",
+          city: addr.city || "",
+          postcode: addr.zip || addr.postcode || "",
+          county: addr.state || addr.county || "",
+          country: addr.country || "",
+        }
+      : null,
+    company_number: sup.company_number || null,
+    utr: sup.utr || null,
+    vat_number: sup.vat_number || null,
+    is_vat_registered: sup.is_vat_registered || false,
+    is_cis_subcontractor: sup.cis?.is_subcontractor || false,
+    cis_verification_number: sup.cis?.verification_number || null,
+    cis_verification_date: sup.cis?.verification_date || null,
+    cis_rate: sup.cis?.rate || null,
+    cis_trader_type: sup.cis?.trader_type || null,
+    cis_labour_only: sup.cis?.labour_only || false,
+    self_billing_enabled: sup.self_billing?.enabled || false,
+    self_billing_agreement_start: sup.self_billing?.agreement_start || null,
+    self_billing_agreement_end: sup.self_billing?.agreement_end || null,
+    self_billing_invoice_series: sup.self_billing?.invoice_series || null,
+    default_reverse_charge: sup.default_reverse_charge || false,
+    payment_terms: sup.payment_terms || null,
+    currency: sup.currency || "GBP",
+    notes: sup.notes || null,
+    is_active: sup.is_active !== false,
+  };
+}
+
 function catalogItemToRow(userId, item) {
   return {
     id: item.id,
@@ -490,6 +586,22 @@ export async function loadCustomers(userId) {
   }
 
   return loadJsonbColumn(userId, "customers");
+}
+
+export async function loadSuppliers(userId) {
+  if (!supabase || !userId) return [];
+
+  const { data, error } = await supabase
+    .from("suppliers")
+    .select("*")
+    .eq("user_id", userId)
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.warn("[dataAccess] loadSuppliers failed:", error.message);
+    return [];
+  }
+  return (data || []).map(rowToSupplier);
 }
 
 export async function loadCatalogItems(userId) {
@@ -656,6 +768,20 @@ export async function saveCustomer(userId, customer) {
   return { data, error: null };
 }
 
+export async function saveSupplier(userId, supplier) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const row = supplierToRow(userId, supplier);
+  const { data, error } = await supabase
+    .from("suppliers")
+    .upsert(row, { onConflict: "id" })
+    .select()
+    .single();
+
+  if (error) return { error };
+  return { data: rowToSupplier(data), error: null };
+}
+
 export async function saveCatalogItem(userId, item) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
@@ -693,6 +819,7 @@ export async function syncEntitiesToNormalised(userId, {
   bills: bilArr,
   customers: custArr,
   catalogItems: catArr,
+  suppliers: supArr,
 } = {}) {
   if (!supabase || !userId) return;
 
@@ -744,6 +871,14 @@ export async function syncEntitiesToNormalised(userId, {
         .from("catalog_items")
         .upsert(catArr.map((i) => catalogItemToRow(userId, i)), { onConflict: "id", ignoreDuplicates: false })
         .then(({ error }) => { if (error) console.warn("[sync] catalog_items:", error.message); })
+    );
+  }
+  if (supArr && supArr.length > 0) {
+    jobs.push(
+      supabase
+        .from("suppliers")
+        .upsert(supArr.map((s) => supplierToRow(userId, s)), { onConflict: "id", ignoreDuplicates: false })
+        .then(({ error }) => { if (error) console.warn("[sync] suppliers:", error.message); })
     );
   }
 
@@ -837,6 +972,18 @@ export async function deleteCustomer(userId, customerId) {
   await patchJsonbColumn(userId, "customers", allCustomers);
 
   return { error: null };
+}
+
+export async function deleteSupplier(userId, supplierId) {
+  if (!supabase || !userId) return { error: "Supabase not configured" };
+
+  const { error } = await supabase
+    .from("suppliers")
+    .delete()
+    .eq("id", supplierId)
+    .eq("user_id", userId);
+
+  return { error: error || null };
 }
 
 export async function deleteCatalogItem(userId, itemId) {
