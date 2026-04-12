@@ -398,12 +398,11 @@ export function calculateNI(
 
   const { isDirector = false, niYtdEmployee = 0, niYtdEmployer = 0, grossYtd = 0 } = options;
 
-  // ── DIRECTOR CUMULATIVE METHOD (HMRC default for directors) ─────────────
+  // ── DIRECTOR CUMULATIVE METHOD ──────────────────────────────────────────
   if (isDirector) {
     const annual = taxTables.ni.annual;
     const cumGross = grossYtd + grossPay;
 
-    // Cumulative employee NI on total earnings YTD
     let cumNiEmployee = 0;
     if (cumGross > annual.PT) {
       const earningsToUEL = Math.min(cumGross, annual.UEL) - annual.PT;
@@ -413,7 +412,6 @@ export function calculateNI(
       }
     }
 
-    // Cumulative employer NI on total earnings YTD
     let cumNiEmployer = 0;
     if (cumGross > annual.ST) {
       if (rates.employerAboveUST !== undefined && annual.UST) {
@@ -427,14 +425,13 @@ export function calculateNI(
       }
     }
 
-    // This period = cumulative - already paid YTD (clamped at 0)
     return {
       niEmployee: round2(Math.max(0, cumNiEmployee - niYtdEmployee)),
       niEmployer: round2(Math.max(0, cumNiEmployer - niYtdEmployer)),
     };
   }
 
-  // ── STANDARD METHOD (employees, per-period thresholds) ──────────────────
+  // ── STANDARD METHOD ─────────────────────────────────────────────────────
   let thresholds;
   if (payFrequency === 'weekly') {
     thresholds = { ...taxTables.ni.weekly };
