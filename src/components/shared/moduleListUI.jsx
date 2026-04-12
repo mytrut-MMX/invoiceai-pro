@@ -13,6 +13,7 @@ export const statusBadgeTheme = {
   Overdue: { color: "#b91c1c", bg: "#fef2f2", border: "#fecaca" },
   Partial: { color: "#b45309", bg: "#fffbeb", border: "#fde68a" },
   Void: { color: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
+  Voided: { color: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
   Reconciled: { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
   Pending: { color: "#475569", bg: "#f8fafc", border: "#cbd5e1" },
   Refunded: { color: "#b91c1c", bg: "#fef2f2", border: "#fecaca" },

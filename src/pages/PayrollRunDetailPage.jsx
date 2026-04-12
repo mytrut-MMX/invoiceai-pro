@@ -6,7 +6,7 @@ import { Btn } from "../components/atoms";
 import { StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate } from "../utils/helpers";
 import { supabase } from "../lib/supabase";
-import { approvePayrollRun, submitPayrollRun, recordPayrollPayment } from "../utils/payroll/payrollService";
+import { approvePayrollRun, submitPayrollRun, recordPayrollPayment, voidPayrollRun } from "../utils/payroll/payrollService";
 import { getEAStatus } from "../lib/employmentAllowance";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import PayslipDetailModal from "../components/payroll/PayslipDetailModal";
@@ -148,6 +148,8 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
         result = err ? { error: err.message } : { success: true, run: data };
       } else if (type === "submit") {
         result = await submitPayrollRun(runId);
+      } else if (type === "void") {
+        result = await voidPayrollRun(runId);
       } else if (type === "discard") {
         const { error: err } = await supabase.from("payroll_runs").delete().eq("id", runId);
         if (err) { result = { error: err.message }; } else { setBusy(false); setConfirmAction(null); onBack?.(); return; }
@@ -228,11 +230,34 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
           {run.status === "submitted" && (
             <>
               <Btn variant="outline" onClick={() => console.log("Download FPS XML — not yet implemented")}>Download FPS XML</Btn>
+              <Btn variant="outline" onClick={() => setConfirmAction({
+                type: "void",
+                title: "Void Payroll Run",
+                message: `This will reverse the journal entries, release Employment Allowance (${fmt(currSym, run.ea_absorbed || 0)}), and delete the draft HMRC bill.`,
+                warning: "This action creates permanent audit records and cannot be undone.",
+                confirmLabel: "Void Run",
+                confirmVariant: "danger",
+              })}>Void Run</Btn>
               <Btn variant="primary" onClick={() => { setActionError(""); setShowPaymentModal(true); }}>Record Payment</Btn>
             </>
           )}
           {run.status === "paid" && (
-            <Btn variant="outline" onClick={() => console.log("Download payslips ZIP — not yet implemented")}>Download Payslips</Btn>
+            <>
+              <Btn variant="outline" onClick={() => console.log("Download payslips ZIP — not yet implemented")}>Download Payslips</Btn>
+              <Btn variant="outline" onClick={() => setConfirmAction({
+                type: "void",
+                title: "Void Payroll Run",
+                message: `This will reverse the payroll journal AND the payment of ${fmt(currSym, run.total_net || 0)} to the bank, release Employment Allowance (${fmt(currSym, run.ea_absorbed || 0)}), and void the HMRC bill.`,
+                warning: "This action creates permanent audit records and cannot be undone. The payment will be reversed in the ledger.",
+                confirmLabel: "Void Run",
+                confirmVariant: "danger",
+              })}>Void Run</Btn>
+            </>
+          )}
+          {run.status === "voided" && (
+            <span style={{ fontSize:12, color:"#6b7280", fontStyle:"italic", padding:"6px 12px" }}>
+              This run is voided — no actions available
+            </span>
           )}
         </div>
       </div>
@@ -273,6 +298,20 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
           <div><span style={{ color:"#94a3b8", fontWeight:600 }}>Tax Month: </span><span style={{ color:"#1a1a2e", fontWeight:600 }}>Month {run.tax_month}{taxMonthName ? ` (${taxMonthName})` : ""}</span></div>
           <div><span style={{ color:"#94a3b8", fontWeight:600 }}>Employees: </span><span style={{ color:"#1a1a2e", fontWeight:600 }}>{payslips.length}</span></div>
         </div>
+
+        {/* Voided banner */}
+        {run.status === "voided" && (
+          <div style={{ background:"#f3f4f6", border:"1px solid #d1d5db", borderRadius:10, padding:"12px 18px", marginBottom:20, fontSize:13 }}>
+            <div style={{ color:"#374151", fontWeight:700, marginBottom:4 }}>
+              ⊘ This payroll run was voided
+            </div>
+            <div style={{ color:"#6b7280", fontSize:12 }}>
+              {run.voided_at && `Voided on ${fmtDate(run.voided_at.split("T")[0])} · `}
+              Journal entries reversed
+              {Number(run.ea_absorbed || 0) > 0 && ` · Employment Allowance released (${fmt(currSym, run.ea_absorbed)})`}
+            </div>
+          </div>
+        )}
 
         {/* Employment Allowance banner — 3 states */}
         {eaStatus?.enabled && (() => {
