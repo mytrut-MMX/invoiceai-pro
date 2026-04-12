@@ -142,6 +142,17 @@ function rowToBill(row) {
     paid_amount: row.paid_amount,
     locked: row.locked,
     created_at: row.created_at,
+    supplier_id: row.supplier_id || null,
+    // CIS (migration 026)
+    labour_amount: row.labour_amount ?? 0,
+    materials_amount: row.materials_amount ?? 0,
+    cis_deduction: row.cis_deduction ?? 0,
+    cis_rate_at_posting: row.cis_rate_at_posting ?? null,
+    cis_verification_at_posting: row.cis_verification_at_posting ?? null,
+    // DRC (migration 026)
+    reverse_charge_applied: !!row.reverse_charge_applied,
+    reverse_charge_vat_amount: row.reverse_charge_vat_amount ?? 0,
+    bill_type: row.bill_type || 'standard',
   };
 }
 
@@ -372,6 +383,17 @@ function billToRow(userId, bil) {
     total: bil.total ?? null,
     paid_date: bil.paid_date || null,
     paid_amount: bil.paid_amount ?? 0,
+    // CIS columns (migration 026)
+    labour_amount:               bil.labour_amount ?? 0,
+    materials_amount:            bil.materials_amount ?? 0,
+    cis_deduction:               bil.cis_deduction ?? 0,
+    cis_rate_at_posting:         bil.cis_rate_at_posting ?? null,
+    cis_verification_at_posting: bil.cis_verification_at_posting ?? null,
+    // DRC columns (migration 026)
+    reverse_charge_applied:      bil.reverse_charge_applied ?? false,
+    reverse_charge_vat_amount:   bil.reverse_charge_vat_amount ?? 0,
+    // Dispatch type (migration 026)
+    bill_type:                   bil.bill_type || 'standard',
   };
 }
 
