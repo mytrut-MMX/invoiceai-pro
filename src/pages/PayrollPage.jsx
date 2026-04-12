@@ -20,6 +20,7 @@ const STATUS_FILTERS = [
   { key: "approved",  label: "Approved" },
   { key: "submitted", label: "Submitted" },
   { key: "paid",      label: "Paid" },
+  { key: "voided",    label: "Voided" },
 ];
 
 /** Format a short date range e.g. "01 Apr – 30 Apr" */
@@ -165,7 +166,7 @@ export default function PayrollPage() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
 
-    const thisMonth = runs.filter(r => r.pay_date >= monthStart && r.pay_date <= monthEnd);
+    const thisMonth = runs.filter(r => r.pay_date >= monthStart && r.pay_date <= monthEnd && r.status !== "voided");
 
     return {
       monthGross: thisMonth.reduce((s, r) => s + Number(r.total_gross || 0), 0),
