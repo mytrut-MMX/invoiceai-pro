@@ -102,6 +102,7 @@ function mapEmployeeForCalc(emp) {
     pensionEnrolled: emp.pension_enrolled,
     pensionEmployeePct: Number(emp.pension_employee_pct),
     pensionEmployerPct: Number(emp.pension_employer_pct),
+    isDirector: emp.is_director || false,
   };
 }
 

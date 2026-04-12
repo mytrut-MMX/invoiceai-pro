@@ -368,31 +368,77 @@ export function calculateTax(
 /**
  * Calculate National Insurance contributions for a pay period.
  *
- * @param {number} grossPay - Gross pay for this period
- * @param {string} niCategory - NI category letter (A, B, C, F, H, J, M, Z)
- * @param {string} payFrequency - 'weekly' | 'fortnightly' | 'monthly'
- * @param {object} [taxTables=DEFAULT_TAX_TABLES]
+ * Standard method (employees): per-period calculation using period thresholds.
+ * Cumulative method (directors): annual thresholds + YTD reconciliation — HMRC
+ *   default for directors per PAYE Booklet CA44. Director pays NI only when
+ *   cumulative earnings cross the annual Primary Threshold (£12,570), then
+ *   catches up in subsequent periods.
+ *
+ * @param {number} grossPay
+ * @param {string} niCategory
+ * @param {string} payFrequency
+ * @param {object} [options]
+ * @param {boolean} [options.isDirector=false]
+ * @param {number}  [options.niYtdEmployee=0]  — employee NI paid YTD (before this period)
+ * @param {number}  [options.niYtdEmployer=0]  — employer NI paid YTD (before this period)
+ * @param {number}  [options.grossYtd=0]        — gross pay YTD (before this period)
+ * @param {object}  [taxTables=DEFAULT_TAX_TABLES]
  * @returns {{ niEmployee: number, niEmployer: number }}
  */
 export function calculateNI(
   grossPay,
   niCategory = 'A',
   payFrequency = 'monthly',
+  options = {},
   taxTables = DEFAULT_TAX_TABLES
 ) {
   const category = niCategory.toUpperCase();
   const rates = taxTables.ni.rates[category];
+  if (!rates) return { niEmployee: 0, niEmployer: 0 };
 
-  if (!rates) {
-    return { niEmployee: 0, niEmployer: 0 };
+  const { isDirector = false, niYtdEmployee = 0, niYtdEmployer = 0, grossYtd = 0 } = options;
+
+  // ── DIRECTOR CUMULATIVE METHOD (HMRC default for directors) ─────────────
+  if (isDirector) {
+    const annual = taxTables.ni.annual;
+    const cumGross = grossYtd + grossPay;
+
+    // Cumulative employee NI on total earnings YTD
+    let cumNiEmployee = 0;
+    if (cumGross > annual.PT) {
+      const earningsToUEL = Math.min(cumGross, annual.UEL) - annual.PT;
+      cumNiEmployee += Math.max(0, earningsToUEL) * rates.employeePTtoUEL;
+      if (cumGross > annual.UEL) {
+        cumNiEmployee += (cumGross - annual.UEL) * rates.employeeAboveUEL;
+      }
+    }
+
+    // Cumulative employer NI on total earnings YTD
+    let cumNiEmployer = 0;
+    if (cumGross > annual.ST) {
+      if (rates.employerAboveUST !== undefined && annual.UST) {
+        const earningsToUST = Math.min(cumGross, annual.UST) - annual.ST;
+        cumNiEmployer += Math.max(0, earningsToUST) * rates.employerAboveST;
+        if (cumGross > annual.UST) {
+          cumNiEmployer += (cumGross - annual.UST) * rates.employerAboveUST;
+        }
+      } else {
+        cumNiEmployer = (cumGross - annual.ST) * rates.employerAboveST;
+      }
+    }
+
+    // This period = cumulative - already paid YTD (clamped at 0)
+    return {
+      niEmployee: round2(Math.max(0, cumNiEmployee - niYtdEmployee)),
+      niEmployer: round2(Math.max(0, cumNiEmployer - niYtdEmployer)),
+    };
   }
 
-  // Get period thresholds
+  // ── STANDARD METHOD (employees, per-period thresholds) ──────────────────
   let thresholds;
   if (payFrequency === 'weekly') {
     thresholds = { ...taxTables.ni.weekly };
   } else if (payFrequency === 'fortnightly') {
-    // Fortnightly: weekly thresholds * 2
     thresholds = {
       LEL: taxTables.ni.weekly.LEL * 2,
       PT: taxTables.ni.weekly.PT * 2,
@@ -401,27 +447,21 @@ export function calculateNI(
       UST: taxTables.ni.weekly.UST * 2,
     };
   } else {
-    // Monthly
     thresholds = { ...taxTables.ni.monthly };
   }
 
-  // Employee NI
   let niEmployee = 0;
   if (grossPay > thresholds.PT) {
     const earningsToUEL = Math.min(grossPay, thresholds.UEL) - thresholds.PT;
     niEmployee += Math.max(0, earningsToUEL) * rates.employeePTtoUEL;
-
     if (grossPay > thresholds.UEL) {
       niEmployee += (grossPay - thresholds.UEL) * rates.employeeAboveUEL;
     }
   }
 
-  // Employer NI
-  // Categories F/H/M/Z: 0% from ST to UST, then employerAboveUST above UST
   let niEmployer = 0;
   if (grossPay > thresholds.ST) {
     if (rates.employerAboveUST !== undefined && thresholds.UST) {
-      // Two-tier: 0% (employerAboveST) up to UST, then employerAboveUST above UST
       const earningsToUST = Math.min(grossPay, thresholds.UST) - thresholds.ST;
       niEmployer += Math.max(0, earningsToUST) * rates.employerAboveST;
       if (grossPay > thresholds.UST) {
@@ -610,6 +650,12 @@ export function calculatePayslip(
     grossPay,
     employee.niCategory || 'A',
     payFrequency,
+    {
+      isDirector: employee.isDirector || false,
+      niYtdEmployee: safeYtd.niYtd || 0,
+      niYtdEmployer: safeYtd.niEmployerYtd || 0,
+      grossYtd: safeYtd.grossYtd || 0,
+    },
     taxTables
   );
 
