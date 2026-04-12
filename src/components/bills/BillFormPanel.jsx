@@ -6,6 +6,9 @@ import { Field, Input, Select, Textarea, Btn } from "../atoms";
 import { todayStr, addDays } from "../../utils/helpers";
 import { SupplierPicker } from "../shared/SupplierPicker";
 import { computeBillCis } from "../../utils/cis/computeBillCis";
+import { postBillEntry } from "../../utils/ledger/postBillEntry";
+import { reverseEntry, findEntryBySource } from "../../utils/ledger/ledgerService";
+import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 
 export default function BillFormPanel({ existing, onClose, onSave }) {
   const { orgSettings, suppliers = [] } = useContext(AppCtx);
@@ -122,7 +125,25 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
       // Dispatch type (migration 026)
       bill_type: calc.billType,
     };
-    setTimeout(() => { onSave(bill); setSaving(false); onClose(); }, 300);
+    setTimeout(() => {
+      onSave(bill);
+      // Fire-and-forget — never blocks the UI save path
+      ;(async () => {
+        try {
+          const { accounts, userId } = await fetchUserAccounts();
+          if (!userId) return;
+          if (isEdit) {
+            const oldEntry = await findEntryBySource('bill', bill.id);
+            if (oldEntry) await reverseEntry(oldEntry.id, userId);
+          }
+          await postBillEntry(bill, supplier, accounts, userId);
+        } catch (err) {
+          console.error('[Ledger] bill post failed:', err);
+        }
+      })();
+      setSaving(false);
+      onClose();
+    }, 300);
   };
 
   // ─── Render ───
