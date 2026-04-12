@@ -71,6 +71,12 @@ export const ROUTES = {
   EXPENSES:     '/expenses',
   EXPENSES_NEW: '/expenses/new',
 
+  // ─── Suppliers ───────────────────────────────────────────────────────────────
+  SUPPLIERS:      '/suppliers',
+  SUPPLIERS_NEW:  '/suppliers/new',
+  SUPPLIER:       (id) => `/suppliers/${id}`,
+  SUPPLIER_EDIT:  (id) => `/suppliers/${id}/edit`,
+
   // ─── Bills / Purchases ──────────────────────────────────────────────────────
   BILLS:      '/bills',
   BILLS_NEW:  '/bills/new',

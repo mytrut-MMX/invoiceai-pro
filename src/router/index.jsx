@@ -58,6 +58,7 @@ const QuotesPage         = lazy(() => import("../pages/QuotesPage"));
 const PaymentsPage       = lazy(() => import("../pages/PaymentsPage"));
 const ExpensesPage       = lazy(() => import("../pages/ExpensesPage"));
 const BillsPage          = lazy(() => import("../pages/BillsPage"));
+const SuppliersPage      = lazy(() => import("../pages/SuppliersPage"));
 const SettingsPage       = lazy(() => import("../pages/SettingsPage"));
 const InvoiceTemplatesPage = lazy(() => import("../pages/InvoiceTemplatesPage"));
 const VATReturnPage      = lazy(() => import("../pages/VATReturnPage"));
@@ -151,6 +152,10 @@ const router = createBrowserRouter([
           // Expenses
           { path: ROUTES.EXPENSES,     element: <ExpensesPage key="list" /> },
           { path: ROUTES.EXPENSES_NEW, element: <ExpensesPage key="new"  initialShowForm /> },
+
+          // Suppliers
+          { path: ROUTES.SUPPLIERS,     element: <SuppliersPage key="list" /> },
+          { path: ROUTES.SUPPLIERS_NEW, element: <SuppliersPage key="new"  initialShowForm /> },
 
           // Bills
           { path: ROUTES.BILLS,     element: <BillsPage key="list" /> },
