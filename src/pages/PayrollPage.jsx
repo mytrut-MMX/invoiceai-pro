@@ -171,7 +171,7 @@ export default function PayrollPage() {
     return {
       monthGross: thisMonth.reduce((s, r) => s + Number(r.total_gross || 0), 0),
       monthNet:   thisMonth.reduce((s, r) => s + Number(r.total_net || 0), 0),
-      payeDue:    runs.filter(r => r.status !== "paid" && r.status !== "voided").reduce((s, r) => s + Number(r.total_tax || 0) + Number(r.total_ni_employee || 0) + Number(r.total_ni_employer || 0) - Number(r.ea_absorbed || 0), 0),
+      payeDue:    runs.filter(r => r.status !== "paid").reduce((s, r) => s + Number(r.total_tax || 0) + Number(r.total_ni_employee || 0) + Number(r.total_ni_employer || 0) - Number(r.ea_absorbed || 0), 0),
     };
   }, [runs]);
 
