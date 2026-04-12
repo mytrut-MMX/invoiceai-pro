@@ -9,6 +9,7 @@ import { moduleUi, ModulePageHeader, ModuleToolbar, ModuleStatsRow, ModuleTableC
 import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
+import { deleteCustomer as deleteCustomerFromDb } from "../lib/dataAccess";
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const T = {
@@ -83,7 +84,7 @@ function CustomerAvatar({ name }) {
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 export default function CustomersPage({ initialShowForm = false }) {
-  const { customers, setCustomers, orgSettings, invoices, quotes, payments } = useContext(AppCtx);
+  const { customers, setCustomers, orgSettings, invoices, quotes, payments, user } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -99,14 +100,23 @@ export default function CustomersPage({ initialShowForm = false }) {
   const setTypeFilter = (v) => setSearchParams(p => { const n = new URLSearchParams(p); v && v !== "All" ? n.set("type", v) : n.delete("type"); return n; }, { replace: true });
 
   // ─── handlers ─────────────────────────────────────────────────────────────
-  const deleteCustomer = (c) => {
+  const deleteCustomer = async (c) => {
     const invCount = (invoices||[]).filter(i => i.customer?.id === c.id).length;
     const qCount   = (quotes||[]).filter(q => q.customer?.id === c.id).length;
     const linked   = invCount + qCount;
     const msg = linked > 0
       ? `"${c.name}" is linked to ${linked} invoice/quote(s). Deleting will not remove those records, but the customer will no longer appear in lookups.\n\nDelete anyway?`
       : `Delete "${c.name}"? This cannot be undone.`;
-    if (window.confirm(msg)) setCustomers(p => p.filter(x => x.id !== c.id));
+    if (!window.confirm(msg)) return;
+    if (!user?.id) return alert("You must be logged in to delete.");
+    const snapshot = customers;
+    setCustomers(p => p.filter(x => x.id !== c.id));
+    const { error } = await deleteCustomerFromDb(user.id, c.id);
+    if (error) {
+      console.error("[CustomersPage] deleteCustomer failed:", error);
+      setCustomers(snapshot);
+      alert("Failed to delete customer: " + (error.message || "Unknown error"));
+    }
   };
 
   const onSave = c => {

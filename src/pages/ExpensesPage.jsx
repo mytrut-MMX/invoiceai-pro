@@ -8,6 +8,7 @@ import { Btn } from "../components/atoms";
 import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 import ExpenseForm from "../components/expenses/ExpenseForm";
+import { deleteExpense } from "../lib/dataAccess";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 
@@ -61,7 +62,7 @@ function filterExpenses(expenses, key) {
 }
 
 export default function ExpensesPage({ initialShowForm = false }) {
-  const { expenses, setExpenses, orgSettings } = useContext(AppCtx);
+  const { expenses, setExpenses, orgSettings, user } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isVat   = orgSettings?.vatReg === "Yes";
@@ -112,9 +113,17 @@ export default function ExpensesPage({ initialShowForm = false }) {
     setEditingExp(null);
   };
 
-  const onDelete = id => {
+  const onDelete = async (id) => {
     if (!window.confirm("Delete this expense?")) return;
+    if (!user?.id) return alert("You must be logged in to delete.");
+    const snapshot = expenses;
     setExpenses(prev => prev.filter(e => e.id !== id));
+    const { error } = await deleteExpense(user.id, id);
+    if (error) {
+      console.error("[ExpensesPage] deleteExpense failed:", error);
+      setExpenses(snapshot);
+      alert("Failed to delete expense: " + (error.message || "Unknown error"));
+    }
   };
 
   if (showForm) return (
