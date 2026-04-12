@@ -13,6 +13,7 @@ import {
   loadExpenses   as daLoadExpenses,
   loadBills      as daLoadBills,
   loadCustomers  as daLoadCustomers,
+  loadSuppliers  as daLoadSuppliers,
   loadCatalogItems as daLoadCatalogItems,
   syncEntitiesToNormalised,
 } from "./lib/dataAccess";
@@ -104,6 +105,7 @@ export default function App() {
   const [customPayMethods,     setCustomPayMethods]     = useState([]);
   const [expenses,             setExpenses]             = useState([]);
   const [bills,                setBills]                = useState([]);
+  const [suppliers,            setSuppliers]            = useState([]);
 
   // ─── PDF / Invoice settings (loaded from Supabase; defaults below) ─────────
   const [pdfTemplate,          setPdfTemplate]          = useState("classic");
@@ -188,13 +190,14 @@ export default function App() {
       setInvoiceTemplateConfig(merged?.invoice_template_config ?? null);
 
       // 3. Entities — load from normalised tables (with JSONB fallback)
-      const [inv, pay, exp, bil, cust, cat] = await Promise.all([
+      const [inv, pay, exp, bil, cust, cat, sup] = await Promise.all([
         daLoadInvoices(user.id),
         daLoadPayments(user.id),
         daLoadExpenses(user.id),
         daLoadBills(user.id),
         daLoadCustomers(user.id),
         daLoadCatalogItems(user.id),
+        daLoadSuppliers(user.id),
       ]);
       if (cancelled) return;
       setInvoices(inv);
@@ -203,6 +206,7 @@ export default function App() {
       setBills(bil);
       setCustomers(cust);
       setCatalogItems(cat);
+      setSuppliers(sup);
 
       setBusinessDataHydrated(true);
     })();
@@ -222,6 +226,7 @@ export default function App() {
         payments: payments.length,
         expenses: expenses.length,
         bills: (bills || []).length,
+        suppliers: (suppliers || []).length,
       });
       if (currentHash === lastSaveHash.current) return;
       lastSaveHash.current = currentHash;
@@ -262,6 +267,7 @@ export default function App() {
         bills,
         customers,
         catalogItems,
+        suppliers,
       }).catch((err) => {
         console.warn("[Data] Failed to sync entities to normalised tables.", err);
       });
@@ -302,7 +308,7 @@ export default function App() {
   }, [
     user?.id, businessDataHydrated,
     orgSettings, onboardingDone, customers, catalogItems,
-    invoices, quotes, payments, customPayMethods, expenses, bills,
+    invoices, quotes, payments, customPayMethods, expenses, bills, suppliers,
     pdfTemplate, companyLogo, companyLogoSize,
     invoicePrefix, quotePrefix, invoiceStartNum, quoteStartNum,
     defaultInvTerms, defaultQuoteTerms, defaultPaymentTerms,
@@ -327,6 +333,7 @@ export default function App() {
     customPayMethods, setCustomPayMethods,
     expenses,    setExpenses,
     bills,       setBills,
+    suppliers,   setSuppliers,
     pdfTemplate, setPdfTemplate,
     companyLogo, setCompanyLogo,
     companyLogoSize,      setCompanyLogoSize,
