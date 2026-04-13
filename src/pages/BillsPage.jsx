@@ -89,7 +89,7 @@ export default function BillsPage({ initialShowForm = false }) {
   const paidAmt    = bills.filter(b => b.status === "Paid").reduce((s, b) => s + Number(b.total || b.amount || 0), 0);
   const cisYearStart = currentCISTaxYearStart();
   const cisYtdAmt = bills
-    .filter(b => b.bill_date >= cisYearStart && Number(b.cis_deduction || 0) > 0)
+    .filter(b => b.status === "Paid" && b.paid_date >= cisYearStart && Number(b.cis_deduction || 0) > 0)
     .reduce((s, b) => s + Number(b.cis_deduction || 0), 0);
 
   const hasFilters = search || activeFilter !== "all" || (cisEnabled && cisFilter !== "all");
