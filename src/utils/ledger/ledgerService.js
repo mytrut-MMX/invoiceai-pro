@@ -66,17 +66,49 @@ const CATEGORY_CODE_MAP = {
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /**
- * Returns the existing journal entry id if one already exists for
- * the given (source_type, source_id) pair, or null if none exists.
+ * Returns the id of an ACTIVE existing journal entry for the given
+ * (source_type, source_id) pair, or null if none exists.
+ *
+ * An entry is considered "active" if it has NOT been reversed — i.e. no
+ * subsequent entry with source_type='reversal' and source_id equal to the
+ * candidate entry's id exists.
+ *
+ * This is what makes the edit → reverse → re-post flow work: after
+ * reverseEntry() has been called on a prior entry, that entry is no longer
+ * active, so callers are free to post a fresh entry with the same
+ * (source_type, source_id) without hitting a false-positive idempotency guard.
+ *
+ * Special case: when sourceType === 'reversal', we skip the active-check and
+ * return the first match. A reversal entry is itself final — you can't
+ * reverse a reversal with another reversal under the same source_id, and the
+ * existing guard inside reverseEntry() depends on this behaviour to prevent
+ * double-reversal of the same original entry.
  */
 async function findExistingEntry(sourceType, sourceId) {
-  const { data } = await supabase
+  const { data: candidates } = await supabase
     .from('journal_entries')
     .select('id')
     .eq('source_type', sourceType)
-    .eq('source_id', sourceId)
-    .maybeSingle();
-  return data?.id ?? null;
+    .eq('source_id', sourceId);
+
+  if (!candidates || candidates.length === 0) return null;
+
+  // Reversals: first match wins, no active-check (see docstring).
+  if (sourceType === 'reversal') {
+    return candidates[0].id;
+  }
+
+  // For all other source types: exclude entries that have been reversed.
+  const candidateIds = candidates.map(c => c.id);
+  const { data: reversals } = await supabase
+    .from('journal_entries')
+    .select('source_id')
+    .eq('source_type', 'reversal')
+    .in('source_id', candidateIds);
+
+  const reversedIds = new Set((reversals || []).map(r => r.source_id));
+  const active = candidates.find(c => !reversedIds.has(c.id));
+  return active?.id ?? null;
 }
 
 /**
