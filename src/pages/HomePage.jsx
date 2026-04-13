@@ -126,13 +126,13 @@ export default function HomePage() {
       : 0;
     const cisDeductedYTD = cisEnabled
       ? bills
-          .filter(b => b.status === "Paid" && (b.bill_date || "") >= cisYearStart && Number(b.cis_deduction || 0) > 0)
+          .filter(b => b.status === "Paid" && (b.paid_date || "") >= cisYearStart && Number(b.cis_deduction || 0) > 0)
           .reduce((sum, b) => sum + Number(b.cis_deduction || 0), 0)
       : 0;
     // CIS300 return for current tax month (paid bills only — HMRC reports payments made, not accruals)
     const cisReturnTaxMonth = cisEnabled
       ? bills
-          .filter(b => b.status === "Paid" && (b.bill_date || "") >= cisTaxMonth.start && (b.bill_date || "") <= cisTaxMonth.end && Number(b.cis_deduction || 0) > 0)
+          .filter(b => b.status === "Paid" && (b.paid_date || "") >= cisTaxMonth.start && (b.paid_date || "") <= cisTaxMonth.end && Number(b.cis_deduction || 0) > 0)
           .reduce((sum, b) => sum + Number(b.cis_deduction || 0), 0)
       : 0;
     const daysUntilCisDeadline = Math.ceil((new Date(cisTaxMonth.deadline) - new Date()) / 86400000);
