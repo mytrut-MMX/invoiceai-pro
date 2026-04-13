@@ -7,17 +7,25 @@ import { todayStr, addDays, nextNum, newLine } from "../utils/helpers";
 import InvoiceFormPanel from "../components/invoices/InvoiceFormPanel";
 import InvoiceViewPanel from "../components/invoices/InvoiceViewPanel";
 import InvoiceListView  from "../components/invoices/InvoiceListView";
+import { saveInvoice } from "../lib/dataAccess";
 
 export default function InvoicesPage({ initialShowForm = false }) {
-  const { invoices, setInvoices, quotes, setQuotes } = useContext(AppCtx);
+  const { invoices, setInvoices, quotes, setQuotes, user } = useContext(AppCtx);
   const navigate = useNavigate();
   const [panel, setPanel] = useState(initialShowForm ? { mode: "new" } : null);
 
-  const onSave = inv => setInvoices(p => {
-    const i = p.findIndex(x => x.id === inv.id);
-    if (i >= 0) { const u = [...p]; u[i] = inv; return u; }
-    return [inv, ...p];
-  });
+  const onSave = inv => {
+    setInvoices(p => {
+      const i = p.findIndex(x => x.id === inv.id);
+      if (i >= 0) { const u = [...p]; u[i] = inv; return u; }
+      return [inv, ...p];
+    });
+    if (user?.id) {
+      saveInvoice(user.id, inv).then(({ error }) => {
+        if (error) console.error('[Invoices] saveInvoice failed:', error);
+      });
+    }
+  };
 
   const handleConvertAcceptedQuote = (quoteId) => {
     const quote = quotes.find(q => q.id === quoteId);
