@@ -9,6 +9,9 @@ import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "..
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
 import BillFormPanel from "../components/bills/BillFormPanel";
 import { deleteBill } from "../lib/dataAccess";
+import { supabase } from "../lib/supabase";
+import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
+import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 
@@ -93,9 +96,29 @@ export default function BillsPage({ initialShowForm = false }) {
       console.error("[BillsPage] deleteBill failed:", error);
       setBills(snapshot);
       alert("Failed to delete bill: " + (error.message || "Unknown error"));
+      return;
     }
+    // Fire-and-forget ledger reversal — never blocks the UI delete path
+    ;(async () => {
+      try {
+        const { userId } = await fetchUserAccounts();
+        if (!userId) return;
+        const billEntry = await findEntryBySource('bill', id);
+        if (billEntry) await reverseEntry(billEntry.id, userId);
+        // Payment entries use composite source_id: `${billId}:${date}:${amount}`
+        const { data: paymentEntries } = await supabase
+          .from('journal_entries')
+          .select('id')
+          .eq('source_type', 'bill_payment')
+          .like('source_id', `${id}:%`);
+        for (const pe of paymentEntries || []) {
+          await reverseEntry(pe.id, userId);
+        }
+      } catch (err) {
+        console.error('[Ledger] bill reversal failed:', err);
+      }
+    })();
   };
-
   // ─── Form mode ─────────────────────────────────────────────────────────────
   if (showForm) return (
     <BillFormPanel
