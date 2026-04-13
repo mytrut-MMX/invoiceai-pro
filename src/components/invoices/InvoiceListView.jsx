@@ -71,8 +71,8 @@ const AVATARS = [
 ];
 const avatarFor = (name = "") => AVATARS[name.charCodeAt(0) % AVATARS.length];
 
-export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInvoice }) {
-  const { invoices, setInvoices, orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
+export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInvoice, onDeleteInvoice }) {
+  const { invoices, orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
   const { cisEnabled, cisDefaultRate } = useCISSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const isVat = orgSettings?.vatReg === "Yes";
@@ -360,7 +360,7 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
                           onMouseLeave={e => { e.currentTarget.style.borderColor="#e8e8ec"; e.currentTarget.style.color="#6b7280"; }}
                         ><Icons.Edit /></button>
                         <button
-                          onClick={() => window.confirm(`Delete ${inv.invoice_number}?`) && setInvoices(prev => prev.filter(x => x.id !== inv.id))}
+                          onClick={() => onDeleteInvoice(inv)}
                           title="Delete invoice"
                           style={{ background:"none", border:"1px solid #e8e8ec", borderRadius:6, padding:"5px 7px", cursor:"pointer", color:"#6b7280", display:"flex", alignItems:"center", transition:"all 0.12s" }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor="#fecaca"; e.currentTarget.style.color="#dc2626"; }}

@@ -7,7 +7,10 @@ import { todayStr, addDays, nextNum, newLine } from "../utils/helpers";
 import InvoiceFormPanel from "../components/invoices/InvoiceFormPanel";
 import InvoiceViewPanel from "../components/invoices/InvoiceViewPanel";
 import InvoiceListView  from "../components/invoices/InvoiceListView";
-import { saveInvoice } from "../lib/dataAccess";
+import { saveInvoice, deleteInvoice } from "../lib/dataAccess";
+import { supabase } from "../lib/supabase";
+import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
+import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 
 export default function InvoicesPage({ initialShowForm = false }) {
   const { invoices, setInvoices, quotes, setQuotes, user } = useContext(AppCtx);
@@ -25,6 +28,40 @@ export default function InvoicesPage({ initialShowForm = false }) {
         if (error) console.error('[Invoices] saveInvoice failed:', error);
       });
     }
+  };
+
+  const onDeleteInvoice = async (inv) => {
+    if (!window.confirm(`Delete ${inv.invoice_number}?`)) return;
+    if (!user?.id) return alert("You must be logged in to delete.");
+    const snapshot = invoices;
+    setInvoices(prev => prev.filter(x => x.id !== inv.id));
+    const { error } = await deleteInvoice(user.id, inv.id);
+    if (error) {
+      console.error("[InvoicesPage] deleteInvoice failed:", error);
+      setInvoices(snapshot);
+      alert("Failed to delete invoice: " + (error.message || "Unknown error"));
+      return;
+    }
+    // Fire-and-forget ledger reversal — never blocks the UI delete path
+    ;(async () => {
+      try {
+        const { userId } = await fetchUserAccounts();
+        if (!userId) return;
+        const invEntry = await findEntryBySource('invoice', inv.id);
+        if (invEntry) await reverseEntry(invEntry.id, userId);
+        // Payment entries use composite source_id: `${invoiceId}:${date}:${amount}`
+        const { data: paymentEntries } = await supabase
+          .from('journal_entries')
+          .select('id')
+          .eq('source_type', 'payment')
+          .like('source_id', `${inv.id}:%`);
+        for (const pe of paymentEntries || []) {
+          await reverseEntry(pe.id, userId);
+        }
+      } catch (err) {
+        console.error('[Ledger] invoice reversal failed:', err);
+      }
+    })();
   };
 
   const handleConvertAcceptedQuote = (quoteId) => {
@@ -81,6 +118,7 @@ export default function InvoicesPage({ initialShowForm = false }) {
       onNewInvoice={() => setPanel({ mode: "new" })}
       onViewInvoice={inv => setPanel({ mode: "view", invoice: inv })}
       onEditInvoice={inv => setPanel({ mode: "edit", invoice: inv })}
+      onDeleteInvoice={onDeleteInvoice}
     />
   );
 }
