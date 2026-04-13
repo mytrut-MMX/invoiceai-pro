@@ -13,9 +13,18 @@ import { supabase } from "../lib/supabase";
 import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { usePagination } from "../hooks/usePagination";
+import { useCISSettings } from "../hooks/useCISSettings";
 import Pagination from "../components/shared/Pagination";
 
 const FILTER_OPTS = [{ key: "all", label: "All Bills" }, ...BILL_STATUSES.map(s => ({ key: s, label: s }))];
+
+function currentCISTaxYearStart() {
+  const today = new Date();
+  const year = today.getMonth() < 3 || (today.getMonth() === 3 && today.getDate() < 6)
+    ? today.getFullYear() - 1
+    : today.getFullYear();
+  return `${year}-04-06`;
+}
 
 function filterBills(bills, key) {
   if (key === "all") return bills;
@@ -24,6 +33,7 @@ function filterBills(bills, key) {
 
 export default function BillsPage({ initialShowForm = false }) {
   const { bills, setBills, orgSettings, user } = useContext(AppCtx);
+  const { cisEnabled } = useCISSettings();
   const navigate = useNavigate();
   const isVat   = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -32,6 +42,7 @@ export default function BillsPage({ initialShowForm = false }) {
   const [editingBill,  setEditingBill]  = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [search,       setSearch]       = useState("");
+  const [cisFilter,    setCisFilter]    = useState("all");
 
   // ─── Auto-mark overdue ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -48,6 +59,11 @@ export default function BillsPage({ initialShowForm = false }) {
   // ─── Filtered + searched list ──────────────────────────────────────────────
   const sorted = useMemo(() => {
     let result = filterBills(bills, activeFilter);
+    if (cisEnabled && cisFilter !== "all") {
+      result = cisFilter === "cis_only"
+        ? result.filter(b => Number(b.cis_deduction || 0) > 0)
+        : result.filter(b => !(Number(b.cis_deduction || 0) > 0));
+    }
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(b =>
@@ -59,7 +75,7 @@ export default function BillsPage({ initialShowForm = false }) {
       );
     }
     return [...result].sort((a, b) => new Date(b.bill_date) - new Date(a.bill_date));
-  }, [bills, activeFilter, search]);
+  }, [bills, activeFilter, search, cisFilter, cisEnabled]);
 
   // ─── Stats ─────────────────────────────────────────────────────────────────
   const today = todayStr();
@@ -69,8 +85,12 @@ export default function BillsPage({ initialShowForm = false }) {
   const dueWeekAmt = bills.filter(b => b.status !== "Paid" && b.status !== "Void" && b.due_date >= today && b.due_date <= weekEnd)
     .reduce((s, b) => s + Number(b.total || b.amount || 0), 0);
   const paidAmt    = bills.filter(b => b.status === "Paid").reduce((s, b) => s + Number(b.total || b.amount || 0), 0);
+  const cisYearStart = currentCISTaxYearStart();
+  const cisYtdAmt = bills
+    .filter(b => b.bill_date >= cisYearStart && Number(b.cis_deduction || 0) > 0)
+    .reduce((s, b) => s + Number(b.cis_deduction || 0), 0);
 
-  const hasFilters = search || activeFilter !== "all";
+  const hasFilters = search || activeFilter !== "all" || (cisEnabled && cisFilter !== "all");
 
   const { page, setPage, totalPages, paginatedItems, totalItems, pageSize } = usePagination(sorted, 25);
 
@@ -132,7 +152,9 @@ export default function BillsPage({ initialShowForm = false }) {
   );
 
   // ─── Render ────────────────────────────────────────────────────────────────
-  const cols = ["Date", "Supplier", "Bill #", "Category", "Due Date", "Status", "Amount", ""];
+  const cols = cisEnabled
+    ? ["Date", "Supplier", "Bill #", "Category", "CIS", "Due Date", "Status", "Amount", ""]
+    : ["Date", "Supplier", "Bill #", "Category", "Due Date", "Status", "Amount", ""];
 
   return (
     <div style={moduleUi.pageCanvas}>
@@ -150,6 +172,7 @@ export default function BillsPage({ initialShowForm = false }) {
             { label: "Overdue",     value: fmt(currSym, overdueAmt), color: "#dc2626" },
             { label: "Due This Week", value: fmt(currSym, dueWeekAmt), color: "#d97706" },
             { label: "Paid",        value: fmt(currSym, paidAmt),    color: "#059669" },
+            ...(cisEnabled ? [{ label: "CIS Deducted (YTD)", value: fmt(currSym, cisYtdAmt), color: "#7c3aed" }] : []),
           ].map(c => (
             <div key={c.label} style={moduleUi.summaryCard}>
               <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", fontWeight: 700 }}>{c.label}</div>
@@ -166,7 +189,15 @@ export default function BillsPage({ initialShowForm = false }) {
               style={{ padding: "8px 10px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 12, background: "#fff", fontFamily: ff }}>
               {FILTER_OPTS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
-            {hasFilters && <Btn variant="ghost" size="sm" onClick={() => { setSearch(""); setActiveFilter("all"); }}>Clear filters</Btn>}
+            {cisEnabled && (
+              <select value={cisFilter} onChange={e => setCisFilter(e.target.value)}
+                style={{ padding: "8px 10px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 12, background: "#fff", fontFamily: ff }}>
+                <option value="all">All (CIS + non-CIS)</option>
+                <option value="cis_only">CIS Only</option>
+                <option value="non_cis">Non-CIS Only</option>
+              </select>
+            )}
+            {hasFilters && <Btn variant="ghost" size="sm" onClick={() => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }}>Clear filters</Btn>}
             <span style={{ fontSize: 12, color: "#9ca3af" }}>{sorted.length} record{sorted.length !== 1 ? "s" : ""}</span>
           </div>
         </div>
@@ -176,7 +207,7 @@ export default function BillsPage({ initialShowForm = false }) {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
             <thead>
               <tr style={{ ...moduleUi.tableHead, position: "sticky", top: 0, zIndex: 1 }}>
-                {cols.map(h => <th key={h} style={{ ...moduleUi.th, textAlign: h === "Amount" ? "right" : "left" }}>{h}</th>)}
+                {cols.map(h => <th key={h} style={{ ...moduleUi.th, textAlign: (h === "Amount" || h === "CIS") ? "right" : "left" }}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -190,6 +221,11 @@ export default function BillsPage({ initialShowForm = false }) {
                   <td style={{ padding: "11px 16px", fontSize: 13, color: "#1a1a2e", fontWeight: 500 }}>{bill.supplier_name || "—"}</td>
                   <td style={{ padding: "11px 16px", fontSize: 13, color: "#1e6be0", fontWeight: 600, whiteSpace: "nowrap" }}>{bill.bill_number || "—"}</td>
                   <td style={{ padding: "11px 16px", fontSize: 13, color: "#6b7280" }}>{bill.category || "—"}</td>
+                  {cisEnabled && (
+                    <td style={{ padding: "11px 16px", fontSize: 13, color: Number(bill.cis_deduction || 0) > 0 ? "#7c3aed" : "#cbd5e1", fontWeight: Number(bill.cis_deduction || 0) > 0 ? 600 : 400, textAlign: "right", whiteSpace: "nowrap" }}>
+                      {Number(bill.cis_deduction || 0) > 0 ? fmt(currSym, bill.cis_deduction) : "—"}
+                    </td>
+                  )}
                   <td style={{ padding: "11px 16px", fontSize: 13, color: bill.due_date < today && bill.status !== "Paid" && bill.status !== "Void" ? "#dc2626" : "#374151", fontWeight: bill.due_date < today && bill.status !== "Paid" && bill.status !== "Void" ? 600 : 400, whiteSpace: "nowrap" }}>
                     {fmtDate(bill.due_date)}
                   </td>
@@ -211,11 +247,11 @@ export default function BillsPage({ initialShowForm = false }) {
                 </tr>
               ))}
               {sorted.length === 0 && (
-                <tr><td colSpan={8}><EmptyState icon={<Icons.Receipt />}
+                <tr><td colSpan={cisEnabled ? 9 : 8}><EmptyState icon={<Icons.Receipt />}
                   text={bills.length === 0 ? "No bills yet. Record your first supplier invoice to start tracking payables." : "No bills match your current search or filters."}
                   cta={bills.length === 0
                     ? <Btn variant="primary" onClick={() => { setEditingBill(null); setShowForm(true); }}>New Bill</Btn>
-                    : <Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); }}>Clear filters</Btn>}
+                    : <Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }}>Clear filters</Btn>}
                 /></td></tr>
               )}
             </tbody>
