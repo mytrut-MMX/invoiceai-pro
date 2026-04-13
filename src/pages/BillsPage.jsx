@@ -8,7 +8,8 @@ import { Btn } from "../components/atoms";
 import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
 import BillFormPanel from "../components/bills/BillFormPanel";
-import { deleteBill } from "../lib/dataAccess";
+import RecordBillPaymentModal from "../components/bills/RecordBillPaymentModal";
+import { deleteBill, saveBill } from "../lib/dataAccess";
 import { supabase } from "../lib/supabase";
 import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
@@ -43,6 +44,7 @@ export default function BillsPage({ initialShowForm = false }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [search,       setSearch]       = useState("");
   const [cisFilter,    setCisFilter]    = useState("all");
+  const [paymentModalBill, setPaymentModalBill] = useState(null);
 
   // ─── Auto-mark overdue ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -139,6 +141,33 @@ export default function BillsPage({ initialShowForm = false }) {
       }
     })();
   };
+  // ─── Record bill payment ───────────────────────────────────────────────────
+  const handlePaymentRecorded = ({ paymentAmount, paidDate }) => {
+    const bill = paymentModalBill;
+    if (!bill) return;
+
+    const prevPaid    = Number(bill.paid_amount || 0);
+    const newPaidAmt  = Math.round((prevPaid + Number(paymentAmount)) * 100) / 100;
+    const outstanding = Math.round((Number(bill.total || 0) - Number(bill.cis_deduction || 0)) * 100) / 100;
+    const newStatus   = newPaidAmt + 0.005 >= outstanding ? "Paid"
+                      : newPaidAmt > 0                    ? "Partially Paid"
+                      : bill.status;
+
+    const updated = { ...bill, paid_amount: newPaidAmt, paid_date: paidDate, status: newStatus };
+
+    // Optimistic local update
+    setBills(prev => prev.map(b => (b.id === bill.id ? updated : b)));
+    setPaymentModalBill(null);
+
+    // Fire-and-forget persist — ledger already posted by the modal.
+    if (user?.id) {
+      ;(async () => {
+        const { error } = await saveBill(user.id, updated);
+        if (error) console.error("[BillsPage] saveBill after payment failed:", error);
+      })();
+    }
+  };
+
   // ─── Form mode ─────────────────────────────────────────────────────────────
   if (showForm) return (
     <BillFormPanel
@@ -241,6 +270,9 @@ export default function BillsPage({ initialShowForm = false }) {
                       onMouseEnter={e => e.currentTarget.style.opacity = 1}
                       onMouseLeave={e => e.currentTarget.style.opacity = 0}>
                       <Btn size="sm" variant="ghost" icon={<Icons.Edit />} onClick={() => { setEditingBill(bill); setShowForm(true); }} />
+                      {bill.status !== "Paid" && bill.status !== "Void" && bill.status !== "Draft" && (
+                        <Btn size="sm" variant="ghost" onClick={() => setPaymentModalBill(bill)}>Pay</Btn>
+                      )}
                       <Btn size="sm" variant="ghost" icon={<Icons.Trash />} onClick={() => onDelete(bill.id)} />
                     </div>
                   </td>
@@ -261,6 +293,15 @@ export default function BillsPage({ initialShowForm = false }) {
 
         <style>{`tr:hover .row-actions { opacity: 1 !important; }`}</style>
       </div>
+
+      {paymentModalBill && (
+        <RecordBillPaymentModal
+          open={true}
+          bill={paymentModalBill}
+          onClose={() => setPaymentModalBill(null)}
+          onPaymentRecorded={handlePaymentRecorded}
+        />
+      )}
     </div>
   );
 }

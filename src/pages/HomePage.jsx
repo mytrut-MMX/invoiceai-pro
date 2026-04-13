@@ -4,7 +4,7 @@ import { useDashboardModuleData } from "../hooks/useDashboardModuleData";
 import { useNavigate } from "react-router-dom";
 import { ff, CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
-import { fmt, parseCisRate } from "../utils/helpers";
+import { fmt } from "../utils/helpers";
 import { useCISSettings } from "../hooks/useCISSettings";
 import { ROUTES } from "../router/routes";
 import { calculateVATReturn } from "../utils/vat/vatReturnCalculator";
