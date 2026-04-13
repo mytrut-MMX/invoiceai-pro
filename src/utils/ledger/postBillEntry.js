@@ -318,19 +318,31 @@ export async function postBillEntry(bill, supplier, accounts, userId) {
       };
     }
 
-    // ── Idempotency guard ─────────────────────────────────────────────────────
+    // ── Idempotency guard (reversal-aware) ────────────────────────────────────
+    // An entry is "active" only if it hasn't been reversed. After an edit →
+    // reverseEntry flow, the original entry remains in journal_entries but
+    // is no longer active, so we must post a fresh entry on re-save.
 
-    const { data: existing } = await supabase
+    const { data: candidates } = await supabase
       .from('journal_entries')
       .select('id')
       .eq('source_type', 'bill')
-      .eq('source_id', bill.id)
-      .maybeSingle();
+      .eq('source_id', bill.id);
 
-    if (existing?.id) {
-      return { success: true, journalEntryId: existing.id };
+    if (candidates && candidates.length > 0) {
+      const candidateIds = candidates.map(c => c.id);
+      const { data: reversals } = await supabase
+        .from('journal_entries')
+        .select('source_id')
+        .eq('source_type', 'reversal')
+        .in('source_id', candidateIds);
+
+      const reversedIds = new Set((reversals || []).map(r => r.source_id));
+      const active = candidates.find(c => !reversedIds.has(c.id));
+      if (active) {
+        return { success: true, journalEntryId: active.id };
+      }
     }
-
     // ── Insert journal entry header ───────────────────────────────────────────
 
     const supplierLabel = supplier?.name || bill.supplier_name || 'supplier';
