@@ -30,6 +30,13 @@ async function patchJsonbColumn(userId, column, arrayValue) {
 // Mappers: normalised row → app-format object
 // =============================================================================
 
+/** Coerce to number or null. Handles "", undefined, null, and numeric strings. */
+function num(v) {
+  if (v === "" || v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function rowToInvoice(row) {
   return {
     id: row.id,
@@ -273,19 +280,19 @@ function invoiceToRow(userId, inv) {
     supply_date: inv.supply_date || null,
     tax_point: inv.tax_point || null,
     payment_terms: inv.payment_terms || null,
-    subtotal: inv.subtotal ?? null,
+    subtotal: num(inv.subtotal),
     discount_type: inv.discount_type || null,
-    discount_value: inv.discount_value ?? null,
-    discount_amount: inv.discountAmount ?? inv.discount_amount ?? null,
-    shipping: inv.shipping ?? 0,
-    total: inv.total ?? null,
+    discount_value: num(inv.discount_value),
+    discount_amount: num(inv.discountAmount ?? inv.discount_amount),
+    shipping: num(inv.shipping) ?? 0,
+    total: num(inv.total),
     vat_scheme: inv.vat_scheme || null,
     accounting_basis: inv.accounting_basis || null,
     notes: inv.notes || null,
     terms: inv.terms || null,
     po_number: inv.po_number || null,
     converted_from_quote: inv.converted_from_quote || null,
-    cis_deduction: inv.cisDeduction ?? inv.cis_deduction ?? 0,
+    cis_deduction: num(inv.cisDeduction ?? inv.cis_deduction) ?? 0,
     updated_at: new Date().toISOString(),
   };
 }
