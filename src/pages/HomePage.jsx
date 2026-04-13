@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ff, CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { fmt, parseCisRate } from "../utils/helpers";
+import { useCISSettings } from "../hooks/useCISSettings";
 import { ROUTES } from "../router/routes";
 import { calculateVATReturn } from "../utils/vat/vatReturnCalculator";
 import SmartAlerts from "../components/home/SmartAlerts";
@@ -20,13 +21,37 @@ const STAT_FILTERS = { "Outstanding": "Sent,Partial", "Overdue": "Overdue", "Pai
 const STAT_ROUTES = {
   "Bills Due": ROUTES.BILLS,
   "VAT Tracked": ROUTES.LEDGER_PL,
-  "CIS Tracked": ROUTES.EXPENSES + "?filter=subcontractor",
-  "Subcontractors": ROUTES.EXPENSES + "?filter=subcontractor",
+  "CIS Suffered (YTD)": ROUTES.ITSA,
+  "CIS Deducted (YTD)": ROUTES.BILLS + "?cis=cis_only",
+  "CIS Return (Tax Month)": ROUTES.BILLS + "?cis=cis_only",
   "Next VAT Return": ROUTES.VAT_RETURN,
   "ITSA Quarter": ROUTES.ITSA,
   "Next Payroll": ROUTES.PAYROLL,
   "PAYE Due": ROUTES.PAYROLL,
 };
+
+function currentCISTaxYearStart() {
+  const today = new Date();
+  const year = today.getMonth() < 3 || (today.getMonth() === 3 && today.getDate() < 6)
+    ? today.getFullYear() - 1
+    : today.getFullYear();
+  return `${year}-04-06`;
+}
+
+function currentCISTaxMonthRange() {
+  const today = new Date();
+  const day = today.getDate();
+  const month = today.getMonth();
+  const year = today.getFullYear();
+  // Tax month runs 6th to 5th. If today < 6th of current calendar month, we're in previous tax month.
+  const startMonth = day < 6 ? month - 1 : month;
+  const start = new Date(year, startMonth, 6);
+  const end = new Date(year, startMonth + 1, 5);
+  const pad = (n) => String(n).padStart(2, "0");
+  const toStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const deadline = new Date(year, startMonth + 1, 19);
+  return { start: toStr(start), end: toStr(end), deadline: toStr(deadline) };
+}
 
 /** Estimate next pay date from frequency + pay day setting (monthly only for now). */
 function calculateNextPayDate(lastPayDate, frequency, payDay) {
@@ -57,6 +82,7 @@ function calculateNextPayDate(lastPayDate, frequency, payDay) {
 
 export default function HomePage() {
   const { user, invoices, expenses, payments, orgSettings, bills } = useContext(AppCtx);
+  const { cisEnabled } = useCISSettings();
   const navigate = useNavigate();
   const [hoveredStat, setHoveredStat] = useState(null);
   const currencySymbol = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -88,25 +114,28 @@ export default function HomePage() {
     const vatDue      = orgSettings?.vatReg === "Yes"
       ? invoices.reduce((sum, inv) => sum + (inv.taxBreakdown || []).reduce((t, tx) => t + Number(tx.amount || 0), 0), 0)
       : 0;
-    const cisRate    = parseCisRate(orgSettings?.cisRate, 20) / 100;
-    const cisTracked = orgSettings?.cisReg === "Yes"
-      ? invoices.reduce((sum, inv) => sum + Number(inv.cisDeduction || (Number(inv.subtotal || 0) * cisRate)), 0)
+    // CIS Suffered = from invoices (customers deducting from us as subcontractor)
+    // CIS Deducted = from bills (we deduct from our subcontractors as contractor)
+    // Both reported in UK fiscal year 6 Apr → 5 Apr
+    const cisYearStart = currentCISTaxYearStart();
+    const cisTaxMonth = currentCISTaxMonthRange();
+    const cisSufferedYTD = cisEnabled
+      ? invoices
+          .filter(inv => (inv.issue_date || "") >= cisYearStart && Number(inv.cisDeduction || 0) > 0)
+          .reduce((sum, inv) => sum + Number(inv.cisDeduction || 0), 0)
       : 0;
-
-    // Subcontractor costs from expenses
-    const subLabourTotal = orgSettings?.cisReg === "Yes"
-      ? expenses.filter(e => e.category === "Subcontractor Labour").reduce((s, e) => s + Number(e.total || 0), 0)
+    const cisDeductedYTD = cisEnabled
+      ? bills
+          .filter(b => b.status === "Paid" && (b.bill_date || "") >= cisYearStart && Number(b.cis_deduction || 0) > 0)
+          .reduce((sum, b) => sum + Number(b.cis_deduction || 0), 0)
       : 0;
-    const subMaterialsTotal = orgSettings?.cisReg === "Yes"
-      ? expenses.filter(e => e.category === "Subcontractor Materials").reduce((s, e) => s + Number(e.total || 0), 0)
+    // CIS300 return for current tax month (paid bills only — HMRC reports payments made, not accruals)
+    const cisReturnTaxMonth = cisEnabled
+      ? bills
+          .filter(b => b.status === "Paid" && (b.bill_date || "") >= cisTaxMonth.start && (b.bill_date || "") <= cisTaxMonth.end && Number(b.cis_deduction || 0) > 0)
+          .reduce((sum, b) => sum + Number(b.cis_deduction || 0), 0)
       : 0;
-    const subContractorTotal = subLabourTotal + subMaterialsTotal;
-    const cisRetainedFromExpenses = orgSettings?.cisReg === "Yes"
-      ? expenses.filter(e => e.is_cis_expense).reduce((s, e) => {
-          const rate = e.cis_rate ?? 20;
-          return s + (e.cis_deduction_amount ?? (Number(e.amount || 0) * rate / 100));
-        }, 0)
-      : 0;
+    const daysUntilCisDeadline = Math.ceil((new Date(cisTaxMonth.deadline) - new Date()) / 86400000);
 
     const currInv = invoices.filter(inCurr);
     const prevInv = invoices.filter(inPrev);
@@ -201,19 +230,19 @@ export default function HomePage() {
       { label: "Bills Due",  value: fmt(currencySymbol, bills.filter(b => !["Paid","Void"].includes(b.status)).reduce((s,b) => s + Number(b.total||0), 0)),
         sub: `${bills.filter(b => b.status === "Overdue").length} overdue`, color: "#dc2626" },
       { label: "VAT Tracked", value: orgSettings?.vatReg === "Yes" ? fmt(currencySymbol, vatDue) : "Disabled", sub: orgSettings?.vatReg === "Yes" ? "Output VAT" : "Enable VAT in Settings", color: "#2563EB" },
-      { label: "CIS Tracked", value: orgSettings?.cisReg === "Yes" ? fmt(currencySymbol, cisTracked) : "Disabled", sub: orgSettings?.cisReg === "Yes" ? "CIS deductions" : "Enable CIS in Settings", color: "#7C3AED" },
-      ...(orgSettings?.cisReg === "Yes" ? [{
-        label: "Subcontractors",
-        value: fmt(currencySymbol, subContractorTotal),
-        sub: cisRetainedFromExpenses > 0 ? `CIS retained: ${fmt(currencySymbol, cisRetainedFromExpenses)}` : "Subcontractor costs",
-        color: "#D97706",
-      }] : []),
+      ...(cisEnabled ? [
+        { label: "CIS Suffered (YTD)", value: fmt(currencySymbol, cisSufferedYTD), sub: "Reclaim via EPS", color: "#7C3AED" },
+        { label: "CIS Deducted (YTD)", value: fmt(currencySymbol, cisDeductedYTD), sub: "Owed to HMRC", color: "#D97706" },
+        { label: "CIS Return (Tax Month)", value: fmt(currencySymbol, cisReturnTaxMonth), sub: daysUntilCisDeadline < 0 ? `Overdue by ${Math.abs(daysUntilCisDeadline)}d` : `Due in ${daysUntilCisDeadline}d (CIS300)`, color: daysUntilCisDeadline < 0 ? "#dc2626" : daysUntilCisDeadline <= 7 ? "#d97706" : "#0891b2" },
+      ] : [
+        { label: "CIS Suffered (YTD)", value: "Disabled", sub: "Enable CIS in Settings", color: "#7C3AED" },
+      ]),
       ...(vatStat ? [vatStat] : []),
       ...(itsaStat ? [itsaStat] : []),
       ...(nextPayrollStat ? [nextPayrollStat] : []),
       ...(payeDueStat ? [payeDueStat] : []),
     ];
-  }, [invoices, expenses, bills, orgSettings, currencySymbol, moduleData.vatPeriods, moduleData.itsaPeriods, moduleData.isVatRegistered, moduleData.isSoleTrader, moduleData.hasEmployees, moduleData.payrollRuns, moduleData.hmrcBills, orgSettings?.defaultPayFrequency, orgSettings?.defaultPayDay]);
+  }, [invoices, expenses, bills, orgSettings, currencySymbol, cisEnabled, moduleData.vatPeriods, moduleData.itsaPeriods, moduleData.isVatRegistered, moduleData.isSoleTrader, moduleData.hasEmployees, moduleData.payrollRuns, moduleData.hmrcBills, orgSettings?.defaultPayFrequency, orgSettings?.defaultPayDay]);
 
   const overdueInvoices = useMemo(() => invoices.filter(i => i.status === "Overdue"), [invoices]);
 
@@ -278,7 +307,7 @@ export default function HomePage() {
       <CashFlowWidget />
       <DebtorInsightsWidget />
       <AIChatPanel user={user} />
-      <ReportsCenter invoices={invoices} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
+      <ReportsCenter invoices={invoices} bills={bills} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
       <CashFlowForecast invoices={invoices} payments={payments} currencySymbol={currencySymbol} />
     </div>
   );

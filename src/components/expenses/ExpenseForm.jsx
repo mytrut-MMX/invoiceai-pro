@@ -185,6 +185,11 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
                   options={EXPENSE_CATEGORIES.map(c => ({ value: c.name, label: `${c.code} · ${c.name}` }))} placeholder="Select…" />
               </Field>
             </>)}
+            {cisEnabled && isSubcontractorCategory && (
+              <div style={{ marginTop: 8, padding: "10px 12px", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, fontSize: 12, color: "#92400e", lineHeight: 1.5 }}>
+                <strong>For CIS compliance, track subcontractor payments as Bills.</strong> Bills support CIS verification, rate-at-posting, and CIS300 reporting. Expenses with this category are excluded from CIS300 returns.
+              </div>
+            )}
             {category && (() => {
               const catEntry = EXPENSE_CATEGORIES.find(c => c.name === category);
               const saCode = catEntry ? SA_CATEGORY_MAP[catEntry.code] : null;
