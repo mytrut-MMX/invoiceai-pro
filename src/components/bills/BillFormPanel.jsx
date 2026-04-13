@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo } from "react";
+import { useState, useContext, useMemo, useRef } from "react";
 import { ff, CUR_SYM, BILL_STATUSES, BILL_CATEGORIES, CIS_RATES_SUPPLIER } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
@@ -36,6 +36,8 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
   const [taxAmount, setTaxAmount] = useState(b.tax_amount || "");
   const [reverseCharge, setReverseCharge] = useState(b.reverse_charge_applied ?? false);
   const [status, setStatus] = useState(b.status || "Draft");
+  // Snapshot original status at mount so we can decide ledger action on save
+  const initialStatusRef = useRef(b.status || "Draft");
   const [reference, setReference] = useState(b.reference || "");
   const [notes, setNotes] = useState(b.notes || "");
   const [saving, setSaving] = useState(false);
@@ -125,18 +127,33 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
       // Dispatch type (migration 026)
       bill_type: calc.billType,
     };
+    const oldStatus = initialStatusRef.current;
+    const newStatus = bill.status;
+    const POSTABLE = ['Approved', 'Overdue', 'Paid', 'Partially Paid'];
+    const wasPostable = POSTABLE.includes(oldStatus);
+    const isPostable  = POSTABLE.includes(newStatus);
+
     setTimeout(() => {
       onSave(bill);
       // Fire-and-forget — never blocks the UI save path
       ;(async () => {
         try {
+          // Draft → Draft: nothing to do in the ledger
+          if (!wasPostable && !isPostable) return;
+
           const { accounts, userId } = await fetchUserAccounts();
           if (!userId) return;
-          if (isEdit) {
+
+          // Reverse the existing entry if there was one (Approved+ → anything)
+          if (wasPostable) {
             const oldEntry = await findEntryBySource('bill', bill.id);
             if (oldEntry) await reverseEntry(oldEntry.id, userId);
           }
-          await postBillEntry(bill, supplier, accounts, userId);
+
+          // Post a fresh entry only when the bill is now postable
+          if (isPostable) {
+            await postBillEntry(bill, supplier, accounts, userId);
+          }
         } catch (err) {
           console.error('[Ledger] bill post failed:', err);
         }

@@ -141,6 +141,28 @@ export default function BillsPage({ initialShowForm = false }) {
       }
     })();
   };
+  // ─── Approve a draft bill ──────────────────────────────────────────────────
+  const handleApprove = (bill) => {
+    const updated = { ...bill, status: 'Approved' };
+    setBills(prev => prev.map(b => b.id === bill.id ? updated : b));
+    if (user?.id) {
+      ;(async () => {
+        const { error } = await saveBill(user.id, updated);
+        if (error) { console.error('[BillsPage] approve save failed:', error); return; }
+        // Post ledger entry now that bill is approved
+        try {
+          const { accounts, userId } = await fetchUserAccounts();
+          if (!userId) return;
+          const supplier = null; // postBillEntry handles null supplier
+          const { postBillEntry } = await import('../utils/ledger/postBillEntry');
+          await postBillEntry(updated, supplier, accounts, userId);
+        } catch (err) {
+          console.error('[Ledger] approve post failed:', err);
+        }
+      })();
+    }
+  };
+
   // ─── Record bill payment ───────────────────────────────────────────────────
   const handlePaymentRecorded = ({ paymentAmount, paidDate }) => {
     const bill = paymentModalBill;
@@ -269,6 +291,9 @@ export default function BillsPage({ initialShowForm = false }) {
                     <div style={{ display: "flex", gap: 2, opacity: 0 }} className="row-actions"
                       onMouseEnter={e => e.currentTarget.style.opacity = 1}
                       onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                      {bill.status === "Draft" && (
+                        <Btn size="sm" variant="ghost" onClick={() => handleApprove(bill)}>Approve</Btn>
+                      )}
                       <Btn size="sm" variant="ghost" icon={<Icons.Edit />} onClick={() => { setEditingBill(bill); setShowForm(true); }} />
                       {bill.status !== "Paid" && bill.status !== "Void" && bill.status !== "Draft" && (
                         <Btn size="sm" variant="ghost" onClick={() => setPaymentModalBill(bill)}>Pay</Btn>
