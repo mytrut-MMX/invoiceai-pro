@@ -13,22 +13,39 @@ export function findAccount(accounts, code) {
 }
 
 /**
- * Looks up an existing journal entry by its source document type and ID.
- * Used before reversing an entry when an invoice is re-saved.
+ * Looks up an ACTIVE existing journal entry by its source document type
+ * and ID. "Active" means the entry has NOT been reversed.
  *
- * @param {string} sourceType  e.g. 'invoice', 'payment', 'expense'
+ * Used before reversing an entry when a document is re-saved or deleted.
+ * If a prior entry for this source was already reversed, it is skipped —
+ * callers want to reverse the most recent active post, not a historical
+ * entry that has already been accounted for.
+ *
+ * @param {string} sourceType  e.g. 'invoice', 'payment', 'expense', 'bill'
  * @param {string} sourceId    the source document's id
  * @returns {Promise<{ id: string }|null>}
  */
 export async function findEntryBySource(sourceType, sourceId) {
   if (!supabaseReady) return null;
-  const { data } = await supabase
+
+  const { data: candidates } = await supabase
     .from('journal_entries')
     .select('id')
     .eq('source_type', sourceType)
-    .eq('source_id', sourceId)
-    .maybeSingle();
-  return data ?? null;
+    .eq('source_id', sourceId);
+
+  if (!candidates || candidates.length === 0) return null;
+
+  const candidateIds = candidates.map(c => c.id);
+  const { data: reversals } = await supabase
+    .from('journal_entries')
+    .select('source_id')
+    .eq('source_type', 'reversal')
+    .in('source_id', candidateIds);
+
+  const reversedIds = new Set((reversals || []).map(r => r.source_id));
+  const active = candidates.find(c => !reversedIds.has(c.id));
+  return active ? { id: active.id } : null;
 }
 
 // ── Category → ledger account code ───────────────────────────────────────────
