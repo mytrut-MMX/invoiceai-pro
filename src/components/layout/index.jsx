@@ -57,12 +57,20 @@ function isActive(pathname, match) {
   return pathname.startsWith(match);
 }
 
-// Hide VAT-only entries from the sidebar when the company is not VAT registered.
-// Mirrors the pattern used across the app (orgSettings?.vatReg === "Yes").
+// Hide entries that don't apply to the current business type / registration.
+// - VAT Returns: only when VAT registered (orgSettings?.vatReg === "Yes")
+// - Self Assessment: only for Sole Trader / Freelancer (SA100 is personal tax).
+//   LTD companies pay Corporation Tax via CT600, not Self Assessment.
+//   bType string mirrors useDashboardModuleData.js canonical check.
 function useVisibleNav() {
   const ctx = useContext(AppCtx);
   const isVatRegistered = ctx?.orgSettings?.vatReg === "Yes";
-  return isVatRegistered ? NAV : NAV.filter(item => item.id !== "vat-return");
+  const isSoleTrader    = ctx?.orgSettings?.bType  === "Sole Trader / Freelancer";
+  return NAV.filter(item => {
+    if (item.id === "vat-return" && !isVatRegistered) return false;
+    if (item.id === "itsa"       && !isSoleTrader)    return false;
+    return true;
+  });
 }
 
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
