@@ -187,7 +187,7 @@ export default function HomePage() {
     // ─── Next Payroll KPI ───────────────────────────────────────────────────
     let nextPayrollStat = null;
     if (moduleData.hasEmployees) {
-      const lastRun = moduleData.payrollRuns?.[0];
+      const lastRun = (moduleData.payrollRuns || []).find(r => r.status !== 'voided');
       const nextPayDate = calculateNextPayDate(
         lastRun?.pay_date,
         orgSettings?.defaultPayFrequency || "monthly",

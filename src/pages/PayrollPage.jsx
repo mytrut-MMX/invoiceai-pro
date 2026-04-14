@@ -8,6 +8,7 @@ import { fmt, fmtDate } from "../utils/helpers";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 import * as dataAccess from "../lib/dataAccess";
+import { supabase } from "../lib/supabase";
 import { createPayrollRun } from "../utils/payroll/payrollService";
 import { getEAStatus } from "../lib/employmentAllowance";
 import PayrollRunDetailPage from "./PayrollRunDetailPage";
@@ -114,6 +115,7 @@ export default function PayrollPage() {
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
   const [runs, setRuns] = useState([]);
+  const [hmrcBills, setHmrcBills] = useState([]);
   const [employeeCount, setEmployeeCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -130,15 +132,23 @@ export default function PayrollPage() {
     (async () => {
       if (!user?.id) { setLoading(false); return; }
       try {
-        const [runsData, empsData, eaData] = await Promise.all([
+        const [runsData, empsData, eaData, billsRes] = await Promise.all([
           dataAccess.loadPayrollRuns?.(user.id) ?? [],
           dataAccess.loadEmployees?.(user.id) ?? [],
           getEAStatus(user.id, currentTaxYear()).catch(() => null),
+          supabase
+            .from("bills")
+            .select("id, total, status")
+            .eq("user_id", user.id)
+            .ilike("supplier_name", "HMRC")
+            .neq("status", "Paid")
+            .neq("status", "Voided"),
         ]);
         if (!cancelled) {
           setRuns(runsData || []);
           setEmployeeCount((empsData || []).filter(e => (e.status || "active") === "active").length);
           setEaStatus(eaData);
+          setHmrcBills(billsRes?.data || []);
         }
       } catch { /* no-op */ }
       if (!cancelled) setLoading(false);
@@ -168,12 +178,17 @@ export default function PayrollPage() {
 
     const thisMonth = runs.filter(r => r.pay_date >= monthStart && r.pay_date <= monthEnd && r.status !== "voided");
 
+    // PAYE Due = sum of unpaid HMRC bills (single source of truth, matches HomePage).
+    // Voided runs have their bills deleted or marked Voided by voidPayrollRun, so they
+    // naturally excluded. Using runs aggregation here would double-count or include voided.
+    const payeDue = (hmrcBills || []).reduce((s, b) => s + Number(b.total || 0), 0);
+
     return {
       monthGross: thisMonth.reduce((s, r) => s + Number(r.total_gross || 0), 0),
       monthNet:   thisMonth.reduce((s, r) => s + Number(r.total_net || 0), 0),
-      payeDue:    runs.filter(r => r.status !== "paid").reduce((s, r) => s + Number(r.total_tax || 0) + Number(r.total_ni_employee || 0) + Number(r.total_ni_employer || 0) - Number(r.ea_absorbed || 0), 0),
+      payeDue,
     };
-  }, [runs]);
+  }, [runs, hmrcBills]);
 
   const hasFilters = statusFilter !== "all" || yearFilter !== currentTaxYear();
 
