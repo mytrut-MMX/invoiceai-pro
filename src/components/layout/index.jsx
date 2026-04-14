@@ -23,6 +23,7 @@ export const NAV = [
   { id:"bills",     label:"Bills",             Icon:Icons.Receipt,  route:ROUTES.BILLS,      match:"/bills",     addRoute:ROUTES.BILLS_NEW },
   { id:"employees", label:"Employees",         Icon:Icons.Customers,route:ROUTES.EMPLOYEES,  match:"/employees" },
   { id:"payroll",   label:"Payroll",           Icon:Icons.Payments, route:ROUTES.PAYROLL,    match:"/payroll" },
+  { id:"cis-statements", label:"CIS Statements", Icon:Icons.Receipt, route:ROUTES.CIS_STATEMENTS, match:"/cis/statements" },
   { id:"vat-return",label:"VAT Returns",       Icon:Icons.Invoices, route:ROUTES.VAT_RETURN, match:"/vat-return" },
   { id:"itsa",      label:"Self Assessment",   Icon:Icons.Receipt,  route:ROUTES.ITSA,       match:"/self-assessment" },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings, route:ROUTES.SETTINGS_GENERAL, match:"/settings" },
@@ -66,9 +67,11 @@ function useVisibleNav() {
   const ctx = useContext(AppCtx);
   const isVatRegistered = ctx?.orgSettings?.vatReg === "Yes";
   const isSoleTrader    = ctx?.orgSettings?.bType  === "Sole Trader / Freelancer";
+  const isCisEnabled    = ctx?.orgSettings?.cis?.enabled ?? (ctx?.orgSettings?.cisReg === "Yes");
   return NAV.filter(item => {
-    if (item.id === "vat-return" && !isVatRegistered) return false;
-    if (item.id === "itsa"       && !isSoleTrader)    return false;
+    if (item.id === "vat-return"     && !isVatRegistered) return false;
+    if (item.id === "itsa"           && !isSoleTrader)    return false;
+    if (item.id === "cis-statements" && !isCisEnabled)    return false;
     return true;
   });
 }

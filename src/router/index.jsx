@@ -66,6 +66,7 @@ const ITSAPage           = lazy(() => import("../pages/ITSAPage"));
 const LedgerPage         = lazy(() => import("../pages/LedgerPage"));
 const EmployeesPage      = lazy(() => import("../pages/EmployeesPage"));
 const PayrollPage        = lazy(() => import("../pages/PayrollPage"));
+const CISStatementsPage  = lazy(() => import("../pages/CISStatementsPage"));
 const AdminPage          = lazy(() => import("../pages/AdminPage"));
 const NotFoundPage       = lazy(() => import("../pages/NotFoundPage"));
 
@@ -167,6 +168,9 @@ const router = createBrowserRouter([
           // Payroll
           { path: ROUTES.PAYROLL,          element: <PayrollPage key="list" /> },
           { path: "/payroll/:runId",       element: <PayrollPage key="detail" /> },
+
+          // CIS Payment and Deduction Statements
+          { path: ROUTES.CIS_STATEMENTS, element: <CISStatementsPage /> },
 
           // VAT Returns
           { path: ROUTES.VAT_RETURN, element: <VATReturnPage /> },

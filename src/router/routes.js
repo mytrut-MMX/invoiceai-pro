@@ -93,6 +93,9 @@ export const ROUTES = {
   PAYROLL:     '/payroll',
   PAYROLL_RUN: (id) => `/payroll/${id}`,
 
+  // ─── CIS Payment and Deduction Statements ──────────────────────────────────
+  CIS_STATEMENTS: '/cis/statements',
+
   // ─── VAT Returns ─────────────────────────────────────────────────────────────
   VAT_RETURN: '/vat-return',
 
