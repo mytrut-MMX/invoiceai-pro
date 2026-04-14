@@ -9,6 +9,8 @@ import { computeBillCis } from "../../utils/cis/computeBillCis";
 import { postBillEntry } from "../../utils/ledger/postBillEntry";
 import { reverseEntry, findEntryBySource } from "../../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
+import BillPaymentsTab from "./BillPaymentsTab";
+import { saveBill } from "../../lib/dataAccess";
 
 export default function BillFormPanel({ existing, onClose, onSave }) {
   const { orgSettings, suppliers = [] } = useContext(AppCtx);
@@ -41,6 +43,7 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
   const [reference, setReference] = useState(b.reference || "");
   const [notes, setNotes] = useState(b.notes || "");
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
 
   // ─── Derived calculations ───
   const isCis = !!supplier?.cis?.is_subcontractor;
@@ -163,6 +166,37 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
     }, 300);
   };
 
+  // ─── Payment reversal → recalc paid_amount + status ───
+  const handlePaymentReversed = (payment) => {
+    const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+    const prevPaid    = Number(b.paid_amount || 0);
+    const newPaidAmt  = Math.max(0, round2(prevPaid - Number(payment.amount || 0)));
+    const outstanding = round2(Number(b.total || 0) - Number(b.cis_deduction || 0));
+
+    const newStatus =
+      newPaidAmt + 0.005 >= outstanding && outstanding > 0 ? "Paid" :
+      newPaidAmt > 0                                        ? "Partially Paid" :
+                                                              "Approved";
+
+    const updated = {
+      ...b,
+      paid_amount: newPaidAmt,
+      status: newStatus,
+      paid_date: newPaidAmt === 0 ? null : b.paid_date,
+    };
+
+    ;(async () => {
+      try {
+        const { userId } = await fetchUserAccounts();
+        if (userId) await saveBill(userId, updated);
+      } catch (err) {
+        console.error('[BillFormPanel] saveBill after reversal failed:', err);
+      }
+    })();
+
+    onSave?.(updated);
+  };
+
   // ─── Render ───
   return (
     <div style={{ padding: "clamp(14px,4vw,28px)", maxWidth: 700, fontFamily: ff }}>
@@ -172,6 +206,37 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
         </h2>
         <Btn variant="ghost" onClick={onClose}>✕</Btn>
       </div>
+
+      {isEdit && (
+        <div style={{ display: "flex", borderBottom: "1px solid #E8E6E0", marginBottom: 18 }}>
+          {[{ id: "details", label: "Details" }, { id: "payments", label: "Payments" }].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "10px 16px 9px",
+                fontSize: 13,
+                fontWeight: activeTab === t.id ? 600 : 400,
+                color: activeTab === t.id ? "#D97706" : "#6b7280",
+                borderBottom: activeTab === t.id ? "2px solid #D97706" : "2px solid transparent",
+                fontFamily: "inherit",
+                marginBottom: "-1px",
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "payments" && isEdit && (
+        <BillPaymentsTab bill={b} onPaymentReversed={handlePaymentReversed} />
+      )}
+
+      {activeTab === "details" && (<>
 
       {/* Supplier */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -352,6 +417,8 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
           {saving ? "Saving..." : isEdit ? "Update Bill" : "Save Bill"}
         </Btn>
       </div>
+
+      </>)}
     </div>
   );
 }
