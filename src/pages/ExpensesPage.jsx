@@ -9,6 +9,8 @@ import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "..
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 import ExpenseForm from "../components/expenses/ExpenseForm";
 import { deleteExpense } from "../lib/dataAccess";
+import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
+import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 
@@ -123,7 +125,19 @@ export default function ExpensesPage({ initialShowForm = false }) {
       console.error("[ExpensesPage] deleteExpense failed:", error);
       setExpenses(snapshot);
       alert("Failed to delete expense: " + (error.message || "Unknown error"));
+      return;
     }
+    // Fire-and-forget ledger reversal — never blocks the UI delete path
+    ;(async () => {
+      try {
+        const { userId } = await fetchUserAccounts();
+        if (!userId) return;
+        const entry = await findEntryBySource('expense', id);
+        if (entry) await reverseEntry(entry.id, userId);
+      } catch (err) {
+        console.error('[Ledger] expense reversal failed:', err);
+      }
+    })();
   };
 
   if (showForm) return (
