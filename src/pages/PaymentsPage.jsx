@@ -5,6 +5,8 @@ import { ff, CUR_SYM, PAYMENT_METHODS } from "../constants";
 import { postPaymentEntry } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
+import { deletePayment } from "../lib/dataAccess";
+import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
 import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
@@ -238,7 +240,7 @@ function PaymentModal({ existing, onClose, onSave }) {
 
 // ─── Payments Page ────────────────────────────────────────────────────────────
 export default function PaymentsPage({ initialShowForm = false }) {
-  const { payments, setPayments, orgSettings } = useContext(AppCtx);
+  const { payments, setPayments, orgSettings, user } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
@@ -273,11 +275,31 @@ export default function PaymentsPage({ initialShowForm = false }) {
     return [pmt,...p];
   });
 
-  const del = id => {
-    if(window.confirm("Delete this payment?")) {
-      setPayments(p=>p.filter(x=>x.id!==id));
-      setViewingPayment(null);
+  const del = async (id) => {
+    if (!window.confirm("Delete this payment?")) return;
+    if (!user?.id) return alert("You must be logged in to delete.");
+    const snapshot = payments;
+    setPayments(p => p.filter(x => x.id !== id));
+    setViewingPayment(null);
+    const { error } = await deletePayment(user.id, id);
+    if (error) {
+      console.error("[PaymentsPage] deletePayment failed:", error);
+      setPayments(snapshot);
+      alert("Failed to delete payment: " + (error.message || "Unknown error"));
+      return;
     }
+    // Fire-and-forget ledger reversal — never blocks the UI delete path
+    ;(async () => {
+      try {
+        const { fetchUserAccounts } = await import("../utils/ledger/fetchUserAccounts");
+        const { userId } = await fetchUserAccounts();
+        if (!userId) return;
+        const entry = await findEntryBySource('payment', id);
+        if (entry) await reverseEntry(entry.id, userId);
+      } catch (err) {
+        console.error('[Ledger] payment reversal failed:', err);
+      }
+    })();
   };
 
   const totalRef = filtered.reduce((s,p)=>s+(p.status==="Refunded"?Number(p.amount||0):0),0);

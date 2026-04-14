@@ -8,9 +8,10 @@ import { Btn, Tag, Switch, InfoBox } from "../components/atoms";
 import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
+import { deleteCatalogItem } from "../lib/dataAccess";
 
 export default function ItemsPage({ initialShowForm = false }) {
-  const { orgSettings, catalogItems, setCatalogItems, invoices, quotes } = useContext(AppCtx);
+  const { orgSettings, catalogItems, setCatalogItems, invoices, quotes, user } = useContext(AppCtx);
   const navigate = useNavigate();
   const isVat = orgSettings?.vatReg === "Yes";
   const isCisOrg = orgSettings?.cisReg === "Yes";
@@ -20,14 +21,23 @@ export default function ItemsPage({ initialShowForm = false }) {
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  const deleteItem = (item) => {
+  const deleteItem = async (item) => {
     const linked = [...(invoices||[]), ...(quotes||[])].filter(doc =>
       (doc.line_items||doc.items||[]).some(li => li.itemId === item.id || li.name === item.name)
     ).length;
     const msg = linked > 0
       ? `"${item.name}" is used in ${linked} invoice/quote(s). Deleting will not remove those records.\n\nDelete anyway?`
       : `Delete "${item.name}"? This cannot be undone.`;
-    if (window.confirm(msg)) setCatalogItems(p => p.filter(x => x.id !== item.id));
+    if (!window.confirm(msg)) return;
+    if (!user?.id) return alert("You must be logged in to delete.");
+    const snapshot = catalogItems;
+    setCatalogItems(p => p.filter(x => x.id !== item.id));
+    const { error } = await deleteCatalogItem(user.id, item.id);
+    if (error) {
+      console.error("[ItemsPage] deleteCatalogItem failed:", error);
+      setCatalogItems(snapshot);
+      alert("Failed to delete item: " + (error.message || "Unknown error"));
+    }
   };
 
   const filtered = catalogItems.filter(i => {

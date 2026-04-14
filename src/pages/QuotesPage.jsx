@@ -104,7 +104,11 @@ export default function QuotesPage({ initialShowForm = false }) {
         quote={panel.quote}
         onClose={() => setPanel(null)}
         onEdit={() => setPanel({ mode: "edit", quote: panel.quote })}
-        onDelete={() => { setQuotes(prev => prev.filter(x => x.id !== panel.quote.id)); setPanel(null); }}
+        onDelete={() => {
+          if (!window.confirm(`Delete ${panel.quote.quote_number}?`)) return;
+          setQuotes(prev => prev.filter(x => x.id !== panel.quote.id));
+          setPanel(null);
+        }}
         onConvert={() => handleConvertToInvoice(panel.quote)}
       />
     );
