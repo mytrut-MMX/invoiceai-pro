@@ -18,6 +18,7 @@ import { useCISSettings } from "../hooks/useCISSettings";
 import { getTaxMonthOptions, formatPeriodDisplay } from "../utils/cis/computeTaxMonth";
 import { aggregatePdsData } from "../utils/cis/aggregatePdsData";
 import { generateCISStatementPdf } from "../utils/cis/generateCISStatementPdf";
+import { sendCISStatement, logCISStatementDownload } from "../utils/cis/sendCISStatement";
 
 // Bulk ZIP requires `jszip` to be present in package.json. It is NOT currently
 // installed in this codebase, so the bulk-select control is rendered disabled.
@@ -44,6 +45,27 @@ function missingDetails(row) {
   return issues;
 }
 
+// Hard gate for email send. Returns { ok, missing }. The missing array is used
+// for tooltip copy on the Email button.
+function isRowEmailable(row) {
+  const missing = [];
+  const email = row?.supplier?.email;
+  const utr = row?.supplier?.utr;
+  if (typeof email !== "string" || !email.trim()) missing.push("email");
+  if (typeof utr !== "string" || !utr.trim()) missing.push("UTR");
+  const needsVerif = row?.cis_rate_used !== "gross_0";
+  if (needsVerif) {
+    const v = row?.verification_number;
+    if (typeof v !== "string" || !v.trim()) missing.push("verification number");
+  }
+  return { ok: missing.length === 0, missing };
+}
+
+function formatSentAt(ts) {
+  try { return new Date(ts).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
+  catch { return ""; }
+}
+
 export default function CISStatementsPage() {
   const { user } = useContext(AppCtx);
   const cis = useCISSettings();
@@ -68,6 +90,16 @@ export default function CISStatementsPage() {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [downloadingRowId, setDownloadingRowId] = useState(null);
   const zipAvailable = ZIP_AVAILABLE;
+
+  // Email state (in-memory only — refreshing the page clears sent badges)
+  const [emailModalRow, setEmailModalRow] = useState(null);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [personalMessage, setPersonalMessage] = useState("");
+  const [sendingIds, setSendingIds] = useState(() => new Set());
+  const [sentMap, setSentMap] = useState({});           // supplier_id -> { email, at }
+  const [rowErrors, setRowErrors] = useState({});       // supplier_id -> string
+  const [bulkProgress, setBulkProgress] = useState(null); // { current, total }
+  const [bulkSummary, setBulkSummary] = useState(null);   // { sent, failed }
 
   // ─── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -111,6 +143,14 @@ export default function CISStatementsPage() {
   useEffect(() => {
     setSelectedIds(new Set());
   }, [selectedKey, rows.length]);
+
+  // Reset per-session sent/error state when tax month changes — badges are
+  // scoped to the active month view.
+  useEffect(() => {
+    setSentMap({});
+    setRowErrors({});
+    setBulkSummary(null);
+  }, [selectedKey]);
 
   const totals = useMemo(() => {
     return rows.reduce((acc, r) => {
@@ -170,7 +210,14 @@ export default function CISStatementsPage() {
     setDownloadingRowId(row.supplier.id);
     try {
       const res = await generateCISStatementPdf(buildPayload(row));
-      if (!res.success) setError(res.error || "PDF generation failed");
+      if (!res.success) {
+        setError(res.error || "PDF generation failed");
+        return;
+      }
+      // Fire-and-forget audit log — do not block UX or surface errors.
+      logCISStatementDownload({ contractor, row, period: taxMonth })
+        .then(r => { if (!r?.success) console.warn("[cis-pds] download log failed:", r?.error); })
+        .catch(err => console.warn("[cis-pds] download log threw:", err?.message));
     } finally {
       setDownloadingRowId(null);
     }
@@ -178,6 +225,76 @@ export default function CISStatementsPage() {
 
   // ZIP download is disabled until `jszip` is added to dependencies.
   const handleDownloadZip = () => { /* no-op — button is disabled */ };
+
+  // ─── Email send ────────────────────────────────────────────────────────────
+  const runSend = async (row, msg) => {
+    const id = row.supplier.id;
+    setSendingIds(prev => { const n = new Set(prev); n.add(id); return n; });
+    setRowErrors(prev => { const { [id]: _drop, ...rest } = prev; return rest; });
+    try {
+      const res = await sendCISStatement({
+        contractor,
+        row,
+        period: taxMonth,
+        settings: {
+          fromName: contractor.name || undefined,
+          personalMessage: msg || "",
+        },
+      });
+      if (res?.success) {
+        setSentMap(prev => ({ ...prev, [id]: { email: row.supplier.email, at: Date.now() } }));
+        if (res.warning) {
+          setRowErrors(prev => ({ ...prev, [id]: `Sent, but audit log failed: ${res.error || "unknown"}` }));
+        }
+        return { ok: true };
+      }
+      setRowErrors(prev => ({ ...prev, [id]: res?.error || "Send failed" }));
+      return { ok: false, error: res?.error };
+    } catch (err) {
+      setRowErrors(prev => ({ ...prev, [id]: err?.message || "Send failed" }));
+      return { ok: false, error: err?.message };
+    } finally {
+      setSendingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    }
+  };
+
+  const handleConfirmSingleSend = async () => {
+    if (!emailModalRow) return;
+    const row = emailModalRow;
+    const msg = personalMessage;
+    setEmailModalRow(null);
+    setPersonalMessage("");
+    await runSend(row, msg);
+  };
+
+  const selectedRows = useMemo(
+    () => rows.filter(r => selectedIds.has(r.supplier.id)),
+    [rows, selectedIds]
+  );
+  const nonEmailableSelected = useMemo(
+    () => selectedRows.filter(r => !isRowEmailable(r).ok).length,
+    [selectedRows]
+  );
+  const bulkEmailDisabled = selectedIds.size === 0 || nonEmailableSelected > 0;
+
+  const handleConfirmBulkSend = async () => {
+    const targets = selectedRows.slice();
+    const msg = personalMessage;
+    setBulkModalOpen(false);
+    setPersonalMessage("");
+    setBulkSummary(null);
+    if (targets.length === 0) return;
+    setBulkProgress({ current: 0, total: targets.length });
+    let sent = 0;
+    let failed = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const r = await runSend(targets[i], msg);
+      if (r.ok) sent += 1; else failed += 1;
+      setBulkProgress({ current: i + 1, total: targets.length });
+    }
+    setBulkProgress(null);
+    setBulkSummary({ sent, failed });
+  };
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   if (loading) {
@@ -232,6 +349,25 @@ export default function CISStatementsPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span
+              title={
+                selectedIds.size === 0
+                  ? "Select rows to email"
+                  : nonEmailableSelected > 0
+                    ? `${nonEmailableSelected} of ${selectedIds.size} selected cannot be emailed (missing details)`
+                    : ""
+              }
+              style={{ display: "inline-flex" }}
+            >
+              <Btn
+                variant="accent"
+                icon={<Icons.Send />}
+                disabled={bulkEmailDisabled || bulkProgress !== null}
+                onClick={() => { setBulkSummary(null); setPersonalMessage(""); setBulkModalOpen(true); }}
+              >
+                {`Email selected${selectedIds.size ? ` · ${selectedIds.size}` : ""}`}
+              </Btn>
+            </span>
+            <span
               title={zipAvailable ? "" : "ZIP library unavailable"}
               style={{ display: "inline-flex" }}
             >
@@ -265,6 +401,25 @@ export default function CISStatementsPage() {
         {error && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#b91c1c" }}>
             {error}
+          </div>
+        )}
+
+        {/* Bulk send progress / summary */}
+        {bulkProgress && (
+          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#1d4ed8" }}>
+            Sending… {bulkProgress.current} of {bulkProgress.total}
+          </div>
+        )}
+        {bulkSummary && !bulkProgress && (
+          <div style={{
+            background: bulkSummary.failed ? "#fffbeb" : "#ecfdf5",
+            border: `1px solid ${bulkSummary.failed ? "#fde68a" : "#a7f3d0"}`,
+            borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12,
+            color: bulkSummary.failed ? "#92400e" : "#065f46",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <span>{bulkSummary.sent} sent{bulkSummary.failed ? `, ${bulkSummary.failed} failed` : ""}.</span>
+            <button type="button" onClick={() => setBulkSummary(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "inherit", fontSize: 11 }}>Dismiss</button>
           </div>
         )}
 
@@ -309,6 +464,10 @@ export default function CISStatementsPage() {
                 const id = row.supplier.id;
                 const checked = selectedIds.has(id);
                 const issues = missingDetails(row);
+                const emailable = isRowEmailable(row);
+                const sentInfo = sentMap[id];
+                const rowError = rowErrors[id];
+                const isSending = sendingIds.has(id);
                 return (
                   <tr key={id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "12px 16px" }}>
@@ -320,10 +479,25 @@ export default function CISStatementsPage() {
                       />
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13 }}>
-                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{row.supplier.name || "—"}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, color: "#0f172a" }}>{row.supplier.name || "—"}</span>
+                        {sentInfo && (
+                          <span
+                            title={`Emailed ${sentInfo.email} on ${formatSentAt(sentInfo.at)}`}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px", fontSize: 10, fontWeight: 700, color: "#065f46", background: "#d1fae5", border: "1px solid #a7f3d0", borderRadius: 999 }}
+                          >
+                            Sent ✓
+                          </span>
+                        )}
+                      </div>
                       {issues.length > 0 && (
                         <div style={{ fontSize: 10, color: "#b91c1c", marginTop: 3 }}>
                           Missing: {issues.join(", ")}
+                        </div>
+                      )}
+                      {rowError && (
+                        <div style={{ fontSize: 10, color: "#b91c1c", marginTop: 3 }}>
+                          {rowError}
                         </div>
                       )}
                       <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
@@ -352,15 +526,31 @@ export default function CISStatementsPage() {
                       {fmtGBP(row.cis_deducted)}
                     </td>
                     <td style={{ padding: "10px 12px", textAlign: "right" }}>
-                      <Btn
-                        size="sm"
-                        variant="outline"
-                        icon={<Icons.Download />}
-                        disabled={downloadingRowId === id}
-                        onClick={() => handleDownloadRow(row)}
-                      >
-                        {downloadingRowId === id ? "…" : "PDF"}
-                      </Btn>
+                      <div style={{ display: "inline-flex", gap: 6, justifyContent: "flex-end" }}>
+                        <Btn
+                          size="sm"
+                          variant="outline"
+                          icon={<Icons.Download />}
+                          disabled={downloadingRowId === id}
+                          onClick={() => handleDownloadRow(row)}
+                        >
+                          {downloadingRowId === id ? "…" : "PDF"}
+                        </Btn>
+                        <span
+                          title={emailable.ok ? "" : `Cannot email: missing ${emailable.missing.join(", ")}`}
+                          style={{ display: "inline-flex" }}
+                        >
+                          <Btn
+                            size="sm"
+                            variant="accent"
+                            icon={<Icons.Send />}
+                            disabled={!emailable.ok || isSending}
+                            onClick={() => { setPersonalMessage(""); setEmailModalRow(row); }}
+                          >
+                            {isSending ? "…" : "Email"}
+                          </Btn>
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -377,6 +567,61 @@ export default function CISStatementsPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Single-row send confirmation */}
+      {emailModalRow && (
+        <ConfirmSendModal
+          title={`Send PDS for ${taxMonth?.label || ""} to ${emailModalRow.supplier.name}`}
+          body={`Send PDS for ${taxMonth?.label || ""} to ${emailModalRow.supplier.name} at ${emailModalRow.supplier.email}?`}
+          personalMessage={personalMessage}
+          onPersonalMessageChange={setPersonalMessage}
+          confirmLabel="Send"
+          onCancel={() => { setEmailModalRow(null); setPersonalMessage(""); }}
+          onConfirm={handleConfirmSingleSend}
+        />
+      )}
+
+      {/* Bulk send confirmation */}
+      {bulkModalOpen && (
+        <ConfirmSendModal
+          title="Send statements"
+          body={`Send ${selectedRows.length} statement(s) for ${taxMonth?.label || ""}? This cannot be undone.`}
+          personalMessage={personalMessage}
+          onPersonalMessageChange={setPersonalMessage}
+          confirmLabel="Send all"
+          onCancel={() => { setBulkModalOpen(false); setPersonalMessage(""); }}
+          onConfirm={handleConfirmBulkSend}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Confirm modal ────────────────────────────────────────────────────────────
+function ConfirmSendModal({ title, body, personalMessage, onPersonalMessageChange, confirmLabel, onCancel, onConfirm }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,16,0.55)", display: "grid", placeItems: "center", zIndex: 1500, padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 460, background: "#fff", borderRadius: 12, border: "1px solid #E8E6E0", boxShadow: "0 18px 40px rgba(17,17,16,0.2)", overflow: "hidden", fontFamily: ff }}>
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid #E8E6E0", fontSize: 16, fontWeight: 700, color: "#1F2937" }}>
+          {title}
+        </div>
+        <div style={{ padding: "14px 18px", fontSize: 13, color: "#334155" }}>
+          <div style={{ marginBottom: 12 }}>{body}</div>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6 }}>
+            Personal message (optional)
+          </label>
+          <textarea
+            value={personalMessage}
+            onChange={e => onPersonalMessageChange(e.target.value)}
+            rows={4}
+            style={{ width: "100%", boxSizing: "border-box", padding: 10, border: "1px solid #dbe4ee", borderRadius: 8, fontSize: 13, fontFamily: ff, resize: "vertical" }}
+          />
+        </div>
+        <div style={{ padding: "12px 18px", display: "flex", justifyContent: "flex-end", gap: 8, background: "#F0EFE9" }}>
+          <Btn variant="outline" onClick={onCancel}>Cancel</Btn>
+          <Btn variant="accent" icon={<Icons.Send />} onClick={onConfirm}>{confirmLabel}</Btn>
         </div>
       </div>
     </div>

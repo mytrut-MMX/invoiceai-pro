@@ -172,6 +172,49 @@ export function buildQuoteEmail({ quote = {}, company = {}, customer = {}, perso
   });
 }
 
+function displayCisRate(rate) {
+  switch (rate) {
+    case 'standard_20':   return '20%';
+    case 'unverified_30': return '30%';
+    case 'gross_0':       return '0%';
+    default:              return rate || '—';
+  }
+}
+
+export function buildCISStatementEmail({
+  contractor = {},
+  subcontractor = {},
+  period = {},
+  amounts = {},
+  personalMessage = '',
+}) {
+  const gross = formatCurrency(amounts.gross_amount ?? 0, 'GBP');
+  const materials = formatCurrency(amounts.materials_amount ?? 0, 'GBP');
+  const labour = formatCurrency(amounts.labour_amount ?? 0, 'GBP');
+  const deducted = formatCurrency(amounts.cis_deducted ?? 0, 'GBP');
+  const rate = displayCisRate(amounts.cis_rate_used);
+  const periodLabel = period.label || '—';
+
+  return buildEmailLayout({
+    companyName: contractor.name || 'Your Contractor',
+    greetingName: subcontractor.name || 'there',
+    bodyLines: [
+      `Please find attached your Payment and Deduction Statement for tax month ${periodLabel}, as required by HMRC under the Construction Industry Scheme (CIS340).`,
+    ],
+    summaryTitle: `CIS Statement — ${periodLabel}`,
+    summaryRows: [
+      { label: 'Gross amount (ex. VAT):',   value: gross },
+      { label: 'Cost of materials:',        value: materials },
+      { label: 'Amount liable to deduction:', value: labour },
+      { label: 'Rate:',                     value: rate },
+      { label: 'CIS deducted:',             value: deducted },
+    ],
+    note: 'Keep this statement for your records. You may need it for your Self Assessment or Corporation Tax return.',
+    personalMessage,
+    footerText: `Sent via InvoiceSaga on behalf of ${contractor.name || 'your contractor'} · invoicesaga.com`,
+  });
+}
+
 export function buildPaymentConfirmationEmail({ invoice = {}, payment = {}, company = {}, customer = {}, personalMessage = '' }) {
   const currency = getCurrencyCode(payment, invoice) || getCurrencyCode(invoice, company);
   const amountPaid = formatCurrency(payment.amount ?? 0, currency);

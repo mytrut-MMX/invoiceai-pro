@@ -29,6 +29,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid JSON request body' });
     }
 
+  // documentType is forwarded for bookkeeping only; subject/html/attachment are
+  // client-built. 'cis-statement' reuses the invoice/quote payload contract.
   const { to, cc, subject, htmlBody, documentType, documentNumber, replyTo, fromName, attachmentBase64, attachmentFilename } = payload;
 
     if (!to || !subject || !htmlBody) {
