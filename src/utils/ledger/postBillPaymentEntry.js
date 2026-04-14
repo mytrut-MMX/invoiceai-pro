@@ -83,13 +83,24 @@ export async function postBillPaymentEntry(bill, paymentDetails, accounts, userI
 
     // ── Idempotency guard ─────────────────────────────────────────────────────
     const idempotencyKey = `${bill.id}:${paymentDetails.paidDate}:${amount.toFixed(2)}`;
-
-    const { data: existing } = await supabase
+    // Reversal-aware idempotency: exclude entries that have been reversed
+    const { data: existingList } = await supabase
       .from('journal_entries')
       .select('id')
       .eq('source_type', 'bill_payment')
-      .eq('source_id', idempotencyKey)
-      .maybeSingle();
+      .eq('source_id', idempotencyKey);
+
+    let existing = null;
+    if (existingList && existingList.length > 0) {
+      const ids = existingList.map(e => e.id);
+      const { data: reversals } = await supabase
+        .from('journal_entries')
+        .select('source_id')
+        .eq('source_type', 'reversal')
+        .in('source_id', ids);
+      const reversedIds = new Set((reversals || []).map(r => r.source_id));
+      existing = existingList.find(e => !reversedIds.has(e.id)) || null;
+    }
 
     if (existing?.id) {
       return { success: true, journalEntryId: existing.id };
