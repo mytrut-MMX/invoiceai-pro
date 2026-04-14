@@ -199,30 +199,40 @@ export async function postInvoiceEntry(invoice, accounts, userId, vatScheme = 'S
     const vatTotal     = (invoice.taxBreakdown || []).reduce((s, t) => s + Number(t.amount || 0), 0);
     const cisDeduction = Number(invoice.cisDeduction || 0);
 
-    const arAccount  = findAccount(accounts, '1100');
-    const revAccount = findAccount(accounts, '4000');
-    const vatAccount = findAccount(accounts, '2100');
-    const cisAccount = findAccount(accounts, '2200');
+    const arAccount         = findAccount(accounts, '1100');
+    const revAccount        = findAccount(accounts, '4000');
+    const vatAccount        = findAccount(accounts, '2100');
+    const cisSufferedAccount = findAccount(accounts, '1250');
 
     if (!arAccount)  return { success: false, error: 'Account 1100 (Accounts Receivable) not found' };
     if (!revAccount) return { success: false, error: 'Account 4000 (Sales Revenue) not found' };
-
-    const lines = [
-      { accountId: arAccount.id,  debit: Number(invoice.total),    credit: 0 },
-      { accountId: revAccount.id, debit: 0, credit: Number(invoice.subtotal) },
-    ];
+    if (cisDeduction > 0 && !cisSufferedAccount) {
+      return { success: false, error: 'Account 1250 (CIS Suffered Receivable) not found. Run migration 028.' };
+    }
 
     // VAT posting depends on scheme:
     // Standard → recognise VAT now (on invoice)
     // Cash Accounting → defer VAT until payment (don't post here)
     // Flat Rate → don't post individual VAT (calculated on total turnover)
     const deferVAT = vatScheme === 'Cash Accounting' || vatScheme === 'Flat Rate Scheme';
+    const vatToPost = (vatTotal > 0 && !deferVAT) ? vatTotal : 0;
 
-    if (vatTotal > 0 && vatAccount && !deferVAT) {
-      lines.push({ accountId: vatAccount.id, debit: 0, credit: vatTotal });
+    // AR = gross receivable from customer (net-of-CIS, since customer deducts CIS at source)
+    // invoice.total is already net-of-CIS per data model
+    const lines = [
+      { accountId: arAccount.id,  debit: Number(invoice.total), credit: 0 },
+      { accountId: revAccount.id, debit: 0, credit: Number(invoice.subtotal) },
+    ];
+
+    // CIS Suffered: asset (reclaim from HMRC via EPS). DR 1250 balances the CIS
+    // portion that the customer withholds. NOT posted to 2200 (CIS Payable is
+    // for bills where user is contractor, not invoices where user is subcontractor).
+    if (cisDeduction > 0) {
+      lines.push({ accountId: cisSufferedAccount.id, debit: cisDeduction, credit: 0 });
     }
-    if (cisDeduction > 0 && cisAccount) {
-      lines.push({ accountId: cisAccount.id, debit: 0, credit: cisDeduction });
+
+    if (vatToPost > 0 && vatAccount) {
+      lines.push({ accountId: vatAccount.id, debit: 0, credit: vatToPost });
     }
 
     return await insertEntry({
@@ -268,11 +278,21 @@ export async function postPaymentEntry(payment, invoice, accounts, userId, vatSc
 
       const vatTotal = (invoice.taxBreakdown || []).reduce((s, t) => s + Number(t.amount || 0), 0);
       const netAmount = Number(invoice.subtotal || 0);
+      const cisDeduction = Number(invoice.cisDeduction || 0);
+
+      const cisSufferedAccount = cisDeduction > 0 ? findAccount(accounts, '1250') : null;
+      if (cisDeduction > 0 && !cisSufferedAccount) {
+        return { success: false, error: 'Account 1250 (CIS Suffered Receivable) not found. Run migration 028.' };
+      }
 
       const lines = [
         { accountId: bankAccount.id, debit: Number(payment.amount), credit: 0 },
         { accountId: revAccount.id, debit: 0, credit: netAmount },
       ];
+
+      if (cisDeduction > 0) {
+        lines.push({ accountId: cisSufferedAccount.id, debit: cisDeduction, credit: 0 });
+      }
 
       if (vatTotal > 0 && vatAccount) {
         lines.push({ accountId: vatAccount.id, debit: 0, credit: vatTotal });
