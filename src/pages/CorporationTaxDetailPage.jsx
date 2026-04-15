@@ -34,6 +34,7 @@ import {
 } from "../utils/ct/ctPeriods";
 import { computeCorporationTax } from "../utils/ct/computeCorporationTax";
 import { getAccountingProfit } from "../utils/ct/getAccountingProfit";
+import { exportCorporationTaxPdf } from "../utils/ct/exportCorporationTaxPdf";
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
 const GBP0 = new Intl.NumberFormat("en-GB", {
@@ -235,6 +236,10 @@ export default function CorporationTaxDetailPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
 
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
+  const [exportSuccess, setExportSuccess] = useState(false);
+
   // ─── Load period ─────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
@@ -355,6 +360,19 @@ export default function CorporationTaxDetailPage() {
     navigate(ROUTES.CORPORATION_TAX);
   }
 
+  async function handleExport() {
+    setExporting(true);
+    setExportError(null);
+    setExportSuccess(false);
+    const res = await exportCorporationTaxPdf({ periodId });
+    setExporting(false);
+    if (!res.success) {
+      setExportError(res.error || "Export failed");
+      return;
+    }
+    setExportSuccess(true);
+  }
+
   // ─── Access gates ────────────────────────────────────────────────────────
   if (btLoading) {
     return (
@@ -415,7 +433,7 @@ export default function CorporationTaxDetailPage() {
   }
 
   const statusLabel =
-    period.status === "finalized" ? "Approved" :
+    period.status === "finalized" ? "Finalized" :
     period.status === "exported" ? "Submitted" : "Draft";
 
   // ─── Render ──────────────────────────────────────────────────────────────
@@ -486,8 +504,8 @@ export default function CorporationTaxDetailPage() {
               </Btn>
             </>
           )}
-          <Btn variant="outline" disabled title="Coming in Task 6">
-            <Icons.Download /> Export PDF
+          <Btn variant="outline" onClick={handleExport} disabled={exporting}>
+            <Icons.Download /> {exporting ? "Generating…" : "Export PDF"}
           </Btn>
         </div>
       </div>
@@ -508,7 +526,7 @@ export default function CorporationTaxDetailPage() {
             }}
           >
             <span style={{ fontWeight: 700 }}>🔒 This period is finalized and locked.</span>{" "}
-            Contact support to unlock. PDF export will be available in Task 6.
+            Contact support to unlock. You can still export the PDF.
           </div>
         )}
 
@@ -549,6 +567,45 @@ export default function CorporationTaxDetailPage() {
             }}
           >
             Saved.
+          </div>
+        )}
+
+        {/* Export error / success */}
+        {exportError && (
+          <div
+            style={{
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: 10,
+              padding: "10px 14px",
+              marginBottom: 16,
+              fontSize: 13,
+              color: "#b91c1c",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>Export failed: {exportError}</span>
+            <button
+              onClick={() => setExportError(null)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#b91c1c", fontSize: 16, padding: 0 }}
+            >×</button>
+          </div>
+        )}
+        {exportSuccess && !exportError && (
+          <div
+            style={{
+              background: "#f0fdf4",
+              border: "1px solid #bbf7d0",
+              borderRadius: 10,
+              padding: "10px 14px",
+              marginBottom: 16,
+              fontSize: 13,
+              color: "#166534",
+            }}
+          >
+            PDF exported.
           </div>
         )}
 
