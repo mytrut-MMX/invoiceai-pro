@@ -165,3 +165,139 @@ export async function fetchCompaniesHousePrefill(crn) {
     companyName: data.companyName || null,
   };
 }
+
+/**
+ * Fetch a single Corporation Tax period by id. RLS enforces ownership so
+ * a period belonging to another user returns a "not found" error.
+ *
+ * @param {string} id
+ * @returns {Promise<{ success: true, period: object } | { success: false, error: string }>}
+ */
+export async function getCorporationTaxPeriod(id) {
+  if (!supabase) return { success: false, error: "Supabase not configured" };
+
+  const { data, error } = await supabase
+    .from("corporation_tax_periods")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  if (!data) return { success: false, error: "Period not found" };
+  return { success: true, period: data };
+}
+
+/**
+ * Update a Corporation Tax period with adjustments and/or computed snapshot.
+ *
+ * RLS policy `ct_periods_update_own` blocks the UPDATE if the row is locked,
+ * so a locked period cannot be silently mutated even by a malicious client.
+ *
+ * The patch shape uses JS camelCase; this helper maps to DB snake_case. Only
+ * keys present on the patch are forwarded — pass e.g. `{ adjustmentsNotes }`
+ * to update just one field.
+ *
+ * @param {string} id
+ * @param {Object} patch
+ * @param {number} [patch.disallowableExpenses]
+ * @param {number} [patch.capitalAllowances]
+ * @param {number} [patch.otherAdjustments]
+ * @param {string|null} [patch.adjustmentsNotes]
+ * @param {number|null} [patch.accountingProfit]
+ * @param {number|null} [patch.taxAdjustedProfit]
+ * @param {number|null} [patch.ctRateApplied]
+ * @param {number|null} [patch.ctEstimated]
+ * @param {string|null} [patch.rateBracket]
+ * @param {string|null} [patch.computedAt]
+ * @returns {Promise<{ success: true, period: object } | { success: false, error: string }>}
+ */
+export async function updateCorporationTaxPeriod(id, patch) {
+  if (!supabase) return { success: false, error: "Supabase not configured" };
+
+  const keyMap = {
+    disallowableExpenses: "disallowable_expenses",
+    capitalAllowances: "capital_allowances",
+    otherAdjustments: "other_adjustments",
+    adjustmentsNotes: "adjustments_notes",
+    accountingProfit: "accounting_profit",
+    taxAdjustedProfit: "tax_adjusted_profit",
+    ctRateApplied: "ct_rate_applied",
+    ctEstimated: "ct_estimated",
+    rateBracket: "rate_bracket",
+    computedAt: "computed_at",
+  };
+  const row = {};
+  for (const [k, v] of Object.entries(patch || {})) {
+    const col = keyMap[k];
+    if (col) row[col] = v;
+  }
+
+  const { data, error } = await supabase
+    .from("corporation_tax_periods")
+    .update(row)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, period: data };
+}
+
+/**
+ * Delete a Corporation Tax period. RLS policy `ct_periods_delete_own` blocks
+ * the DELETE if the row is locked.
+ *
+ * @param {string} id
+ * @returns {Promise<{ success: true } | { success: false, error: string }>}
+ */
+export async function deleteCorporationTaxPeriod(id) {
+  if (!supabase) return { success: false, error: "Supabase not configured" };
+
+  const { error } = await supabase
+    .from("corporation_tax_periods")
+    .delete()
+    .eq("id", id);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/**
+ * Transition a Corporation Tax period's lifecycle status.
+ *
+ * Phase 1 note: only `draft → finalized` is supported from the UI. Unlocking
+ * (`finalized → draft`) requires pre-update `locked = false`, which RLS
+ * policy `ct_periods_update_own` does not allow once the row is locked. An
+ * admin unlock workflow is out of scope for Phase 1 — users are told to
+ * contact support. This function therefore treats `finalized` as one-way
+ * and sets `locked = true` alongside the status change.
+ *
+ * Updating to `exported` is reserved for Task 6 (PDF export) and also sets
+ * `locked = true`.
+ *
+ * @param {string} id
+ * @param {'finalized'|'exported'} status
+ * @returns {Promise<{ success: true, period: object } | { success: false, error: string }>}
+ */
+export async function setCorporationTaxPeriodStatus(id, status) {
+  if (!supabase) return { success: false, error: "Supabase not configured" };
+
+  if (status !== "finalized" && status !== "exported") {
+    return {
+      success: false,
+      error:
+        "Only 'finalized' or 'exported' statuses can be set from the app. " +
+        "Unlocking is a support-only operation in Phase 1.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("corporation_tax_periods")
+    .update({ status, locked: true })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, period: data };
+}

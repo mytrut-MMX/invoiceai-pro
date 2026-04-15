@@ -97,7 +97,8 @@ export const ROUTES = {
   CIS_STATEMENTS: '/cis/statements',
 
   // ─── Corporation Tax (CT600) ───────────────────────────────────────────────
-  CORPORATION_TAX: '/corporation-tax',
+  CORPORATION_TAX:        '/corporation-tax',
+  CORPORATION_TAX_DETAIL: '/corporation-tax/:periodId',
 
   // ─── VAT Returns ─────────────────────────────────────────────────────────────
   VAT_RETURN: '/vat-return',
