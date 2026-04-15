@@ -2,18 +2,38 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock supabase BEFORE importing the module under test.
 //
-// list path chain: from('...').select().order()  → thenable
-// create path chain: from('...').insert(...).select().single() → thenable
+// list path chain:     from().select().order()                          → thenable
+// create path chain:   from().insert(...).select().single()             → thenable
+// get path chain:      from().select().eq(id).single()                  → thenable
+// update path chain:   from().update(row).eq(id).select().single()      → thenable
+// delete path chain:   from().delete().eq(id)                           → thenable
 const selectFn = vi.fn();
 const orderFn = vi.fn();
 const insertFn = vi.fn();
 const insertSelectFn = vi.fn();
 const insertSingleFn = vi.fn();
 
+const selectEqFn = vi.fn();
+const selectSingleFn = vi.fn();
+
+const updateFn = vi.fn();
+const updateEqFn = vi.fn();
+const updateSelectFn = vi.fn();
+const updateSingleFn = vi.fn();
+
+const deleteFn = vi.fn();
+const deleteEqFn = vi.fn();
+
 const fromSpy = vi.fn(() => ({
   select: (...args) => {
     selectFn(...args);
-    return { order: orderFn };
+    return {
+      order: orderFn,
+      eq: (...eqArgs) => {
+        selectEqFn(...eqArgs);
+        return { single: selectSingleFn };
+      },
+    };
   },
   insert: (...args) => {
     insertFn(...args);
@@ -23,6 +43,24 @@ const fromSpy = vi.fn(() => ({
         return { single: insertSingleFn };
       },
     };
+  },
+  update: (...args) => {
+    updateFn(...args);
+    return {
+      eq: (...eqArgs) => {
+        updateEqFn(...eqArgs);
+        return {
+          select: () => {
+            updateSelectFn();
+            return { single: updateSingleFn };
+          },
+        };
+      },
+    };
+  },
+  delete: (...args) => {
+    deleteFn(...args);
+    return { eq: deleteEqFn };
   },
 }));
 
@@ -39,6 +77,10 @@ const {
   listCorporationTaxPeriods,
   createCorporationTaxPeriod,
   fetchCompaniesHousePrefill,
+  getCorporationTaxPeriod,
+  updateCorporationTaxPeriod,
+  deleteCorporationTaxPeriod,
+  setCorporationTaxPeriodStatus,
 } = await import("../ctPeriods");
 
 beforeEach(() => {
@@ -48,6 +90,14 @@ beforeEach(() => {
   insertFn.mockClear();
   insertSelectFn.mockClear();
   insertSingleFn.mockReset();
+  selectEqFn.mockClear();
+  selectSingleFn.mockReset();
+  updateFn.mockClear();
+  updateEqFn.mockClear();
+  updateSelectFn.mockClear();
+  updateSingleFn.mockReset();
+  deleteFn.mockClear();
+  deleteEqFn.mockReset();
   getUserFn.mockReset();
 });
 
@@ -164,5 +214,95 @@ describe("fetchCompaniesHousePrefill", () => {
 
     expect(r).toEqual({ success: false, error: "Company not found" });
     vi.unstubAllGlobals();
+  });
+});
+
+describe("getCorporationTaxPeriod", () => {
+  it("returns the period on success", async () => {
+    const row = {
+      id: "p1",
+      period_start: "2025-04-01",
+      period_end: "2026-03-31",
+      locked: false,
+    };
+    selectSingleFn.mockResolvedValue({ data: row, error: null });
+
+    const r = await getCorporationTaxPeriod("p1");
+
+    expect(r).toEqual({ success: true, period: row });
+    expect(fromSpy).toHaveBeenCalledWith("corporation_tax_periods");
+    expect(selectEqFn).toHaveBeenCalledWith("id", "p1");
+  });
+
+  it("returns error when the period is not found", async () => {
+    selectSingleFn.mockResolvedValue({
+      data: null,
+      error: { message: "No rows found" },
+    });
+
+    const r = await getCorporationTaxPeriod("missing");
+
+    expect(r).toEqual({ success: false, error: "No rows found" });
+  });
+});
+
+describe("updateCorporationTaxPeriod", () => {
+  it("maps camelCase patch to snake_case columns and returns the updated row", async () => {
+    const updated = { id: "p1", ct_estimated: 4750 };
+    updateSingleFn.mockResolvedValue({ data: updated, error: null });
+
+    const r = await updateCorporationTaxPeriod("p1", {
+      disallowableExpenses: 1000,
+      capitalAllowances: 500,
+      otherAdjustments: -250,
+      adjustmentsNotes: "notes",
+      accountingProfit: 25000,
+      taxAdjustedProfit: 25250,
+      ctRateApplied: 19,
+      ctEstimated: 4797,
+      rateBracket: "small",
+      computedAt: "2026-04-15T00:00:00.000Z",
+    });
+
+    expect(r).toEqual({ success: true, period: updated });
+    const row = updateFn.mock.calls[0][0];
+    expect(row).toEqual({
+      disallowable_expenses: 1000,
+      capital_allowances: 500,
+      other_adjustments: -250,
+      adjustments_notes: "notes",
+      accounting_profit: 25000,
+      tax_adjusted_profit: 25250,
+      ct_rate_applied: 19,
+      ct_estimated: 4797,
+      rate_bracket: "small",
+      computed_at: "2026-04-15T00:00:00.000Z",
+    });
+    expect(updateEqFn).toHaveBeenCalledWith("id", "p1");
+  });
+});
+
+describe("deleteCorporationTaxPeriod", () => {
+  it("deletes by id and returns success", async () => {
+    deleteEqFn.mockResolvedValue({ error: null });
+
+    const r = await deleteCorporationTaxPeriod("p1");
+
+    expect(r).toEqual({ success: true });
+    expect(fromSpy).toHaveBeenCalledWith("corporation_tax_periods");
+    expect(deleteEqFn).toHaveBeenCalledWith("id", "p1");
+  });
+});
+
+describe("setCorporationTaxPeriodStatus", () => {
+  it("transitions draft → finalized and sets locked=true", async () => {
+    const updated = { id: "p1", status: "finalized", locked: true };
+    updateSingleFn.mockResolvedValue({ data: updated, error: null });
+
+    const r = await setCorporationTaxPeriodStatus("p1", "finalized");
+
+    expect(r).toEqual({ success: true, period: updated });
+    expect(updateFn).toHaveBeenCalledWith({ status: "finalized", locked: true });
+    expect(updateEqFn).toHaveBeenCalledWith("id", "p1");
   });
 });
