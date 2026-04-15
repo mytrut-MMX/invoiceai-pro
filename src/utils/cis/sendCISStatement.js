@@ -27,10 +27,22 @@ async function blobToBase64(blob) {
   return btoa(binary);
 }
 
-function toIsoDate(d) {
+export function toIsoDate(d) {
   if (!d) return "";
+  // Idempotent: if already a YYYY-MM-DD string, return as-is.
+  if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}/.test(d)) {
+    return d.slice(0, 10);
+  }
   const dt = d instanceof Date ? d : new Date(d);
-  return dt.toISOString().slice(0, 10);
+  if (Number.isNaN(dt.getTime())) return "";
+  // Format in Europe/London to match HMRC CIS340 tax-month semantics.
+  // en-CA locale yields YYYY-MM-DD natively.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(dt);
 }
 
 function buildSubcontractorPayload(row) {
