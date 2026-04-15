@@ -5,6 +5,7 @@ import { Ic, Icons } from "../icons";
 import InvoiceSagaLogo from "../InvoiceSagaLogo";
 import { ROUTES } from "../../router/routes";
 import { AppCtx } from "../../context/AppContext";
+import { useBusinessType } from "../../hooks/useBusinessType";
 
 // ─── NAVIGATION DEFINITION ────────────────────────────────────────────────────
 // Each entry maps a sidebar item to its route(s).
@@ -24,8 +25,9 @@ export const NAV = [
   { id:"employees", label:"Employees",         Icon:Icons.Customers,route:ROUTES.EMPLOYEES,  match:"/employees" },
   { id:"payroll",   label:"Payroll",           Icon:Icons.Payments, route:ROUTES.PAYROLL,    match:"/payroll" },
   { id:"cis-statements", label:"CIS Statements", Icon:Icons.Receipt, route:ROUTES.CIS_STATEMENTS, match:"/cis/statements" },
+  { id:"corporation-tax", label:"Corporation Tax", Icon:Icons.Receipt, route:ROUTES.CORPORATION_TAX, match:"/corporation-tax", entityGate:"ltd" },
   { id:"vat-return",label:"VAT Returns",       Icon:Icons.Invoices, route:ROUTES.VAT_RETURN, match:"/vat-return" },
-  { id:"itsa",      label:"Self Assessment",   Icon:Icons.Receipt,  route:ROUTES.ITSA,       match:"/self-assessment" },
+  { id:"itsa",      label:"Self Assessment",   Icon:Icons.Receipt,  route:ROUTES.ITSA,       match:"/self-assessment", entityGate:"sole_trader" },
   { id:"settings",  label:"Settings",          Icon:Icons.Settings, route:ROUTES.SETTINGS_GENERAL, match:"/settings" },
 ];
 
@@ -60,18 +62,26 @@ function isActive(pathname, match) {
 
 // Hide entries that don't apply to the current business type / registration.
 // - VAT Returns: only when VAT registered (orgSettings?.vatReg === "Yes")
-// - Self Assessment: only for Sole Trader / Freelancer (SA100 is personal tax).
-//   LTD companies pay Corporation Tax via CT600, not Self Assessment.
-//   bType string mirrors useDashboardModuleData.js canonical check.
+// - CIS Statements: only when CIS enabled
+// - entityGate: generic gate driven by useBusinessType()
+//     "ltd"         → visible when isLtd  (orgSettings.crn non-empty)
+//     "sole_trader" → visible when isSoleTrader (bType "Sole Trader / Freelancer")
+//   Gated items are hidden during loading to avoid nav flash.
+// LTD companies pay Corporation Tax via CT600, not Self Assessment.
+// bType string mirrors useDashboardModuleData.js canonical check.
 function useVisibleNav() {
   const ctx = useContext(AppCtx);
+  const { isLtd, isSoleTrader, loading: entityLoading } = useBusinessType();
   const isVatRegistered = ctx?.orgSettings?.vatReg === "Yes";
-  const isSoleTrader    = ctx?.orgSettings?.bType  === "Sole Trader / Freelancer";
   const isCisEnabled    = ctx?.orgSettings?.cis?.enabled ?? (ctx?.orgSettings?.cisReg === "Yes");
   return NAV.filter(item => {
     if (item.id === "vat-return"     && !isVatRegistered) return false;
-    if (item.id === "itsa"           && !isSoleTrader)    return false;
     if (item.id === "cis-statements" && !isCisEnabled)    return false;
+    if (item.entityGate) {
+      if (entityLoading) return false;
+      if (item.entityGate === "ltd"         && !isLtd)         return false;
+      if (item.entityGate === "sole_trader" && !isSoleTrader)  return false;
+    }
     return true;
   });
 }

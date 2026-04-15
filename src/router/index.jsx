@@ -67,6 +67,7 @@ const LedgerPage         = lazy(() => import("../pages/LedgerPage"));
 const EmployeesPage      = lazy(() => import("../pages/EmployeesPage"));
 const PayrollPage        = lazy(() => import("../pages/PayrollPage"));
 const CISStatementsPage  = lazy(() => import("../pages/CISStatementsPage"));
+const CorporationTaxPage = lazy(() => import("../pages/CorporationTaxPage"));
 const AdminPage          = lazy(() => import("../pages/AdminPage"));
 const NotFoundPage       = lazy(() => import("../pages/NotFoundPage"));
 
@@ -171,6 +172,9 @@ const router = createBrowserRouter([
 
           // CIS Payment and Deduction Statements
           { path: ROUTES.CIS_STATEMENTS, element: <CISStatementsPage /> },
+
+          // Corporation Tax (CT600) — Phase 1 stub; real UI lands in Task 4.
+          { path: ROUTES.CORPORATION_TAX, element: <CorporationTaxPage /> },
 
           // VAT Returns
           { path: ROUTES.VAT_RETURN, element: <VATReturnPage /> },
