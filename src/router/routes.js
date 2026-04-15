@@ -96,6 +96,9 @@ export const ROUTES = {
   // ─── CIS Payment and Deduction Statements ──────────────────────────────────
   CIS_STATEMENTS: '/cis/statements',
 
+  // ─── Corporation Tax (CT600) ───────────────────────────────────────────────
+  CORPORATION_TAX: '/corporation-tax',
+
   // ─── VAT Returns ─────────────────────────────────────────────────────────────
   VAT_RETURN: '/vat-return',
 
