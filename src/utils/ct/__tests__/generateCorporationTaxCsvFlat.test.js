@@ -3,8 +3,9 @@ import { generateCorporationTaxCsvFlat } from "../generateCorporationTaxCsvFlat"
 
 const HEADER =
   "period_start,period_end,accounting_profit,disallowable_expenses," +
-  "capital_allowances,other_adjustments,tax_adjusted_profit," +
-  "ct_rate_applied,ct_estimated,rate_bracket,notes";
+  "capital_allowances,other_adjustments,associated_companies_count," +
+  "augmented_profits_adjustment,tax_adjusted_profit," +
+  "ct_rate_applied,ct_estimated,marginal_relief,rate_bracket,notes";
 
 async function readBlobText(blob) {
   // Decode with ignoreBOM so the leading U+FEFF survives — we test for it.
@@ -38,11 +39,11 @@ describe("generateCorporationTaxCsvFlat", () => {
 
     expect(lines[0]).toBe(HEADER);
     expect(lines[1]).toBe(
-      "2024-04-01,2025-03-31,40000.00,1500.00,500.00,1000.00,42000.00," +
-        "19,7980.00,small,Standard adjustments",
+      "2024-04-01,2025-03-31,40000.00,1500.00,500.00,1000.00,,," +
+        "42000.00,19,7980.00,,small,Standard adjustments",
     );
-    expect(lines[0].split(",")).toHaveLength(11);
-    expect(lines[1].split(",")).toHaveLength(11);
+    expect(lines[0].split(",")).toHaveLength(14);
+    expect(lines[1].split(",")).toHaveLength(14);
   });
 
   it("loss bracket: zero CT estimated, rate 0", async () => {
@@ -61,7 +62,7 @@ describe("generateCorporationTaxCsvFlat", () => {
     // Notes was null → empty string (not the literal word "null").
     expect(dataRow.endsWith(",loss,")).toBe(true);
     expect(dataRow).toContain("-2000.00");
-    expect(dataRow).toContain(",0.00,loss,");
+    expect(dataRow).toContain(",0.00,,loss,");
   });
 
   it("escapes notes that contain commas, quotes and newlines (RFC 4180)", async () => {

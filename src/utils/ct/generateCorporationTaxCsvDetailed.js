@@ -76,6 +76,14 @@ export function generateCorporationTaxCsvDetailed(period) {
   lines.push(row("Disallowable expenses", signedDecimal(period?.disallowable_expenses, "+")));
   lines.push(row("Capital allowances", signedDecimal(period?.capital_allowances, "-")));
   lines.push(row("Other adjustments", signedDecimal(period?.other_adjustments, "+")));
+  const associatedCount = Number(period?.associated_companies_count) || 0;
+  if (associatedCount > 0) {
+    lines.push(row("Associated companies", String(associatedCount)));
+  }
+  const augmentedAdj = Number(period?.augmented_profits_adjustment) || 0;
+  if (augmentedAdj > 0) {
+    lines.push(row("Augmented profits adjustment", signedDecimal(augmentedAdj, "+")));
+  }
   lines.push(row("Tax-adjusted profit", csvDecimal(period?.tax_adjusted_profit)));
   lines.push("");
 
@@ -87,6 +95,10 @@ export function generateCorporationTaxCsvDetailed(period) {
     period?.rate_bracket ? String(period.rate_bracket).toLowerCase() : "",
   ));
   lines.push(row("CT estimated", csvDecimal(period?.ct_estimated)));
+  const marginalRelief = Number(period?.marginal_relief) || 0;
+  if (marginalRelief > 0) {
+    lines.push(row("Marginal relief", signedDecimal(marginalRelief, "-")));
+  }
   if (period?.rate_bracket === "marginal_zone") {
     lines.push(row("Warning", MARGINAL_WARNING));
   }

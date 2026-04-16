@@ -274,6 +274,32 @@ function MoneyInput({ value, onChange, disabled }) {
   );
 }
 
+function IntInput({ value, onChange, disabled, min = 0 }) {
+  return (
+    <input
+      type="number"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      step="1"
+      min={min}
+      disabled={disabled}
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "9px 11px",
+        border: "1px solid #e8e8ec",
+        borderRadius: 5,
+        fontSize: 13,
+        fontFamily: ff,
+        background: disabled ? "#f3f4f6" : "#fff",
+        color: disabled ? "#6b7280" : "#1a1a2e",
+        cursor: disabled ? "not-allowed" : "text",
+        outline: "none",
+      }}
+    />
+  );
+}
+
 function FieldLabel({ label, children }) {
   return (
     <label style={{ display: "block" }}>
@@ -359,6 +385,8 @@ export default function CorporationTaxDetailPage() {
   const [disallowable, setDisallowable] = useState("0");
   const [capital, setCapital] = useState("0");
   const [other, setOther] = useState("0");
+  const [associatedCo, setAssociatedCo] = useState("0");
+  const [augmentedAdj, setAugmentedAdj] = useState("0");
   const [notes, setNotes] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -390,6 +418,8 @@ export default function CorporationTaxDetailPage() {
       setDisallowable(String(res.period.disallowable_expenses ?? 0));
       setCapital(String(res.period.capital_allowances ?? 0));
       setOther(String(res.period.other_adjustments ?? 0));
+      setAssociatedCo(String(res.period.associated_companies_count ?? 0));
+      setAugmentedAdj(String(res.period.augmented_profits_adjustment ?? 0));
       setNotes(res.period.adjustments_notes || "");
     })();
     return () => { cancelled = true; };
@@ -434,11 +464,13 @@ export default function CorporationTaxDetailPage() {
         disallowableExpenses: Number(disallowable) || 0,
         capitalAllowances: Number(capital) || 0,
         otherAdjustments: Number(other) || 0,
+        associatedCompaniesCount: Number(associatedCo) || 0,
+        augmentedProfitsAdjustment: Number(augmentedAdj) || 0,
       });
     } catch (e) {
       return { error: e.message };
     }
-  }, [accountingProfit, disallowable, capital, other]);
+  }, [accountingProfit, disallowable, capital, other, associatedCo, augmentedAdj]);
 
   const isLocked = !!period?.locked;
 
@@ -452,6 +484,8 @@ export default function CorporationTaxDetailPage() {
       disallowableExpenses: Number(disallowable) || 0,
       capitalAllowances: Number(capital) || 0,
       otherAdjustments: Number(other) || 0,
+      associatedCompaniesCount: Number(associatedCo) || 0,
+      augmentedProfitsAdjustment: Number(augmentedAdj) || 0,
       adjustmentsNotes: notes.trim() || null,
       accountingProfit,
       taxAdjustedProfit: calc.taxAdjustedProfit,
@@ -886,6 +920,19 @@ export default function CorporationTaxDetailPage() {
               <MoneyInput value={other} onChange={setOther} disabled={isLocked} />
             </FieldLabel>
           </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+            <FieldLabel label="Associated companies">
+              <IntInput value={associatedCo} onChange={setAssociatedCo} disabled={isLocked} />
+            </FieldLabel>
+            <FieldLabel label="Augmented profits adjustment £">
+              <MoneyInput value={augmentedAdj} onChange={setAugmentedAdj} disabled={isLocked} />
+            </FieldLabel>
+          </div>
+          {calc && !calc.error && calc.rateBracket === "marginal_zone" && (
+            <div style={{ fontSize: 12, color: "#16A34A", marginTop: 8 }}>
+              Marginal relief applied: {fmtGbp0(calc.marginalRelief)}
+            </div>
+          )}
           <FieldLabel label="Notes">
             <textarea
               rows={2}
@@ -930,6 +977,16 @@ export default function CorporationTaxDetailPage() {
                   <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>
                     {fmtGbp2(calc.taxAdjustedProfit)}
                   </div>
+                  {((Number(augmentedAdj) || 0) > 0 || (Number(associatedCo) || 0) > 0) && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>
+                        Augmented profits
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e", fontVariantNumeric: "tabular-nums" }}>
+                        {fmtGbp2(calc.augmentedProfits)}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>

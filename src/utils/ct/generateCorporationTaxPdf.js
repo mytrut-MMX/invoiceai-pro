@@ -92,6 +92,10 @@ function renderHtml({ company, period, calc }) {
   const tdCtLabel = `padding:12px;font-size:13px;font-weight:800;color:${C.positive};border-bottom:2px solid ${C.border};`;
   const tdCtVal = tdCtLabel + `text-align:right;font-variant-numeric:tabular-nums;font-size:15px;`;
 
+  const associatedCount = Number(calc?.associatedCompaniesCount) || 0;
+  const augmentedAdj = Number(calc?.augmentedProfitsAdjustment) || 0;
+  const marginalRelief = Number(calc?.marginalRelief) || 0;
+
   return `
     <div style="width:210mm;min-height:297mm;padding:18mm 16mm;font-family:${ff};color:${C.body};background:#fff;box-sizing:border-box;">
 
@@ -164,6 +168,16 @@ function renderHtml({ company, period, calc }) {
             <td style="${tdLabel}">± Other adjustments</td>
             <td style="${tdVal}">${fmtGbp2(calc?.otherAdjustments)}</td>
           </tr>
+          ${associatedCount > 0 ? `
+          <tr>
+            <td style="${tdLabel}">Associated companies</td>
+            <td style="${tdVal}">${associatedCount}</td>
+          </tr>` : ""}
+          ${augmentedAdj > 0 ? `
+          <tr>
+            <td style="${tdLabel}">Augmented profits adjustment</td>
+            <td style="${tdVal}">${fmtGbp2(augmentedAdj)}</td>
+          </tr>` : ""}
           <tr>
             <td style="${tdTotalLabel}">= Tax-adjusted profit</td>
             <td style="${tdTotalVal}">${fmtGbp2(calc?.taxAdjustedProfit)}</td>
@@ -172,6 +186,11 @@ function renderHtml({ company, period, calc }) {
             <td style="${tdLabel}">CT rate applied</td>
             <td style="${tdVal}">${calc?.ctRateApplied == null ? "—" : `${calc.ctRateApplied}%`}</td>
           </tr>
+          ${marginalRelief > 0 ? `
+          <tr>
+            <td style="${tdLabel}">Marginal relief</td>
+            <td style="${tdVal}">−${fmtGbp0(marginalRelief)}</td>
+          </tr>` : ""}
           <tr>
             <td style="${tdCtLabel}">Estimated Corporation Tax</td>
             <td style="${tdCtVal}">${fmtGbp0(calc?.ctEstimated)}</td>
