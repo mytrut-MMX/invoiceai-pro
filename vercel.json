@@ -43,6 +43,7 @@
     { "src": "/api/orchestrator",         "dest": "/api/agents.js" },
     { "src": "/api/product-workflow-lead","dest": "/api/agents.js" },
     { "src": "/api/frontend-architecture-lead","dest": "/api/agents.js" },
+    { "src": "/api/data-ledger-lead",     "dest": "/api/agents.js" },
     { "src": "/api/(.*)",         "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)",             "dest": "/index.html" }
