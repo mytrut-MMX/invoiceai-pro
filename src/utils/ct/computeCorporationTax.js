@@ -60,6 +60,7 @@ export function computeCorporationTax({
   associatedCompaniesCount = 0,
   augmentedProfitsAdjustment = 0,
   accountingPeriodDays = 365,
+  lossCarriedForwardIn = 0,
 }) {
   if (disallowableExpenses < 0) {
     throw new TypeError("disallowableExpenses must be >= 0");
@@ -76,10 +77,23 @@ export function computeCorporationTax({
   if (accountingPeriodDays < 1 || accountingPeriodDays > 366) {
     throw new TypeError("accountingPeriodDays must be between 1 and 366");
   }
+  if (lossCarriedForwardIn < 0) {
+    throw new TypeError("lossCarriedForwardIn must be >= 0");
+  }
 
   const taxAdjustedProfit =
     accountingProfit + disallowableExpenses - capitalAllowances + otherAdjustments;
-  const augmentedProfits = taxAdjustedProfit + augmentedProfitsAdjustment;
+
+  let lossUsed = 0;
+  let lossUnused = lossCarriedForwardIn;
+  let taxableAfterLoss = taxAdjustedProfit;
+  if (taxAdjustedProfit > 0) {
+    lossUsed = Math.min(lossCarriedForwardIn, taxAdjustedProfit);
+    lossUnused = lossCarriedForwardIn - lossUsed;
+    taxableAfterLoss = taxAdjustedProfit - lossUsed;
+  }
+
+  const augmentedProfits = taxableAfterLoss + augmentedProfitsAdjustment;
 
   if (augmentedProfits < 0) {
     return {
@@ -89,6 +103,8 @@ export function computeCorporationTax({
       ctEstimated: 0,
       marginalRelief: 0,
       rateBracket: "loss",
+      lossUsed,
+      lossUnused,
       warnings: [],
     };
   }
@@ -108,17 +124,17 @@ export function computeCorporationTax({
   if (flooredAugmented <= lowerLimit) {
     rateBracket = "small";
     ctRateApplied = CT_SMALL_PROFITS_RATE;
-    ctEstimated = Math.floor((taxAdjustedProfit * ctRateApplied) / 100);
+    ctEstimated = Math.floor((taxableAfterLoss * ctRateApplied) / 100);
   } else if (flooredAugmented >= upperLimit) {
     rateBracket = "main";
     ctRateApplied = CT_MAIN_RATE;
-    ctEstimated = Math.floor((taxAdjustedProfit * ctRateApplied) / 100);
+    ctEstimated = Math.floor((taxableAfterLoss * ctRateApplied) / 100);
   } else {
     rateBracket = "marginal_zone";
     ctRateApplied = CT_MAIN_RATE;
     marginalRelief = computeMarginalRelief({
       augmentedProfits,
-      taxableProfit: taxAdjustedProfit,
+      taxableProfit: taxableAfterLoss,
       upperLimit,
       lowerLimit,
     });
@@ -136,6 +152,8 @@ export function computeCorporationTax({
     ctEstimated,
     marginalRelief,
     rateBracket,
+    lossUsed,
+    lossUnused,
     warnings,
   };
 }

@@ -256,3 +256,88 @@ describe("computeCorporationTax — marginal relief (HMRC CTM03930)", () => {
     );
   });
 });
+
+describe("computeCorporationTax — loss carried forward relief (CTA 2010 s.45)", () => {
+  it("24. fully absorbed: profit=£100k, loss=£40k → taxableAfterLoss=£60k", () => {
+    const r = computeCorporationTax({
+      accountingProfit: 100000,
+      ...noAdj,
+      lossCarriedForwardIn: 40000,
+    });
+    expect(r.taxAdjustedProfit).toBe(100000);
+    expect(r.augmentedProfits).toBe(60000);
+    expect(r.lossUsed).toBe(40000);
+    expect(r.lossUnused).toBe(0);
+    expect(r.rateBracket).toBe("marginal_zone");
+  });
+
+  it("25. partially absorbed (exceeds profit): profit=£30k, loss=£50k", () => {
+    const r = computeCorporationTax({
+      accountingProfit: 30000,
+      ...noAdj,
+      lossCarriedForwardIn: 50000,
+    });
+    expect(r.taxAdjustedProfit).toBe(30000);
+    expect(r.augmentedProfits).toBe(0);
+    expect(r.lossUsed).toBe(30000);
+    expect(r.lossUnused).toBe(20000);
+    expect(r.rateBracket).toBe("small");
+    expect(r.ctEstimated).toBe(0);
+  });
+
+  it("26. loss reduces marginal_zone profit to small bracket: profit=£80k, loss=£35k", () => {
+    const r = computeCorporationTax({
+      accountingProfit: 80000,
+      ...noAdj,
+      lossCarriedForwardIn: 35000,
+    });
+    expect(r.augmentedProfits).toBe(45000);
+    expect(r.lossUsed).toBe(35000);
+    expect(r.lossUnused).toBe(0);
+    expect(r.rateBracket).toBe("small");
+    expect(r.ctEstimated).toBe(Math.floor(45000 * 0.19));
+  });
+
+  it("27. loss applied after taxAdjustedProfit calc (adjustments first)", () => {
+    const r = computeCorporationTax({
+      accountingProfit: 90000,
+      disallowableExpenses: 0,
+      capitalAllowances: 20000,
+      otherAdjustments: 0,
+      lossCarriedForwardIn: 30000,
+    });
+    expect(r.taxAdjustedProfit).toBe(70000);
+    expect(r.augmentedProfits).toBe(40000);
+    expect(r.lossUsed).toBe(30000);
+    expect(r.lossUnused).toBe(0);
+  });
+
+  it("28. lossCarriedForwardIn=0 (default) — existing behaviour unchanged", () => {
+    const r = computeCorporationTax({ accountingProfit: 30000, ...noAdj });
+    expect(r.lossUsed).toBe(0);
+    expect(r.lossUnused).toBe(0);
+    expect(r.rateBracket).toBe("small");
+    expect(r.ctEstimated).toBe(5700);
+  });
+
+  it("29. negative lossCarriedForwardIn throws TypeError", () => {
+    expect(() =>
+      computeCorporationTax({
+        accountingProfit: 10000,
+        ...noAdj,
+        lossCarriedForwardIn: -1,
+      }),
+    ).toThrow(TypeError);
+  });
+
+  it("30. loss not applied when taxAdjustedProfit <= 0", () => {
+    const r = computeCorporationTax({
+      accountingProfit: -10000,
+      ...noAdj,
+      lossCarriedForwardIn: 5000,
+    });
+    expect(r.lossUsed).toBe(0);
+    expect(r.lossUnused).toBe(5000);
+    expect(r.rateBracket).toBe("loss");
+  });
+});
