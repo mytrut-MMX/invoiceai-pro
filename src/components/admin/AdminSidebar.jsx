@@ -6,6 +6,7 @@ const items = [
   { id: 'contacts', label: 'Contact' },
   { id: 'orchestrator', label: 'Orchestrator' },
   { id: 'frontend-lead', label: 'Frontend Lead' },
+  { id: 'data-ledger-lead', label: 'Data & Ledger Lead' },
 ];
 
 export default function AdminSidebar({ section, setSection, userCount, contactCount, orchestratorCount }) {
