@@ -216,7 +216,7 @@ export async function exportCorporationTaxPdf({ periodId }) {
         user_id: userId,
         period_id: periodId,
         export_type: "pdf",
-        pdf_storage_path: storagePath,
+        storage_path: storagePath,
         period_start: period.period_start,
         period_end: period.period_end,
         accounting_profit: period.accounting_profit,
