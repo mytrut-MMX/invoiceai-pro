@@ -32,6 +32,8 @@ import {
   deleteCorporationTaxPeriod,
   setCorporationTaxPeriodStatus,
   unlockCorporationTaxPeriod,
+  getCorporationTaxExportLog,
+  getCorporationTaxUnlockLog,
 } from "../utils/ct/ctPeriods";
 import { computeCorporationTax } from "../utils/ct/computeCorporationTax";
 import { getAccountingProfit } from "../utils/ct/getAccountingProfit";
@@ -55,6 +57,17 @@ const fmtDate = (d) =>
         day: "numeric",
         month: "short",
         year: "numeric",
+      })
+    : "—";
+const fmtDateTime = (d) =>
+  d
+    ? new Date(d).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
       })
     : "—";
 
@@ -342,6 +355,87 @@ function SectionCard({ title, children, style }) {
   );
 }
 
+function HistoryList({ exportLog, unlockLog }) {
+  const entries = [
+    ...exportLog.map((e) => ({
+      kind: "export",
+      id: `export-${e.id}`,
+      at: e.created_at,
+      export_type: e.export_type,
+      storage_path: e.storage_path,
+    })),
+    ...unlockLog.map((u) => ({
+      kind: "unlock",
+      id: `unlock-${u.id}`,
+      at: u.created_at,
+      reason: u.reason,
+    })),
+  ].sort((a, b) => new Date(b.at) - new Date(a.at));
+
+  if (entries.length === 0) {
+    return (
+      <div style={{ fontSize: 13, color: "#94a3b8" }}>
+        No export or unlock history for this period.
+      </div>
+    );
+  }
+
+  return (
+    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+      {entries.map((e, idx) => (
+        <li
+          key={e.id}
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            padding: "10px 0",
+            borderTop: idx === 0 ? "none" : "1px solid #f1f5f9",
+          }}
+        >
+          <span style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>
+            {e.kind === "export" ? "📄" : "🔓"}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>
+                {e.kind === "export" ? e.export_type : "Unlocked"}
+              </span>
+              <span style={{ fontSize: 12, color: "#64748b", whiteSpace: "nowrap" }}>
+                {fmtDateTime(e.at)}
+              </span>
+            </div>
+            {e.kind === "export" && e.storage_path && (
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#94a3b8",
+                  marginTop: 2,
+                  wordBreak: "break-all",
+                }}
+              >
+                {e.storage_path}
+              </div>
+            )}
+            {e.kind === "unlock" && e.reason && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#64748b",
+                  fontStyle: "italic",
+                  marginTop: 2,
+                }}
+              >
+                {e.reason}
+              </div>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function ExportMenuItem({ label, onClick }) {
   return (
     <button
@@ -405,24 +499,33 @@ export default function CorporationTaxDetailPage() {
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef(null);
 
+  const [exportLog, setExportLog] = useState([]);
+  const [unlockLog, setUnlockLog] = useState([]);
+
   // ─── Load period ─────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await getCorporationTaxPeriod(periodId);
+      const [periodRes, exportRes, unlockRes] = await Promise.all([
+        getCorporationTaxPeriod(periodId),
+        getCorporationTaxExportLog(periodId),
+        getCorporationTaxUnlockLog(periodId),
+      ]);
       if (cancelled) return;
-      if (!res.success) {
-        setLoadError(res.error);
+      if (!periodRes.success) {
+        setLoadError(periodRes.error);
         return;
       }
-      setPeriod(res.period);
-      setDisallowable(String(res.period.disallowable_expenses ?? 0));
-      setCapital(String(res.period.capital_allowances ?? 0));
-      setOther(String(res.period.other_adjustments ?? 0));
-      setAssociatedCo(String(res.period.associated_companies_count ?? 0));
-      setAugmentedAdj(String(res.period.augmented_profits_adjustment ?? 0));
-      setLossIn(String(res.period.loss_carried_forward_in ?? 0));
-      setNotes(res.period.adjustments_notes || "");
+      setPeriod(periodRes.period);
+      setDisallowable(String(periodRes.period.disallowable_expenses ?? 0));
+      setCapital(String(periodRes.period.capital_allowances ?? 0));
+      setOther(String(periodRes.period.other_adjustments ?? 0));
+      setAssociatedCo(String(periodRes.period.associated_companies_count ?? 0));
+      setAugmentedAdj(String(periodRes.period.augmented_profits_adjustment ?? 0));
+      setLossIn(String(periodRes.period.loss_carried_forward_in ?? 0));
+      setNotes(periodRes.period.adjustments_notes || "");
+      if (exportRes.success) setExportLog(exportRes.data);
+      if (unlockRes.success) setUnlockLog(unlockRes.data);
     })();
     return () => { cancelled = true; };
   }, [periodId]);
@@ -1039,6 +1142,11 @@ export default function CorporationTaxDetailPage() {
               )}
             </>
           )}
+        </SectionCard>
+
+        {/* History — read-only export + unlock audit trail */}
+        <SectionCard title="History">
+          <HistoryList exportLog={exportLog} unlockLog={unlockLog} />
         </SectionCard>
       </div>
 
