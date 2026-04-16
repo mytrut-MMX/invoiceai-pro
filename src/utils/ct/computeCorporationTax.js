@@ -124,7 +124,8 @@ export function computeCorporationTax({
     });
     ctEstimated = Math.floor(augmentedProfits * 0.25 - marginalRelief);
     warnings.push(
-      "Marginal relief applied. Consult an accountant for associated company complexity.",
+      "Marginal relief calculated per HMRC CTM03930. Consult a qualified accountant " +
+        "if you have associated companies or augmented profits adjustments.",
     );
   }
 

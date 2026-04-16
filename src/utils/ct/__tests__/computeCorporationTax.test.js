@@ -251,7 +251,8 @@ describe("computeCorporationTax — marginal relief (HMRC CTM03930)", () => {
   it("23. marginal_zone warning text reflects relief being applied", () => {
     const r = computeCorporationTax({ accountingProfit: 150000, ...noAdj });
     expect(r.warnings[0]).toBe(
-      "Marginal relief applied. Consult an accountant for associated company complexity.",
+      "Marginal relief calculated per HMRC CTM03930. Consult a qualified accountant " +
+        "if you have associated companies or augmented profits adjustments.",
     );
   });
 });
