@@ -222,6 +222,7 @@ export async function updateCorporationTaxPeriod(id, patch) {
     otherAdjustments: "other_adjustments",
     associatedCompaniesCount: "associated_companies_count",
     augmentedProfitsAdjustment: "augmented_profits_adjustment",
+    lossCarriedForwardIn: "loss_carried_forward_in",
     adjustmentsNotes: "adjustments_notes",
     accountingProfit: "accounting_profit",
     taxAdjustedProfit: "tax_adjusted_profit",

@@ -95,6 +95,9 @@ function renderHtml({ company, period, calc }) {
   const associatedCount = Number(calc?.associatedCompaniesCount) || 0;
   const augmentedAdj = Number(calc?.augmentedProfitsAdjustment) || 0;
   const marginalRelief = Number(calc?.marginalRelief) || 0;
+  const lossIn = Number(period?.loss_carried_forward_in) || 0;
+  const taxAdjProfit = Number(calc?.taxAdjustedProfit) || 0;
+  const lossUsed = lossIn > 0 && taxAdjProfit > 0 ? Math.min(lossIn, taxAdjProfit) : 0;
 
   return `
     <div style="width:210mm;min-height:297mm;padding:18mm 16mm;font-family:${ff};color:${C.body};background:#fff;box-sizing:border-box;">
@@ -178,6 +181,11 @@ function renderHtml({ company, period, calc }) {
             <td style="${tdLabel}">Augmented profits adjustment</td>
             <td style="${tdVal}">${fmtGbp2(augmentedAdj)}</td>
           </tr>` : ""}
+          ${lossIn > 0 ? `
+          <tr>
+            <td style="${tdLabel}">Losses brought forward</td>
+            <td style="${tdVal}">${fmtGbp2(lossIn)}</td>
+          </tr>` : ""}
           <tr>
             <td style="${tdTotalLabel}">= Tax-adjusted profit</td>
             <td style="${tdTotalVal}">${fmtGbp2(calc?.taxAdjustedProfit)}</td>
@@ -186,6 +194,11 @@ function renderHtml({ company, period, calc }) {
             <td style="${tdLabel}">CT rate applied</td>
             <td style="${tdVal}">${calc?.ctRateApplied == null ? "—" : `${calc.ctRateApplied}%`}</td>
           </tr>
+          ${lossUsed > 0 ? `
+          <tr>
+            <td style="${tdLabel}">Loss relief applied</td>
+            <td style="${tdVal}">−${fmtGbp0(lossUsed)}</td>
+          </tr>` : ""}
           ${marginalRelief > 0 ? `
           <tr>
             <td style="${tdLabel}">Marginal relief</td>

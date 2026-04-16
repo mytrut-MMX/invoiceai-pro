@@ -4,8 +4,8 @@ import { generateCorporationTaxCsvFlat } from "../generateCorporationTaxCsvFlat"
 const HEADER =
   "period_start,period_end,accounting_profit,disallowable_expenses," +
   "capital_allowances,other_adjustments,associated_companies_count," +
-  "augmented_profits_adjustment,tax_adjusted_profit," +
-  "ct_rate_applied,ct_estimated,marginal_relief,rate_bracket,notes";
+  "augmented_profits_adjustment,loss_carried_forward_in,loss_used,loss_unused," +
+  "tax_adjusted_profit,ct_rate_applied,ct_estimated,marginal_relief,rate_bracket,notes";
 
 async function readBlobText(blob) {
   // Decode with ignoreBOM so the leading U+FEFF survives — we test for it.
@@ -39,11 +39,11 @@ describe("generateCorporationTaxCsvFlat", () => {
 
     expect(lines[0]).toBe(HEADER);
     expect(lines[1]).toBe(
-      "2024-04-01,2025-03-31,40000.00,1500.00,500.00,1000.00,,," +
+      "2024-04-01,2025-03-31,40000.00,1500.00,500.00,1000.00,,,,,," +
         "42000.00,19,7980.00,,small,Standard adjustments",
     );
-    expect(lines[0].split(",")).toHaveLength(14);
-    expect(lines[1].split(",")).toHaveLength(14);
+    expect(lines[0].split(",")).toHaveLength(17);
+    expect(lines[1].split(",")).toHaveLength(17);
   });
 
   it("loss bracket: zero CT estimated, rate 0", async () => {

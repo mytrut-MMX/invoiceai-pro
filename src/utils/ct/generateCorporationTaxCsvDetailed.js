@@ -84,6 +84,19 @@ export function generateCorporationTaxCsvDetailed(period) {
   if (augmentedAdj > 0) {
     lines.push(row("Augmented profits adjustment", signedDecimal(augmentedAdj, "+")));
   }
+  const lossIn = Number(period?.loss_carried_forward_in) || 0;
+  const taxAdjProfit = Number(period?.tax_adjusted_profit) || 0;
+  const lossUsed = lossIn > 0 && taxAdjProfit > 0 ? Math.min(lossIn, taxAdjProfit) : 0;
+  const lossUnused = Math.max(0, lossIn - lossUsed);
+  if (lossIn > 0) {
+    lines.push(row("Losses brought forward", csvDecimal(lossIn)));
+  }
+  if (lossUsed > 0) {
+    lines.push(row("Loss relief applied", signedDecimal(lossUsed, "-")));
+  }
+  if (lossUnused > 0) {
+    lines.push(row("Loss unused", csvDecimal(lossUnused)));
+  }
   lines.push(row("Tax-adjusted profit", csvDecimal(period?.tax_adjusted_profit)));
   lines.push("");
 
