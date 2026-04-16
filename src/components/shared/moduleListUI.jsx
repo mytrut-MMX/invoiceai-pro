@@ -18,6 +18,7 @@ export const statusBadgeTheme = {
   Pending: { color: "#475569", bg: "#f8fafc", border: "#cbd5e1" },
   Refunded: { color: "#b91c1c", bg: "#fef2f2", border: "#fecaca" },
   Submitted: { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
+  Finalized: { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
   Approved: { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
   Reimbursed: { color: "#6d28d9", bg: "#f5f3ff", border: "#ddd6fe" },
   Active: { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
