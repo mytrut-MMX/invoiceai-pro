@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   computeCorporationTax,
+  computeMarginalRelief,
   CT_SMALL_PROFITS_THRESHOLD,
   CT_MAIN_RATE_THRESHOLD,
   CT_SMALL_PROFITS_RATE,
   CT_MAIN_RATE,
+  CT_MSCR_NUMERATOR,
+  CT_MSCR_DENOMINATOR,
 } from "../computeCorporationTax";
 
 const noAdj = { disallowableExpenses: 0, capitalAllowances: 0, otherAdjustments: 0 };
@@ -63,18 +66,18 @@ describe("computeCorporationTax — small profits bracket (19%)", () => {
 });
 
 describe("computeCorporationTax — marginal zone (£50,001–£249,999)", () => {
-  it("6. £50,001 tips into marginal zone, rate=25, ct=12,500 with warning", () => {
+  it("6. £50,001 tips into marginal zone, rate=25, ct=9,501 with relief warning", () => {
     const r = computeCorporationTax({ accountingProfit: 50001, ...noAdj });
     expect(r.rateBracket).toBe("marginal_zone");
     expect(r.ctRateApplied).toBe(25);
-    expect(r.ctEstimated).toBe(12500);
+    expect(r.ctEstimated).toBe(9501);
     expect(r.warnings.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("7. mid marginal zone (£150,000) yields ct=37,500", () => {
+  it("7. mid marginal zone (£150,000) yields ct=36,000 after relief", () => {
     const r = computeCorporationTax({ accountingProfit: 150000, ...noAdj });
     expect(r.rateBracket).toBe("marginal_zone");
-    expect(r.ctEstimated).toBe(37500);
+    expect(r.ctEstimated).toBe(36000);
   });
 });
 
@@ -159,5 +162,96 @@ describe("computeCorporationTax — rounding and validation", () => {
         otherAdjustments: 0,
       }),
     ).toThrow(TypeError);
+  });
+});
+
+describe("computeCorporationTax — marginal relief (HMRC CTM03930)", () => {
+  it("exports MSCR fraction constants (3/200)", () => {
+    expect(CT_MSCR_NUMERATOR).toBe(3);
+    expect(CT_MSCR_DENOMINATOR).toBe(200);
+  });
+
+  it("16. HMRC worked example: £150,000 profit → relief=1,500, ct=36,000", () => {
+    const r = computeCorporationTax({ accountingProfit: 150000, ...noAdj });
+    expect(r.augmentedProfits).toBe(150000);
+    expect(r.rateBracket).toBe("marginal_zone");
+    expect(r.marginalRelief).toBe(1500);
+    expect(r.ctEstimated).toBe(36000);
+  });
+
+  it("17. associatedCompaniesCount=1 halves thresholds; £80,000 is marginal", () => {
+    const r = computeCorporationTax({
+      accountingProfit: 80000,
+      ...noAdj,
+      associatedCompaniesCount: 1,
+    });
+    // U = 250000/2 = 125000, L = 50000/2 = 25000
+    // MR = (125000 - 80000) * (80000/80000) * 3/200 = 45000 * 0.015 = 675
+    // CT = floor(80000*0.25 - 675) = 20000 - 675 = 19325
+    expect(r.rateBracket).toBe("marginal_zone");
+    expect(r.marginalRelief).toBe(675);
+    expect(r.ctEstimated).toBe(19325);
+  });
+
+  it("18. accountingPeriodDays=183 pro-rates thresholds; £60,000 is marginal", () => {
+    const r = computeCorporationTax({
+      accountingProfit: 60000,
+      ...noAdj,
+      accountingPeriodDays: 183,
+    });
+    // U ≈ 250000 * 183/365 ≈ 125342.47
+    // L ≈  50000 * 183/365 ≈  25068.49
+    // 60000 is between L and U → marginal
+    // MR = (125342.47 - 60000) * 1 * 3/200 ≈ 980.137 → floor 980
+    expect(r.rateBracket).toBe("marginal_zone");
+    expect(r.marginalRelief).toBe(980);
+  });
+
+  it("19. augmentedProfitsAdjustment pushes £45,000 profit into marginal_zone", () => {
+    const r = computeCorporationTax({
+      accountingProfit: 45000,
+      ...noAdj,
+      augmentedProfitsAdjustment: 10000,
+    });
+    expect(r.taxAdjustedProfit).toBe(45000);
+    expect(r.augmentedProfits).toBe(55000);
+    expect(r.rateBracket).toBe("marginal_zone");
+  });
+
+  it("20. computeMarginalRelief clamps to 0 when formula would be negative", () => {
+    const r = computeMarginalRelief({
+      augmentedProfits: 300000,
+      taxableProfit: 300000,
+      upperLimit: 250000,
+      lowerLimit: 50000,
+    });
+    expect(r).toBe(0);
+  });
+
+  it("21. negative associatedCompaniesCount throws TypeError", () => {
+    expect(() =>
+      computeCorporationTax({
+        accountingProfit: 10000,
+        ...noAdj,
+        associatedCompaniesCount: -1,
+      }),
+    ).toThrow(TypeError);
+  });
+
+  it("22. accountingPeriodDays=0 throws TypeError", () => {
+    expect(() =>
+      computeCorporationTax({
+        accountingProfit: 10000,
+        ...noAdj,
+        accountingPeriodDays: 0,
+      }),
+    ).toThrow(TypeError);
+  });
+
+  it("23. marginal_zone warning text reflects relief being applied", () => {
+    const r = computeCorporationTax({ accountingProfit: 150000, ...noAdj });
+    expect(r.warnings[0]).toBe(
+      "Marginal relief applied. Consult an accountant for associated company complexity.",
+    );
   });
 });
