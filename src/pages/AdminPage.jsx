@@ -7,6 +7,7 @@ import AdminUsersPanel from '../components/admin/AdminUsersPanel';
 import AdminContactsPanel from '../components/admin/AdminContactsPanel';
 import AdminOrchestratorRunner from '../components/admin/AdminOrchestratorRunner';
 import AdminOrchestratorHistory from '../components/admin/AdminOrchestratorHistory';
+import FrontendLeadPanel from '../components/admin/FrontendLeadPanel';
 import { s } from '../components/admin/adminShared';
 
 // ── Admin Dashboard (authenticated view) ────────────────────────────────────
@@ -148,6 +149,10 @@ function AdminDashboard({ onLogout, token }) {
                 setSelectedObjectiveId={setSelectedObjectiveId}
               />
             </div>
+          )}
+
+          {section === 'frontend-lead' && (
+            <FrontendLeadPanel token={token} />
           )}
         </AdminLayout>
       </div>

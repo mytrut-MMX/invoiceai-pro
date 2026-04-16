@@ -5,6 +5,7 @@ const items = [
   { id: 'users', label: 'Users' },
   { id: 'contacts', label: 'Contact' },
   { id: 'orchestrator', label: 'Orchestrator' },
+  { id: 'frontend-lead', label: 'Frontend Lead' },
 ];
 
 export default function AdminSidebar({ section, setSection, userCount, contactCount, orchestratorCount }) {
