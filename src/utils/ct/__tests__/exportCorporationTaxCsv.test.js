@@ -132,6 +132,23 @@ describe("exportCorporationTaxCsv", () => {
     expect(logInsertFn.mock.calls[0][0].export_type).toBe("csv-detailed");
   });
 
+  it("rejects a draft period: no upload, no log, no download", async () => {
+    getUserFn.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    periodSingleFn.mockResolvedValue({
+      data: { ...PERIOD_ROW, status: "draft" },
+      error: null,
+    });
+    const createUrlSpy = vi.spyOn(URL, "createObjectURL");
+
+    await expect(
+      exportCorporationTaxCsv("period-1", "flat")
+    ).rejects.toThrow(/Cannot export a draft period/);
+
+    expect(uploadFn).not.toHaveBeenCalled();
+    expect(logInsertFn).not.toHaveBeenCalled();
+    expect(createUrlSpy).not.toHaveBeenCalled();
+  });
+
   it("storage upload failure returns { success: false, stage: 'storage' } and skips audit", async () => {
     getUserFn.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
     periodSingleFn.mockResolvedValue({ data: PERIOD_ROW, error: null });

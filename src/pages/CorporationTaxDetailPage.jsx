@@ -556,11 +556,15 @@ export default function CorporationTaxDetailPage() {
               </Btn>
             </>
           )}
-          <div ref={exportMenuRef} style={{ position: "relative" }}>
+          <div
+            ref={exportMenuRef}
+            style={{ position: "relative" }}
+            title={period.status === "draft" ? "Finalize this period to enable export." : undefined}
+          >
             <Btn
               variant="outline"
               onClick={() => setExportMenuOpen((v) => !v)}
-              disabled={exporting}
+              disabled={exporting || period.status === "draft"}
             >
               <Icons.Download /> {exporting ? "Generating…" : "Export ▾"}
             </Btn>

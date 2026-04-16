@@ -99,7 +99,7 @@ const PERIOD_ROW = {
   rate_bracket: "small",
   adjustments_notes: null,
   locked: false,
-  status: "draft",
+  status: "finalized",
 };
 
 const PROFILE_ROW = {
@@ -175,6 +175,24 @@ describe("exportCorporationTaxPdf", () => {
 
     expect(res).toEqual({ success: false, stage: "storage", error: "bucket forbidden" });
     expect(logInsertFn).not.toHaveBeenCalled();
+  });
+
+  it("rejects a draft period: no PDF, no upload, no log, no download", async () => {
+    getUserFn.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    periodSingleFn.mockResolvedValue({
+      data: { ...PERIOD_ROW, status: "draft" },
+      error: null,
+    });
+    const createUrlSpy = vi.spyOn(URL, "createObjectURL");
+
+    await expect(
+      exportCorporationTaxPdf({ periodId: "period-1" })
+    ).rejects.toThrow(/Cannot export a draft period/);
+
+    expect(generatePdfBlob).not.toHaveBeenCalled();
+    expect(uploadFn).not.toHaveBeenCalled();
+    expect(logInsertFn).not.toHaveBeenCalled();
+    expect(createUrlSpy).not.toHaveBeenCalled();
   });
 
   it("log insert failure after successful upload returns success with warning flag", async () => {
