@@ -132,6 +132,14 @@ export async function exportCorporationTaxPdf({ periodId }) {
     return { success: false, error: err?.message || "Period fetch failed", stage: "period" };
   }
 
+  // Guard: draft periods produce numbers that can still change. Exporting
+  // them would write an inconsistent snapshot to ct_export_log. The UI
+  // disables the dropdown in this state; this throw is defense-in-depth for
+  // direct orchestrator calls (e.g. from the browser console).
+  if (period.status === "draft") {
+    throw new Error("Cannot export a draft period. Finalize it first.");
+  }
+
   // 3. Company (name + CRN) from business_profiles.org_settings.
   let company = {};
   try {
