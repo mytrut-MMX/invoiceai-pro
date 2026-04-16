@@ -1,50 +1,65 @@
 /**
  * computeCorporationTax — pure, synchronous CT600 estimator.
  *
- * Phase 1 MVP scope: small profits rate (19%) + main rate (25%) only.
- * NO marginal relief, NO loss relief, NO R&D, NO groups.
+ * Phase 2: small profits rate (19%), main rate (25%), and HMRC marginal
+ * relief (CTM03930) for augmented profits in the £50K–£250K band.
  *
- * Tax-adjusted profit:
+ * Tax-adjusted profit (taxable total profits, N):
  *   taxAdjustedProfit = accountingProfit
  *                     + disallowableExpenses
  *                     - capitalAllowances
  *                     + otherAdjustments
  *
- * Brackets (evaluated on floored integer-pounds tax-adjusted profit, to
- * match HMRC's pound-unit semantics):
- *   tax-adjusted < 0              -> bracket='loss', rate=0,  ct=0
- *   tax-adjusted <= 50,000        -> bracket='small', rate=19, ct=profit*0.19
- *   50,001..249,999               -> bracket='marginal_zone', rate=25,
- *                                    ct=profit*0.25, warning emitted
- *   tax-adjusted >= 250,000       -> bracket='main', rate=25, ct=profit*0.25
+ * Augmented profits (A) for threshold testing and marginal relief:
+ *   A = taxAdjustedProfit + augmentedProfitsAdjustment
  *
- * Final ctEstimated is rounded DOWN to whole pounds (HMRC convention).
+ * Pro-rated, associate-divided thresholds:
+ *   U = 250000 × (accountingPeriodDays / 365) / (associatedCompaniesCount + 1)
+ *   L =  50000 × (accountingPeriodDays / 365) / (associatedCompaniesCount + 1)
  *
- * @param {Object} input
- * @param {number} input.accountingProfit    - may be negative (loss)
- * @param {number} input.disallowableExpenses - MUST be >= 0 (DB CHECK)
- * @param {number} input.capitalAllowances    - MUST be >= 0 (DB CHECK)
- * @param {number} input.otherAdjustments     - any sign
- * @throws {TypeError} if disallowableExpenses < 0 or capitalAllowances < 0
- * @returns {{
- *   taxAdjustedProfit: number,
- *   ctRateApplied: number,
- *   ctEstimated: number,
- *   rateBracket: 'loss'|'small'|'marginal_zone'|'main',
- *   warnings: string[]
- * }}
+ * Marginal relief (HMRC formula, MSCR = 3/200):
+ *   MR = (U − A) × (N / A) × 3/200    (floored, never negative)
+ *
+ * Brackets (evaluated on floored integer-pounds augmented profits):
+ *   A < 0            -> 'loss',          rate=0,  ct=0
+ *   floor(A) <= L    -> 'small',         rate=19, ct=floor(N * 0.19)
+ *   floor(A) >= U    -> 'main',          rate=25, ct=floor(N * 0.25)
+ *   L < floor(A) < U -> 'marginal_zone', rate=25, ct=floor(A*0.25 − MR)
  */
 
 export const CT_SMALL_PROFITS_THRESHOLD = 50000;
 export const CT_MAIN_RATE_THRESHOLD = 250000;
 export const CT_SMALL_PROFITS_RATE = 19;
 export const CT_MAIN_RATE = 25;
+export const CT_MSCR_NUMERATOR = 3;
+export const CT_MSCR_DENOMINATOR = 200;
+
+/**
+ * Pure HMRC marginal relief calculation.
+ *
+ * @param {Object} input
+ * @param {number} input.augmentedProfits   - A, must be > 0 when called
+ * @param {number} input.taxableProfit      - N (taxable total profits)
+ * @param {number} input.upperLimit         - U, pro-rated and associate-divided
+ * @param {number} input.lowerLimit         - L, accepted for signature symmetry
+ * @returns {number} floored, non-negative marginal relief in whole pounds
+ */
+// eslint-disable-next-line no-unused-vars
+export function computeMarginalRelief({ augmentedProfits, taxableProfit, upperLimit, lowerLimit }) {
+  const raw =
+    ((upperLimit - augmentedProfits) * (taxableProfit / augmentedProfits) * CT_MSCR_NUMERATOR) /
+    CT_MSCR_DENOMINATOR;
+  return Math.max(0, Math.floor(raw));
+}
 
 export function computeCorporationTax({
   accountingProfit,
   disallowableExpenses,
   capitalAllowances,
   otherAdjustments,
+  associatedCompaniesCount = 0,
+  augmentedProfitsAdjustment = 0,
+  accountingPeriodDays = 365,
 }) {
   if (disallowableExpenses < 0) {
     throw new TypeError("disallowableExpenses must be >= 0");
@@ -52,49 +67,73 @@ export function computeCorporationTax({
   if (capitalAllowances < 0) {
     throw new TypeError("capitalAllowances must be >= 0");
   }
+  if (associatedCompaniesCount < 0) {
+    throw new TypeError("associatedCompaniesCount must be >= 0");
+  }
+  if (augmentedProfitsAdjustment < 0) {
+    throw new TypeError("augmentedProfitsAdjustment must be >= 0");
+  }
+  if (accountingPeriodDays < 1 || accountingPeriodDays > 366) {
+    throw new TypeError("accountingPeriodDays must be between 1 and 366");
+  }
 
   const taxAdjustedProfit =
     accountingProfit + disallowableExpenses - capitalAllowances + otherAdjustments;
+  const augmentedProfits = taxAdjustedProfit + augmentedProfitsAdjustment;
 
-  if (taxAdjustedProfit < 0) {
+  if (augmentedProfits < 0) {
     return {
       taxAdjustedProfit,
+      augmentedProfits,
       ctRateApplied: 0,
       ctEstimated: 0,
+      marginalRelief: 0,
       rateBracket: "loss",
       warnings: [],
     };
   }
 
-  // HMRC works in integer pounds — floor before bracket classification so
-  // a fractional tax-adjusted profit like £50,000.99 falls in the small
-  // bracket (it would be reported to HMRC as £50,000).
-  const flooredProfit = Math.floor(taxAdjustedProfit);
+  const divisor = associatedCompaniesCount + 1;
+  const proRate = accountingPeriodDays / 365;
+  const upperLimit = (CT_MAIN_RATE_THRESHOLD * proRate) / divisor;
+  const lowerLimit = (CT_SMALL_PROFITS_THRESHOLD * proRate) / divisor;
+
+  const flooredAugmented = Math.floor(augmentedProfits);
   const warnings = [];
   let rateBracket;
   let ctRateApplied;
+  let marginalRelief = 0;
+  let ctEstimated;
 
-  if (flooredProfit <= CT_SMALL_PROFITS_THRESHOLD) {
+  if (flooredAugmented <= lowerLimit) {
     rateBracket = "small";
     ctRateApplied = CT_SMALL_PROFITS_RATE;
-  } else if (flooredProfit >= CT_MAIN_RATE_THRESHOLD) {
+    ctEstimated = Math.floor((taxAdjustedProfit * ctRateApplied) / 100);
+  } else if (flooredAugmented >= upperLimit) {
     rateBracket = "main";
     ctRateApplied = CT_MAIN_RATE;
+    ctEstimated = Math.floor((taxAdjustedProfit * ctRateApplied) / 100);
   } else {
     rateBracket = "marginal_zone";
     ctRateApplied = CT_MAIN_RATE;
+    marginalRelief = computeMarginalRelief({
+      augmentedProfits,
+      taxableProfit: taxAdjustedProfit,
+      upperLimit,
+      lowerLimit,
+    });
+    ctEstimated = Math.floor(augmentedProfits * 0.25 - marginalRelief);
     warnings.push(
-      "Marginal relief is not calculated in Phase 1. CT estimated at the " +
-        "full main rate (25%); your actual liability may be lower.",
+      "Marginal relief applied. Consult an accountant for associated company complexity.",
     );
   }
 
-  const ctEstimated = Math.floor((taxAdjustedProfit * ctRateApplied) / 100);
-
   return {
     taxAdjustedProfit,
+    augmentedProfits,
     ctRateApplied,
     ctEstimated,
+    marginalRelief,
     rateBracket,
     warnings,
   };
