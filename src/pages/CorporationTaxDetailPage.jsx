@@ -31,6 +31,7 @@ import {
   updateCorporationTaxPeriod,
   deleteCorporationTaxPeriod,
   setCorporationTaxPeriodStatus,
+  unlockCorporationTaxPeriod,
 } from "../utils/ct/ctPeriods";
 import { computeCorporationTax } from "../utils/ct/computeCorporationTax";
 import { getAccountingProfit } from "../utils/ct/getAccountingProfit";
@@ -138,6 +139,108 @@ function ConfirmModal({ title, message, warning, confirmLabel, confirmVariant = 
           <Btn variant="outline" onClick={onCancel} disabled={busy}>Cancel</Btn>
           <Btn variant={confirmVariant} onClick={onConfirm} disabled={busy}>
             {busy ? "Processing…" : confirmLabel}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Unlock modal (reason textarea + min-length guard) ──────────────────────
+function UnlockModal({ onConfirm, onCancel, busy, error }) {
+  const [reason, setReason] = useState("");
+  const trimmedLen = reason.trim().length;
+  const canSubmit = trimmedLen >= 5 && !busy;
+
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.35)",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 14,
+          padding: "24px 28px",
+          width: 480,
+          maxWidth: "92vw",
+          boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
+          fontFamily: ff,
+        }}
+      >
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1a1a2e", margin: "0 0 10px" }}>
+          Unlock period
+        </h3>
+        <p style={{ fontSize: 13, color: "#374151", margin: "0 0 14px", lineHeight: 1.5 }}>
+          This will revert the period to draft, allowing edits. The current
+          snapshot will be saved to the audit log. You'll need to re-finalize
+          after editing.
+        </p>
+        <label style={{ display: "block" }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#6B7280",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              marginBottom: 6,
+            }}
+          >
+            Reason for unlocking (min 5 chars)
+          </div>
+          <textarea
+            rows={3}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={busy}
+            autoFocus
+            placeholder="e.g. Adjustment correction from accountant"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: 10,
+              border: "1px solid #dbe4ee",
+              borderRadius: 8,
+              fontSize: 13,
+              fontFamily: ff,
+              resize: "vertical",
+              color: "#1a1a2e",
+            }}
+          />
+        </label>
+        {error && (
+          <div
+            style={{
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: 8,
+              padding: "8px 12px",
+              marginTop: 10,
+              fontSize: 12,
+              color: "#b91c1c",
+            }}
+          >
+            {error}
+          </div>
+        )}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+          <Btn variant="outline" onClick={onCancel} disabled={busy}>Cancel</Btn>
+          <Btn
+            variant="primary"
+            onClick={() => onConfirm(reason)}
+            disabled={!canSubmit}
+          >
+            {busy ? "Unlocking…" : "Confirm Unlock"}
           </Btn>
         </div>
       </div>
@@ -263,6 +366,10 @@ export default function CorporationTaxDetailPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
 
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlockError, setUnlockError] = useState(null);
+
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
   const [exportSuccess, setExportSuccess] = useState(null); // 'pdf' | 'csv-flat' | 'csv-detailed' | null
@@ -375,6 +482,19 @@ export default function CorporationTaxDetailPage() {
       return;
     }
     setPeriod(res.period);
+  }
+
+  async function handleUnlock(reason) {
+    setUnlocking(true);
+    setUnlockError(null);
+    const res = await unlockCorporationTaxPeriod(periodId, reason);
+    setUnlocking(false);
+    if (!res.success) {
+      setUnlockError(res.error);
+      return;
+    }
+    setPeriod(res.period);
+    setUnlockOpen(false);
   }
 
   async function handleDelete() {
@@ -544,7 +664,7 @@ export default function CorporationTaxDetailPage() {
                   type: "finalize",
                   title: "Finalize period",
                   message: "Lock this period with the current adjustments and CT estimate?",
-                  warning: "Finalizing is one-way in Phase 1. Once finalized, contact support to unlock.",
+                  warning: "Finalizing locks the period. You can unlock later with a reason — every unlock is recorded in the audit log.",
                   confirmLabel: "Finalize",
                 })}
                 disabled={!calc || calc?.error || profitLoading}
@@ -555,6 +675,11 @@ export default function CorporationTaxDetailPage() {
                 <Icons.Save /> {saving ? "Saving…" : "Save"}
               </Btn>
             </>
+          )}
+          {isLocked && period.status === "finalized" && (
+            <Btn variant="outline" onClick={() => { setUnlockError(null); setUnlockOpen(true); }}>
+              <Icons.Edit /> Unlock
+            </Btn>
           )}
           <div
             ref={exportMenuRef}
@@ -609,7 +734,9 @@ export default function CorporationTaxDetailPage() {
             }}
           >
             <span style={{ fontWeight: 700 }}>🔒 This period is finalized and locked.</span>{" "}
-            Contact support to unlock. You can still export the PDF.
+            {period.status === "finalized"
+              ? "Use Unlock to revert to draft and edit. Every unlock is recorded with a reason in the audit log."
+              : "You can still export the PDF."}
           </div>
         )}
 
@@ -843,6 +970,15 @@ export default function CorporationTaxDetailPage() {
           )}
         </SectionCard>
       </div>
+
+      {unlockOpen && (
+        <UnlockModal
+          busy={unlocking}
+          error={unlockError}
+          onCancel={() => { if (!unlocking) { setUnlockOpen(false); setUnlockError(null); } }}
+          onConfirm={handleUnlock}
+        />
+      )}
 
       {confirmAction && (
         <ConfirmModal
