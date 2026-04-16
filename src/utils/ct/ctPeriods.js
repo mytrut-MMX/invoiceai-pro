@@ -304,6 +304,49 @@ export async function unlockCorporationTaxPeriod(id, reason) {
 }
 
 /**
+ * Read the export audit trail for a single period.
+ *
+ * @param {string} periodId
+ * @returns {Promise<{ success: true, data: Array<{
+ *   id: string, export_type: string, created_at: string, storage_path: string|null
+ * }> } | { success: false, error: string }>}
+ */
+export async function getCorporationTaxExportLog(periodId) {
+  if (!supabase) return { success: false, error: "Supabase not configured" };
+
+  const { data, error } = await supabase
+    .from("ct_export_log")
+    .select("id, export_type, created_at, storage_path")
+    .eq("period_id", periodId)
+    .order("created_at", { ascending: false });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data || [] };
+}
+
+/**
+ * Read the unlock audit trail for a single period.
+ *
+ * @param {string} periodId
+ * @returns {Promise<{ success: true, data: Array<{
+ *   id: string, reason: string, created_at: string,
+ *   prev_status: string, prev_ct_estimated: number|null
+ * }> } | { success: false, error: string }>}
+ */
+export async function getCorporationTaxUnlockLog(periodId) {
+  if (!supabase) return { success: false, error: "Supabase not configured" };
+
+  const { data, error } = await supabase
+    .from("ct_period_unlock_log")
+    .select("id, reason, created_at, prev_status, prev_ct_estimated")
+    .eq("period_id", periodId)
+    .order("created_at", { ascending: false });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data || [] };
+}
+
+/**
  * Transition a Corporation Tax period's lifecycle status.
  *
  * Phase 1 note: only `draft → finalized` is supported from the UI. Unlocking
