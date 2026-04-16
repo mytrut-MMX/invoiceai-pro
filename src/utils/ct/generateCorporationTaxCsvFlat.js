@@ -19,6 +19,9 @@ const COLUMNS = [
   "other_adjustments",
   "associated_companies_count",
   "augmented_profits_adjustment",
+  "loss_carried_forward_in",
+  "loss_used",
+  "loss_unused",
   "tax_adjusted_profit",
   "ct_rate_applied",
   "ct_estimated",
@@ -77,6 +80,13 @@ function csvInt(n) {
  * @returns {Blob} CSV blob (text/csv; charset=utf-8) with leading UTF-8 BOM.
  */
 export function generateCorporationTaxCsvFlat(period) {
+  const lossInRaw = period?.loss_carried_forward_in;
+  const hasLoss = lossInRaw != null && lossInRaw !== "";
+  const lossIn = Number(lossInRaw) || 0;
+  const taxAdjProfit = Number(period?.tax_adjusted_profit) || 0;
+  const lossUsed = lossIn > 0 && taxAdjProfit > 0 ? Math.min(lossIn, taxAdjProfit) : 0;
+  const lossUnused = Math.max(0, lossIn - lossUsed);
+
   const row = [
     csvDate(period?.period_start),
     csvDate(period?.period_end),
@@ -86,6 +96,9 @@ export function generateCorporationTaxCsvFlat(period) {
     csvDecimal(period?.other_adjustments),
     csvInt(period?.associated_companies_count),
     csvDecimal(period?.augmented_profits_adjustment),
+    hasLoss ? csvDecimal(lossIn) : "",
+    hasLoss ? csvDecimal(lossUsed) : "",
+    hasLoss ? csvDecimal(lossUnused) : "",
     csvDecimal(period?.tax_adjusted_profit),
     csvRate(period?.ct_rate_applied),
     csvDecimal(period?.ct_estimated),

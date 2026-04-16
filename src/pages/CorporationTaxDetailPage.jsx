@@ -387,6 +387,7 @@ export default function CorporationTaxDetailPage() {
   const [other, setOther] = useState("0");
   const [associatedCo, setAssociatedCo] = useState("0");
   const [augmentedAdj, setAugmentedAdj] = useState("0");
+  const [lossIn, setLossIn] = useState("0");
   const [notes, setNotes] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -420,6 +421,7 @@ export default function CorporationTaxDetailPage() {
       setOther(String(res.period.other_adjustments ?? 0));
       setAssociatedCo(String(res.period.associated_companies_count ?? 0));
       setAugmentedAdj(String(res.period.augmented_profits_adjustment ?? 0));
+      setLossIn(String(res.period.loss_carried_forward_in ?? 0));
       setNotes(res.period.adjustments_notes || "");
     })();
     return () => { cancelled = true; };
@@ -466,11 +468,12 @@ export default function CorporationTaxDetailPage() {
         otherAdjustments: Number(other) || 0,
         associatedCompaniesCount: Number(associatedCo) || 0,
         augmentedProfitsAdjustment: Number(augmentedAdj) || 0,
+        lossCarriedForwardIn: Number(lossIn) || 0,
       });
     } catch (e) {
       return { error: e.message };
     }
-  }, [accountingProfit, disallowable, capital, other, associatedCo, augmentedAdj]);
+  }, [accountingProfit, disallowable, capital, other, associatedCo, augmentedAdj, lossIn]);
 
   const isLocked = !!period?.locked;
 
@@ -486,6 +489,7 @@ export default function CorporationTaxDetailPage() {
       otherAdjustments: Number(other) || 0,
       associatedCompaniesCount: Number(associatedCo) || 0,
       augmentedProfitsAdjustment: Number(augmentedAdj) || 0,
+      lossCarriedForwardIn: Number(lossIn) || 0,
       adjustmentsNotes: notes.trim() || null,
       accountingProfit,
       taxAdjustedProfit: calc.taxAdjustedProfit,
@@ -920,12 +924,15 @@ export default function CorporationTaxDetailPage() {
               <MoneyInput value={other} onChange={setOther} disabled={isLocked} />
             </FieldLabel>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
             <FieldLabel label="Associated companies">
               <IntInput value={associatedCo} onChange={setAssociatedCo} disabled={isLocked} />
             </FieldLabel>
             <FieldLabel label="Augmented profits adjustment £">
               <MoneyInput value={augmentedAdj} onChange={setAugmentedAdj} disabled={isLocked} />
+            </FieldLabel>
+            <FieldLabel label="Trading losses brought forward £">
+              <MoneyInput value={lossIn} onChange={setLossIn} disabled={isLocked} />
             </FieldLabel>
           </div>
           {calc && !calc.error && calc.rateBracket === "marginal_zone" && (
@@ -977,6 +984,11 @@ export default function CorporationTaxDetailPage() {
                   <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>
                     {fmtGbp2(calc.taxAdjustedProfit)}
                   </div>
+                  {calc.lossUsed > 0 && (
+                    <div style={{ fontSize: 12, color: "#16A34A", marginTop: 4 }}>
+                      Loss relief applied: −{fmtGbp0(calc.lossUsed)}
+                    </div>
+                  )}
                   {((Number(augmentedAdj) || 0) > 0 || (Number(associatedCo) || 0) > 0) && (
                     <div style={{ marginTop: 8 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>
