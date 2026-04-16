@@ -152,7 +152,7 @@ describe("exportCorporationTaxPdf", () => {
       user_id: "user-1",
       period_id: "period-1",
       export_type: "pdf",
-      pdf_storage_path: pathArg,
+      storage_path: pathArg,
       period_start: "2025-04-01",
       period_end: "2026-03-31",
       accounting_profit: 40000,
