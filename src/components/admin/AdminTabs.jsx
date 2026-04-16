@@ -12,6 +12,9 @@ export default function AdminTabs({ tab, setTab, userCount, contactCount }) {
       <button style={tab === 'orchestrator' ? s.tabActive : s.tab} onClick={() => setTab('orchestrator')}>
         Orchestrator
       </button>
+      <button style={tab === 'frontend-lead' ? s.tabActive : s.tab} onClick={() => setTab('frontend-lead')}>
+        Frontend Lead
+      </button>
     </div>
   );
 }
