@@ -42,6 +42,7 @@
     { "src": "/api/hmrc-vat(.*)",         "dest": "/api/hmrc.js$1" },
     { "src": "/api/orchestrator",         "dest": "/api/agents.js" },
     { "src": "/api/product-workflow-lead","dest": "/api/agents.js" },
+    { "src": "/api/frontend-architecture-lead","dest": "/api/agents.js" },
     { "src": "/api/(.*)",         "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)",             "dest": "/index.html" }
