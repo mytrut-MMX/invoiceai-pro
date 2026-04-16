@@ -15,6 +15,9 @@ export default function AdminTabs({ tab, setTab, userCount, contactCount }) {
       <button style={tab === 'frontend-lead' ? s.tabActive : s.tab} onClick={() => setTab('frontend-lead')}>
         Frontend Lead
       </button>
+      <button style={tab === 'data-ledger-lead' ? s.tabActive : s.tab} onClick={() => setTab('data-ledger-lead')}>
+        Data & Ledger Lead
+      </button>
     </div>
   );
 }
