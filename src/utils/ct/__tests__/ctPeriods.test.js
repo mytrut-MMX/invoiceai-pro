@@ -65,11 +65,13 @@ const fromSpy = vi.fn(() => ({
 }));
 
 const getUserFn = vi.fn();
+const rpcFn = vi.fn();
 
 vi.mock("../../../lib/supabase", () => ({
   supabase: {
     from: fromSpy,
     auth: { getUser: getUserFn },
+    rpc: rpcFn,
   },
 }));
 
@@ -80,6 +82,7 @@ const {
   getCorporationTaxPeriod,
   updateCorporationTaxPeriod,
   deleteCorporationTaxPeriod,
+  unlockCorporationTaxPeriod,
   setCorporationTaxPeriodStatus,
 } = await import("../ctPeriods");
 
@@ -99,6 +102,7 @@ beforeEach(() => {
   deleteFn.mockClear();
   deleteEqFn.mockReset();
   getUserFn.mockReset();
+  rpcFn.mockReset();
 });
 
 describe("listCorporationTaxPeriods", () => {
@@ -304,5 +308,44 @@ describe("setCorporationTaxPeriodStatus", () => {
     expect(r).toEqual({ success: true, period: updated });
     expect(updateFn).toHaveBeenCalledWith({ status: "finalized", locked: true });
     expect(updateEqFn).toHaveBeenCalledWith("id", "p1");
+  });
+});
+
+describe("unlockCorporationTaxPeriod", () => {
+  it("calls unlock_ct_period RPC and returns the unlocked period", async () => {
+    const unlocked = { id: "p1", status: "draft", locked: false };
+    rpcFn.mockResolvedValue({ data: unlocked, error: null });
+
+    const r = await unlockCorporationTaxPeriod("p1", "client made an error");
+
+    expect(r).toEqual({ success: true, period: unlocked });
+    expect(rpcFn).toHaveBeenCalledWith("unlock_ct_period", {
+      p_period_id: "p1",
+      p_reason: "client made an error",
+    });
+  });
+
+  it("propagates RPC errors", async () => {
+    rpcFn.mockResolvedValue({
+      data: null,
+      error: { message: "Period not found or not owned by user" },
+    });
+
+    const r = await unlockCorporationTaxPeriod("p1", "valid reason here");
+
+    expect(r).toEqual({
+      success: false,
+      error: "Period not found or not owned by user",
+    });
+  });
+
+  it("rejects a too-short reason without calling the RPC", async () => {
+    const r = await unlockCorporationTaxPeriod("p1", "  too  ");
+
+    expect(r).toEqual({
+      success: false,
+      error: "Reason must be at least 5 characters",
+    });
+    expect(rpcFn).not.toHaveBeenCalled();
   });
 });

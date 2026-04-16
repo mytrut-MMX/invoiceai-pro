@@ -263,14 +263,48 @@ export async function deleteCorporationTaxPeriod(id) {
 }
 
 /**
+ * Unlock a finalized Corporation Tax period.
+ *
+ * Calls the `unlock_ct_period` Postgres RPC (SECURITY DEFINER), which
+ * inserts a snapshot row into `ct_period_unlock_log` and flips the period
+ * back to `locked = false, status = 'draft'`. The function bypasses the
+ * RLS UPDATE policy that blocks writes on locked rows; ownership is
+ * enforced inside the function via `auth.uid()`.
+ *
+ * Reason is validated server-side (`length(trim(reason)) >= 5`); the
+ * client-side guard here gives faster UX feedback without round-tripping.
+ *
+ * @param {string} id
+ * @param {string} reason  - min 5 chars after trim
+ * @returns {Promise<{ success: true, period: object } | { success: false, error: string }>}
+ */
+export async function unlockCorporationTaxPeriod(id, reason) {
+  if (!supabase) return { success: false, error: "Supabase not configured" };
+
+  const trimmed = (reason || "").trim();
+  if (trimmed.length < 5) {
+    return {
+      success: false,
+      error: "Reason must be at least 5 characters",
+    };
+  }
+
+  const { data, error } = await supabase.rpc("unlock_ct_period", {
+    p_period_id: id,
+    p_reason: reason,
+  });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, period: data };
+}
+
+/**
  * Transition a Corporation Tax period's lifecycle status.
  *
  * Phase 1 note: only `draft → finalized` is supported from the UI. Unlocking
- * (`finalized → draft`) requires pre-update `locked = false`, which RLS
- * policy `ct_periods_update_own` does not allow once the row is locked. An
- * admin unlock workflow is out of scope for Phase 1 — users are told to
- * contact support. This function therefore treats `finalized` as one-way
- * and sets `locked = true` alongside the status change.
+ * (`finalized → draft`) is handled separately by `unlockCorporationTaxPeriod`,
+ * which calls a SECURITY DEFINER RPC to bypass the RLS UPDATE block on
+ * locked rows.
  *
  * Updating to `exported` is reserved for Task 6 (PDF export) and also sets
  * `locked = true`.
