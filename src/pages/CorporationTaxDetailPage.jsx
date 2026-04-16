@@ -1009,7 +1009,7 @@ export default function CorporationTaxDetailPage() {
                 </div>
               </div>
 
-              {calc.rateBracket === "marginal_zone" && calc.warnings.length > 0 && (
+              {calc.rateBracket === "marginal_zone" && (
                 <div
                   style={{
                     background: "#fffbeb",
@@ -1020,7 +1020,9 @@ export default function CorporationTaxDetailPage() {
                     color: "#92400e",
                   }}
                 >
-                  ⚠ {calc.warnings[0]}
+                  ⚠ Marginal relief has been calculated using the HMRC CTM03930 formula.
+                  For businesses with associated companies or non-standard augmented profits,
+                  consult a qualified accountant to verify your liability.
                 </div>
               )}
             </>
