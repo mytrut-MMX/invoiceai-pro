@@ -17,9 +17,12 @@ const COLUMNS = [
   "disallowable_expenses",
   "capital_allowances",
   "other_adjustments",
+  "associated_companies_count",
+  "augmented_profits_adjustment",
   "tax_adjusted_profit",
   "ct_rate_applied",
   "ct_estimated",
+  "marginal_relief",
   "rate_bracket",
   "notes",
 ];
@@ -57,6 +60,13 @@ function csvRate(n) {
   return String(num);
 }
 
+function csvInt(n) {
+  if (n == null || n === "") return "";
+  const num = Number(n);
+  if (!Number.isFinite(num)) return "";
+  return String(Math.trunc(num));
+}
+
 /**
  * Build a single-row CSV summary of a CT period.
  *
@@ -74,9 +84,12 @@ export function generateCorporationTaxCsvFlat(period) {
     csvDecimal(period?.disallowable_expenses),
     csvDecimal(period?.capital_allowances),
     csvDecimal(period?.other_adjustments),
+    csvInt(period?.associated_companies_count),
+    csvDecimal(period?.augmented_profits_adjustment),
     csvDecimal(period?.tax_adjusted_profit),
     csvRate(period?.ct_rate_applied),
     csvDecimal(period?.ct_estimated),
+    csvDecimal(period?.marginal_relief),
     period?.rate_bracket ? String(period.rate_bracket).toLowerCase() : "",
     period?.adjustments_notes || "",
   ].map(csvCell);

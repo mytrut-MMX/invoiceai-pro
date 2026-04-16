@@ -169,9 +169,12 @@ export async function exportCorporationTaxPdf({ periodId }) {
     disallowableExpenses: period.disallowable_expenses,
     capitalAllowances: period.capital_allowances,
     otherAdjustments: period.other_adjustments,
+    associatedCompaniesCount: period.associated_companies_count,
+    augmentedProfitsAdjustment: period.augmented_profits_adjustment,
     taxAdjustedProfit: period.tax_adjusted_profit,
     ctRateApplied: period.ct_rate_applied,
     ctEstimated: period.ct_estimated,
+    marginalRelief: period.marginal_relief,
     rateBracket: period.rate_bracket,
     warnings: period.rate_bracket === "marginal_zone"
       ? [

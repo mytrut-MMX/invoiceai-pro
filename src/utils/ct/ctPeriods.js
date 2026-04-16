@@ -202,6 +202,8 @@ export async function getCorporationTaxPeriod(id) {
  * @param {number} [patch.disallowableExpenses]
  * @param {number} [patch.capitalAllowances]
  * @param {number} [patch.otherAdjustments]
+ * @param {number} [patch.associatedCompaniesCount]
+ * @param {number} [patch.augmentedProfitsAdjustment]
  * @param {string|null} [patch.adjustmentsNotes]
  * @param {number|null} [patch.accountingProfit]
  * @param {number|null} [patch.taxAdjustedProfit]
@@ -218,6 +220,8 @@ export async function updateCorporationTaxPeriod(id, patch) {
     disallowableExpenses: "disallowable_expenses",
     capitalAllowances: "capital_allowances",
     otherAdjustments: "other_adjustments",
+    associatedCompaniesCount: "associated_companies_count",
+    augmentedProfitsAdjustment: "augmented_profits_adjustment",
     adjustmentsNotes: "adjustments_notes",
     accountingProfit: "accounting_profit",
     taxAdjustedProfit: "tax_adjusted_profit",
