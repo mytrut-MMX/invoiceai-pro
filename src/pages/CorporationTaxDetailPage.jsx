@@ -17,7 +17,7 @@
  * user edits adjustment inputs.
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ff } from "../constants";
 import { Icons } from "../components/icons";
@@ -35,6 +35,7 @@ import {
 import { computeCorporationTax } from "../utils/ct/computeCorporationTax";
 import { getAccountingProfit } from "../utils/ct/getAccountingProfit";
 import { exportCorporationTaxPdf } from "../utils/ct/exportCorporationTaxPdf";
+import { exportCorporationTaxCsv } from "../utils/ct/exportCorporationTaxCsv";
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
 const GBP0 = new Intl.NumberFormat("en-GB", {
@@ -212,6 +213,32 @@ function SectionCard({ title, children, style }) {
   );
 }
 
+function ExportMenuItem({ label, onClick }) {
+  return (
+    <button
+      role="menuitem"
+      onClick={onClick}
+      style={{
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        padding: "8px 12px",
+        background: "transparent",
+        border: "none",
+        borderRadius: 6,
+        fontSize: 13,
+        fontFamily: ff,
+        color: "#1a1a2e",
+        cursor: "pointer",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f4f6")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function CorporationTaxDetailPage() {
@@ -238,7 +265,9 @@ export default function CorporationTaxDetailPage() {
 
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
-  const [exportSuccess, setExportSuccess] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(null); // 'pdf' | 'csv-flat' | 'csv-detailed' | null
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef(null);
 
   // ─── Load period ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -360,18 +389,41 @@ export default function CorporationTaxDetailPage() {
     navigate(ROUTES.CORPORATION_TAX);
   }
 
-  async function handleExport() {
+  async function handleExport(kind) {
+    setExportMenuOpen(false);
     setExporting(true);
     setExportError(null);
-    setExportSuccess(false);
-    const res = await exportCorporationTaxPdf({ periodId });
+    setExportSuccess(null);
+    const res =
+      kind === "pdf"
+        ? await exportCorporationTaxPdf({ periodId })
+        : await exportCorporationTaxCsv(periodId, kind === "csv-flat" ? "flat" : "detailed");
     setExporting(false);
     if (!res.success) {
       setExportError(res.error || "Export failed");
       return;
     }
-    setExportSuccess(true);
+    setExportSuccess(kind);
   }
+
+  // Close export dropdown on outside-click or Esc.
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    function onMouseDown(e) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+        setExportMenuOpen(false);
+      }
+    }
+    function onKeyDown(e) {
+      if (e.key === "Escape") setExportMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [exportMenuOpen]);
 
   // ─── Access gates ────────────────────────────────────────────────────────
   if (btLoading) {
@@ -504,9 +556,36 @@ export default function CorporationTaxDetailPage() {
               </Btn>
             </>
           )}
-          <Btn variant="outline" onClick={handleExport} disabled={exporting}>
-            <Icons.Download /> {exporting ? "Generating…" : "Export PDF"}
-          </Btn>
+          <div ref={exportMenuRef} style={{ position: "relative" }}>
+            <Btn
+              variant="outline"
+              onClick={() => setExportMenuOpen((v) => !v)}
+              disabled={exporting}
+            >
+              <Icons.Download /> {exporting ? "Generating…" : "Export ▾"}
+            </Btn>
+            {exportMenuOpen && (
+              <div
+                role="menu"
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  right: 0,
+                  background: "#fff",
+                  border: "1px solid #e8e8ec",
+                  borderRadius: 8,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                  minWidth: 180,
+                  padding: 4,
+                  zIndex: 20,
+                }}
+              >
+                <ExportMenuItem label="PDF" onClick={() => handleExport("pdf")} />
+                <ExportMenuItem label="CSV — flat" onClick={() => handleExport("csv-flat")} />
+                <ExportMenuItem label="CSV — detailed" onClick={() => handleExport("csv-detailed")} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -605,7 +684,11 @@ export default function CorporationTaxDetailPage() {
               color: "#166534",
             }}
           >
-            PDF exported.
+            {exportSuccess === "pdf"
+              ? "PDF exported."
+              : exportSuccess === "csv-flat"
+              ? "CSV (flat) exported."
+              : "CSV (detailed) exported."}
           </div>
         )}
 
