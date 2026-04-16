@@ -10,6 +10,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import OpenAI from "openai";
 import { PRODUCT_WORKFLOW_LEAD_PROMPT } from "../lib/prompts/productWorkflowLead.js";
+import { FRONTEND_ARCHITECTURE_LEAD_PROMPT, FRONTEND_ARCHITECTURE_LEAD_SCHEMA } from "../lib/prompts/frontendArchitectureLead.js";
 import { supabaseAdmin } from "../lib/supabaseAdmin.js";
 import { withRateLimit } from './_lib/with-rate-limit.js';
 
@@ -35,6 +36,7 @@ function verifyAdminToken(token, secret) {
 function detectAgent(req) {
   const url = req.url || '';
   if (url.includes('product-workflow-lead')) return 'product-workflow-lead';
+  if (url.includes('frontend-architecture-lead')) return 'frontend-architecture-lead';
   if (url.includes('orchestrator')) return 'orchestrator';
   return req.body?.agent || 'orchestrator';
 }
@@ -237,6 +239,63 @@ async function handleProductWorkflowLead(req, res) {
   }
 }
 
+// ─── Frontend Architecture Lead ─────────────────────────────────────────────
+
+function validateFalInput(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return "Invalid request body.";
+  if (!body.objective_id || typeof body.objective_id !== "string") return "Missing or invalid objective_id.";
+  if (!body.task_id || typeof body.task_id !== "string") return "Missing or invalid task_id.";
+  if (!body.task_title || typeof body.task_title !== "string") return "Missing or invalid task_title.";
+  if (!body.task_description || typeof body.task_description !== "string") return "Missing or invalid task_description.";
+  if (!body.context || typeof body.context !== "object" || Array.isArray(body.context)) return "Missing or invalid context object.";
+  return null;
+}
+
+async function handleFrontendArchitectureLead(req, res) {
+  const inputError = validateFalInput(req.body);
+  if (inputError) return res.status(400).json({ success: false, error: inputError });
+
+  const userPayload = {
+    objective_id: req.body.objective_id, task_id: req.body.task_id,
+    task_title: req.body.task_title, task_description: req.body.task_description,
+    context: req.body.context,
+  };
+
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        { role: "developer", content: FRONTEND_ARCHITECTURE_LEAD_PROMPT },
+        { role: "user", content: JSON.stringify(userPayload) },
+      ],
+      response_format: { type: "json_schema", json_schema: FRONTEND_ARCHITECTURE_LEAD_SCHEMA },
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (!content) return res.status(502).json({ success: false, error: "Empty response from AI." });
+
+    let parsed;
+    try { parsed = JSON.parse(content); } catch { return res.status(502).json({ success: false, error: "AI returned non-JSON content.", raw: content }); }
+
+    if (parsed.agent !== "frontend_architecture_lead") return res.status(422).json({ success: false, error: "Invalid agent value.", data: parsed });
+    if (parsed.task_id !== userPayload.task_id) return res.status(422).json({ success: false, error: "Returned task_id does not match input.", data: parsed });
+    if (parsed.objective_id !== userPayload.objective_id) return res.status(422).json({ success: false, error: "Returned objective_id does not match input.", data: parsed });
+
+    const { data: insertedRows, error: insertError } = await supabaseAdmin
+      .from("agent_task_specs")
+      .insert([{ objective_id: parsed.objective_id, task_id: parsed.task_id, agent_name: parsed.agent, spec_payload: parsed, status: parsed.status }])
+      .select();
+
+    if (insertError) return res.status(500).json({ success: false, error: insertError.message });
+    return res.status(200).json({ success: true, data: parsed, saved: insertedRows?.[0] || null });
+  } catch (error) {
+    console.error('[frontend-architecture-lead] Error:', error.message);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+}
+
 // ─── Main handler ───────────────────────────────────────────────────────────
 
 async function handler(req, res) {
@@ -247,6 +306,10 @@ async function handler(req, res) {
   // product-workflow-lead has no admin auth in the original
   if (agentType === 'product-workflow-lead') {
     return handleProductWorkflowLead(req, res);
+  }
+
+  if (agentType === 'frontend-architecture-lead') {
+    return handleFrontendArchitectureLead(req, res);
   }
 
   // orchestrator requires admin auth
