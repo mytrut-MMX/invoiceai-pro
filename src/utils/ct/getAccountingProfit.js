@@ -1,25 +1,26 @@
 /**
- * getAccountingProfit — query journal_lines for a date range, aggregate
- * revenue and expense totals in JS, return the accounting profit.
+ * getAccountingProfit — call the `get_accounting_profit` Postgres RPC to
+ * aggregate revenue and expense totals server-side for a date range, and
+ * return the accounting profit.
  *
  * Never throws. Returns { success, ... }. On Supabase error, success is
  * false and `error` is set. On empty period, success is true with all
  * zeros.
  *
- * Schema notes (from `supabase/migrations/001_ledger_schema.sql`):
+ * Schema notes (from `supabase/migrations/001_ledger_schema.sql` and
+ * `supabase/migrations/037_accounting_profit_rpc.sql`):
  *   - journal_entries.user_id is TEXT (pass auth.uid()::text)
  *   - journal_entries.date is DATE (column name, not "accounting_date")
  *   - accounts.type enum includes 'revenue' and 'expense'
  *   - journal_lines has `debit` and `credit` DECIMAL(15,2) columns with
  *     the double-entry invariant `debit = 0 OR credit = 0`
  *
- * Aggregation:
+ * Aggregation (performed in Postgres):
  *   revenue  = Σ(credit − debit) over lines where account.type='revenue'
  *   expenses = Σ(debit − credit) over lines where account.type='expense'
  *   accountingProfit = revenue − expenses
  *
- * Phase 1: no Postgres RPC, aggregate client-side. Acceptable up to
- * ~10k lines per period — well beyond MVP ledger sizes.
+ * Phase 2: Postgres RPC — single query, server-side aggregation.
  *
  * @param {Object} input
  * @param {string} input.userId       - auth.uid() string
@@ -38,34 +39,25 @@ export async function getAccountingProfit({ userId, periodStart, periodEnd }) {
     return { success: false, error: "Supabase not configured" };
   }
 
-  const { data, error } = await supabase
-    .from("journal_lines")
-    .select(
-      "debit, credit, accounts!inner(type), journal_entries!inner(user_id, date)",
-    )
-    .eq("journal_entries.user_id", userId)
-    .gte("journal_entries.date", periodStart)
-    .lte("journal_entries.date", periodEnd)
-    .in("accounts.type", ["revenue", "expense"]);
+  const { data, error } = await supabase.rpc("get_accounting_profit", {
+    p_user_id: userId,
+    p_period_start: periodStart,
+    p_period_end: periodEnd,
+  });
 
   if (error) {
     return { success: false, error: error.message || "Query failed" };
   }
 
-  let revenue = 0;
-  let expenses = 0;
-  for (const line of data || []) {
-    const type = line?.accounts?.type;
-    const debit = Number(line?.debit) || 0;
-    const credit = Number(line?.credit) || 0;
-    if (type === "revenue") revenue += credit - debit;
-    else if (type === "expense") expenses += debit - credit;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    return { success: true, revenue: 0, expenses: 0, accountingProfit: 0 };
   }
 
   return {
     success: true,
-    revenue,
-    expenses,
-    accountingProfit: revenue - expenses,
+    revenue: Number(row.revenue) || 0,
+    expenses: Number(row.expenses) || 0,
+    accountingProfit: Number(row.accounting_profit) || 0,
   };
 }
