@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useContext } from "react";
-import { ff, CUR_SYM, PAYMENT_METHODS } from "../../constants";
+import { CUR_SYM, PAYMENT_METHODS } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { Field, Input, Select, Btn } from "../atoms";
@@ -11,48 +11,98 @@ export { A4InvoiceDoc } from "./A4InvoiceDoc";
 export { A4PrintModal } from "./A4PrintModal";
 
 // ─── TOTALS BLOCK ─────────────────────────────────────────────────────────────
-export function TotalsBlock({ subtotal, discountType, discountValue, setDiscountType, setDiscountValue, shipping, setShipping, taxBreakdown, total, currSymbol, isVat, cisDeduction, showShipping = true }) {
-  const discAmt = discountType === "percent" ? subtotal * (Number(discountValue) / 100) : Math.min(Number(discountValue), subtotal);
-  const R = ({ label, value, color }) => (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0" }}>
-      <span style={{ fontSize: 13, color: color || "#666" }}>{label}</span>
-      <span style={{ fontSize: 13, color: color || "#444", fontWeight: 500 }}>{value}</span>
+export function TotalsBlock({
+  subtotal, discountType, discountValue, setDiscountType, setDiscountValue,
+  shipping, setShipping, taxBreakdown, total, currSymbol, isVat, cisDeduction,
+  showShipping = true,
+}) {
+  const discAmt = discountType === "percent"
+    ? subtotal * (Number(discountValue) / 100)
+    : Math.min(Number(discountValue), subtotal);
+
+  const Row = ({ label, value, valueClass = "text-[var(--text-primary)]" }) => (
+    <div className="flex items-center justify-between py-1">
+      <span className="text-sm text-[var(--text-secondary)]">{label}</span>
+      <span className={`text-sm font-medium tabular-nums ${valueClass}`}>{value}</span>
     </div>
   );
+
   return (
-    <div style={{ background: "#FAFAFA", borderRadius: 10, border: "1px solid #EBEBEB", padding: "14px 16px", minWidth: 260 }}>
-      <R label="Subtotal" value={fmt(currSymbol, subtotal)} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
-        <span style={{ fontSize: 13, color: "#666" }}>Discount</span>
-        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-          <div style={{ display: "flex", border: "1.5px solid #E0E0E0", borderRadius: 6, overflow: "hidden" }}>
-            {[["percent", "%"], ["fixed", currSymbol]].map(([t, l]) => (
-              <button key={t} onClick={() => setDiscountType(t)}
-                style={{ padding: "3px 8px", border: "none", background: discountType === t ? "#1A1A1A" : "transparent", color: discountType === t ? "#fff" : "#999", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: ff }}>{l}</button>
-            ))}
+    <div className="bg-[var(--surface-sunken)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] p-4 min-w-[260px]">
+      <Row label="Subtotal" value={fmt(currSymbol, subtotal)} />
+
+      {/* Discount row */}
+      <div className="flex items-center justify-between py-1">
+        <span className="text-sm text-[var(--text-secondary)]">Discount</span>
+        <div className="flex items-center gap-1.5">
+          <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border-default)] overflow-hidden">
+            {[["percent", "%"], ["fixed", currSymbol]].map(([t, l]) => {
+              const active = discountType === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setDiscountType(t)}
+                  className={[
+                    "px-2 py-0.5 text-[11px] font-semibold cursor-pointer border-none transition-colors duration-150",
+                    active
+                      ? "bg-[var(--text-primary)] text-white"
+                      : "bg-transparent text-[var(--text-tertiary)] hover:bg-white",
+                  ].join(" ")}
+                >
+                  {l}
+                </button>
+              );
+            })}
           </div>
-          <input value={discountValue} onChange={e => setDiscountValue(e.target.value)} type="number" min="0"
-            style={{ width: 62, padding: "4px 6px", border: "1.5px solid #E0E0E0", borderRadius: 6, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }} />
+          <input
+            value={discountValue}
+            onChange={e => setDiscountValue(e.target.value)}
+            type="number"
+            min="0"
+            className="w-16 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+          />
         </div>
       </div>
-      {discAmt > 0 && <R label="" value={`− ${fmt(currSymbol, discAmt)}`} color="#E86C4A" />}
+
+      {discAmt > 0 && (
+        <Row label="" value={`− ${fmt(currSymbol, discAmt)}`} valueClass="text-[var(--warning-700)]" />
+      )}
+
       {showShipping && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
-          <span style={{ fontSize: 13, color: "#666" }}>Shipping</span>
-          <input value={shipping} onChange={e => setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
-            style={{ width: 86, padding: "4px 6px", border: "1.5px solid #E0E0E0", borderRadius: 6, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }} />
+        <div className="flex items-center justify-between py-1">
+          <span className="text-sm text-[var(--text-secondary)]">Shipping</span>
+          <input
+            value={shipping}
+            onChange={e => setShipping(e.target.value)}
+            type="number"
+            min="0"
+            placeholder="0.00"
+            inputMode="decimal"
+            className="w-24 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+          />
         </div>
       )}
-      {isVat && taxBreakdown.map(tb => <R key={tb.rate} label={`VAT ${tb.rate}%`} value={fmt(currSymbol, tb.amount)} />)}
-      {cisDeduction > 0 && <R label="CIS Deduction" value={`− ${fmt(currSymbol, cisDeduction)}`} color="#D97706" />}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0 2px", borderTop: "2px solid #1A1A1A", marginTop: 6 }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color: "#1A1A1A" }}>Total Due</span>
-        <span style={{ fontSize: 16, fontWeight: 800, color: "#1A1A1A" }}>{fmt(currSymbol, total)}</span>
-      </div>
+
+      {isVat && taxBreakdown.map(tb => (
+        <Row key={tb.rate} label={`VAT ${tb.rate}%`} value={fmt(currSymbol, tb.amount)} />
+      ))}
+
       {cisDeduction > 0 && (
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", marginTop: 2 }}>
-          <span style={{ fontSize: 11, color: "#AAA" }}>Gross (before CIS)</span>
-          <span style={{ fontSize: 11, color: "#AAA" }}>{fmt(currSymbol, total + cisDeduction)}</span>
+        <Row label="CIS Deduction" value={`− ${fmt(currSymbol, cisDeduction)}`} valueClass="text-[var(--warning-700)]" />
+      )}
+
+      {/* Total */}
+      <div className="flex items-center justify-between pt-2.5 mt-2 border-t-2 border-[var(--text-primary)]">
+        <span className="text-base font-bold text-[var(--text-primary)]">Total Due</span>
+        <span className="text-base font-bold text-[var(--text-primary)] tabular-nums">
+          {fmt(currSymbol, total)}
+        </span>
+      </div>
+
+      {cisDeduction > 0 && (
+        <div className="flex items-center justify-between pt-1 text-[11px] text-[var(--text-tertiary)] tabular-nums">
+          <span>Gross (before CIS)</span>
+          <span>{fmt(currSymbol, total + cisDeduction)}</span>
         </div>
       )}
     </div>
@@ -63,33 +113,55 @@ export function TotalsBlock({ subtotal, discountType, discountValue, setDiscount
 export function SaveSplitBtn({ onSave, onSaveAndSend, onSaveAndPrint, saving }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+
   useEffect(() => {
     const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
+
+  const btnBase = "h-9 bg-[var(--text-primary)] hover:bg-[var(--surface-dark-2)] disabled:bg-[var(--text-primary)] text-white border-none text-sm font-semibold transition-colors duration-150";
+  const disabled = saving;
+
   return (
-    <div ref={ref} style={{ position: "relative", display: "flex" }}>
-      <button onClick={() => { onSave(); setOpen(false); }} disabled={saving}
-        style={{ padding: "8px 14px", background: "#1A1A1A", color: "#fff", border: "none", borderRight: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px 0 0 8px", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontFamily: ff, display: "flex", alignItems: "center", gap: 6, opacity: saving ? 0.6 : 1 }}>
-        <Icons.Save />{saving ? "Saving…" : "Save"}
+    <div ref={ref} className="relative flex">
+      <button
+        onClick={() => { onSave(); setOpen(false); }}
+        disabled={disabled}
+        className={[
+          btnBase,
+          "px-4 rounded-l-[var(--radius-md)] border-r border-white/15 flex items-center gap-1.5",
+          disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+        ].join(" ")}
+      >
+        <Icons.Save />
+        {saving ? "Saving…" : "Save"}
       </button>
-      <button onClick={() => setOpen(o => !o)} disabled={saving}
-        style={{ padding: "8px 9px", background: "#1A1A1A", color: "#fff", border: "none", borderRadius: "0 8px 8px 0", fontSize: 13, cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", opacity: saving ? 0.6 : 1 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        disabled={disabled}
+        className={[
+          btnBase,
+          "px-2.5 rounded-r-[var(--radius-md)] flex items-center",
+          disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+        ].join(" ")}
+      >
         <Icons.ChevDown />
       </button>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "#fff", border: "1.5px solid #E0E0E0", borderRadius: 9, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 160, zIndex: 500, overflow: "hidden" }}>
+        <div className="absolute top-[calc(100%+4px)] right-0 bg-white border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] min-w-[180px] z-[500] overflow-hidden">
           {[
             { label: "Save",         icon: <Icons.Save />,    action: onSave },
             { label: "Save & Send",  icon: <Icons.Send />,    action: onSaveAndSend },
             { label: "Save & Print", icon: <Icons.Receipt />, action: onSaveAndPrint },
           ].map(item => (
-            <button key={item.label} onClick={() => { item.action(); setOpen(false); }}
-              style={{ width: "100%", padding: "10px 14px", background: "none", border: "none", display: "flex", alignItems: "center", gap: 9, fontSize: 13, fontWeight: 600, color: "#1A1A1A", cursor: "pointer", fontFamily: ff, textAlign: "left" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#F7F7F5"}
-              onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              <span style={{ color: "#888" }}>{item.icon}</span>{item.label}
+            <button
+              key={item.label}
+              onClick={() => { item.action(); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3.5 py-2.5 bg-transparent border-none cursor-pointer text-sm font-medium text-[var(--text-primary)] text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+            >
+              <span className="text-[var(--text-tertiary)] flex">{item.icon}</span>
+              {item.label}
             </button>
           ))}
         </div>
@@ -105,23 +177,37 @@ export function PaidConfirmModal({ invoice, onConfirm, onCancel }) {
   const [payDate, setPayDate] = useState(todayStr());
   const [payMethod, setPayMethod] = useState("Bank Transfer");
   const [payRef, setPayRef] = useState("");
+
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.18)", fontFamily: ff, overflow: "hidden" }}>
-        <div style={{ background: "#F0FDF4", padding: "18px 22px 14px", borderBottom: "1px solid #BBF7D0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#16A34A", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icons.Check /></div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#15803D" }}>Mark as Paid</div>
-              <div style={{ fontSize: 12, color: "#16A34A", marginTop: 1 }}>{invoice.invoice_number} · {fmt(CUR_SYM[invoice.currency] || "£", invoice.total)}</div>
+    <div className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-[420px] shadow-[var(--shadow-popover)] overflow-hidden">
+        {/* Header */}
+        <div className="bg-[var(--success-50)] border-b border-[var(--success-100)] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[var(--success-600)] text-white flex items-center justify-center flex-shrink-0">
+              <Icons.Check />
+            </div>
+            <div className="min-w-0">
+              <div className="text-base font-bold text-[var(--success-700)]">Mark as paid</div>
+              <div className="text-xs text-[var(--success-700)] mt-0.5 truncate">
+                {invoice.invoice_number} · {fmt(CUR_SYM[invoice.currency] || "£", invoice.total)}
+              </div>
             </div>
           </div>
         </div>
-        <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 13 }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#555", lineHeight: 1.6 }}>Confirm payment details. A record will be automatically added to <strong>Payments Received</strong>.</p>
+
+        {/* Body */}
+        <div className="px-5 py-5 flex flex-col gap-3">
+          <p className="m-0 text-sm text-[var(--text-secondary)] leading-relaxed">
+            Confirm payment details. A record will be automatically added to <strong>Payments Received</strong>.
+          </p>
           <Field label="Payment Date" required>
-            <input value={payDate} onChange={e => setPayDate(e.target.value)} type="date"
-              style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, outline: "none", boxSizing: "border-box" }} />
+            <input
+              value={payDate}
+              onChange={e => setPayDate(e.target.value)}
+              type="date"
+              className="w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] box-border"
+            />
           </Field>
           <Field label="Payment Method" required>
             <Select value={payMethod} onChange={setPayMethod} options={allMethods} />
@@ -130,9 +216,13 @@ export function PaidConfirmModal({ invoice, onConfirm, onCancel }) {
             <Input value={payRef} onChange={setPayRef} placeholder="Bank ref, transaction ID…" />
           </Field>
         </div>
-        <div style={{ padding: "12px 22px 18px", display: "flex", gap: 8, justifyContent: "flex-end" }}>
+
+        {/* Footer */}
+        <div className="px-5 pb-5 pt-2 flex gap-2 justify-end">
           <Btn onClick={onCancel} variant="outline">Cancel</Btn>
-          <Btn onClick={() => onConfirm({ date: payDate, method: payMethod, reference: payRef })} variant="primary" icon={<Icons.Check />}>Confirm Payment</Btn>
+          <Btn onClick={() => onConfirm({ date: payDate, method: payMethod, reference: payRef })} variant="success" icon={<Icons.Check />}>
+            Confirm payment
+          </Btn>
         </div>
       </div>
     </div>

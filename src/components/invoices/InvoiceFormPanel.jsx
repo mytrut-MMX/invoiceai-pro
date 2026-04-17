@@ -1,5 +1,5 @@
 import { useState, useContext, useMemo, useEffect } from "react";
-import { ff, CUR_SYM, DEFAULT_INV_TERMS } from "../../constants";
+import { CUR_SYM, DEFAULT_INV_TERMS } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { Field, Input, Select, Textarea, Btn, SlideToggle, InfoBox, PaymentTermsField } from "../atoms";
@@ -13,54 +13,79 @@ import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
 import { calculateTaxPoint, taxPointExplanation } from "../../utils/taxPoint";
 
-const STATUSES = ["Draft","Sent","Overdue","Paid","Void","Partial"];
+const STATUSES = ["Draft", "Sent", "Overdue", "Paid", "Void", "Partial"];
+
+const dateInputCls =
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+
+const selectInputCls =
+  "h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150";
+
+function SectionTitle({ children }) {
+  return (
+    <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+      {children}
+    </div>
+  );
+}
+
+function Section({ children }) {
+  return (
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5 mb-4">
+      {children}
+    </div>
+  );
+}
 
 export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, payments, quotes, user } = useContext(AppCtx);
   const { cisEnabled, cisDefaultRate } = useCISSettings();
-  const isVat = orgSettings?.vatReg==="Yes";
-  const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
+  const isVat = orgSettings?.vatReg === "Yes";
+  const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const isEdit = !!existing;
-  const inv = existing||{};
+  const inv = existing || {};
 
-  const [customer, setCustomer] = useState(inv.customer||null);
-  const [custSearch, setCustSearch] = useState(inv.customer?.name||"");
+  const [customer, setCustomer] = useState(inv.customer || null);
+  const [custSearch, setCustSearch] = useState(inv.customer?.name || "");
   const [custOpen, setCustOpen] = useState(false);
-  const [issueDate, setIssueDate] = useState(inv.issue_date||todayStr());
+  const [issueDate, setIssueDate] = useState(inv.issue_date || todayStr());
   const [supplyDate, setSupplyDate] = useState(inv.supply_date || inv.issue_date || todayStr());
-  const [payTerms, setPayTerms] = useState(inv.payment_terms||customer?.paymentTerms||"Net 30");
-  const [customDays, setCustomDays] = useState(inv.custom_payment_days||"");
-  const [dueDate, setDueDate] = useState(inv.due_date||addDays(todayStr(),30));
-  const [items, setItems] = useState((inv.line_items&&inv.line_items.length>0) ? inv.line_items : [newLine(0)]);
-  const [discType, setDiscType] = useState(inv.discount_type||"percent");
-  const [discVal, setDiscVal] = useState(inv.discount_value||"");
-  const [shipping, setShipping] = useState(inv.shipping||"");
+  const [payTerms, setPayTerms] = useState(inv.payment_terms || customer?.paymentTerms || "Net 30");
+  const [customDays, setCustomDays] = useState(inv.custom_payment_days || "");
+  const [dueDate, setDueDate] = useState(inv.due_date || addDays(todayStr(), 30));
+  const [items, setItems] = useState((inv.line_items && inv.line_items.length > 0) ? inv.line_items : [newLine(0)]);
+  const [discType, setDiscType] = useState(inv.discount_type || "percent");
+  const [discVal, setDiscVal] = useState(inv.discount_value || "");
+  const [shipping, setShipping] = useState(inv.shipping || "");
   const showShipping = orgSettings?.deliversItems !== false;
-  const [notes, setNotes] = useState(inv.notes||"");
-  const [terms, setTerms] = useState(inv.terms||DEFAULT_INV_TERMS);
-  const [status, setStatus] = useState(inv.status||"Draft");
-  const [template, setTemplate] = useState(inv.template||"classic");
+  const [notes, setNotes] = useState(inv.notes || "");
+  const [terms, setTerms] = useState(inv.terms || DEFAULT_INV_TERMS);
+  const [status, setStatus] = useState(inv.status || "Draft");
+  const [template, setTemplate] = useState(inv.template || "classic");
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [templateId] = useState(inv.templateId || null);
   const [showPaidModal, setShowPaidModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [recurringEnabled, setRecurringEnabled] = useState(inv.recurring||false);
-  const [recurFreq, setRecurFreq] = useState(inv.recurring_frequency||"Monthly");
-  const [recurringNextDate, setRecurringNextDate] = useState(inv.recurring_next_date||addDays(issueDate,30));
-  const [poNumber, setPoNumber] = useState(inv.po_number||"");
+  const [recurringEnabled, setRecurringEnabled] = useState(inv.recurring || false);
+  const [recurFreq, setRecurFreq] = useState(inv.recurring_frequency || "Monthly");
+  const [recurringNextDate, setRecurringNextDate] = useState(inv.recurring_next_date || addDays(issueDate, 30));
+  const [poNumber, setPoNumber] = useState(inv.po_number || "");
   const [invNumber, setInvNumber] = useState(inv.invoice_number || nextNum("INV", invoices));
   const [invNumError, setInvNumError] = useState("");
-  const acceptedQuotes = useMemo(() => (quotes||[]).filter(q=>q.status==="Accepted"), [quotes]);
+  const acceptedQuotes = useMemo(() => (quotes || []).filter(q => q.status === "Accepted"), [quotes]);
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
 
   useEffect(() => {
-    if(!selectedQuoteId || !onConvertFromQuote) return;
+    if (!selectedQuoteId || !onConvertFromQuote) return;
     onConvertFromQuote(selectedQuoteId);
     setSelectedQuoteId("");
   }, [selectedQuoteId, onConvertFromQuote]);
 
-  const totals = useMemo(()=>calcTotals(items,discType,discVal,showShipping?shipping:0,isVat,customer,cisEnabled,cisDefaultRate),[items,discType,discVal,shipping,isVat,customer,showShipping,cisEnabled,cisDefaultRate]);
+  const totals = useMemo(
+    () => calcTotals(items, discType, discVal, showShipping ? shipping : 0, isVat, customer, cisEnabled, cisDefaultRate),
+    [items, discType, discVal, shipping, isVat, customer, showShipping, cisEnabled, cisDefaultRate]
+  );
   const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
   const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
   const taxPointResult = useMemo(
@@ -70,29 +95,28 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
 
   const handleTermsChange = (t, days) => {
     setPayTerms(t);
-    const map = { "Net 30":30,"Net 15":15,"Net 7":7,"Net 60":60,"Net 90":90,"Due on Receipt":0 };
-    if(t==="Custom"){ setCustomDays(days); setDueDate(addDays(issueDate,Number(days)||30)); }
-    else if(map[t]!==undefined) setDueDate(addDays(issueDate,map[t]));
+    const map = { "Net 30": 30, "Net 15": 15, "Net 7": 7, "Net 60": 60, "Net 90": 90, "Due on Receipt": 0 };
+    if (t === "Custom") { setCustomDays(days); setDueDate(addDays(issueDate, Number(days) || 30)); }
+    else if (map[t] !== undefined) setDueDate(addDays(issueDate, map[t]));
   };
 
-  const filteredCustomers = customers.filter(c=>
-    !custSearch || c.name.toLowerCase().includes(custSearch.toLowerCase())
-  );
-
-  const docData = { docNumber:invNumber, customer, issueDate, dueDate, paymentTerms:payTerms, items, ...totals, notes, terms, status, poNumber, docType:"invoice", templateId };
+  const docData = {
+    docNumber: invNumber, customer, issueDate, dueDate, paymentTerms: payTerms, items,
+    ...totals, notes, terms, status, poNumber, docType: "invoice", templateId,
+  };
   const activeInvoiceTemplate = getTemplateById(templateId) || getDefaultTemplate();
 
   const buildInvoice = (newStatus) => ({
-    id: inv.id||crypto.randomUUID(),
+    id: inv.id || crypto.randomUUID(),
     invoice_number: invNumber,
-    customer, issue_date:issueDate, supply_date:supplyDate, tax_point:taxPointResult.taxPoint, due_date:dueDate,
-    payment_terms:payTerms, custom_payment_days:customDays,
-    line_items:items, discount_type:discType, discount_value:discVal,
-    shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number:poNumber,
-    status: newStatus||status, template, templateId,
-    recurring:recurringEnabled, recurring_frequency:recurFreq,
+    customer, issue_date: issueDate, supply_date: supplyDate, tax_point: taxPointResult.taxPoint, due_date: dueDate,
+    payment_terms: payTerms, custom_payment_days: customDays,
+    line_items: items, discount_type: discType, discount_value: discVal,
+    shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number: poNumber,
+    status: newStatus || status, template, templateId,
+    recurring: recurringEnabled, recurring_frequency: recurFreq,
     recurring_next_date: recurringEnabled ? recurringNextDate : "",
-    activity: inv.activity || []
+    activity: inv.activity || [],
   });
 
   const handleSave = (newStatus) => {
@@ -103,32 +127,45 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     }
     setInvNumError("");
     setSaving(true);
-    setTimeout(()=>{
+    setTimeout(() => {
       const previousStatus = inv.status || "Draft";
       const nextStatus = newStatus || status;
       const savedInvoice = buildInvoice(newStatus);
-      const action = !isEdit ? "Created" : nextStatus !== previousStatus ? `Status changed to ${nextStatus}` : "Updated";
-      savedInvoice.activity = [...(inv.activity || []), { action, timestamp: new Date().toISOString(), actor: user?.name || "Unknown" }];
+      const action = !isEdit
+        ? "Created"
+        : nextStatus !== previousStatus
+          ? `Status changed to ${nextStatus}`
+          : "Updated";
+      savedInvoice.activity = [
+        ...(inv.activity || []),
+        { action, timestamp: new Date().toISOString(), actor: user?.name || "Unknown" },
+      ];
       onSave(savedInvoice);
-      // Fire-and-forget — never blocks the UI save path
       ;(async () => {
         try {
           const { accounts, userId } = await fetchUserAccounts();
           if (!userId) return;
           if (isEdit) {
-            const oldEntry = await findEntryBySource('invoice', inv.id);
+            const oldEntry = await findEntryBySource("invoice", inv.id);
             if (oldEntry) await reverseEntry(oldEntry.id, userId);
           }
-          await postInvoiceEntry(savedInvoice, accounts, userId, orgSettings?.vatScheme || 'Standard', orgSettings?.accountingBasis || 'Accrual');
+          await postInvoiceEntry(savedInvoice, accounts, userId, orgSettings?.vatScheme || "Standard", orgSettings?.accountingBasis || "Accrual");
         } catch (err) {
-          console.error('[Ledger] invoice post failed:', err);
+          console.error("[Ledger] invoice post failed:", err);
         }
       })();
       if (nextStatus === "Paid" && previousStatus !== "Paid") {
-        setPayments(p=>[{
-          id:crypto.randomUUID(), invoice_id:savedInvoice.id, invoice_number:savedInvoice.invoice_number,
-          customer_name:customer?.name||"", amount:totals.total, date:todayStr(), method:"Bank Transfer", reference:"Status changed to Paid", status:"Reconciled"
-        },...p]);
+        setPayments(p => [{
+          id: crypto.randomUUID(),
+          invoice_id: savedInvoice.id,
+          invoice_number: savedInvoice.invoice_number,
+          customer_name: customer?.name || "",
+          amount: totals.total,
+          date: todayStr(),
+          method: "Bank Transfer",
+          reference: "Status changed to Paid",
+          status: "Reconciled",
+        }, ...p]);
       }
       setSaving(false);
       onClose();
@@ -137,17 +174,25 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
 
   const handlePaidConfirm = ({ date, method, reference }) => {
     const saved = buildInvoice("Paid");
-    saved.activity = [...(inv.activity || []), { action: "Marked Paid", timestamp: new Date().toISOString(), actor: user?.name || "Unknown" }];
+    saved.activity = [
+      ...(inv.activity || []),
+      { action: "Marked Paid", timestamp: new Date().toISOString(), actor: user?.name || "Unknown" },
+    ];
     onSave(saved);
     const existingPaid = (payments || [])
       .filter(p => p.invoice_id === saved.id)
       .reduce((s, p) => s + Number(p.amount || 0), 0);
     if (existingPaid < totals.total) {
       const paymentAmount = existingPaid > 0 ? totals.total - existingPaid : totals.total;
-      setPayments(p=>[{
-        id:crypto.randomUUID(), invoice_id:saved.id, invoice_number:saved.invoice_number,
-        customer_name:customer?.name||"", amount:paymentAmount, date, method, reference, status:"Reconciled"
-      },...p]);
+      setPayments(p => [{
+        id: crypto.randomUUID(),
+        invoice_id: saved.id,
+        invoice_number: saved.invoice_number,
+        customer_name: customer?.name || "",
+        amount: paymentAmount,
+        date, method, reference,
+        status: "Reconciled",
+      }, ...p]);
     }
     setShowPaidModal(false);
     onClose();
@@ -166,228 +211,344 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     // TODO: Move share link validation to a server-side API endpoint
     // that verifies token + expiry from database before returning document.
     const shareUrl = `${window.location.origin}/${basePath}/invoice/${invNumber}?token=${token}&expires=${expiresOn}`;
-    window.prompt(mode === "private"
-      ? "Private link created. Customer will use one-time passcode. Copy link:"
-      : "Public link created. Anyone with the link can access before expiry. Copy link:", shareUrl);
+    window.prompt(
+      mode === "private"
+        ? "Private link created. Customer will use one-time passcode. Copy link:"
+        : "Public link created. Anyone with the link can access before expiry. Copy link:",
+      shareUrl
+    );
   };
 
   const handleNewItemSaved = (item) => {
-    setCatalogItems(p=>[...p, item]);
-    const newItem = { id:crypto.randomUUID(), name:item.name, description:item.description||"", quantity:1, rate:item.rate, tax_rate:isVat?(item.taxRate||20):0, amount:item.rate, sort_order:items.length };
-    setItems(p=>[...p, newItem]);
+    setCatalogItems(p => [...p, item]);
+    const newItem = {
+      id: crypto.randomUUID(),
+      name: item.name,
+      description: item.description || "",
+      quantity: 1,
+      rate: item.rate,
+      tax_rate: isVat ? (item.taxRate || 20) : 0,
+      amount: item.rate,
+      sort_order: items.length,
+    };
+    setItems(p => [...p, newItem]);
     setShowItemModal(false);
   };
 
   return (
     <>
-      {showPaidModal && <PaidConfirmModal invoice={{ ...docData, invoice_number:docData.docNumber, currency:orgSettings?.currency||"GBP" }} onConfirm={handlePaidConfirm} onCancel={()=>setShowPaidModal(false)} />}
-      {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={()=>setShowPrintModal(false)} invoiceTemplate={activeInvoiceTemplate} />}
-      {showItemModal && <ItemModal existing={null} onClose={()=>setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: cisEnabled } }} />}
+      {showPaidModal && (
+        <PaidConfirmModal
+          invoice={{ ...docData, invoice_number: docData.docNumber, currency: orgSettings?.currency || "GBP" }}
+          onConfirm={handlePaidConfirm}
+          onCancel={() => setShowPaidModal(false)}
+        />
+      )}
+      {showPrintModal && (
+        <A4PrintModal
+          data={docData}
+          currSymbol={currSym}
+          isVat={isVat}
+          onClose={() => setShowPrintModal(false)}
+          invoiceTemplate={activeInvoiceTemplate}
+        />
+      )}
+      {showItemModal && (
+        <ItemModal
+          existing={null}
+          onClose={() => setShowItemModal(false)}
+          onSave={handleNewItemSaved}
+          settings={{ cis: { enabled: cisEnabled } }}
+        />
+      )}
 
-      <div style={{ width:"100%", maxWidth:1100, margin:"0 auto", background:"#f4f5f7", display:"flex", flexDirection:"column", fontFamily:ff, padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)" }}>
-        {/* Header */}
-        <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, display:"flex", alignItems:"center", gap:4 }}>
+      <div className="bg-[var(--surface-page)] min-h-screen">
+        {/* Sticky header */}
+        <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-3 flex items-center justify-between gap-2 flex-wrap">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150"
+          >
             ← Invoices
           </button>
-          <div style={{ flex:1, minWidth:0 }} />
-          <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-            {isEdit && status!=="Paid" && (
-              <Btn onClick={()=>setShowPaidModal(true)} variant="success" icon={<Icons.Check />}>Mark Paid</Btn>
+          <div className="flex items-center gap-2 flex-wrap">
+            {isEdit && status !== "Paid" && (
+              <Btn onClick={() => setShowPaidModal(true)} variant="success" icon={<Icons.Check />}>Mark paid</Btn>
             )}
-            <Btn onClick={()=>setShowPrintModal(true)} variant="outline" icon={<Icons.Receipt />}>Print / PDF</Btn>
-            <Btn onClick={handleShare} variant="outline" icon={<Icons.Send />}>Share Link</Btn>
-            <SaveSplitBtn onSave={()=>handleSave()} onSaveAndSend={()=>handleSave("Sent")} onSaveAndPrint={()=>{ handleSave(); }} saving={saving} />
+            <Btn onClick={() => setShowPrintModal(true)} variant="outline" icon={<Icons.Receipt />}>Print / PDF</Btn>
+            <Btn onClick={handleShare} variant="outline" icon={<Icons.Send />}>Share link</Btn>
+            <SaveSplitBtn
+              onSave={() => handleSave()}
+              onSaveAndSend={() => handleSave("Sent")}
+              onSaveAndPrint={() => { handleSave(); }}
+              saving={saving}
+            />
           </div>
         </div>
 
         {/* Body */}
-        <div style={{ flex:1, overflowY:"auto", padding:"20px 24px" }}>
-          {/* Customer picker */}
-          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Customer</div>
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-5">
+          {/* Customer section */}
+          <Section>
+            <SectionTitle>Customer</SectionTitle>
             <CustomerPicker
               customers={customers}
               value={customer}
               onChange={c => {
                 setCustomer(c);
                 setCustSearch(c.name);
-                if(!isEdit || !inv.payment_terms){
+                if (!isEdit || !inv.payment_terms) {
                   const nextTerms = c.paymentTerms || "Net 30";
                   setPayTerms(nextTerms);
-                  const map = { "Net 30":30,"Net 15":15,"Net 7":7,"Net 60":60,"Net 90":90,"Due on Receipt":0 };
-                  if(nextTerms==="Custom") setDueDate(addDays(issueDate,Number(c.customPaymentDays)||30));
-                  else if(map[nextTerms]!==undefined) setDueDate(addDays(issueDate,map[nextTerms]));
+                  const map = { "Net 30": 30, "Net 15": 15, "Net 7": 7, "Net 60": 60, "Net 90": 90, "Due on Receipt": 0 };
+                  if (nextTerms === "Custom") setDueDate(addDays(issueDate, Number(c.customPaymentDays) || 30));
+                  else if (map[nextTerms] !== undefined) setDueDate(addDays(issueDate, map[nextTerms]));
                 }
-                if(cisEnabled && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered)){
+                if (cisEnabled && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered)) {
                   setItems(prev => prev.map(it => ({ ...it, cisApplicable: true })));
                 }
               }}
               onClear={() => { setCustomer(null); setCustSearch(""); setCustOpen(false); }}
             />
             {cisEnabled && customer?.cis?.registered && (
-              <div style={{
-                display:"inline-flex", alignItems:"center", gap:4,
-                marginTop:4, padding:"2px 8px",
-                background:"#fef3c7", borderRadius:20,
-                fontSize:11, fontWeight:600, color:"#92400e"
-              }}>
-                ⚠ CIS Subcontractor · {customer.cis.rate || "20%"}
+              <div className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-full text-[11px] font-semibold text-[var(--warning-700)]">
+                <Icons.Alert />
+                CIS Subcontractor · {customer.cis.rate || "20%"}
               </div>
             )}
-            {!isEdit && acceptedQuotes.length>0 && (
-              <div style={{ marginTop:10, padding:"10px", border:"1px solid #D1FAE5", borderRadius:8, background:"#F0FDF4" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-                  <span style={{ fontSize:12, fontWeight:700, color:"#166534" }}>Convert Accepted Quote</span>
+            {!isEdit && acceptedQuotes.length > 0 && (
+              <div className="mt-3 p-3 border border-[var(--success-100)] rounded-[var(--radius-md)] bg-[var(--success-50)]">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-semibold text-[var(--success-700)]">Convert accepted quote</span>
                   <Select
                     value={selectedQuoteId}
                     onChange={setSelectedQuoteId}
                     placeholder="Choose accepted quote"
-                    options={acceptedQuotes.map(q=>({ value:q.id, label:`${q.quote_number} · ${q.customer?.name||"No customer"}` }))}
-                    style={{ maxWidth:360 }}
+                    options={acceptedQuotes.map(q => ({
+                      value: q.id,
+                      label: `${q.quote_number} · ${q.customer?.name || "No customer"}`,
+                    }))}
+                    style={{ maxWidth: 360 }}
                   />
                 </div>
               </div>
             )}
-          </div>
+          </Section>
+
           {cisEnabled && customer && !customer?.cis?.registered && !customer?.taxDetails?.cisRegistered && (
-            <div style={{ marginBottom:14 }}>
-              <InfoBox color="#D97706">CIS cannot be applied for this customer because they are not marked as CIS registered.</InfoBox>
+            <div className="mb-4">
+              <InfoBox color="var(--warning-600)">
+                CIS cannot be applied for this customer because they are not marked as CIS registered.
+              </InfoBox>
             </div>
           )}
 
           {/* Invoice details */}
-          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Invoice Details</div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
-              <Field label="Invoice #">
-                <Input value={invNumber} onChange={v=>{ setInvNumber(v); if(invNumError) setInvNumError(""); }} style={invNumError ? { borderColor:"#DC2626" } : {}} />
-                {invNumError && <div style={{ fontSize:11, color:"#DC2626", marginTop:3 }}>{invNumError}</div>}
+          <Section>
+            <SectionTitle>Invoice details</SectionTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Field label="Invoice #" error={invNumError || undefined}>
+                <Input
+                  value={invNumber}
+                  onChange={v => { setInvNumber(v); if (invNumError) setInvNumError(""); }}
+                  error={!!invNumError}
+                />
               </Field>
               <Field label="Issue Date">
-                <input value={issueDate} onChange={e=>setIssueDate(e.target.value)} type="date"
-                  style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                <input
+                  value={issueDate}
+                  onChange={e => setIssueDate(e.target.value)}
+                  type="date"
+                  className={dateInputCls}
+                />
               </Field>
               <Field label="Supply Date" hint="Date goods delivered or services completed">
-                <input value={supplyDate} onChange={e=>setSupplyDate(e.target.value)} type="date"
-                  style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                <input
+                  value={supplyDate}
+                  onChange={e => setSupplyDate(e.target.value)}
+                  type="date"
+                  className={dateInputCls}
+                />
               </Field>
               {isVat && (
                 <Field label="Tax Point" hint={taxPointExplanation(taxPointResult.rule)}>
                   <input
                     value={taxPointResult.taxPoint}
                     readOnly
-                    style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box", background:"#f9fafb", color:"#6b7280" }}
+                    className={`${dateInputCls} bg-[var(--surface-sunken)] text-[var(--text-secondary)]`}
                   />
                 </Field>
               )}
               <Field label="Payment Terms">
-                <PaymentTermsField value={payTerms} onChange={handleTermsChange} customDays={customDays} onCustomDaysChange={d=>{ setCustomDays(d); setDueDate(addDays(issueDate,Number(d)||30)); }} />
+                <PaymentTermsField
+                  value={payTerms}
+                  onChange={handleTermsChange}
+                  customDays={customDays}
+                  onCustomDaysChange={d => { setCustomDays(d); setDueDate(addDays(issueDate, Number(d) || 30)); }}
+                />
               </Field>
               <Field label="Due Date">
-                <input value={dueDate} onChange={e=>setDueDate(e.target.value)} type="date"
-                  style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                <input
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  type="date"
+                  className={dateInputCls}
+                />
               </Field>
               <Field label="PO Number">
                 <Input value={poNumber} onChange={setPoNumber} placeholder="Optional" />
               </Field>
             </div>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:"1px solid #F0F0F0", flexWrap:"wrap", gap:10 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontSize:13, fontWeight:600, color:"#333" }}>Status</span>
-                <select value={status} onChange={e=>setStatus(e.target.value)}
-                  style={{ padding:"5px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#f9fafb", outline:"none", cursor:"pointer" }}>
-                  {STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
+
+            <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-[var(--border-subtle)] flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Status</span>
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  className={selectInputCls}
+                >
+                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontSize:13, fontWeight:600, color:"#333" }}>Recurring</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Recurring</span>
                 <SlideToggle value={recurringEnabled} onChange={setRecurringEnabled} />
-                {recurringEnabled && <><Select value={recurFreq} onChange={setRecurFreq} options={["Weekly","Monthly","Quarterly","Annually"]} /><input value={recurringNextDate} onChange={e=>setRecurringNextDate(e.target.value)} type="date" style={{ padding:"5px 10px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, background:"#f9fafb", outline:"none" }} /></>}
+                {recurringEnabled && (
+                  <>
+                    <Select
+                      value={recurFreq}
+                      onChange={setRecurFreq}
+                      options={["Weekly", "Monthly", "Quarterly", "Annually"]}
+                    />
+                    <input
+                      value={recurringNextDate}
+                      onChange={e => setRecurringNextDate(e.target.value)}
+                      type="date"
+                      className={dateInputCls}
+                      style={{ maxWidth: 160 }}
+                    />
+                  </>
+                )}
               </div>
             </div>
-          </div>
+          </Section>
 
           {/* Line items */}
-          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px", marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Line Items</div>
+          <Section>
+            <SectionTitle>Line items</SectionTitle>
             <LineItemsTable
               items={items}
               onChange={setItems}
               currSymbol={currSym}
               catalogItems={catalogItems}
               isVat={isVat}
-              onAddNewItem={()=>setShowItemModal(true)}
+              onAddNewItem={() => setShowItemModal(true)}
               isCISInvoice={cisEnabled && !!(customer?.cis?.registered || customer?.taxDetails?.cisRegistered)}
             />
-          </div>
+          </Section>
 
-          {/* Totals + Notes */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr auto", gap:14, alignItems:"start", marginBottom:40 }}>
-            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"16px 18px" }}>
-              <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Notes & Terms</div>
+          {/* Notes + Totals */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 mb-10 items-start">
+            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5">
+              <SectionTitle>Notes &amp; Terms</SectionTitle>
               <Field label="Notes (shown on invoice)">
-                <Textarea value={notes} onChange={setNotes} rows={3} placeholder="e.g. Thank you for your business!" />
+                <Textarea
+                  value={notes}
+                  onChange={setNotes}
+                  rows={3}
+                  placeholder="e.g. Thank you for your business!"
+                />
               </Field>
               <Field label="Payment Terms & Conditions">
                 <Textarea value={terms} onChange={setTerms} rows={3} />
               </Field>
             </div>
-            <div style={{ background:"#FAFAFA", borderRadius:10, border:"1px solid #EBEBEB", padding:"14px 16px", minWidth:260 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
-                <span style={{ fontSize:13, color:"#666" }}>Discount</span>
-                <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                  <div style={{ display:"flex", border:"1.5px solid #E0E0E0", borderRadius:6, overflow:"hidden" }}>
-                    {[["percent","%"],["fixed",currSym]].map(([t,l])=>(
-                      <button key={t} onClick={()=>setDiscType(t)}
-                        style={{ padding:"3px 8px", border:"none", background:discType===t?"#1A1A1A":"transparent", color:discType===t?"#fff":"#999", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:ff }}>{l}</button>
-                    ))}
+
+            <div className="bg-[var(--surface-sunken)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] p-4 min-w-[280px]">
+              {/* Discount */}
+              <div className="flex items-center justify-between py-1">
+                <span className="text-sm text-[var(--text-secondary)]">Discount</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border-default)] overflow-hidden">
+                    {[["percent", "%"], ["fixed", currSym]].map(([t, l]) => {
+                      const active = discType === t;
+                      return (
+                        <button
+                          key={t}
+                          onClick={() => setDiscType(t)}
+                          className={[
+                            "px-2 py-0.5 text-[11px] font-semibold cursor-pointer border-none transition-colors duration-150",
+                            active
+                              ? "bg-[var(--text-primary)] text-white"
+                              : "bg-transparent text-[var(--text-tertiary)] hover:bg-white",
+                          ].join(" ")}
+                        >
+                          {l}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <input value={discVal} onChange={e=>setDiscVal(e.target.value)} type="number" min="0"
-                    style={{ width:62, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
+                  <input
+                    value={discVal}
+                    onChange={e => setDiscVal(e.target.value)}
+                    type="number"
+                    min="0"
+                    className="w-16 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+                  />
                 </div>
               </div>
+
               {showShipping && (
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0" }}>
-                  <span style={{ fontSize:13, color:"#666" }}>Shipping</span>
-                  <input value={shipping} onChange={e=>setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
-                    style={{ width:86, padding:"4px 6px", border:"1.5px solid #E0E0E0", borderRadius:6, fontSize:13, textAlign:"right", fontFamily:ff, background:"#fff", outline:"none" }} />
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-sm text-[var(--text-secondary)]">Shipping</span>
+                  <input
+                    value={shipping}
+                    onChange={e => setShipping(e.target.value)}
+                    type="number"
+                    min="0"
+                    placeholder="0.00"
+                    inputMode="decimal"
+                    className="w-24 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+                  />
                 </div>
               )}
 
               {/* Totals */}
-              <div style={{ marginTop:16, paddingTop:12, borderTop:"1px solid #e8e8ec" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13 }}>
-                  <span style={{ color:"#6b7280" }}>Subtotal</span>
-                  <span style={{ color:"#1a1a2e" }}>£{totals.subtotal.toFixed(2)}</span>
+              <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+                <div className="flex items-center justify-between py-1 text-sm">
+                  <span className="text-[var(--text-secondary)]">Subtotal</span>
+                  <span className="text-[var(--text-primary)] tabular-nums">£{totals.subtotal.toFixed(2)}</span>
                 </div>
 
                 {vatAmount > 0 && (
-                  <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13 }}>
-                    <span style={{ color:"#6b7280" }}>VAT ({vatRate}%)</span>
-                    <span style={{ color:"#1a1a2e" }}>£{vatAmount.toFixed(2)}</span>
+                  <div className="flex items-center justify-between py-1 text-sm">
+                    <span className="text-[var(--text-secondary)]">VAT ({vatRate}%)</span>
+                    <span className="text-[var(--text-primary)] tabular-nums">£{vatAmount.toFixed(2)}</span>
                   </div>
                 )}
 
                 {totals.hasCISItems && (
-                  <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize:13, marginTop:4, paddingTop:8, borderTop:"1px dashed #fee2e2" }}>
-                    <span style={{ color:"#dc2626" }}>
+                  <div className="flex items-center justify-between py-1 mt-1 pt-2 border-t border-dashed border-[var(--danger-100)] text-sm">
+                    <span className="text-[var(--danger-600)]">
                       CIS Deduction
-                      <span style={{ fontSize:11, color:"#9ca3af", marginLeft:6 }}>
+                      <span className="text-[11px] text-[var(--text-tertiary)] ml-1.5">
                         ({totals.customerCIS?.rate || "20% — Standard"})
                       </span>
                     </span>
-                    <span style={{ color:"#dc2626", fontWeight:600 }}>−£{totals.cisDeduction.toFixed(2)}</span>
+                    <span className="text-[var(--danger-600)] font-semibold tabular-nums">
+                      −£{totals.cisDeduction.toFixed(2)}
+                    </span>
                   </div>
                 )}
 
-                <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", marginTop:6, borderTop:"2px solid #e8e8ec", fontSize:15, fontWeight:700, color:"#1a1a2e" }}>
+                <div className="flex items-center justify-between pt-3 mt-3 border-t-2 border-[var(--text-primary)] text-base font-bold text-[var(--text-primary)]">
                   <span>{totals.hasCISItems ? "Total to Pay" : "Total"}</span>
-                  <span>£{Math.max(0, totals.total).toFixed(2)}</span>
+                  <span className="tabular-nums">£{Math.max(0, totals.total).toFixed(2)}</span>
                 </div>
 
                 {totals.hasCISItems && (
-                  <div style={{ marginTop:12, padding:"10px 12px", background:"#fff7ed", borderRadius:8, border:"1px solid #fed7aa", fontSize:12, color:"#92400e", lineHeight:1.6 }}>
+                  <div className="mt-3 p-3 bg-[var(--warning-50)] rounded-[var(--radius-md)] border border-[var(--warning-100)] text-xs text-[var(--warning-700)] leading-relaxed">
                     <strong>CIS applies.</strong> £{totals.cisDeduction.toFixed(2)} will be deducted at {totals.customerCIS?.rateValue ?? 20}% and paid to HMRC on behalf of {customer?.name || "the subcontractor"}.
                   </div>
                 )}

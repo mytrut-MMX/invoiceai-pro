@@ -195,6 +195,8 @@ const BTN_SIZES = {
 const BTN_VARIANTS = {
   primary: "bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white border border-transparent",
   accent:  "bg-[var(--info-600)] hover:bg-[var(--info-700)] text-white border border-transparent",
+  success: "bg-[var(--success-600)] hover:bg-[var(--success-700)] text-white border border-transparent",
+  dark:    "bg-[var(--surface-dark)] hover:bg-[var(--surface-dark-2)] text-white border border-transparent",
   outline: "bg-white border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]",
   ghost:   "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] border border-transparent",
   danger:  "bg-[var(--danger-50)] text-[var(--danger-600)] border border-[var(--danger-100)] hover:bg-[var(--danger-100)]",

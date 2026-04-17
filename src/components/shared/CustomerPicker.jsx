@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ff } from "../../constants";
+import { Icons } from "../icons";
 
 export function CustomerPicker({ customers = [], value, onChange, onClear }) {
   const [open, setOpen] = useState(false);
@@ -14,7 +14,9 @@ export function CustomerPicker({ customers = [], value, onChange, onClear }) {
   }, []);
 
   const filtered = customers.filter(c =>
-    !search || c.name?.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase())
+    !search
+    || c.name?.toLowerCase().includes(search.toLowerCase())
+    || c.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSelect = c => { onChange(c); setSearch(""); setOpen(false); };
@@ -33,36 +35,42 @@ export function CustomerPicker({ customers = [], value, onChange, onClear }) {
     if (!open) setTimeout(() => inputRef.current?.focus(), 0);
   };
 
+  const shellCls = [
+    "flex items-center border rounded-[var(--radius-lg)] bg-white min-h-[42px] transition-[border-color,box-shadow] duration-150",
+    open
+      ? "border-[var(--brand-600)] shadow-[var(--focus-ring)]"
+      : value
+      ? "border-[var(--border-strong)]"
+      : "border-[var(--border-default)]",
+    value ? "cursor-default" : "cursor-pointer",
+  ].join(" ");
+
   return (
-    <div ref={wrapRef} style={{ position: "relative" }}>
-      <div
-        onClick={handleToggle}
-        style={{
-          display: "flex", alignItems: "center",
-          border: `1.5px solid ${open ? "#1e6be0" : value ? "#1a1a2e" : "#E0E0E0"}`,
-          borderRadius: 8, background: "#fff", cursor: value ? "default" : "pointer",
-          boxShadow: open ? "0 0 0 3px rgba(30,107,224,0.10)" : "none",
-          transition: "border-color 0.15s, box-shadow 0.15s",
-          minHeight: 42,
-        }}>
+    <div ref={wrapRef} className="relative">
+      <div onClick={handleToggle} className={shellCls}>
         {value ? (
           <>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#E86C4A22", color: "#E86C4A", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 10 }}>
-              {value.name?.[0]}
+            <div className="w-7 h-7 rounded-full bg-[var(--brand-50)] text-[var(--brand-700)] font-semibold text-xs flex items-center justify-center flex-shrink-0 ml-2.5">
+              {value.name?.[0]?.toUpperCase() || "?"}
             </div>
-            <div style={{ flex: 1, minWidth: 0, padding: "0 8px" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value.name}</div>
-              {value.email && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value.email}</div>}
+            <div className="flex-1 min-w-0 px-2">
+              <div className="text-sm font-semibold text-[var(--text-primary)] truncate">{value.name}</div>
+              {value.email && (
+                <div className="text-xs text-[var(--text-tertiary)] truncate">{value.email}</div>
+              )}
             </div>
-            <button onClick={handleClear} title="Remove customer"
-              style={{ padding: "0 12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex", alignItems: "center", fontSize: 16, flexShrink: 0, alignSelf: "stretch" }}>
-              ×
+            <button
+              onClick={handleClear}
+              title="Remove customer"
+              className="px-3 self-stretch bg-transparent border-none cursor-pointer flex items-center text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] flex-shrink-0"
+            >
+              <Icons.X />
             </button>
           </>
         ) : (
           <>
-            <span style={{ display: "flex", alignItems: "center", paddingLeft: 10, color: "#9ca3af", flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" strokeWidth="1.8"/><path d="M13.5 13.5l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            <span className="flex items-center pl-3 text-[var(--text-tertiary)] flex-shrink-0">
+              <Icons.Search />
             </span>
             <input
               ref={inputRef}
@@ -71,34 +79,33 @@ export function CustomerPicker({ customers = [], value, onChange, onClear }) {
               onFocus={() => setOpen(true)}
               onClick={e => e.stopPropagation()}
               placeholder="Select or add a customer"
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: ff, padding: "0 8px", background: "transparent", color: "#1a1a2e", lineHeight: "42px" }}
+              className="flex-1 min-w-0 border-none outline-none text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] px-2 h-[40px]"
             />
-            <span style={{ padding: "0 12px", display: "flex", alignItems: "center", color: "#9ca3af", flexShrink: 0 }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 512 512"
-                style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.18s" }}>
-                <path d="M2.157 159.57c0 13.773 5.401 27.542 16.195 38.02l198.975 192.867c21.411 20.725 55.94 20.725 77.34 0L493.63 197.59c21.508-20.846 21.637-54.778.269-75.773-21.35-20.994-56.104-21.098-77.612-.26L256.004 276.93 95.721 121.562c-21.528-20.833-56.268-20.734-77.637.26C7.472 132.261 2.157 145.923 2.157 159.57z" fill="currentColor"/>
-              </svg>
+            <span
+              className={`pr-3 flex items-center text-[var(--text-tertiary)] flex-shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+            >
+              <Icons.ChevDown />
             </span>
           </>
         )}
       </div>
 
       {open && !value && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1.5px solid #E0E0E0", borderRadius: 9, boxShadow: "0 8px 28px rgba(0,0,0,0.12)", zIndex: 400, maxHeight: 240, overflowY: "auto" }}>
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] z-[400] max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div style={{ padding: "14px 16px", fontSize: 13, color: "#9ca3af", textAlign: "center" }}>No customers found</div>
+            <div className="px-4 py-3.5 text-sm text-[var(--text-tertiary)] text-center">No customers found</div>
           ) : filtered.map(c => (
-            <button key={c.id}
+            <button
+              key={c.id}
               onMouseDown={e => { e.preventDefault(); handleSelect(c); }}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: ff, textAlign: "left" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#f4f5f7"}
-              onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#E86C4A22", color: "#E86C4A", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {c.name?.[0]}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+            >
+              <div className="w-7 h-7 rounded-full bg-[var(--brand-50)] text-[var(--brand-700)] font-semibold text-xs flex items-center justify-center flex-shrink-0">
+                {c.name?.[0]?.toUpperCase() || "?"}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>{c.name}</div>
-                {c.email && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{c.email}</div>}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-[var(--text-primary)] truncate">{c.name}</div>
+                {c.email && <div className="text-xs text-[var(--text-tertiary)] truncate">{c.email}</div>}
               </div>
             </button>
           ))}
