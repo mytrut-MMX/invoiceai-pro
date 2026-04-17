@@ -1,21 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock supabase BEFORE importing the module under test. The query builder
-// chains .select().eq().gte().lte().in() — each step returns the same
-// builder, and the final `.in()` is awaited as a thenable resolving to
-// { data, error }.
-const builder = {
-  select: vi.fn().mockReturnThis(),
-  eq: vi.fn().mockReturnThis(),
-  gte: vi.fn().mockReturnThis(),
-  lte: vi.fn().mockReturnThis(),
-  in: vi.fn(),
-};
-
+// Mock supabase BEFORE importing the module under test. The new
+// implementation calls supabase.rpc("get_accounting_profit", {...}) which
+// resolves to { data, error }.
 vi.mock("../../../lib/supabase", () => ({
-  supabase: { from: vi.fn(() => builder) },
+  supabase: { rpc: vi.fn() },
 }));
 
+const { supabase } = await import("../../../lib/supabase");
 const { getAccountingProfit } = await import("../getAccountingProfit");
 
 const baseInput = {
@@ -25,16 +17,12 @@ const baseInput = {
 };
 
 beforeEach(() => {
-  builder.select.mockClear();
-  builder.eq.mockClear();
-  builder.gte.mockClear();
-  builder.lte.mockClear();
-  builder.in.mockReset();
+  supabase.rpc.mockReset();
 });
 
 describe("getAccountingProfit", () => {
   it("returns all-zero totals on an empty period", async () => {
-    builder.in.mockResolvedValue({ data: [], error: null });
+    supabase.rpc.mockResolvedValue({ data: [], error: null });
 
     const r = await getAccountingProfit(baseInput);
 
@@ -50,15 +38,8 @@ describe("getAccountingProfit", () => {
     // Revenue: 1,000 + 500 credit, 50 debit (contra) => 1,450
     // Expense: 200 + 300 debit, 25 credit (contra)   => 475
     // Profit: 1,450 - 475 = 975
-    builder.in.mockResolvedValue({
-      data: [
-        { debit: 0, credit: 1000, accounts: { type: "revenue" } },
-        { debit: 0, credit: 500, accounts: { type: "revenue" } },
-        { debit: 50, credit: 0, accounts: { type: "revenue" } },
-        { debit: 200, credit: 0, accounts: { type: "expense" } },
-        { debit: 300, credit: 0, accounts: { type: "expense" } },
-        { debit: 0, credit: 25, accounts: { type: "expense" } },
-      ],
+    supabase.rpc.mockResolvedValue({
+      data: [{ revenue: 1450, expenses: 475, accounting_profit: 975 }],
       error: null,
     });
 
@@ -71,7 +52,7 @@ describe("getAccountingProfit", () => {
   });
 
   it("returns success=false with error message on Supabase error", async () => {
-    builder.in.mockResolvedValue({
+    supabase.rpc.mockResolvedValue({
       data: null,
       error: { message: "permission denied" },
     });
