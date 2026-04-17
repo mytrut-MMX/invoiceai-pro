@@ -8,6 +8,7 @@ const items = [
   { id: 'frontend-lead', label: 'Frontend Lead' },
   { id: 'data-ledger-lead', label: 'Data & Ledger Lead' },
   { id: 'backend-integrations-lead', label: 'Backend & Integrations Lead' },
+  { id: 'security-trust-lead', label: 'Security & Trust Lead' },
 ];
 
 export default function AdminSidebar({ section, setSection, userCount, contactCount, orchestratorCount }) {
