@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* ─── Base resets ──────────────────────────────────────── */
+html, body, #root {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ─── Tabular numerals for financial data ──────────────── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Focus ring utility ───────────────────────────────── */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

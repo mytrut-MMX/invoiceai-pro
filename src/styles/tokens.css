@@ -1,0 +1,84 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
+:root {
+  /* ─── Typography ─────────────────────────────────────── */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ─── Surfaces ───────────────────────────────────────── */
+  --surface-page: #F8F7F4;
+  --surface-card: #FFFFFF;
+  --surface-sunken: #F1F0EC;
+  --surface-overlay: #FFFFFF;
+  --surface-dark: #1C1917;
+  --surface-dark-2: #292524;
+
+  /* ─── Text ───────────────────────────────────────────── */
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --text-disabled: #D6D3D1;
+  --text-inverse: #FFFFFF;
+  --text-link: #4F46E5;
+
+  /* ─── Brand / Accent (deep indigo) ───────────────────── */
+  --brand-50: #EEF2FF;
+  --brand-100: #E0E7FF;
+  --brand-200: #C7D2FE;
+  --brand-500: #6366F1;
+  --brand-600: #4F46E5;
+  --brand-700: #4338CA;
+  --brand-900: #312E81;
+
+  /* ─── Borders ────────────────────────────────────────── */
+  --border-subtle: #E7E5E4;
+  --border-default: #D6D3D1;
+  --border-strong: #A8A29E;
+
+  /* ─── Semantic: Success ──────────────────────────────── */
+  --success-50: #ECFDF5;
+  --success-100: #D1FAE5;
+  --success-600: #059669;
+  --success-700: #047857;
+
+  /* ─── Semantic: Warning ──────────────────────────────── */
+  --warning-50: #FFFBEB;
+  --warning-100: #FEF3C7;
+  --warning-600: #D97706;
+  --warning-700: #B45309;
+
+  /* ─── Semantic: Danger ───────────────────────────────── */
+  --danger-50: #FEF2F2;
+  --danger-100: #FEE2E2;
+  --danger-600: #DC2626;
+  --danger-700: #B91C1C;
+
+  /* ─── Semantic: Info ─────────────────────────────────── */
+  --info-50: #EFF6FF;
+  --info-100: #DBEAFE;
+  --info-600: #2563EB;
+  --info-700: #1D4ED8;
+
+  /* ─── Semantic: Neutral ──────────────────────────────── */
+  --neutral-50: #F5F5F4;
+  --neutral-100: #E7E5E4;
+  --neutral-600: #57534E;
+
+  /* ─── Radii ──────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ─── Shadows ────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 2px 8px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 8px 24px rgba(28, 25, 23, 0.08), 0 2px 6px rgba(28, 25, 23, 0.04);
+  --shadow-popover: 0 12px 32px rgba(28, 25, 23, 0.12);
+
+  /* ─── Focus ──────────────────────────────────────────── */
+  --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.35);
+}
