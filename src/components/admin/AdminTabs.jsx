@@ -30,6 +30,9 @@ export default function AdminTabs({ tab, setTab, userCount, contactCount }) {
       <button style={tab === 'release-gate-agent' ? s.tabActive : s.tab} onClick={() => setTab('release-gate-agent')}>
         Release Gate
       </button>
+      <button style={tab === 'data-integrity-auditor' ? s.tabActive : s.tab} onClick={() => setTab('data-integrity-auditor')}>
+        Data Integrity
+      </button>
     </div>
   );
 }

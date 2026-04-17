@@ -15,6 +15,7 @@ const BackendIntegrationsLeadPanel = React.lazy(() => import('../components/admi
 const SecurityTrustLeadPanel = React.lazy(() => import('../components/admin/SecurityTrustLeadPanel'));
 const QaRegressionAgentPanel = React.lazy(() => import('../components/admin/QaRegressionAgentPanel'));
 const ReleaseGateAgentPanel = React.lazy(() => import('../components/admin/ReleaseGateAgentPanel'));
+const DataIntegrityAuditorPanel = React.lazy(() => import('../components/admin/DataIntegrityAuditorPanel'));
 
 const panelFallback = <div style={{ padding: 20, color: '#94a3b8' }}>Loading…</div>;
 
@@ -198,6 +199,12 @@ function AdminDashboard({ onLogout, token }) {
           {section === 'release-gate-agent' && (
             <Suspense fallback={panelFallback}>
               <ReleaseGateAgentPanel token={token} />
+            </Suspense>
+          )}
+
+          {section === 'data-integrity-auditor' && (
+            <Suspense fallback={panelFallback}>
+              <DataIntegrityAuditorPanel token={token} />
             </Suspense>
           )}
         </AdminLayout>
