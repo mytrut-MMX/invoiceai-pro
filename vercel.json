@@ -48,6 +48,7 @@
     { "src": "/api/security-trust-lead",  "dest": "/api/agents.js" },
     { "src": "/api/qa-regression-agent",  "dest": "/api/agents.js" },
     { "src": "/api/release-gate-agent",   "dest": "/api/agents.js" },
+    { "src": "/api/data-integrity-auditor","dest": "/api/agents.js" },
     { "src": "/api/(.*)",         "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)",             "dest": "/index.html" }
