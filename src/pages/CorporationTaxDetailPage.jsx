@@ -560,6 +560,13 @@ export default function CorporationTaxDetailPage() {
     return () => { cancelled = true; };
   }, [period]);
 
+  const accountingPeriodDays = useMemo(() => {
+    if (!period?.period_start || !period?.period_end) return 365;
+    const start = new Date(period.period_start);
+    const end = new Date(period.period_end);
+    return Math.round((end - start) / (1000 * 60 * 60 * 24));
+  }, [period]);
+
   // ─── Live calc (pure, synchronous) ───────────────────────────────────────
   const calc = useMemo(() => {
     if (accountingProfit === null) return null;
@@ -572,11 +579,12 @@ export default function CorporationTaxDetailPage() {
         associatedCompaniesCount: Number(associatedCo) || 0,
         augmentedProfitsAdjustment: Number(augmentedAdj) || 0,
         lossCarriedForwardIn: Number(lossIn) || 0,
+        accountingPeriodDays,
       });
     } catch (e) {
       return { error: e.message };
     }
-  }, [accountingProfit, disallowable, capital, other, associatedCo, augmentedAdj, lossIn]);
+  }, [accountingProfit, disallowable, capital, other, associatedCo, augmentedAdj, lossIn, accountingPeriodDays]);
 
   const isLocked = !!period?.locked;
 
@@ -1090,6 +1098,16 @@ export default function CorporationTaxDetailPage() {
                   {calc.lossUsed > 0 && (
                     <div style={{ fontSize: 12, color: "#16A34A", marginTop: 4 }}>
                       Loss relief applied: −{fmtGbp0(calc.lossUsed)}
+                    </div>
+                  )}
+                  {calc.lossUnused > 0 && (
+                    <div style={{ fontSize: 12, color: "#F59E0B", marginTop: 4 }}>
+                      Loss carry-forward out: {fmtGbp0(calc.lossUnused)}
+                    </div>
+                  )}
+                  {accountingPeriodDays !== 365 && (
+                    <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>
+                      Accounting period: {accountingPeriodDays} days (pro-rated)
                     </div>
                   )}
                   {((Number(augmentedAdj) || 0) > 0 || (Number(associatedCo) || 0) > 0) && (
