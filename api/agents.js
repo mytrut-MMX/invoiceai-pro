@@ -14,6 +14,7 @@ import { FRONTEND_ARCHITECTURE_LEAD_PROMPT, FRONTEND_ARCHITECTURE_LEAD_SCHEMA } 
 import { DATA_LEDGER_LEAD_PROMPT, DATA_LEDGER_LEAD_SCHEMA } from "../lib/prompts/dataLedgerLead.js";
 import { BACKEND_INTEGRATIONS_LEAD_PROMPT, BACKEND_INTEGRATIONS_LEAD_SCHEMA } from "../lib/prompts/backendIntegrationsLead.js";
 import { SECURITY_TRUST_LEAD_PROMPT, SECURITY_TRUST_LEAD_SCHEMA } from "../lib/prompts/securityTrustLead.js";
+import { QA_REGRESSION_AGENT_PROMPT, QA_REGRESSION_AGENT_SCHEMA } from "../lib/prompts/qaRegressionAgent.js";
 import { supabaseAdmin } from "../lib/supabaseAdmin.js";
 import { withRateLimit } from './_lib/with-rate-limit.js';
 
@@ -43,6 +44,7 @@ function detectAgent(req) {
   if (url.includes('data-ledger-lead')) return 'data-ledger-lead';
   if (url.includes('backend-integrations-lead')) return 'backend-integrations-lead';
   if (url.includes('security-trust-lead')) return 'security-trust-lead';
+  if (url.includes('qa-regression-agent')) return 'qa-regression-agent';
   if (url.includes('orchestrator')) return 'orchestrator';
   return req.body?.agent || 'orchestrator';
 }
@@ -473,6 +475,63 @@ async function handleSecurityTrustLead(req, res) {
   }
 }
 
+// ─── QA Regression Agent ────────────────────────────────────────────────────
+
+function validateQraInput(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return "Invalid request body.";
+  if (!body.objective_id || typeof body.objective_id !== "string") return "Missing or invalid objective_id.";
+  if (!body.task_id || typeof body.task_id !== "string") return "Missing or invalid task_id.";
+  if (!body.task_title || typeof body.task_title !== "string") return "Missing or invalid task_title.";
+  if (!body.task_description || typeof body.task_description !== "string") return "Missing or invalid task_description.";
+  if (!body.context || typeof body.context !== "object" || Array.isArray(body.context)) return "Missing or invalid context object.";
+  return null;
+}
+
+async function handleQaRegressionAgent(req, res) {
+  const inputError = validateQraInput(req.body);
+  if (inputError) return res.status(400).json({ success: false, error: inputError });
+
+  const userPayload = {
+    objective_id: req.body.objective_id, task_id: req.body.task_id,
+    task_title: req.body.task_title, task_description: req.body.task_description,
+    context: req.body.context,
+  };
+
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        { role: "developer", content: QA_REGRESSION_AGENT_PROMPT },
+        { role: "user", content: JSON.stringify(userPayload) },
+      ],
+      response_format: { type: "json_schema", json_schema: QA_REGRESSION_AGENT_SCHEMA },
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (!content) return res.status(502).json({ success: false, error: "Empty response from AI." });
+
+    let parsed;
+    try { parsed = JSON.parse(content); } catch { return res.status(502).json({ success: false, error: "AI returned non-JSON content.", raw: content }); }
+
+    if (parsed.agent !== "qa_regression_agent") return res.status(422).json({ success: false, error: "Invalid agent value.", data: parsed });
+    if (parsed.task_id !== userPayload.task_id) return res.status(422).json({ success: false, error: "Returned task_id does not match input.", data: parsed });
+    if (parsed.objective_id !== userPayload.objective_id) return res.status(422).json({ success: false, error: "Returned objective_id does not match input.", data: parsed });
+
+    const { data: insertedRows, error: insertError } = await supabaseAdmin
+      .from("agent_task_specs")
+      .insert([{ objective_id: parsed.objective_id, task_id: parsed.task_id, agent_name: parsed.agent, spec_payload: parsed, status: parsed.status }])
+      .select();
+
+    if (insertError) return res.status(500).json({ success: false, error: insertError.message });
+    return res.status(200).json({ success: true, data: parsed, saved: insertedRows?.[0] || null });
+  } catch (error) {
+    console.error('[qa-regression-agent] Error:', error.message);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+}
+
 // ─── Main handler ───────────────────────────────────────────────────────────
 
 async function handler(req, res) {
@@ -499,6 +558,10 @@ async function handler(req, res) {
 
   if (agentType === 'security-trust-lead') {
     return handleSecurityTrustLead(req, res);
+  }
+
+  if (agentType === 'qa-regression-agent') {
+    return handleQaRegressionAgent(req, res);
   }
 
   // orchestrator requires admin auth
