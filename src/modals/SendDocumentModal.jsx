@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import html2pdf from "html2pdf.js";
 import { ff, PDF_TEMPLATES } from "../constants";
 import { Btn, Field, Input, Textarea } from "../components/atoms";
 import { Icons } from "../components/icons";
@@ -194,6 +193,7 @@ export default function SendDocumentModal({
           const docTypeLabel = documentType === "quote" ? "Quote" : "Invoice";
           attachmentFilename = `${docTypeLabel}-${docNum || "document"}.pdf`;
 
+          const { default: html2pdf } = await import("html2pdf.js");
           const pdfBlob = await html2pdf()
             .set({
               margin: 0,

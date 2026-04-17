@@ -1,19 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import AdminLogin from '../components/admin/AdminLogin';
 import AdminHeader from '../components/admin/AdminHeader';
 import AdminLayout from '../components/admin/AdminLayout';
 import AdminStats from '../components/admin/AdminStats';
-import AdminUsersPanel from '../components/admin/AdminUsersPanel';
-import AdminContactsPanel from '../components/admin/AdminContactsPanel';
-import AdminOrchestratorRunner from '../components/admin/AdminOrchestratorRunner';
-import AdminOrchestratorHistory from '../components/admin/AdminOrchestratorHistory';
-import FrontendLeadPanel from '../components/admin/FrontendLeadPanel';
-import DataLedgerLeadPanel from '../components/admin/DataLedgerLeadPanel';
-import BackendIntegrationsLeadPanel from '../components/admin/BackendIntegrationsLeadPanel';
-import SecurityTrustLeadPanel from '../components/admin/SecurityTrustLeadPanel';
-import QaRegressionAgentPanel from '../components/admin/QaRegressionAgentPanel';
-import ReleaseGateAgentPanel from '../components/admin/ReleaseGateAgentPanel';
 import { s } from '../components/admin/adminShared';
+
+const AdminUsersPanel = React.lazy(() => import('../components/admin/AdminUsersPanel'));
+const AdminContactsPanel = React.lazy(() => import('../components/admin/AdminContactsPanel'));
+const AdminOrchestratorRunner = React.lazy(() => import('../components/admin/AdminOrchestratorRunner'));
+const AdminOrchestratorHistory = React.lazy(() => import('../components/admin/AdminOrchestratorHistory'));
+const FrontendLeadPanel = React.lazy(() => import('../components/admin/FrontendLeadPanel'));
+const DataLedgerLeadPanel = React.lazy(() => import('../components/admin/DataLedgerLeadPanel'));
+const BackendIntegrationsLeadPanel = React.lazy(() => import('../components/admin/BackendIntegrationsLeadPanel'));
+const SecurityTrustLeadPanel = React.lazy(() => import('../components/admin/SecurityTrustLeadPanel'));
+const QaRegressionAgentPanel = React.lazy(() => import('../components/admin/QaRegressionAgentPanel'));
+const ReleaseGateAgentPanel = React.lazy(() => import('../components/admin/ReleaseGateAgentPanel'));
+
+const panelFallback = <div style={{ padding: 20, color: '#94a3b8' }}>Loading…</div>;
 
 // ── Admin Dashboard (authenticated view) ────────────────────────────────────
 function AdminDashboard({ onLogout, token }) {
@@ -122,62 +125,80 @@ function AdminDashboard({ onLogout, token }) {
           )}
 
           {section === 'users' && (
-            <AdminUsersPanel loading={loading} users={users} />
+            <Suspense fallback={panelFallback}>
+              <AdminUsersPanel loading={loading} users={users} />
+            </Suspense>
           )}
 
           {section === 'contacts' && (
-            <AdminContactsPanel
-              loading={loading}
-              contacts={contacts}
-              expandedMsg={expandedMsg}
-              setExpandedMsg={setExpandedMsg}
-            />
+            <Suspense fallback={panelFallback}>
+              <AdminContactsPanel
+                loading={loading}
+                contacts={contacts}
+                expandedMsg={expandedMsg}
+                setExpandedMsg={setExpandedMsg}
+              />
+            </Suspense>
           )}
 
           {section === 'orchestrator' && (
-            <div>
-              <AdminOrchestratorRunner
-                orchTitle={orchTitle}
-                setOrchTitle={setOrchTitle}
-                orchObjective={orchObjective}
-                setOrchObjective={setOrchObjective}
-                orchRunning={orchRunning}
-                runOrchestrator={runOrchestrator}
-                orchError={orchError}
-                orchResult={orchResult}
-              />
-              <AdminOrchestratorHistory
-                loading={loading}
-                objectives={objectives}
-                tasks={tasks}
-                selectedObjectiveId={selectedObjectiveId}
-                setSelectedObjectiveId={setSelectedObjectiveId}
-              />
-            </div>
+            <Suspense fallback={panelFallback}>
+              <div>
+                <AdminOrchestratorRunner
+                  orchTitle={orchTitle}
+                  setOrchTitle={setOrchTitle}
+                  orchObjective={orchObjective}
+                  setOrchObjective={setOrchObjective}
+                  orchRunning={orchRunning}
+                  runOrchestrator={runOrchestrator}
+                  orchError={orchError}
+                  orchResult={orchResult}
+                />
+                <AdminOrchestratorHistory
+                  loading={loading}
+                  objectives={objectives}
+                  tasks={tasks}
+                  selectedObjectiveId={selectedObjectiveId}
+                  setSelectedObjectiveId={setSelectedObjectiveId}
+                />
+              </div>
+            </Suspense>
           )}
 
           {section === 'frontend-lead' && (
-            <FrontendLeadPanel token={token} />
+            <Suspense fallback={panelFallback}>
+              <FrontendLeadPanel token={token} />
+            </Suspense>
           )}
 
           {section === 'data-ledger-lead' && (
-            <DataLedgerLeadPanel token={token} />
+            <Suspense fallback={panelFallback}>
+              <DataLedgerLeadPanel token={token} />
+            </Suspense>
           )}
 
           {section === 'backend-integrations-lead' && (
-            <BackendIntegrationsLeadPanel token={token} />
+            <Suspense fallback={panelFallback}>
+              <BackendIntegrationsLeadPanel token={token} />
+            </Suspense>
           )}
 
           {section === 'security-trust-lead' && (
-            <SecurityTrustLeadPanel token={token} />
+            <Suspense fallback={panelFallback}>
+              <SecurityTrustLeadPanel token={token} />
+            </Suspense>
           )}
 
           {section === 'qa-regression-agent' && (
-            <QaRegressionAgentPanel token={token} />
+            <Suspense fallback={panelFallback}>
+              <QaRegressionAgentPanel token={token} />
+            </Suspense>
           )}
 
           {section === 'release-gate-agent' && (
-            <ReleaseGateAgentPanel token={token} />
+            <Suspense fallback={panelFallback}>
+              <ReleaseGateAgentPanel token={token} />
+            </Suspense>
           )}
         </AdminLayout>
       </div>

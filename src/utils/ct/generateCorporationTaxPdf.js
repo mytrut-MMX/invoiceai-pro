@@ -10,8 +10,6 @@
  * not a CT600 submission. See the disclaimer footer rendered into the PDF.
  */
 
-import html2pdf from "html2pdf.js";
-
 const ff = "'Inter', 'Lato', 'DM Sans', 'Helvetica Neue', sans-serif";
 const mono = "'Courier New', monospace";
 
@@ -277,6 +275,7 @@ async function withRenderedDoc({ company, period, calc }, worker) {
 export async function generateCorporationTaxPdfBlob({ company, period, calc }) {
   try {
     const filename = filenameFor({ company, period });
+    const { default: html2pdf } = await import("html2pdf.js");
     return await withRenderedDoc({ company, period, calc }, async (el) => {
       const blob = await html2pdf().set(pdfOptions(filename)).from(el).outputPdf("blob");
       return { success: true, filename, blob };

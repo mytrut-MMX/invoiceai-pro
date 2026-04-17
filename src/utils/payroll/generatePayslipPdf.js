@@ -6,7 +6,6 @@
  * html2pdf.js to convert it to a downloadable PDF.
  */
 
-import html2pdf from "html2pdf.js";
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import PayslipDocument from "../../components/payroll/PayslipDocument";
@@ -59,6 +58,7 @@ export async function generatePayslipPdf(payslip, employee, payrollRun, employer
     const filename = `Payslip_${lastName}_${periodEnd}.pdf`;
 
     // Generate PDF with same options as invoice generator
+    const { default: html2pdf } = await import("html2pdf.js");
     await html2pdf()
       .set({
         margin: 0,
