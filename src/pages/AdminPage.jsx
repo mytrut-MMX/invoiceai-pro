@@ -10,6 +10,7 @@ import AdminOrchestratorHistory from '../components/admin/AdminOrchestratorHisto
 import FrontendLeadPanel from '../components/admin/FrontendLeadPanel';
 import DataLedgerLeadPanel from '../components/admin/DataLedgerLeadPanel';
 import BackendIntegrationsLeadPanel from '../components/admin/BackendIntegrationsLeadPanel';
+import SecurityTrustLeadPanel from '../components/admin/SecurityTrustLeadPanel';
 import { s } from '../components/admin/adminShared';
 
 // ── Admin Dashboard (authenticated view) ────────────────────────────────────
@@ -163,6 +164,10 @@ function AdminDashboard({ onLogout, token }) {
 
           {section === 'backend-integrations-lead' && (
             <BackendIntegrationsLeadPanel token={token} />
+          )}
+
+          {section === 'security-trust-lead' && (
+            <SecurityTrustLeadPanel token={token} />
           )}
         </AdminLayout>
       </div>

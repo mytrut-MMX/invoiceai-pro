@@ -21,6 +21,9 @@ export default function AdminTabs({ tab, setTab, userCount, contactCount }) {
       <button style={tab === 'backend-integrations-lead' ? s.tabActive : s.tab} onClick={() => setTab('backend-integrations-lead')}>
         Backend & Integrations Lead
       </button>
+      <button style={tab === 'security-trust-lead' ? s.tabActive : s.tab} onClick={() => setTab('security-trust-lead')}>
+        Security & Trust Lead
+      </button>
     </div>
   );
 }
