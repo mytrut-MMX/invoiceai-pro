@@ -8,8 +8,7 @@ import { AppCtx } from "../context/AppContext";
 import { deletePayment } from "../lib/dataAccess";
 import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { Icons } from "../components/icons";
-import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
+import { Field, Input, Select, Textarea, Btn, StatusBadge } from "../components/atoms";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 
 const METHOD_ICON = {
@@ -343,90 +342,220 @@ export default function PaymentsPage({ initialShowForm = false }) {
     />
   );
 
+  const thisMonthTotal = payments
+    .filter(p => p.status !== "Refunded" && p.date?.startsWith(new Date().toISOString().slice(0, 7)))
+    .reduce((s, p) => s + Number(p.amount || 0), 0);
+
   return (
-    <div style={moduleUi.pageCanvas}>
-      <div style={{ ...moduleUi.page, fontFamily:ff }}>
-        <div style={moduleUi.sectionStack}>
-      <div style={moduleUi.summaryGrid}>
-        {[
-          { label:"Total Received", value:fmt(currSym,totalReceived), color:"#16A34A" },
-          { label:"Unreconciled",   value:unreconciledCount, color: unreconciledCount ? "#d97706" : "#64748b" },
-          { label:"This Month",     value:fmt(currSym,payments.filter(p=>p.status!=="Refunded"&&p.date?.startsWith(new Date().toISOString().slice(0,7))).reduce((s,p)=>s+Number(p.amount||0),0)), color:"#1A1A1A" },
-          { label:"Refunded",       value:fmt(currSym,totalRef), color:"#DC2626" },
-          { label:"Transactions",   value:payments.length, color:"#64748b" },
-        ].map(s=>(
-          <div key={s.label} style={moduleUi.summaryCard}>
-            <div style={{ fontSize:10, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5 }}>{s.label}</div>
-            <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
+        <div className="flex items-end justify-between gap-3 mb-5 flex-wrap">
+          <div>
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] m-0">Payments Received</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1 m-0">
+              {payments.length} record{payments.length !== 1 ? "s" : ""} · searchable, auditable payment history
+            </p>
           </div>
-        ))}
-      </div>
-
-      <ModuleHeader title="Payments Received" helper={`${payments.length} records · searchable, auditable payment history.`} right={<Btn onClick={() => { setEditingPayment(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>Record Payment</Btn>} />
-
-      <div style={{ ...moduleUi.toolbar, marginTop:12 }}>
-        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search payments…" />
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-            style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
-            {["All","Reconciled","Partial","Pending","Refunded"].map(s=><option key={s}>{s}</option>)}
-          </select>
-          <select value={filterMethod} onChange={e=>setFilterMethod(e.target.value)}
-            style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, fontFamily:ff, background:"#fff", outline:"none", cursor:"pointer" }}>
-            {methods.map(m=><option key={m}>{m}</option>)}
-          </select>
-          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{setSearch(""); setFilterMethod("All"); setFilterStatus("All");}}>Clear filters</Btn>}
+          <Btn onClick={() => { setEditingPayment(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>Record payment</Btn>
         </div>
-     </div>
-      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
-          <thead>
-            <tr style={moduleUi.tableHead}>
-              {["Payment #","Date","Customer","Invoice","Method","Reference","Amount","Status",""].map(h=>(
-                <th key={h} style={{ ...moduleUi.th, textAlign:h==="Amount"?"right":"left" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(pmt=>(
-              <tr key={pmt.id}
-                onClick={() => setViewingPayment(pmt)}
-                style={{ ...moduleUi.rowHover, cursor:"pointer" }}
-                onMouseEnter={e=>e.currentTarget.style.background="#F5F8FF"}
-                onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <td style={{ padding:"12px 16px", fontSize:12, color:"#1A1A1A", fontWeight:700, whiteSpace:"nowrap" }}>{pmt.payment_number||"—"}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:"#888", whiteSpace:"nowrap" }}>{fmtDate(pmt.date)}</td>
-                <td style={{ padding:"12px 16px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                    <div style={{ width:26, height:26, borderRadius:"50%", background:"#16A34A22", color:"#16A34A", fontWeight:800, fontSize:11, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{(pmt.customer_name||"?")[0]}</div>
-                    <span style={moduleUi.primaryText}>{pmt.customer_name||"—"}</span>
-                  </div>
-                </td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:"#4F46E5", fontWeight:600 }}>{pmt.invoice_number||"—"}</td>
-                <td style={{ padding:"12px 16px", fontSize:13, color:"#555" }}>
-                  <span>{METHOD_ICON[pmt.method]||"💰"} {pmt.method}</span>
-                </td>
-                <td style={{ padding:"12px 16px", fontSize:12, color:"#AAA", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pmt.reference||"—"}</td>
-                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell, color:pmt.status==="Refunded"?"#DC2626":"#16A34A" }}>
-                  {pmt.status==="Refunded"?"-":""}{fmt(currSym,pmt.amount||0)}
-                </td>
-                <td style={{ padding:"12px 16px" }}><StatusBadge status={pmt.status} /></td>
-                <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
-                  <div style={{ display:"flex", gap:4 }}>
-                    <Btn onClick={() => { setEditingPayment(pmt); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} />
-                    <Btn onClick={()=>del(pmt.id)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#dc2626" }} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filtered.length===0 && (
-              <tr><td colSpan={9}><EmptyState icon={<Icons.Payments />} text={payments.length===0?"No payments recorded yet.":"No payments match your filters."} cta={<Btn variant="outline" onClick={()=>{setSearch(""); setFilterMethod("All"); setFilterStatus("All");}}>Clear filters</Btn>} /></td></tr>
+
+        {/* Summary strip */}
+        {payments.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+            <PaymentSummaryCard label="Total Received" value={fmt(currSym, totalReceived)} tone="success" />
+            <PaymentSummaryCard label="Unreconciled"   value={String(unreconciledCount)}    tone={unreconciledCount ? "warning" : "muted"} />
+            <PaymentSummaryCard label="This Month"     value={fmt(currSym, thisMonthTotal)} tone="neutral" />
+            <PaymentSummaryCard label="Refunded"       value={fmt(currSym, totalRef)}        tone="danger" />
+            <PaymentSummaryCard label="Transactions"   value={String(payments.length)}       tone="muted" />
+          </div>
+        )}
+
+        {/* Main card */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-3 flex items-center gap-2 flex-wrap border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2 flex-1 min-w-[160px] h-9 px-3 bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)]">
+              <span className="text-[var(--text-tertiary)] flex flex-shrink-0"><Icons.Search /></span>
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search payments…"
+                className="flex-1 min-w-0 border-none outline-none bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} title="Clear" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer flex flex-shrink-0 p-0">
+                  <Icons.X />
+                </button>
+              )}
+            </div>
+            <select
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+            >
+              {["All", "Reconciled", "Partial", "Pending", "Refunded"].map(s => <option key={s}>{s}</option>)}
+            </select>
+            <select
+              value={filterMethod}
+              onChange={e => setFilterMethod(e.target.value)}
+              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+            >
+              {methods.map(m => <option key={m}>{m}</option>)}
+            </select>
+            {hasFilters && (
+              <button
+                onClick={() => { setSearch(""); setFilterMethod("All"); setFilterStatus("All"); }}
+                className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer px-2 py-1 whitespace-nowrap transition-colors duration-150"
+              >
+                Clear
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[780px]">
+              <thead>
+                <tr className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)]">
+                  <PmtTh>Payment #</PmtTh>
+                  <PmtTh>Date</PmtTh>
+                  <PmtTh>Customer</PmtTh>
+                  <PmtTh>Invoice</PmtTh>
+                  <PmtTh>Method</PmtTh>
+                  <PmtTh>Reference</PmtTh>
+                  <PmtTh align="right">Amount</PmtTh>
+                  <PmtTh>Status</PmtTh>
+                  <PmtTh align="right" />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={9}>
+                      {payments.length === 0 ? (
+                        <PmtEmptyState
+                          icon={<Icons.Payments />}
+                          title="No payments yet"
+                          message="Record your first payment to start tracking inflows"
+                          cta={<Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingPayment(null); setShowForm(true); }}>Record payment</Btn>}
+                        />
+                      ) : (
+                        <PmtEmptyState
+                          icon={<Icons.Search />}
+                          title="No payments match your filters"
+                          cta={<Btn variant="outline" onClick={() => { setSearch(""); setFilterMethod("All"); setFilterStatus("All"); }}>Clear filters</Btn>}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                ) : filtered.map(pmt => {
+                  const custName = pmt.customer_name || "—";
+                  return (
+                    <tr
+                      key={pmt.id}
+                      onClick={() => setViewingPayment(pmt)}
+                      className="border-b border-[var(--border-subtle)] last:border-0 cursor-pointer hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+                    >
+                      <td className="py-3 px-4 text-sm font-semibold text-[var(--text-primary)] whitespace-nowrap">{pmt.payment_number || "—"}</td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)] whitespace-nowrap">{fmtDate(pmt.date)}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-[26px] h-[26px] rounded-full bg-[var(--success-100)] text-[var(--success-700)] font-semibold text-[11px] flex items-center justify-center flex-shrink-0">
+                            {(custName || "?")[0].toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium text-[var(--text-primary)] truncate max-w-[180px]">{custName}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-[var(--brand-600)] whitespace-nowrap">{pmt.invoice_number || "—"}</td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                        {pmt.method ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span>{METHOD_ICON[pmt.method] || "💰"}</span>
+                            <span>{pmt.method}</span>
+                          </span>
+                        ) : "—"}
+                      </td>
+                      <td className="py-3 px-4 text-xs text-[var(--text-tertiary)] truncate max-w-[140px] whitespace-nowrap">{pmt.reference || "—"}</td>
+                      <td className={`py-3 px-4 text-right text-sm font-medium tabular-nums whitespace-nowrap ${pmt.status === "Refunded" ? "text-[var(--danger-600)]" : "text-[var(--success-700)]"}`}>
+                        {pmt.status === "Refunded" ? "−" : ""}{fmt(currSym, pmt.amount || 0)}
+                      </td>
+                      <td className="py-3 px-4"><StatusBadge status={pmt.status} /></td>
+                      <td className="py-3 px-4 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <PmtActionBtn onClick={() => { setEditingPayment(pmt); setShowForm(true); }} title="Edit payment" icon={<Icons.Edit />} />
+                          <PmtActionBtn onClick={() => del(pmt.id)} title="Delete payment" icon={<Icons.Trash />} tone="danger" />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {filtered.length > 0 && (
+            <div className="border-t border-[var(--border-subtle)] px-4 py-2 text-xs text-[var(--text-tertiary)] text-right">
+              {hasFilters ? `${filtered.length} of ${payments.length}` : payments.length} payment{payments.length !== 1 ? "s" : ""}
+            </div>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Payments list helpers (Tailwind) ─────────────────────────────────────────
+
+function PmtTh({ children, align = "left" }) {
+  const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  return (
+    <th className={`py-2.5 px-4 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider whitespace-nowrap ${alignCls}`}>
+      {children}
+    </th>
+  );
+}
+
+function PmtActionBtn({ onClick, title, icon, tone = "neutral" }) {
+  const toneCls = tone === "danger"
+    ? "hover:border-[var(--danger-100)] hover:text-[var(--danger-600)]"
+    : "hover:border-[var(--brand-600)] hover:text-[var(--brand-600)]";
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`flex items-center justify-center bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function PaymentSummaryCard({ label, value, tone = "neutral" }) {
+  const toneCls = {
+    success: "text-[var(--success-600)]",
+    danger:  "text-[var(--danger-600)]",
+    warning: "text-[var(--warning-600)]",
+    muted:   "text-[var(--text-tertiary)]",
+    neutral: "text-[var(--text-primary)]",
+  }[tone] || "text-[var(--text-primary)]";
+  return (
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-4">
+      <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums leading-tight ${toneCls}`}>{value}</div>
+    </div>
+  );
+}
+
+function PmtEmptyState({ icon, title, message, cta }) {
+  return (
+    <div className="py-16 px-6 text-center">
+      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
+        {icon}
+      </div>
+      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
+      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
+      {cta}
     </div>
   );
 }

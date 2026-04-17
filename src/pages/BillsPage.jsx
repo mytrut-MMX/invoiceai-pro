@@ -1,11 +1,10 @@
 import { useState, useContext, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { ff, CUR_SYM, BILL_STATUSES } from "../constants";
+import { CUR_SYM, BILL_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Btn } from "../components/atoms";
-import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
+import { Btn, StatusBadge } from "../components/atoms";
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
 import BillFormPanel from "../components/bills/BillFormPanel";
 import RecordBillPaymentModal from "../components/bills/RecordBillPaymentModal";
@@ -32,6 +31,61 @@ function filterBills(bills, key) {
   return bills.filter(b => b.status === key);
 }
 
+function Th({ children, align = "left" }) {
+  const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  return (
+    <th className={`py-2.5 px-4 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider whitespace-nowrap ${alignCls}`}>
+      {children}
+    </th>
+  );
+}
+
+function ActionBtn({ onClick, title, icon, tone = "neutral", children }) {
+  const toneCls = tone === "danger"
+    ? "hover:border-[var(--danger-100)] hover:text-[var(--danger-600)]"
+    : "hover:border-[var(--brand-600)] hover:text-[var(--brand-600)]";
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`flex items-center justify-center gap-1 bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] px-2 py-1.5 cursor-pointer text-xs text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function SummaryCard({ label, value, tone = "neutral" }) {
+  const toneCls = {
+    info:    "text-[var(--info-600)]",
+    danger:  "text-[var(--danger-600)]",
+    success: "text-[var(--success-600)]",
+    warning: "text-[var(--warning-600)]",
+    brand:   "text-[var(--brand-700)]",
+    neutral: "text-[var(--text-primary)]",
+  }[tone] || "text-[var(--text-primary)]";
+  return (
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-4">
+      <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums leading-tight ${toneCls}`}>{value}</div>
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, message, cta }) {
+  return (
+    <div className="py-16 px-6 text-center">
+      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
+        {icon}
+      </div>
+      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
+      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
+      {cta}
+    </div>
+  );
+}
+
 export default function BillsPage({ initialShowForm = false }) {
   const { bills, setBills, orgSettings, user } = useContext(AppCtx);
   const { cisEnabled } = useCISSettings();
@@ -46,7 +100,6 @@ export default function BillsPage({ initialShowForm = false }) {
   const [cisFilter,    setCisFilter]    = useState("all");
   const [paymentModalBill, setPaymentModalBill] = useState(null);
 
-  // ─── Auto-mark overdue ─────────────────────────────────────────────────────
   useEffect(() => {
     const today = todayStr();
     setBills(prev => {
@@ -58,7 +111,6 @@ export default function BillsPage({ initialShowForm = false }) {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Filtered + searched list ──────────────────────────────────────────────
   const sorted = useMemo(() => {
     let result = filterBills(bills, activeFilter);
     if (cisEnabled && cisFilter !== "all") {
@@ -79,7 +131,6 @@ export default function BillsPage({ initialShowForm = false }) {
     return [...result].sort((a, b) => new Date(b.bill_date) - new Date(a.bill_date));
   }, [bills, activeFilter, search, cisFilter, cisEnabled]);
 
-  // ─── Stats ─────────────────────────────────────────────────────────────────
   const today = todayStr();
   const weekEnd = (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split("T")[0]; })();
   const totalAll   = bills.reduce((s, b) => s + Number(b.total || b.amount || 0), 0);
@@ -93,10 +144,8 @@ export default function BillsPage({ initialShowForm = false }) {
     .reduce((s, b) => s + Number(b.cis_deduction || 0), 0);
 
   const hasFilters = search || activeFilter !== "all" || (cisEnabled && cisFilter !== "all");
-
   const { page, setPage, totalPages, paginatedItems, totalItems, pageSize } = usePagination(sorted, 25);
 
-  // ─── CRUD ──────────────────────────────────────────────────────────────────
   const onSave = bill => {
     setBills(prev => {
       const idx = prev.findIndex(x => x.id === bill.id);
@@ -120,14 +169,12 @@ export default function BillsPage({ initialShowForm = false }) {
       alert("Failed to delete bill: " + (error.message || "Unknown error"));
       return;
     }
-    // Fire-and-forget ledger reversal — never blocks the UI delete path
     ;(async () => {
       try {
         const { userId } = await fetchUserAccounts();
         if (!userId) return;
         const billEntry = await findEntryBySource('bill', id);
         if (billEntry) await reverseEntry(billEntry.id, userId);
-        // Payment entries use composite source_id: `${billId}:${date}:${amount}`
         const { data: paymentEntries } = await supabase
           .from('journal_entries')
           .select('id')
@@ -141,7 +188,7 @@ export default function BillsPage({ initialShowForm = false }) {
       }
     })();
   };
-  // ─── Approve a draft bill ──────────────────────────────────────────────────
+
   const handleApprove = (bill) => {
     const updated = { ...bill, status: 'Approved' };
     setBills(prev => prev.map(b => b.id === bill.id ? updated : b));
@@ -149,13 +196,11 @@ export default function BillsPage({ initialShowForm = false }) {
       ;(async () => {
         const { error } = await saveBill(user.id, updated);
         if (error) { console.error('[BillsPage] approve save failed:', error); return; }
-        // Post ledger entry now that bill is approved
         try {
           const { accounts, userId } = await fetchUserAccounts();
           if (!userId) return;
-          const supplier = null; // postBillEntry handles null supplier
           const { postBillEntry } = await import('../utils/ledger/postBillEntry');
-          await postBillEntry(updated, supplier, accounts, userId);
+          await postBillEntry(updated, null, accounts, userId);
         } catch (err) {
           console.error('[Ledger] approve post failed:', err);
         }
@@ -163,25 +208,18 @@ export default function BillsPage({ initialShowForm = false }) {
     }
   };
 
-  // ─── Record bill payment ───────────────────────────────────────────────────
   const handlePaymentRecorded = ({ paymentAmount, paidDate }) => {
     const bill = paymentModalBill;
     if (!bill) return;
-
     const prevPaid    = Number(bill.paid_amount || 0);
     const newPaidAmt  = Math.round((prevPaid + Number(paymentAmount)) * 100) / 100;
     const outstanding = Math.round((Number(bill.total || 0) - Number(bill.cis_deduction || 0)) * 100) / 100;
     const newStatus   = newPaidAmt + 0.005 >= outstanding ? "Paid"
                       : newPaidAmt > 0                    ? "Partially Paid"
                       : bill.status;
-
     const updated = { ...bill, paid_amount: newPaidAmt, paid_date: paidDate, status: newStatus };
-
-    // Optimistic local update
     setBills(prev => prev.map(b => (b.id === bill.id ? updated : b)));
     setPaymentModalBill(null);
-
-    // Fire-and-forget persist — ledger already posted by the modal.
     if (user?.id) {
       ;(async () => {
         const { error } = await saveBill(user.id, updated);
@@ -190,7 +228,6 @@ export default function BillsPage({ initialShowForm = false }) {
     }
   };
 
-  // ─── Form mode ─────────────────────────────────────────────────────────────
   if (showForm) return (
     <BillFormPanel
       existing={editingBill}
@@ -202,121 +239,185 @@ export default function BillsPage({ initialShowForm = false }) {
     />
   );
 
-  // ─── Render ────────────────────────────────────────────────────────────────
-  const cols = cisEnabled
-    ? ["Date", "Supplier", "Bill #", "Category", "CIS", "Due Date", "Status", "Amount", ""]
-    : ["Date", "Supplier", "Bill #", "Category", "Due Date", "Status", "Amount", ""];
+  const summaryItems = [
+    { label: "Total Bills",     value: fmt(currSym, totalAll),   tone: "neutral" },
+    { label: "Overdue",         value: fmt(currSym, overdueAmt), tone: "danger" },
+    { label: "Due This Week",   value: fmt(currSym, dueWeekAmt), tone: "warning" },
+    { label: "Paid",            value: fmt(currSym, paidAmt),    tone: "success" },
+    ...(cisEnabled ? [{ label: "CIS Deducted (YTD)", value: fmt(currSym, cisYtdAmt), tone: "brand" }] : []),
+  ];
 
   return (
-    <div style={moduleUi.pageCanvas}>
-      <div style={{ ...moduleUi.page, maxWidth: 1320, fontFamily: ff }}>
-        <ModuleHeader
-          title="Bills"
-          helper={`${bills.length} record${bills.length !== 1 ? "s" : ""} · track supplier invoices and accounts payable.`}
-          right={<Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingBill(null); setShowForm(true); }}>New Bill</Btn>}
-        />
-
-        {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginTop: 16, marginBottom: 10 }}>
-          {[
-            { label: "Total Bills", value: fmt(currSym, totalAll),   color: "#0f172a" },
-            { label: "Overdue",     value: fmt(currSym, overdueAmt), color: "#dc2626" },
-            { label: "Due This Week", value: fmt(currSym, dueWeekAmt), color: "#d97706" },
-            { label: "Paid",        value: fmt(currSym, paidAmt),    color: "#059669" },
-            ...(cisEnabled ? [{ label: "CIS Deducted (YTD)", value: fmt(currSym, cisYtdAmt), color: "#7c3aed" }] : []),
-          ].map(c => (
-            <div key={c.label} style={moduleUi.summaryCard}>
-              <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", fontWeight: 700 }}>{c.label}</div>
-              <div style={{ fontSize: 20, marginTop: 4, fontWeight: 800, color: c.color }}>{c.value}</div>
-            </div>
-          ))}
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
+        <div className="flex items-end justify-between gap-3 mb-5 flex-wrap">
+          <div>
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] m-0">Bills</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1 m-0">
+              {bills.length} record{bills.length !== 1 ? "s" : ""} · track supplier invoices and accounts payable
+            </p>
+          </div>
+          <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingBill(null); setShowForm(true); }}>New bill</Btn>
         </div>
 
-        {/* Toolbar */}
-        <div style={{ ...moduleUi.toolbar, marginTop: 10, marginBottom: 10 }}>
-          <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search bills…" />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <select value={activeFilter} onChange={e => setActiveFilter(e.target.value)}
-              style={{ padding: "8px 10px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 12, background: "#fff", fontFamily: ff }}>
+        {/* Summary strip */}
+        {bills.length > 0 && (
+          <div className={`grid grid-cols-2 ${cisEnabled ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-3 mb-4`}>
+            {summaryItems.map(c => (
+              <SummaryCard key={c.label} label={c.label} value={c.value} tone={c.tone} />
+            ))}
+          </div>
+        )}
+
+        {/* Main card */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-3 flex items-center gap-2 flex-wrap border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2 flex-1 min-w-[160px] h-9 px-3 bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)]">
+              <span className="text-[var(--text-tertiary)] flex flex-shrink-0"><Icons.Search /></span>
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search bills…"
+                className="flex-1 min-w-0 border-none outline-none bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  title="Clear"
+                  className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer flex flex-shrink-0 p-0"
+                >
+                  <Icons.X />
+                </button>
+              )}
+            </div>
+            <select
+              value={activeFilter}
+              onChange={e => setActiveFilter(e.target.value)}
+              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+            >
               {FILTER_OPTS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
             {cisEnabled && (
-              <select value={cisFilter} onChange={e => setCisFilter(e.target.value)}
-                style={{ padding: "8px 10px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 12, background: "#fff", fontFamily: ff }}>
+              <select
+                value={cisFilter}
+                onChange={e => setCisFilter(e.target.value)}
+                className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+              >
                 <option value="all">All (CIS + non-CIS)</option>
                 <option value="cis_only">CIS Only</option>
                 <option value="non_cis">Non-CIS Only</option>
               </select>
             )}
-            {hasFilters && <Btn variant="ghost" size="sm" onClick={() => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }}>Clear filters</Btn>}
-            <span style={{ fontSize: 12, color: "#9ca3af" }}>{sorted.length} record{sorted.length !== 1 ? "s" : ""}</span>
+            {hasFilters && (
+              <button
+                onClick={() => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }}
+                className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer px-2 py-1 rounded whitespace-nowrap transition-colors duration-150"
+              >
+                Clear
+              </button>
+            )}
           </div>
-        </div>
 
-        {/* Table */}
-        <div style={{ ...moduleUi.card, flex: 1, overflowY: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
-            <thead>
-              <tr style={{ ...moduleUi.tableHead, position: "sticky", top: 0, zIndex: 1 }}>
-                {cols.map(h => <th key={h} style={{ ...moduleUi.th, textAlign: (h === "Amount" || h === "CIS") ? "right" : "left" }}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedItems.map(bill => (
-                <tr key={bill.id}
-                  onClick={() => { setEditingBill(bill); setShowForm(true); }}
-                  style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  <td style={{ padding: "11px 16px", fontSize: 13, color: "#374151", whiteSpace: "nowrap" }}>{fmtDate(bill.bill_date)}</td>
-                  <td style={{ padding: "11px 16px", fontSize: 13, color: "#1a1a2e", fontWeight: 500 }}>{bill.supplier_name || "—"}</td>
-                  <td style={{ padding: "11px 16px", fontSize: 13, color: "#1e6be0", fontWeight: 600, whiteSpace: "nowrap" }}>{bill.bill_number || "—"}</td>
-                  <td style={{ padding: "11px 16px", fontSize: 13, color: "#6b7280" }}>{bill.category || "—"}</td>
-                  {cisEnabled && (
-                    <td style={{ padding: "11px 16px", fontSize: 13, color: Number(bill.cis_deduction || 0) > 0 ? "#7c3aed" : "#cbd5e1", fontWeight: Number(bill.cis_deduction || 0) > 0 ? 600 : 400, textAlign: "right", whiteSpace: "nowrap" }}>
-                      {Number(bill.cis_deduction || 0) > 0 ? fmt(currSym, bill.cis_deduction) : "—"}
-                    </td>
-                  )}
-                  <td style={{ padding: "11px 16px", fontSize: 13, color: bill.due_date < today && bill.status !== "Paid" && bill.status !== "Void" ? "#dc2626" : "#374151", fontWeight: bill.due_date < today && bill.status !== "Paid" && bill.status !== "Void" ? 600 : 400, whiteSpace: "nowrap" }}>
-                    {fmtDate(bill.due_date)}
-                  </td>
-                  <td style={{ padding: "11px 16px" }}><StatusBadge status={bill.status} /></td>
-                  <td style={{ padding: "11px 16px", fontSize: 13, fontWeight: 600, color: "#1a1a2e", textAlign: "right", whiteSpace: "nowrap" }}>
-                    {fmt(currSym, bill.total || bill.amount || 0)}
-                    {isVat && bill.tax_amount > 0 && (
-                      <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 400 }}>incl. {fmt(currSym, bill.tax_amount)} VAT</div>
-                    )}
-                  </td>
-                  <td style={{ padding: "11px 12px" }} onClick={ev => ev.stopPropagation()}>
-                    <div style={{ display: "flex", gap: 2, opacity: 0 }} className="row-actions"
-                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                      onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                      {bill.status === "Draft" && (
-                        <Btn size="sm" variant="ghost" onClick={() => handleApprove(bill)}>Approve</Btn>
-                      )}
-                      <Btn size="sm" variant="ghost" icon={<Icons.Edit />} onClick={() => { setEditingBill(bill); setShowForm(true); }} />
-                      {bill.status !== "Paid" && bill.status !== "Void" && bill.status !== "Draft" && (
-                        <Btn size="sm" variant="ghost" onClick={() => setPaymentModalBill(bill)}>Pay</Btn>
-                      )}
-                      <Btn size="sm" variant="ghost" icon={<Icons.Trash />} onClick={() => onDelete(bill.id)} />
-                    </div>
-                  </td>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[780px]">
+              <thead>
+                <tr className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)]">
+                  <Th>Date</Th>
+                  <Th>Supplier</Th>
+                  <Th>Bill #</Th>
+                  <Th>Category</Th>
+                  {cisEnabled && <Th align="right">CIS</Th>}
+                  <Th>Due Date</Th>
+                  <Th>Status</Th>
+                  <Th align="right">Amount</Th>
+                  <Th align="right" />
                 </tr>
-              ))}
-              {sorted.length === 0 && (
-                <tr><td colSpan={cisEnabled ? 9 : 8}><EmptyState icon={<Icons.Receipt />}
-                  text={bills.length === 0 ? "No bills yet. Record your first supplier invoice to start tracking payables." : "No bills match your current search or filters."}
-                  cta={bills.length === 0
-                    ? <Btn variant="primary" onClick={() => { setEditingBill(null); setShowForm(true); }}>New Bill</Btn>
-                    : <Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }}>Clear filters</Btn>}
-                /></td></tr>
-              )}
-            </tbody>
-          </table>
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} pageSize={pageSize} />
-        </div>
+              </thead>
+              <tbody>
+                {sorted.length === 0 ? (
+                  <tr>
+                    <td colSpan={cisEnabled ? 9 : 8}>
+                      {bills.length === 0 ? (
+                        <EmptyState
+                          icon={<Icons.Receipt />}
+                          title="No bills yet"
+                          message="Record your first supplier invoice to start tracking payables"
+                          cta={<Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingBill(null); setShowForm(true); }}>New bill</Btn>}
+                        />
+                      ) : (
+                        <EmptyState
+                          icon={<Icons.Search />}
+                          title="No bills match your filters"
+                          cta={<Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }}>Clear filters</Btn>}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                ) : paginatedItems.map(bill => {
+                  const isOverdue = bill.due_date < today && bill.status !== "Paid" && bill.status !== "Void";
+                  return (
+                    <tr
+                      key={bill.id}
+                      onClick={() => { setEditingBill(bill); setShowForm(true); }}
+                      className="border-b border-[var(--border-subtle)] last:border-0 cursor-pointer hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+                    >
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)] whitespace-nowrap">{fmtDate(bill.bill_date)}</td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-primary)] font-medium">{bill.supplier_name || "—"}</td>
+                      <td className="py-3 px-4 text-sm font-medium text-[var(--brand-600)] whitespace-nowrap">{bill.bill_number || "—"}</td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{bill.category || "—"}</td>
+                      {cisEnabled && (
+                        <td className="py-3 px-4 text-sm text-right tabular-nums whitespace-nowrap">
+                          {Number(bill.cis_deduction || 0) > 0 ? (
+                            <span className="text-[var(--brand-700)] font-medium">{fmt(currSym, bill.cis_deduction)}</span>
+                          ) : (
+                            <span className="text-[var(--text-tertiary)]">—</span>
+                          )}
+                        </td>
+                      )}
+                      <td className={`py-3 px-4 text-sm whitespace-nowrap ${isOverdue ? "text-[var(--danger-600)] font-medium" : "text-[var(--text-secondary)]"}`}>
+                        {fmtDate(bill.due_date)}
+                      </td>
+                      <td className="py-3 px-4"><StatusBadge status={bill.status} /></td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap tabular-nums">
+                        <div className="text-sm font-medium text-[var(--text-primary)]">{fmt(currSym, bill.total || bill.amount || 0)}</div>
+                        {isVat && bill.tax_amount > 0 && (
+                          <div className="text-[11px] text-[var(--text-tertiary)]">incl. {fmt(currSym, bill.tax_amount)} VAT</div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap" onClick={ev => ev.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          {bill.status === "Draft" && (
+                            <ActionBtn onClick={() => handleApprove(bill)} title="Approve bill">Approve</ActionBtn>
+                          )}
+                          <ActionBtn onClick={() => { setEditingBill(bill); setShowForm(true); }} title="Edit bill" icon={<Icons.Edit />} />
+                          {bill.status !== "Paid" && bill.status !== "Void" && bill.status !== "Draft" && (
+                            <ActionBtn onClick={() => setPaymentModalBill(bill)} title="Record payment">Pay</ActionBtn>
+                          )}
+                          <ActionBtn onClick={() => onDelete(bill.id)} title="Delete bill" icon={<Icons.Trash />} tone="danger" />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-        <style>{`tr:hover .row-actions { opacity: 1 !important; }`}</style>
+          {sorted.length > 0 && totalPages > 1 && (
+            <div className="px-4 border-t border-[var(--border-subtle)]">
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} pageSize={pageSize} />
+            </div>
+          )}
+
+          {sorted.length > 0 && (
+            <div className="border-t border-[var(--border-subtle)] px-4 py-2 text-xs text-[var(--text-tertiary)] text-right">
+              {hasFilters ? `${sorted.length} of ${bills.length}` : bills.length} record{bills.length !== 1 ? "s" : ""}
+            </div>
+          )}
+        </div>
       </div>
 
       {paymentModalBill && (

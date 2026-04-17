@@ -1,14 +1,81 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Tag, Switch, InfoBox } from "../components/atoms";
-import { moduleUi, ModuleHeader, SearchInput, EmptyState, StatusBadge } from "../components/shared/moduleListUI";
 import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 import { deleteCatalogItem } from "../lib/dataAccess";
+
+const TYPE_COLORS = {
+  Service:   "var(--info-600)",
+  Labour:    "var(--warning-600)",
+  Material:  "var(--success-600)",
+  Equipment: "var(--brand-500)",
+  Other:     "var(--text-tertiary)",
+};
+
+const TYPE_AVATAR = {
+  Service:   { bg: "bg-[var(--info-50)]",    fg: "text-[var(--info-700)]" },
+  Labour:    { bg: "bg-[var(--warning-50)]", fg: "text-[var(--warning-700)]" },
+  Material:  { bg: "bg-[var(--success-50)]", fg: "text-[var(--success-700)]" },
+  Equipment: { bg: "bg-[var(--brand-50)]",   fg: "text-[var(--brand-700)]" },
+  Other:     { bg: "bg-[var(--neutral-50)]", fg: "text-[var(--text-secondary)]" },
+};
+
+function Th({ children, align = "left" }) {
+  const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  return (
+    <th className={`py-2.5 px-4 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider whitespace-nowrap ${alignCls}`}>
+      {children}
+    </th>
+  );
+}
+
+function ActionBtn({ onClick, title, icon, tone = "neutral" }) {
+  const toneCls = tone === "danger"
+    ? "hover:border-[var(--danger-100)] hover:text-[var(--danger-600)]"
+    : "hover:border-[var(--brand-600)] hover:text-[var(--brand-600)]";
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`flex items-center justify-center bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function SummaryCard({ label, value, tone = "neutral" }) {
+  const toneCls = {
+    info:    "text-[var(--info-600)]",
+    success: "text-[var(--success-600)]",
+    warning: "text-[var(--warning-600)]",
+    brand:   "text-[var(--brand-700)]",
+    neutral: "text-[var(--text-primary)]",
+  }[tone] || "text-[var(--text-primary)]";
+  return (
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-4">
+      <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums leading-tight ${toneCls}`}>{value}</div>
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, message, cta }) {
+  return (
+    <div className="py-16 px-6 text-center">
+      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
+        {icon}
+      </div>
+      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
+      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
+      {cta}
+    </div>
+  );
+}
 
 export default function ItemsPage({ initialShowForm = false }) {
   const { orgSettings, catalogItems, setCatalogItems, invoices, quotes, user } = useContext(AppCtx);
@@ -22,8 +89,8 @@ export default function ItemsPage({ initialShowForm = false }) {
   const [statusFilter, setStatusFilter] = useState("All");
 
   const deleteItem = async (item) => {
-    const linked = [...(invoices||[]), ...(quotes||[])].filter(doc =>
-      (doc.line_items||doc.items||[]).some(li => li.itemId === item.id || li.name === item.name)
+    const linked = [...(invoices || []), ...(quotes || [])].filter(doc =>
+      (doc.line_items || doc.items || []).some(li => li.itemId === item.id || li.name === item.name)
     ).length;
     const msg = linked > 0
       ? `"${item.name}" is used in ${linked} invoice/quote(s). Deleting will not remove those records.\n\nDelete anyway?`
@@ -51,8 +118,8 @@ export default function ItemsPage({ initialShowForm = false }) {
 
   const onSave = item => {
     setCatalogItems(p => {
-      const i = p.findIndex(x=>x.id===item.id);
-      if(i>=0){ const u=[...p]; u[i]=item; return u; }
+      const i = p.findIndex(x => x.id === item.id);
+      if (i >= 0) { const u = [...p]; u[i] = item; return u; }
       return [...p, item];
     });
     if (initialShowForm) { navigate(ROUTES.ITEMS, { replace: true }); return; }
@@ -60,10 +127,8 @@ export default function ItemsPage({ initialShowForm = false }) {
     setEditingItem(null);
   };
 
-  const toggleActive = id => setCatalogItems(p => p.map(i => i.id===id ? {...i, active:!i.active} : i));
+  const toggleActive = id => setCatalogItems(p => p.map(i => i.id === id ? { ...i, active: !i.active } : i));
 
-  const typeColors = { Service:"#1e6be0", Labour:"#d97706", Material:"#059669", Equipment:"#0891b2", Other:"#6b7280" };
-  const typeAvatars = { Service:"#e8f0fc", Labour:"#fef3c7", Material:"#d1fae5", Equipment:"#cffafe", Other:"#e5e7eb" };
   const activeItems = catalogItems.filter(i => i.active).length;
   const servicesCount = catalogItems.filter(i => i.type === "Service").length;
   const materialsCount = catalogItems.filter(i => i.type === "Material").length;
@@ -81,90 +146,190 @@ export default function ItemsPage({ initialShowForm = false }) {
       settings={{ cis: { enabled: orgSettings?.cisReg === "Yes" } }}
     />
   );
-  
+
   return (
-    <div style={moduleUi.pageCanvas}>
-      <div style={{ ...moduleUi.page, fontFamily:ff }}>
-        <div style={moduleUi.sectionStack}>
-      <ModuleHeader
-        title="Items"
-        helper="Manage products and services with rates, VAT, CIS and active status."
-        right={<Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New Item</Btn>}
-      />
-      <div style={moduleUi.summaryGrid}>
-        {[
-          { label:"Total Items", value:catalogItems.length, color:"#0f172a" },
-          { label:"Active Items", value:activeItems, color:"#059669" },
-          { label:"Services", value:servicesCount, color:"#1d4ed8" },
-          { label:"Materials", value:materialsCount, color:"#0f766e" },
-        ].map(card => (
-          <div key={card.label} style={moduleUi.summaryCard}>
-            <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", fontWeight:700 }}>{card.label}</div>
-            <div style={{ fontSize:20, marginTop:4, fontWeight:800, color:card.color }}>{card.value}</div>
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
+        <div className="flex items-end justify-between gap-3 mb-5 flex-wrap">
+          <div>
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] m-0">Items</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1 m-0">
+              Manage products and services with rates, VAT, CIS and active status
+            </p>
           </div>
-        ))}
-      </div>
-
-      {!isVat && <div style={{ marginTop:12 }}><InfoBox color="#D97706">Your organisation is not VAT registered. VAT rates are hidden on all items.</InfoBox></div>}
-
-      <div style={moduleUi.toolbar}>
-        <SearchInput value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items…" />
-      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
-            {["All",...Object.keys(typeColors)].map(v => <option key={v}>{v}</option>)}
-          </select>
-          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
-            {["All","Active","Inactive"].map(v => <option key={v}>{v}</option>)}
-          </select>
-          {hasFilters && <Btn variant="ghost" size="sm" onClick={()=>{ setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>}
+          <Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New item</Btn>
         </div>
-      </div>
 
-      <div style={{ ...moduleUi.card, overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:680 }}>
-          <thead>
-            <tr style={moduleUi.tableHead}>
-              {["Name","Type","Rate","Unit",...(isVat?["VAT"]:[]),"CIS","Status","",""] .map(h=>(
-                <th key={h} style={{ ...moduleUi.th, textAlign:h==="Rate"?"right":"left" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(item=>(
-             <tr key={item.id} onClick={() => { setEditingItem(item); setShowForm(true); }} style={{ ...moduleUi.rowHover, cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"} onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <td style={moduleUi.td}>
-                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    {item.photo
-                      ? <img src={item.photo} alt="" style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
-                      : <div style={{ width:30, height:30, borderRadius:"50%", background:typeAvatars[item.type]||"#e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:typeColors[item.type]||"#6b7280", flexShrink:0 }}>{(item.type||"—")[0]}</div>
-                    }
-                    <div>
-                      <div style={moduleUi.primaryText}>{item.name}</div>
-                      <div style={moduleUi.secondaryText}>{item.description}</div>
-                    </div>
-                  </div>
-                </td>
-                <td style={moduleUi.td}><Tag color={typeColors[item.type]||"#6b7280"}>{item.type||"—"}</Tag></td>
-                <td style={{ ...moduleUi.td, ...moduleUi.moneyCell }}>{fmt("£",item.rate)}</td>
-                <td style={moduleUi.td}>{item.unit}</td>
-                {isVat && <td style={moduleUi.td}>{item.taxRate}%</td>}
-                <td style={moduleUi.td}>{isCisOrg && item.cis?.enabled ? <Tag color="#D97706">CIS {item.cis?.labour ?? 100}% labour</Tag> : <span style={{ fontSize:12, color:"#94a3b8" }}>—</span>}</td>
-                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}>
-                  <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                    <Switch checked={item.active} onChange={()=>toggleActive(item.id)} />
-                    <span style={{ fontSize:12, color:item.active?"#16A34A":"#94a3b8" }}>{item.active?"Active":"Inactive"}</span>
-                  </div>
-                </td>
-                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => { setEditingItem(item); setShowForm(true); }} variant="ghost" size="sm" icon={<Icons.Edit />} /></td>
-                <td style={moduleUi.td} onClick={e=>e.stopPropagation()}><Btn onClick={() => deleteItem(item)} variant="ghost" size="sm" icon={<Icons.Trash />} style={{ color:"#dc2626" }} /></td>
-              </tr>
-            ))}
-            {filtered.length===0 && (
-              <tr><td colSpan={9}><EmptyState icon={<Icons.Items />} text={catalogItems.length===0 ? "No items yet. Create one to start pricing invoices and quotes." : "No items match your current search or filters."} cta={catalogItems.length===0 ? <Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary">New Item</Btn> : <Btn variant="outline" onClick={()=>{ setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>} /></td></tr>
+        {/* Summary strip */}
+        {catalogItems.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <SummaryCard label="Total Items"  value={String(catalogItems.length)} tone="neutral" />
+            <SummaryCard label="Active Items" value={String(activeItems)}         tone="success" />
+            <SummaryCard label="Services"     value={String(servicesCount)}       tone="info" />
+            <SummaryCard label="Materials"    value={String(materialsCount)}      tone="brand" />
+          </div>
+        )}
+
+        {!isVat && (
+          <div className="mb-4">
+            <InfoBox color="var(--warning-600)">
+              Your organisation is not VAT registered. VAT rates are hidden on all items.
+            </InfoBox>
+          </div>
+        )}
+
+        {/* Main card */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-3 flex items-center gap-2 flex-wrap border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2 flex-1 min-w-[160px] h-9 px-3 bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)]">
+              <span className="text-[var(--text-tertiary)] flex flex-shrink-0"><Icons.Search /></span>
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search items…"
+                className="flex-1 min-w-0 border-none outline-none bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} title="Clear" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer flex flex-shrink-0 p-0">
+                  <Icons.X />
+                </button>
+              )}
+            </div>
+            <select
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value)}
+              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+            >
+              {["All", ...Object.keys(TYPE_COLORS)].map(v => <option key={v}>{v}</option>)}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+            >
+              {["All", "Active", "Inactive"].map(v => <option key={v}>{v}</option>)}
+            </select>
+            {hasFilters && (
+              <button
+                onClick={() => { setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}
+                className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer px-2 py-1 whitespace-nowrap transition-colors duration-150"
+              >
+                Clear
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[780px]">
+              <thead>
+                <tr className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)]">
+                  <Th>Name</Th>
+                  <Th>Type</Th>
+                  <Th align="right">Rate</Th>
+                  <Th>Unit</Th>
+                  {isVat && <Th align="right">VAT</Th>}
+                  <Th>CIS</Th>
+                  <Th>Status</Th>
+                  <Th align="right" />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={isVat ? 8 : 7}>
+                      {catalogItems.length === 0 ? (
+                        <EmptyState
+                          icon={<Icons.Items />}
+                          title="No items yet"
+                          message="Create one to start pricing invoices and quotes"
+                          cta={<Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New item</Btn>}
+                        />
+                      ) : (
+                        <EmptyState
+                          icon={<Icons.Search />}
+                          title="No items match your filters"
+                          cta={<Btn variant="outline" onClick={() => { setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                ) : filtered.map(item => {
+                  const avatarTone = TYPE_AVATAR[item.type] || TYPE_AVATAR.Other;
+                  return (
+                    <tr
+                      key={item.id}
+                      onClick={() => { setEditingItem(item); setShowForm(true); }}
+                      className="border-b border-[var(--border-subtle)] last:border-0 cursor-pointer hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2.5">
+                          {item.photo ? (
+                            <img
+                              src={item.photo}
+                              alt=""
+                              className="w-[30px] h-[30px] rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center font-semibold text-xs flex-shrink-0 ${avatarTone.bg} ${avatarTone.fg}`}>
+                              {(item.type || "—")[0]}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-[var(--text-primary)] truncate">{item.name}</div>
+                            {item.description && (
+                              <div className="text-xs text-[var(--text-tertiary)] truncate max-w-[280px]">{item.description}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Tag color={TYPE_COLORS[item.type] || "var(--text-tertiary)"}>{item.type || "—"}</Tag>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm font-medium text-[var(--text-primary)] tabular-nums whitespace-nowrap">
+                        {fmt("£", item.rate)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{item.unit}</td>
+                      {isVat && (
+                        <td className="py-3 px-4 text-right text-sm text-[var(--text-secondary)] tabular-nums whitespace-nowrap">
+                          {item.taxRate}%
+                        </td>
+                      )}
+                      <td className="py-3 px-4">
+                        {isCisOrg && item.cis?.enabled ? (
+                          <Tag color="var(--warning-600)">CIS {item.cis?.labour ?? 100}% labour</Tag>
+                        ) : (
+                          <span className="text-xs text-[var(--text-tertiary)]">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          <Switch checked={item.active} onChange={() => toggleActive(item.id)} />
+                          <span className={`text-xs ${item.active ? "text-[var(--success-700)] font-medium" : "text-[var(--text-tertiary)]"}`}>
+                            {item.active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <ActionBtn onClick={() => { setEditingItem(item); setShowForm(true); }} title="Edit item" icon={<Icons.Edit />} />
+                          <ActionBtn onClick={() => deleteItem(item)} title="Delete item" icon={<Icons.Trash />} tone="danger" />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {filtered.length > 0 && (
+            <div className="border-t border-[var(--border-subtle)] px-4 py-2 text-xs text-[var(--text-tertiary)] text-right">
+              {hasFilters ? `${filtered.length} of ${catalogItems.length}` : catalogItems.length} item{catalogItems.length !== 1 ? "s" : ""}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -263,13 +263,45 @@ export const Ribbon = ({ status }) => {
 };
 
 // ─── STATUS BADGE (new) ──────────────────────────────────────────────────────
+const NEUTRAL   = { bg: "var(--neutral-50)", text: "var(--neutral-600)",   dot: "var(--neutral-600)" };
+const INFO      = { bg: "var(--info-50)",    text: "var(--info-700)",      dot: "var(--info-600)" };
+const SUCCESS   = { bg: "var(--success-50)", text: "var(--success-700)",   dot: "var(--success-600)" };
+const DANGER    = { bg: "var(--danger-50)",  text: "var(--danger-700)",    dot: "var(--danger-600)" };
+const WARNING   = { bg: "var(--warning-50)", text: "var(--warning-700)",   dot: "var(--warning-600)" };
+const BRAND     = { bg: "var(--brand-50)",   text: "var(--brand-700)",     dot: "var(--brand-500)" };
+const MUTED     = { bg: "var(--neutral-50)", text: "var(--text-tertiary)", dot: "var(--text-disabled)" };
+
 const STATUS_BADGE_STYLES = {
-  Draft:   { bg: "var(--neutral-50)",  text: "var(--neutral-600)",   dot: "var(--neutral-600)" },
-  Sent:    { bg: "var(--info-50)",     text: "var(--info-600)",      dot: "var(--info-600)" },
-  Paid:    { bg: "var(--success-50)",  text: "var(--success-600)",   dot: "var(--success-600)" },
-  Overdue: { bg: "var(--danger-50)",   text: "var(--danger-600)",    dot: "var(--danger-600)" },
-  Partial: { bg: "var(--warning-50)",  text: "var(--warning-600)",   dot: "var(--warning-600)" },
-  Void:    { bg: "var(--neutral-50)",  text: "var(--text-tertiary)", dot: "var(--text-disabled)" },
+  // invoice + bill lifecycle
+  Draft:    NEUTRAL,
+  Sent:     INFO,
+  Paid:     SUCCESS,
+  Overdue:  DANGER,
+  Partial:  WARNING,
+  "Partially Paid": WARNING,
+  Void:     MUTED,
+  Voided:   MUTED,
+  // quote lifecycle
+  Accepted: SUCCESS,
+  Declined: DANGER,
+  Invoiced: BRAND,
+  Expired:  WARNING,
+  Pending:  NEUTRAL,
+  // payments
+  Reconciled: SUCCESS,
+  Refunded:   DANGER,
+  // generic workflow
+  Submitted:  INFO,
+  Approved:   SUCCESS,
+  Finalized:  SUCCESS,
+  Reimbursed: BRAND,
+  "Awaiting Approval": WARNING,
+  // entities
+  Active:      SUCCESS,
+  Inactive:    NEUTRAL,
+  Business:    INFO,
+  Individual:  NEUTRAL,
+  Leaver:      MUTED,
 };
 export const StatusBadge = ({ status }) => {
   const s = STATUS_BADGE_STYLES[status] || STATUS_BADGE_STYLES.Draft;

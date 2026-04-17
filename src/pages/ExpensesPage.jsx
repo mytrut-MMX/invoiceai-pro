@@ -1,11 +1,10 @@
 import { useState, useContext, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { ff, CUR_SYM, EXPENSE_STATUSES } from "../constants";
+import { CUR_SYM, EXPENSE_STATUSES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
-import { Btn } from "../components/atoms";
-import { moduleUi, EmptyState, ModuleHeader, SearchInput, StatusBadge } from "../components/shared/moduleListUI";
+import { Btn, StatusBadge } from "../components/atoms";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 import ExpenseForm from "../components/expenses/ExpenseForm";
 import { deleteExpense } from "../lib/dataAccess";
@@ -63,6 +62,59 @@ function filterExpenses(expenses, key) {
   return expenses.filter(e => e.status === key);
 }
 
+function Th({ children, align = "left" }) {
+  const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  return (
+    <th className={`py-2.5 px-4 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider whitespace-nowrap ${alignCls}`}>
+      {children}
+    </th>
+  );
+}
+
+function ActionBtn({ onClick, title, icon, tone = "neutral" }) {
+  const toneCls = tone === "danger"
+    ? "hover:border-[var(--danger-100)] hover:text-[var(--danger-600)]"
+    : "hover:border-[var(--brand-600)] hover:text-[var(--brand-600)]";
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`flex items-center justify-center bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function SummaryCard({ label, value, tone = "neutral" }) {
+  const toneCls = {
+    info:    "text-[var(--info-600)]",
+    success: "text-[var(--success-600)]",
+    warning: "text-[var(--warning-600)]",
+    brand:   "text-[var(--brand-700)]",
+    neutral: "text-[var(--text-primary)]",
+  }[tone] || "text-[var(--text-primary)]";
+  return (
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-4">
+      <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums leading-tight ${toneCls}`}>{value}</div>
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, message, cta }) {
+  return (
+    <div className="py-16 px-6 text-center">
+      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
+        {icon}
+      </div>
+      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
+      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
+      {cta}
+    </div>
+  );
+}
+
 export default function ExpensesPage({ initialShowForm = false }) {
   const { expenses, setExpenses, orgSettings, user } = useContext(AppCtx);
   const navigate = useNavigate();
@@ -94,13 +146,13 @@ export default function ExpensesPage({ initialShowForm = false }) {
     return [...result].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [expenses, activeFilter, search, billableFilter]);
 
-  const hasFilters       = search || activeFilter !== "all" || billableFilter !== "All";
+  const hasFilters = search || activeFilter !== "all" || billableFilter !== "All";
 
   const { page, setPage, totalPages, paginatedItems, totalItems, pageSize } = usePagination(sortedFiltered, 25);
   const totalExpenses    = expenses.reduce((s, e) => s + Number(e.total || 0), 0);
   const billableCount    = expenses.filter(e => e.billable).length;
   const withReceiptCount = expenses.filter(e => !!e.receipt_url || !!e.receipt).length;
-  const countFor = key  => filterExpenses(expenses, key).length;
+  const countFor = key => filterExpenses(expenses, key).length;
 
   const onSave = exp => {
     setExpenses(prev => {
@@ -127,7 +179,6 @@ export default function ExpensesPage({ initialShowForm = false }) {
       alert("Failed to delete expense: " + (error.message || "Unknown error"));
       return;
     }
-    // Fire-and-forget ledger reversal — never blocks the UI delete path
     ;(async () => {
       try {
         const { userId } = await fetchUserAccounts();
@@ -151,157 +202,200 @@ export default function ExpensesPage({ initialShowForm = false }) {
     />
   );
 
-  const cols = ["Date", "Expense Account", "Reference #", "Paid Through", "Customer", "Status", "Amount", ""];
-
   return (
-    <div style={moduleUi.pageCanvas}>
-      <div style={{ ...moduleUi.page, maxWidth: 1320, fontFamily: ff }}>
-        <div style={{ display: "flex", height: "100%" }}>
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
+        <div className="flex items-end justify-between gap-3 mb-5 flex-wrap">
+          <div>
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] m-0">Expenses</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1 m-0">
+              {expenses.length} record{expenses.length !== 1 ? "s" : ""} · monitor spend, billables, and documentation
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn>
+            <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New expense</Btn>
+          </div>
+        </div>
 
-          {/* LEFT FILTER PANEL */}
-          <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid #e8e8ec", background: "#fff", padding: "14px 0", overflowY: "auto" }}>
+        {/* Summary strip */}
+        {expenses.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <SummaryCard label="Total Expenses" value={fmt(currSym, totalExpenses)} tone="neutral" />
+            <SummaryCard label="Billable"       value={String(billableCount)}       tone="info" />
+            <SummaryCard label="With Receipt"   value={String(withReceiptCount)}    tone="success" />
+          </div>
+        )}
+
+        <div className="flex gap-4">
+          {/* Left filter panel */}
+          <div className="hidden lg:block w-[200px] flex-shrink-0 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] py-3 h-fit">
             {FILTER_GROUPS.map(({ key, label }) => {
-              if (!label) return <div key={key} style={{ height: 1, background: "#f0f0f4", margin: "8px 0" }} />;
+              if (!label) return <div key={key} className="h-px bg-[var(--border-subtle)] my-2" />;
               const cnt    = countFor(key);
               const active = activeFilter === key;
               return (
-                <button key={key} onClick={() => setActiveFilter(key)}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    width: "100%", textAlign: "left", padding: "7px 18px",
-                    background: "none", border: "none",
-                    borderLeft: `3px solid ${active ? "#1e6be0" : "transparent"}`,
-                    color: active ? "#1e6be0" : "#374151",
-                    fontSize: 13, fontWeight: active ? 700 : 400,
-                    cursor: "pointer", fontFamily: ff,
-                  }}>
+                <button
+                  key={key}
+                  onClick={() => setActiveFilter(key)}
+                  className={[
+                    "flex items-center justify-between w-full text-left px-4 py-1.5 bg-transparent border-none border-l-[3px] cursor-pointer text-sm transition-colors duration-150",
+                    active
+                      ? "border-l-[var(--brand-600)] text-[var(--brand-700)] font-semibold bg-[var(--brand-50)]"
+                      : "border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]",
+                  ].join(" ")}
+                >
                   <span>{label}</span>
                   {cnt > 0 && (
-                    <span style={{ fontSize: 11, color: active ? "#1e6be0" : "#9ca3af", fontWeight: 600, minWidth: 18, textAlign: "right" }}>{cnt}</span>
+                    <span className={`text-[11px] font-semibold min-w-[18px] text-right ${active ? "text-[var(--brand-700)]" : "text-[var(--text-tertiary)]"}`}>
+                      {cnt}
+                    </span>
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* MAIN CONTENT */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "0 0 0 14px", gap: 12 }}>
-            <ModuleHeader
-              title="Expenses"
-              helper={`${expenses.length} records · monitor spend, billables, and documentation.`}
-              right={
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Btn variant="outline" icon={<Icons.Download />} onClick={() => exportCSV(sortedFiltered)}>Export CSV</Btn>
-                  <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn>
+          {/* Main area */}
+          <div className="flex-1 min-w-0 flex flex-col gap-3">
+            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
+              {/* Toolbar */}
+              <div className="p-3 flex items-center gap-2 flex-wrap border-b border-[var(--border-subtle)]">
+                <div className="flex items-center gap-2 flex-1 min-w-[160px] h-9 px-3 bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)]">
+                  <span className="text-[var(--text-tertiary)] flex flex-shrink-0"><Icons.Search /></span>
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search expenses…"
+                    className="flex-1 min-w-0 border-none outline-none bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+                  />
+                  {search && (
+                    <button onClick={() => setSearch("")} title="Clear" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer flex flex-shrink-0 p-0">
+                      <Icons.X />
+                    </button>
+                  )}
                 </div>
-              }
-            />
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginTop: 12, marginBottom: 10 }}>
-              {[
-                { label: "Total Expenses", value: fmt(currSym, totalExpenses), color: "#0f172a" },
-                { label: "Billable",       value: billableCount,               color: "#1d4ed8" },
-                { label: "With Receipt",   value: withReceiptCount,            color: "#0f766e" },
-              ].map(card => (
-                <div key={card.label} style={moduleUi.summaryCard}>
-                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", fontWeight: 700 }}>{card.label}</div>
-                  <div style={{ fontSize: 20, marginTop: 4, fontWeight: 800, color: card.color }}>{card.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* search toolbar */}
-            <div style={{ ...moduleUi.toolbar, marginTop: 10, marginBottom: 10 }}>
-              <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search expenses…" />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <select value={billableFilter} onChange={e => setBillableFilter(e.target.value)} style={{ padding: "8px 10px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 12, background: "#fff", fontFamily: ff }}>
+                <select
+                  value={billableFilter}
+                  onChange={e => setBillableFilter(e.target.value)}
+                  className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+                >
                   {["All", "Billable", "With Receipt"].map(v => <option key={v}>{v}</option>)}
                 </select>
-                {hasFilters && <Btn variant="ghost" size="sm" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>}
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>{sortedFiltered.length} record{sortedFiltered.length !== 1 ? "s" : ""}</span>
+                {hasFilters && (
+                  <button
+                    onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}
+                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer px-2 py-1 whitespace-nowrap transition-colors duration-150"
+                  >
+                    Clear
+                  </button>
+                )}
+                <span className="text-xs text-[var(--text-tertiary)] ml-auto">
+                  {sortedFiltered.length} record{sortedFiltered.length !== 1 ? "s" : ""}
+                </span>
               </div>
-            </div>
 
-            {/* table */}
-            <div style={{ ...moduleUi.card, flex: 1, overflowY: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
-                <thead>
-                  <tr style={{ ...moduleUi.tableHead, position: "sticky", top: 0, zIndex: 1 }}>
-                    {cols.map(h => (
-                      <th key={h} style={{ ...moduleUi.th, textAlign: ["Amount"].includes(h) ? "right" : "left" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedItems.map(exp => (
-                    <tr key={exp.id}
-                      onClick={() => { setEditingExp(exp); setShowForm(true); }}
-                      style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                      onMouseLeave={e => e.currentTarget.style.background = ""}>
-                      <td style={{ padding: "11px 16px", fontSize: 13, color: "#374151", whiteSpace: "nowrap" }}>
-                        {fmtDate(exp.date)}
-                      </td>
-                      <td style={{ padding: "11px 16px", fontSize: 13, color: "#1a1a2e", fontWeight: 500 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {exp.expense_type === "mileage" && (
-                            <span style={{ fontSize: 11, color: "#0891b2", background: "#ecfeff", padding: "1px 6px", borderRadius: 10, fontWeight: 700 }}>Mileage</span>
-                          )}
-                          <span>{exp.category || <span style={{ color: "#c4c4c4" }}>—</span>}</span>
-                          {exp.is_cis_expense && (
-                            <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 700, color: "#92400e", background: "#fef3c7", borderRadius: 4, padding: "1px 5px" }}>CIS</span>
-                          )}
-                        </div>
-                        {exp.expense_type === "mileage" && exp.mileage_km > 0 && (
-                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{exp.mileage_km} km · {exp.mileage_from} → {exp.mileage_to}</div>
-                        )}
-                        {exp.expense_type !== "mileage" && exp.vendor && (
-                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{exp.vendor}</div>
-                        )}
-                      </td>
-                      <td style={{ padding: "11px 16px", fontSize: 13, color: "#1e6be0", fontWeight: 600, whiteSpace: "nowrap" }}>
-                        {exp.expense_number}
-                      </td>
-                      <td style={{ padding: "11px 16px", fontSize: 13, color: "#6b7280" }}>
-                        {exp.paid_through || "—"}
-                      </td>
-                      <td style={{ padding: "11px 16px", fontSize: 13, color: exp.billable && exp.customer ? "#059669" : "#9ca3af", fontWeight: exp.billable && exp.customer ? 600 : 400 }}>
-                        {exp.billable && exp.customer ? exp.customer.name : exp.billable ? <span style={{ color: "#d97706", fontWeight: 600 }}>Billable</span> : "—"}
-                      </td>
-                      <td style={{ padding: "11px 16px" }}>
-                        <StatusBadge status={exp.status} />
-                      </td>
-                      <td style={{ padding: "11px 16px", fontSize: 13, fontWeight: 600, color: "#1a1a2e", textAlign: "right", whiteSpace: "nowrap" }}>
-                        {fmt(currSym, exp.total)}
-                        {isVat && exp.tax_amount > 0 && (
-                          <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 400 }}>incl. {fmt(currSym, exp.tax_amount)} VAT</div>
-                        )}
-                      </td>
-                      <td style={{ padding: "11px 12px" }} onClick={ev => ev.stopPropagation()}>
-                        <div style={{ display: "flex", gap: 2, opacity: 0 }} className="row-actions"
-                          onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                          onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                          <Btn size="sm" variant="ghost" icon={<Icons.Edit />} onClick={() => { setEditingExp(exp); setShowForm(true); }} />
-                          <Btn size="sm" variant="ghost" icon={<Icons.Trash />} onClick={() => onDelete(exp.id)} />
-                        </div>
-                      </td>
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse min-w-[720px]">
+                  <thead>
+                    <tr className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)]">
+                      <Th>Date</Th>
+                      <Th>Expense Account</Th>
+                      <Th>Reference #</Th>
+                      <Th>Paid Through</Th>
+                      <Th>Customer</Th>
+                      <Th>Status</Th>
+                      <Th align="right">Amount</Th>
+                      <Th align="right" />
                     </tr>
-                  ))}
-                  {sortedFiltered.length === 0 && (
-                    <tr><td colSpan={8}><EmptyState icon={<Icons.Expenses />}
-                      text={expenses.length === 0 ? "No expenses yet. Record your first expense to start tracking spend." : "No expenses match your current search or filters."}
-                      cta={expenses.length === 0
-                        ? <Btn variant="primary" onClick={() => { setEditingExp(null); setShowForm(true); }}>New Expense</Btn>
-                        : <Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>}
-                    /></td></tr>
-                  )}
-                </tbody>
-              </table>
-              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} pageSize={pageSize} />
+                  </thead>
+                  <tbody>
+                    {sortedFiltered.length === 0 ? (
+                      <tr>
+                        <td colSpan={8}>
+                          {expenses.length === 0 ? (
+                            <EmptyState
+                              icon={<Icons.Expenses />}
+                              title="No expenses yet"
+                              message="Record your first expense to start tracking spend"
+                              cta={<Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New expense</Btn>}
+                            />
+                          ) : (
+                            <EmptyState
+                              icon={<Icons.Search />}
+                              title="No expenses match your filters"
+                              cta={<Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    ) : paginatedItems.map(exp => (
+                      <tr
+                        key={exp.id}
+                        onClick={() => { setEditingExp(exp); setShowForm(true); }}
+                        className="border-b border-[var(--border-subtle)] last:border-0 cursor-pointer hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+                      >
+                        <td className="py-3 px-4 text-sm text-[var(--text-secondary)] whitespace-nowrap">{fmtDate(exp.date)}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {exp.expense_type === "mileage" && (
+                              <span className="text-[11px] font-semibold text-[var(--info-700)] bg-[var(--info-50)] px-2 py-0.5 rounded-full">Mileage</span>
+                            )}
+                            <span className="text-sm text-[var(--text-primary)] font-medium">
+                              {exp.category || <span className="text-[var(--text-tertiary)]">—</span>}
+                            </span>
+                            {exp.is_cis_expense && (
+                              <span className="text-[10px] font-semibold text-[var(--warning-700)] bg-[var(--warning-50)] px-1.5 py-0.5 rounded">CIS</span>
+                            )}
+                          </div>
+                          {exp.expense_type === "mileage" && exp.mileage_km > 0 && (
+                            <div className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
+                              {exp.mileage_km} km · {exp.mileage_from} → {exp.mileage_to}
+                            </div>
+                          )}
+                          {exp.expense_type !== "mileage" && exp.vendor && (
+                            <div className="text-[11px] text-[var(--text-tertiary)] mt-0.5 truncate max-w-[200px]">{exp.vendor}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-sm font-medium text-[var(--brand-600)] whitespace-nowrap">{exp.expense_number}</td>
+                        <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{exp.paid_through || "—"}</td>
+                        <td className="py-3 px-4 text-sm">
+                          {exp.billable && exp.customer ? (
+                            <span className="text-[var(--success-700)] font-medium">{exp.customer.name}</span>
+                          ) : exp.billable ? (
+                            <span className="text-[var(--warning-700)] font-medium">Billable</span>
+                          ) : (
+                            <span className="text-[var(--text-tertiary)]">—</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4"><StatusBadge status={exp.status} /></td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap tabular-nums">
+                          <div className="text-sm font-medium text-[var(--text-primary)]">{fmt(currSym, exp.total)}</div>
+                          {isVat && exp.tax_amount > 0 && (
+                            <div className="text-[11px] text-[var(--text-tertiary)]">incl. {fmt(currSym, exp.tax_amount)} VAT</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap" onClick={ev => ev.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <ActionBtn onClick={() => { setEditingExp(exp); setShowForm(true); }} title="Edit expense" icon={<Icons.Edit />} />
+                            <ActionBtn onClick={() => onDelete(exp.id)} title="Delete expense" icon={<Icons.Trash />} tone="danger" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {sortedFiltered.length > 0 && totalPages > 1 && (
+                <div className="px-4 border-t border-[var(--border-subtle)]">
+                  <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} pageSize={pageSize} />
+                </div>
+              )}
             </div>
           </div>
-
-          <style>{`tr:hover .row-actions { opacity: 1 !important; }`}</style>
         </div>
       </div>
     </div>
