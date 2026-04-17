@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ff } from "../constants";
 import { Icons } from "../components/icons";
 import { supabase, supabaseReady } from "../lib/supabase";
+import InvoiceSagaLogo from "../components/InvoiceSagaLogo";
 
 function getStrength(password) {
   let score = 0;
@@ -21,14 +21,18 @@ export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
   const [showPw, setShowPw] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | loading | error | success | invalid
   const [errorMsg, setErrorMsg] = useState("");
-  const [isPwFocused, setIsPwFocused] = useState(false);
-  const [isConfirmFocused, setIsConfirmFocused] = useState(false);
-  const [isPrimaryHovered, setIsPrimaryHovered] = useState(false);
 
   const strength = useMemo(() => getStrength(password), [password]);
   const strengthLabels = ["", "Weak", "Fair", "Good", "Strong", "Very strong"];
-  const strengthColors = ["", "#dc2626", "#d97706", "#ca8a04", "#16a34a", "#15803d"];
-  const strengthColor = strengthColors[strength] || "#e5e7eb";
+  const strengthColors = [
+    "",
+    "var(--danger-600)",
+    "var(--warning-600)",
+    "var(--warning-700)",
+    "var(--success-600)",
+    "var(--success-700)",
+  ];
+  const strengthColor = strengthColors[strength] || "var(--border-default)";
 
   useEffect(() => {
     const search = new URLSearchParams(window.location.search);
@@ -43,10 +47,7 @@ export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
       supabase.auth
         .setSession({ access_token: accessToken, refresh_token: refreshToken })
         .then(({ error }) => {
-          if (error) {
-            setStatus("invalid");
-            return;
-          }
+          if (error) { setStatus("invalid"); return; }
           setMode("supabase");
           window.history.replaceState({}, "", window.location.pathname);
         })
@@ -59,10 +60,7 @@ export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
       supabase.auth
         .exchangeCodeForSession(code)
         .then(({ error }) => {
-          if (error) {
-            setStatus("invalid");
-            return;
-          }
+          if (error) { setStatus("invalid"); return; }
           setMode("supabase");
           window.history.replaceState({}, "", window.location.pathname);
         })
@@ -110,197 +108,191 @@ export default function ResetPasswordPage({ onPasswordReset, onBackToLogin }) {
     setStatus("invalid");
   };
 
-  if (mode === null && status !== "invalid") {
-    return (
-      <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" }}>
-        <style>{"@keyframes spin { to { transform: rotate(360deg); } }"}</style>
-        <div style={{ width: "100%", maxWidth: 460 }}>
-          <div style={{ background: "#fff", maxWidth: 460, border: "1px solid #E8E6E0", borderRadius: 12, boxShadow: "0 2px 24px rgba(0,0,0,0.06)", padding: "32px 32px 28px", textAlign: "center" }}>
-            <div style={{ width: 40, height: 40, border: "3px solid #E8E6E0", borderTopColor: "#111110", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 20px" }} />
-            <p style={{ fontSize: 14, color: "#6B6B6B", margin: 0 }}>Verifying reset link…</p>
-          </div>
+  const Shell = ({ children }) => (
+    <div className="min-h-screen bg-[var(--surface-sunken)] flex items-center justify-center p-4">
+      <div className="w-full max-w-[440px]">
+        <div className="flex justify-center mb-6">
+          <InvoiceSagaLogo height={32} />
+        </div>
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-[var(--shadow-lg)] p-8">
+          {children}
         </div>
       </div>
+    </div>
+  );
+
+  if (mode === null && status !== "invalid") {
+    return (
+      <Shell>
+        <div className="text-center">
+          <div className="w-10 h-10 border-[3px] border-[var(--border-subtle)] border-t-[var(--text-primary)] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[var(--text-secondary)] m-0">Verifying reset link…</p>
+        </div>
+      </Shell>
     );
   }
 
   if (status === "invalid") {
     return (
-      <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" }}>
-        <div style={{ width: "100%", maxWidth: 460 }}>
-          <div style={{ background: "#fff", maxWidth: 460, border: "1px solid #E8E6E0", borderRadius: 12, boxShadow: "0 2px 24px rgba(0,0,0,0.06)", padding: "32px 32px 28px", textAlign: "center" }}>
-            <div style={{ margin: "0 auto 16px", width: 56, height: 56, borderRadius: "50%", background: "#FEE2E2", color: "#B91C1C", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 7v6" />
-                <circle cx="12" cy="16.5" r="1" fill="currentColor" stroke="none" />
-              </svg>
-            </div>
-            <h1 style={{ fontSize: 24, fontWeight: 400, fontFamily: 'Georgia, "Times New Roman", serif', color: "#111110", lineHeight: 1.25, margin: "0 0 6px", letterSpacing: -0.3 }}>
-              Link expired or invalid
-            </h1>
-            <p style={{ fontSize: 14, color: "#6B6B6B", lineHeight: 1.6, margin: "0 0 20px" }}>
-              This password reset link has expired or is no longer valid. Reset links are only valid for 30 minutes.
-            </p>
-            <button
-              onClick={onBackToLogin}
-              style={{ width: "100%", background: "#111110", color: "#FAFAF7", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 500, height: 48, lineHeight: "48px", fontFamily: ff, cursor: "pointer", padding: 0 }}
-            >
-              Back to sign in
-            </button>
+      <Shell>
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-full bg-[var(--danger-50)] text-[var(--danger-700)] flex items-center justify-center mx-auto mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 7v6" />
+              <circle cx="12" cy="16.5" r="1" fill="currentColor" stroke="none" />
+            </svg>
           </div>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight m-0 mb-2">
+            Link expired or invalid
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0 mb-5">
+            This password reset link has expired or is no longer valid. Reset links are only valid for 30 minutes.
+          </p>
+          <button
+            onClick={onBackToLogin}
+            className="w-full h-11 bg-[var(--text-primary)] hover:bg-[var(--surface-dark-2)] text-white border-none rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-colors duration-150"
+          >
+            Back to sign in
+          </button>
         </div>
-      </div>
+      </Shell>
     );
   }
 
   if (status === "success") {
     return (
-      <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" }}>
-        <div style={{ width: "100%", maxWidth: 460 }}>
-          <div style={{ background: "#fff", maxWidth: 460, border: "1px solid #E8E6E0", borderRadius: 12, boxShadow: "0 2px 24px rgba(0,0,0,0.06)", padding: "32px 32px 28px", textAlign: "center" }}>
-            <div style={{ margin: "0 auto 16px", width: 56, height: 56, borderRadius: "50%", background: "#D4EDDA", color: "#155724", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icons.Check />
-            </div>
-            <h1 style={{ fontSize: 24, fontWeight: 400, fontFamily: 'Georgia, "Times New Roman", serif', color: "#111110", lineHeight: 1.25, margin: "0 0 6px", letterSpacing: -0.3 }}>
-              Password updated!
-            </h1>
-            <p style={{ fontSize: 14, color: "#6B6B6B", lineHeight: 1.6, margin: "0 0 20px" }}>
-              Your password has been successfully reset. You can now sign in with your new password.
-            </p>
-            <button
-              onClick={() => {
-                onPasswordReset();
-                onBackToLogin();
-              }}
-              style={{ width: "100%", background: "#111110", color: "#FAFAF7", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 500, height: 48, lineHeight: "48px", fontFamily: ff, cursor: "pointer", padding: 0 }}
-            >
-              Sign in now →
-            </button>
+      <Shell>
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-full bg-[var(--success-50)] text-[var(--success-700)] flex items-center justify-center mx-auto mb-4">
+            <Icons.Check />
           </div>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight m-0 mb-2">
+            Password updated
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0 mb-5">
+            Your password has been successfully reset. You can now sign in with your new password.
+          </p>
+          <button
+            onClick={() => { onPasswordReset(); onBackToLogin(); }}
+            className="w-full h-11 bg-[var(--text-primary)] hover:bg-[var(--surface-dark-2)] text-white border-none rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-colors duration-150"
+          >
+            Sign in now →
+          </button>
         </div>
-      </div>
+      </Shell>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 460 }}>
-        <div style={{ background: "#fff", maxWidth: 460, border: "1px solid #E8E6E0", borderRadius: 12, boxShadow: "0 2px 24px rgba(0,0,0,0.06)", padding: "32px 32px 28px" }}>
-          <div style={{ margin: "0 auto 16px", width: 56, height: 56, borderRadius: "50%", background: "#FEF3C7", color: "#92400E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="4" y="11" width="16" height="9" rx="2" />
-              <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-            </svg>
-          </div>
-
-          <h1 style={{ fontSize: 24, fontWeight: 400, fontFamily: 'Georgia, "Times New Roman", serif', color: "#111110", lineHeight: 1.25, margin: "0 0 6px", letterSpacing: -0.3, textAlign: "center" }}>
-            Set new password
-          </h1>
-          <p style={{ fontSize: 14, color: "#6B6B6B", lineHeight: 1.6, margin: "0 0 20px", textAlign: "center" }}>
-            Choose a strong password for your account.
-          </p>
-
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9A9A9A", display: "flex" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="4" y="11" width="16" height="9" rx="2" />
-                  <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-                </svg>
-              </span>
-              <input
-                type={showPw ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={() => setIsPwFocused(true)}
-                onBlur={() => setIsPwFocused(false)}
-                placeholder="New password"
-                style={{ width: "100%", border: `1.5px solid ${isPwFocused ? "#111110" : "#E0E0E0"}`, borderRadius: 6, fontSize: 15, fontFamily: ff, padding: "9px 36px 9px 36px", outline: "none", boxSizing: "border-box" }}
-              />
-              <button
-                onClick={() => setShowPw((p) => !p)}
-                style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#AAA", padding: 2, display: "flex" }}
-              >
-                {showPw ? <Icons.EyeSlash /> : <Icons.Eye />}
-              </button>
-            </div>
-          </div>
-
-          {password.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", gap: 4 }}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div
-                    key={i}
-                    style={{ flex: 1, height: 3, borderRadius: 2, background: i <= strength ? strengthColor : "#e5e7eb" }}
-                  />
-                ))}
-              </div>
-              <div style={{ fontSize: 11, color: strengthColor, fontWeight: 600, marginTop: 4 }}>
-                {strengthLabels[strength]}
-              </div>
-            </div>
-          )}
-
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9A9A9A", display: "flex" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="4" y="11" width="16" height="9" rx="2" />
-                  <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-                </svg>
-              </span>
-              <input
-                type={showPw ? "text" : "password"}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                onFocus={() => setIsConfirmFocused(true)}
-                onBlur={() => setIsConfirmFocused(false)}
-                onKeyDown={(e) => e.key === "Enter" && status !== "loading" && handleSubmit()}
-                placeholder="Confirm new password"
-                style={{ width: "100%", border: `1.5px solid ${confirm && password !== confirm ? "#fca5a5" : (isConfirmFocused ? "#111110" : "#E0E0E0")}`, borderRadius: 6, fontSize: 15, fontFamily: ff, padding: "9px 10px 9px 36px", outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            {[
-              ["At least 8 characters", password.length >= 8],
-              ["Passwords match", password.length > 0 && password === confirm],
-            ].map(([text, ok]) => (
-              <div key={text} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: ok ? "#16A34A" : "#AAA", marginBottom: 3 }}>
-                <span>{ok ? "✓" : "○"}</span>
-                {text}
-              </div>
-            ))}
-          </div>
-
-          {errorMsg && (
-            <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "9px 12px", fontSize: 12, color: "#DC2626", display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <span style={{ display: "flex" }}><Icons.Info /></span>
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          <button
-            onClick={handleSubmit}
-            disabled={status === "loading"}
-            onMouseEnter={() => setIsPrimaryHovered(true)}
-            onMouseLeave={() => setIsPrimaryHovered(false)}
-            style={{ width: "100%", background: status === "loading" ? "#E8E6E0" : (isPrimaryHovered ? "#333330" : "#111110"), color: status === "loading" ? "#9A9A9A" : "#FAFAF7", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 500, height: 48, lineHeight: "48px", fontFamily: ff, cursor: status === "loading" ? "not-allowed" : "pointer", padding: 0 }}
-          >
-            {status === "loading" ? "Updating…" : "Update password →"}
-          </button>
-
-          <button
-            onClick={onBackToLogin}
-            style={{ display: "block", margin: "16px auto 0", background: "none", border: "none", cursor: "pointer", color: "#9A9A9A", fontSize: 13, fontFamily: ff }}
-          >
-            ← Back to sign in
-          </button>
+    <Shell>
+      <div className="flex justify-center mb-4">
+        <div className="w-14 h-14 rounded-full bg-[var(--warning-50)] text-[var(--warning-700)] flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="11" width="16" height="9" rx="2" />
+            <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+          </svg>
         </div>
       </div>
-    </div>
+
+      <h1 className="text-2xl font-semibold text-[var(--text-primary)] text-center leading-tight m-0 mb-2">
+        Set new password
+      </h1>
+      <p className="text-sm text-[var(--text-secondary)] text-center leading-relaxed m-0 mb-5">
+        Choose a strong password for your account.
+      </p>
+
+      <div className="relative mb-3">
+        <input
+          type={showPw ? "text" : "password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="New password"
+          className="w-full h-11 pl-3 pr-11 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border"
+        />
+        <button
+          onClick={() => setShowPw((p) => !p)}
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] p-1.5 flex"
+        >
+          {showPw ? <Icons.EyeSlash /> : <Icons.Eye />}
+        </button>
+      </div>
+
+      {password.length > 0 && (
+        <div className="mb-3">
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="flex-1 h-[3px] rounded-[2px] transition-colors duration-150"
+                style={{
+                  background: i <= strength ? strengthColor : "var(--border-subtle)",
+                }}
+              />
+            ))}
+          </div>
+          <div className="text-[11px] font-semibold mt-1" style={{ color: strengthColor }}>
+            {strengthLabels[strength]}
+          </div>
+        </div>
+      )}
+
+      <input
+        type={showPw ? "text" : "password"}
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && status !== "loading" && handleSubmit()}
+        placeholder="Confirm new password"
+        className={[
+          "w-full h-11 px-3 rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none transition-colors duration-150 box-border mb-3",
+          confirm && password !== confirm
+            ? "border border-[var(--danger-600)] focus:shadow-[var(--focus-ring)]"
+            : "border border-[var(--border-default)] focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",
+        ].join(" ")}
+      />
+
+      <div className="mb-3">
+        {[
+          ["At least 8 characters", password.length >= 8],
+          ["Passwords match", password.length > 0 && password === confirm],
+        ].map(([text, ok]) => (
+          <div
+            key={text}
+            className={[
+              "flex items-center gap-1.5 text-xs mb-1",
+              ok ? "text-[var(--success-700)]" : "text-[var(--text-tertiary)]",
+            ].join(" ")}
+          >
+            <span className={`flex items-center justify-center w-3.5 h-3.5 rounded-full ${ok ? "bg-[var(--success-600)] text-white" : "border border-[var(--border-default)]"}`}>
+              {ok && <Icons.Check />}
+            </span>
+            {text}
+          </div>
+        ))}
+      </div>
+
+      {errorMsg && (
+        <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3 py-2 text-xs text-[var(--danger-700)] flex items-center gap-2 mb-3">
+          <span className="flex"><Icons.Info /></span>
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={status === "loading"}
+        className="w-full h-11 bg-[var(--text-primary)] hover:bg-[var(--surface-dark-2)] disabled:bg-[var(--surface-sunken)] disabled:text-[var(--text-tertiary)] disabled:cursor-not-allowed text-white border-none rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-colors duration-150"
+      >
+        {status === "loading" ? "Updating…" : "Update password →"}
+      </button>
+
+      <button
+        onClick={onBackToLogin}
+        className="block mx-auto mt-4 bg-transparent border-none cursor-pointer text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors duration-150"
+      >
+        ← Back to sign in
+      </button>
+    </Shell>
   );
 }

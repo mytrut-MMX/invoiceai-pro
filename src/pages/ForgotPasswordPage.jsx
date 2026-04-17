@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ff } from "../constants";
 import { Icons } from "../components/icons";
 import { supabase, supabaseReady } from "../lib/supabase";
+import InvoiceSagaLogo from "../components/InvoiceSagaLogo";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -12,8 +12,6 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
   const [sentTo, setSentTo] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | error | sent
-  const [isEmailFocused, setIsEmailFocused] = useState(false);
-  const [isPrimaryHovered, setIsPrimaryHovered] = useState(false);
 
   const resetToForm = () => {
     setEmail("");
@@ -65,49 +63,51 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 460 }}>
-        <div style={{ background: "#fff", maxWidth: 460, border: "1px solid #E8E6E0", borderRadius: 12, boxShadow: "0 2px 24px rgba(0,0,0,0.06)", padding: "32px 32px 28px" }}>
+    <div className="min-h-screen bg-[var(--surface-sunken)] flex items-center justify-center p-4">
+      <div className="w-full max-w-[440px]">
+        <div className="flex justify-center mb-6">
+          <InvoiceSagaLogo height={32} />
+        </div>
+
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-[var(--shadow-lg)] p-8">
           {status !== "sent" ? (
             <>
-              <div style={{ margin: "0 auto 16px", width: 56, height: 56, borderRadius: "50%", background: "#FEF3C7", color: "#92400E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="4" y="11" width="16" height="9" rx="2" />
-                  <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-                </svg>
-              </div>
-
-              <h1 style={{ fontSize: 24, fontWeight: 400, fontFamily: 'Georgia, "Times New Roman", serif', color: "#111110", lineHeight: 1.25, margin: "0 0 6px", letterSpacing: -0.3, textAlign: "center" }}>
-                Reset your password
-              </h1>
-              <p style={{ fontSize: 14, color: "#6B6B6B", lineHeight: 1.6, margin: "0 0 20px", textAlign: "center" }}>
-                Enter the email for your account and we'll send reset instructions.
-              </p>
-
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9A9A9A", display: "flex" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="20" height="16" x="2" y="4" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
-                  </span>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setIsEmailFocused(true)}
-                    onBlur={() => setIsEmailFocused(false)}
-                    onKeyDown={(e) => e.key === "Enter" && status !== "loading" && handleSubmit()}
-                    placeholder="you@example.com"
-                    style={{ width: "100%", border: `1.5px solid ${isEmailFocused ? "#111110" : "#E0E0E0"}`, borderRadius: 6, fontSize: 15, fontFamily: ff, padding: "9px 10px 9px 36px", outline: "none", boxSizing: "border-box" }}
-                  />
+              <div className="flex justify-center mb-4">
+                <div className="w-14 h-14 rounded-full bg-[var(--warning-50)] text-[var(--warning-700)] flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="4" y="11" width="16" height="9" rx="2" />
+                    <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+                  </svg>
                 </div>
               </div>
 
+              <h1 className="text-2xl font-semibold text-[var(--text-primary)] text-center leading-tight m-0 mb-2">
+                Reset your password
+              </h1>
+              <p className="text-sm text-[var(--text-secondary)] text-center leading-relaxed m-0 mb-5">
+                Enter the email for your account and we'll send reset instructions.
+              </p>
+
+              <div className="relative mb-3">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] flex pointer-events-none">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && status !== "loading" && handleSubmit()}
+                  placeholder="you@example.com"
+                  className="w-full h-11 pl-10 pr-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border"
+                />
+              </div>
+
               {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "9px 12px", fontSize: 12, color: "#DC2626", display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <span style={{ display: "flex" }}><Icons.Info /></span>
+                <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3 py-2 text-xs text-[var(--danger-700)] flex items-center gap-2 mb-3">
+                  <span className="flex"><Icons.Info /></span>
                   <span>{error}</span>
                 </div>
               )}
@@ -115,48 +115,48 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
               <button
                 onClick={handleSubmit}
                 disabled={status === "loading"}
-                onMouseEnter={() => setIsPrimaryHovered(true)}
-                onMouseLeave={() => setIsPrimaryHovered(false)}
-                style={{ width: "100%", background: status === "loading" ? "#E8E6E0" : (isPrimaryHovered ? "#333330" : "#111110"), color: status === "loading" ? "#9A9A9A" : "#FAFAF7", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 500, height: 48, lineHeight: "48px", fontFamily: ff, cursor: status === "loading" ? "not-allowed" : "pointer", padding: 0 }}
+                className="w-full h-11 bg-[var(--text-primary)] hover:bg-[var(--surface-dark-2)] disabled:bg-[var(--surface-sunken)] disabled:text-[var(--text-tertiary)] disabled:cursor-not-allowed text-white border-none rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-colors duration-150"
               >
                 {status === "loading" ? "Sending…" : "Send reset link →"}
               </button>
 
               <button
                 onClick={onBackToLogin}
-                style={{ display: "block", margin: "16px auto 0", background: "none", border: "none", cursor: "pointer", color: "#9A9A9A", fontSize: 13, fontFamily: ff }}
+                className="block mx-auto mt-4 bg-transparent border-none cursor-pointer text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors duration-150"
               >
                 ← Back to sign in
               </button>
             </>
           ) : (
             <>
-              <div style={{ margin: "0 auto 16px", width: 56, height: 56, borderRadius: "50%", background: "#D4EDDA", color: "#155724", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icons.Check />
+              <div className="flex justify-center mb-4">
+                <div className="w-14 h-14 rounded-full bg-[var(--success-50)] text-[var(--success-700)] flex items-center justify-center">
+                  <Icons.Check />
+                </div>
               </div>
 
-              <h1 style={{ fontSize: 24, fontWeight: 400, fontFamily: 'Georgia, "Times New Roman", serif', color: "#111110", lineHeight: 1.25, margin: "0 0 6px", letterSpacing: -0.3, textAlign: "center" }}>
+              <h1 className="text-2xl font-semibold text-[var(--text-primary)] text-center leading-tight m-0 mb-2">
                 Check your inbox
               </h1>
-              <p style={{ fontSize: 14, color: "#6B6B6B", lineHeight: 1.6, margin: "0 0 16px", textAlign: "center" }}>
+              <p className="text-sm text-[var(--text-secondary)] text-center leading-relaxed m-0 mb-4">
                 If an account exists for {sentTo || email.trim().toLowerCase()}, we've sent password reset instructions. Check spam if you don't see it.
               </p>
 
-              <div style={{ background: "#F5F4F0", border: "1px solid #E8E6E0", borderRadius: 8, padding: "12px 14px", fontSize: 12, color: "#6B6B6B", marginBottom: 12, lineHeight: 1.7 }}>
+              <div className="bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] px-3.5 py-3 text-xs text-[var(--text-secondary)] leading-relaxed mb-3">
                 <div>• Check your spam / junk folder</div>
                 <div>• Link expires in 30 minutes</div>
               </div>
 
               <button
                 onClick={resetToForm}
-                style={{ width: "100%", background: "none", border: "1px solid #E8E6E0", borderRadius: 8, height: 44, fontSize: 14, color: "#6B6B6B", cursor: "pointer", fontFamily: ff, marginBottom: 10 }}
+                className="w-full h-11 bg-transparent border border-[var(--border-default)] hover:bg-[var(--surface-sunken)] rounded-[var(--radius-md)] text-sm text-[var(--text-secondary)] cursor-pointer transition-colors duration-150 mb-2.5"
               >
                 Try a different email
               </button>
 
               <button
                 onClick={onBackToLogin}
-                style={{ display: "block", margin: "0 auto", background: "none", border: "none", cursor: "pointer", color: "#9A9A9A", fontSize: 13, fontFamily: ff }}
+                className="block mx-auto bg-transparent border-none cursor-pointer text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors duration-150"
               >
                 ← Back to sign in
               </button>

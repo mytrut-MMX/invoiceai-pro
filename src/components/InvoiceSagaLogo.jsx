@@ -1,14 +1,26 @@
-import { ff } from "../constants";
 import { Icons } from "./icons";
 
 export default function InvoiceSagaLogo({ height = 24, dark = false }) {
   const iconSize = Math.max(20, Math.round(height * 1.15));
+  const textSize = Math.max(12, Math.round(height * 0.54));
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-      <div style={{ width: iconSize, height: iconSize, background: dark ? "rgba(255,255,255,0.12)" : "#1a1a2e", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div className="flex items-center gap-2.5">
+      <div
+        className={[
+          "rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0",
+          dark ? "bg-white/15" : "bg-[var(--text-primary)]",
+        ].join(" ")}
+        style={{ width: iconSize, height: iconSize }}
+      >
         <Icons.Receipt />
       </div>
-      <span style={{ color: dark ? "#fff" : "#1a1a2e", fontSize: Math.max(12, Math.round(height * 0.54)), fontWeight: 800, letterSpacing: "0.06em", fontFamily: ff }}>
+      <span
+        className={[
+          "font-bold tracking-wider",
+          dark ? "text-white" : "text-[var(--text-primary)]",
+        ].join(" ")}
+        style={{ fontSize: textSize }}
+      >
         InvoiceSaga
       </span>
     </div>
