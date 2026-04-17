@@ -12,6 +12,7 @@ import DataLedgerLeadPanel from '../components/admin/DataLedgerLeadPanel';
 import BackendIntegrationsLeadPanel from '../components/admin/BackendIntegrationsLeadPanel';
 import SecurityTrustLeadPanel from '../components/admin/SecurityTrustLeadPanel';
 import QaRegressionAgentPanel from '../components/admin/QaRegressionAgentPanel';
+import ReleaseGateAgentPanel from '../components/admin/ReleaseGateAgentPanel';
 import { s } from '../components/admin/adminShared';
 
 // ── Admin Dashboard (authenticated view) ────────────────────────────────────
@@ -173,6 +174,10 @@ function AdminDashboard({ onLogout, token }) {
 
           {section === 'qa-regression-agent' && (
             <QaRegressionAgentPanel token={token} />
+          )}
+
+          {section === 'release-gate-agent' && (
+            <ReleaseGateAgentPanel token={token} />
           )}
         </AdminLayout>
       </div>
