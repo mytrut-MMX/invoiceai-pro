@@ -1,12 +1,9 @@
 import { useState, useContext } from "react";
-import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Field, Input, Select, Btn, SlideToggle, Toggle } from "../components/atoms";
 import { Icons } from "../components/icons";
 import { formatPhoneNumber, stripPhoneForStorage, formatSortCode, stripSortCode } from "../utils/helpers";
 import * as dataAccess from "../lib/dataAccess";
-
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
 const NI_REGEX = /^[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z]\d{6}[A-D]$/i;
 const TAX_CODE_REGEX = /^[SC]?(\d{1,4}[LMNT]|BR|D0|D1|D2|0T|NT|K\d+)( ?[WM]1)?$/i;
@@ -32,35 +29,37 @@ const STUDENT_LOAN_OPTIONS = [
 
 const TITLES = ["Mr", "Mrs", "Ms", "Dr", "Prof", "Mx", "Rev"];
 
-// ─── SECTION HEADER ──────────────────────────────────────────────────────────
+const textInputCls =
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
 
 function SectionToggle({ label, open, onToggle, preview }) {
   return (
-    <button onClick={onToggle}
-      style={{ display:"flex", alignItems:"center", gap:8, background:"none", border:"1.5px dashed #CCC", borderRadius:7, padding:"9px 14px", cursor:"pointer", color:"#555", fontSize:13, fontFamily:ff, width:"100%", marginBottom: open ? 0 : 0 }}>
-      <span style={{ color:"#888" }}>{open ? <Icons.ChevDown /> : <Icons.ChevRight />}</span>
-      <span style={{ fontWeight:600 }}>{label}</span>
-      {!open && preview && <span style={{ fontSize:11, color:"#888", marginLeft:"auto" }}>{preview}</span>}
+    <button
+      onClick={onToggle}
+      className="flex items-center gap-2 bg-transparent border border-dashed border-[var(--border-default)] rounded-[var(--radius-md)] px-3.5 py-2.5 cursor-pointer text-sm w-full text-[var(--text-secondary)] hover:border-[var(--border-strong)] transition-colors duration-150"
+    >
+      <span className="text-[var(--text-tertiary)] flex">
+        {open ? <Icons.ChevDown /> : <Icons.ChevRight />}
+      </span>
+      <span className="font-semibold">{label}</span>
+      {!open && preview && <span className="text-xs text-[var(--text-tertiary)] ml-auto">{preview}</span>}
     </button>
   );
 }
 
 function SectionBody({ children }) {
   return (
-    <div style={{ background:"#F9F9F9", borderRadius:10, padding:"14px 14px 2px", marginTop:8, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+    <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] p-4 pb-1 mt-2 border border-[var(--border-subtle)] shadow-[var(--shadow-sm)]">
       {children}
     </div>
   );
 }
 
-const req = (label) => <>{label} <span style={{ color:"#dc2626" }}>*</span></>;
-
-// ─── MAIN FORM ───────────────────────────────────────────────────────────────
+const req = (label) => <>{label} <span className="text-[var(--danger-600)]">*</span></>;
 
 export default function EmployeeForm({ existing, onClose, onSave }) {
   const { user } = useContext(AppCtx);
 
-  // Sections
   const [showPersonal, setShowPersonal] = useState(true);
   const [showTaxNI, setShowTaxNI] = useState(!existing);
   const [showEmployment, setShowEmployment] = useState(!existing);
@@ -105,11 +104,9 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
   const [sortCode, setSortCode] = useState(existing?.bank_details?.sort_code || "");
   const [accountNumber, setAccountNumber] = useState(existing?.bank_details?.account_number || "");
 
-  // Save state
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // ─── Validation ─────────────────────────────────────────────────────────────
   const validateNI = (v) => {
     const trimmed = v.trim().toUpperCase();
     if (!trimmed) { setNiError("NI number is required"); return false; }
@@ -132,9 +129,7 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
     startDate &&
     salaryAmount !== "" && Number(salaryAmount) >= 0;
 
-  // ─── Save ───────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    // Final validation pass
     const niOk = validateNI(niNumber);
     const taxOk = validateTaxCode(taxCode);
     if (!niOk || !taxOk || !canSave) return;
@@ -186,43 +181,42 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
     }
   };
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ background:"#FAFAF7", minHeight:"100vh", fontFamily:ff }}>
-
+    <div className="bg-[var(--surface-page)] min-h-screen">
       {/* Sticky header */}
-      <div style={{
-        position:"sticky", top:0, zIndex:10, background:"#fff",
-        borderBottom:"1px solid #E8E6E0", padding:"12px 24px",
-        display:"flex", alignItems:"center", justifyContent:"space-between",
-      }}>
-        <button onClick={onClose}
-          style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, display:"flex", alignItems:"center", gap:4, padding:0 }}>
+      <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-3 flex items-center justify-between">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150"
+        >
           ← Employees
         </button>
-        <div style={{ display:"flex", gap:8 }}>
+        <div className="flex gap-2">
           <Btn onClick={onClose} variant="outline">Cancel</Btn>
           <Btn onClick={handleSave} variant="primary" disabled={!canSave || saving}>
-            {saving ? "Saving…" : existing ? "Save Changes" : "Save Employee"}
+            {saving ? "Saving…" : existing ? "Save changes" : "Save employee"}
           </Btn>
         </div>
       </div>
 
-      <div style={{ maxWidth:900, margin:"0 auto", padding:"20px 24px 40px" }}>
-
+      <div className="max-w-[960px] mx-auto px-4 sm:px-6 py-5 pb-10">
         {saveError && (
-          <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"10px 14px", marginBottom:16, fontSize:13, color:"#b91c1c" }}>
+          <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3.5 py-2.5 mb-4 text-sm text-[var(--danger-700)]">
             {saveError}
           </div>
         )}
 
-        {/* ── Section 1: Personal Details ─────────────────────────────────── */}
-        <div style={{ marginBottom:14 }}>
-          <SectionToggle label="Personal Details" open={showPersonal} onToggle={() => setShowPersonal(!showPersonal)}
-            preview={firstName || lastName ? `${firstName} ${lastName}`.trim() : null} />
+        {/* Personal */}
+        <div className="mb-3.5">
+          <SectionToggle
+            label="Personal details"
+            open={showPersonal}
+            onToggle={() => setShowPersonal(!showPersonal)}
+            preview={firstName || lastName ? `${firstName} ${lastName}`.trim() : null}
+          />
           {showPersonal && (
             <SectionBody>
-              <div style={{ display:"grid", gridTemplateColumns:"100px 1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid gap-3 mb-3" style={{ gridTemplateColumns: "100px 1fr 1fr" }}>
                 <Field label="Title">
                   <Select value={title} onChange={setTitle} options={TITLES} placeholder="—" />
                 </Field>
@@ -233,22 +227,27 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
                   <Input value={lastName} onChange={setLastName} placeholder="Last name" />
                 </Field>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label="Email">
                   <Input value={email} onChange={setEmail} type="email" placeholder="email@example.com" />
                 </Field>
                 <Field label="Phone">
-                  <input type="text" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhone(formatPhoneNumber(phone))} placeholder="+44 …"
-                    style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-                    onFocus={e => e.target.style.borderColor="#1e6be0"} />
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    onBlur={() => setPhone(formatPhoneNumber(phone))}
+                    placeholder="+44 …"
+                    className={textInputCls}
+                  />
                 </Field>
               </div>
-              <div style={{ marginBottom:14 }}>
+              <div className="mb-3">
                 <Field label="Date of Birth">
                   <Input value={dob} onChange={setDob} type="date" />
                 </Field>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label="Street">
                   <Input value={street} onChange={setStreet} placeholder="123 High Street" />
                 </Field>
@@ -256,7 +255,7 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
                   <Input value={city} onChange={setCity} placeholder="London" />
                 </Field>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label="Postcode">
                   <Input value={postcode} onChange={setPostcode} placeholder="SW1A 1AA" />
                 </Field>
@@ -268,21 +267,29 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
           )}
         </div>
 
-        {/* ── Section 2: Tax & NI ─────────────────────────────────────────── */}
-        <div style={{ marginBottom:14 }}>
-          <SectionToggle label="Tax & National Insurance" open={showTaxNI} onToggle={() => setShowTaxNI(!showTaxNI)}
-            preview={niNumber ? `NI: ${niNumber}` : null} />
+        {/* Tax & NI */}
+        <div className="mb-3.5">
+          <SectionToggle
+            label="Tax & National Insurance"
+            open={showTaxNI}
+            onToggle={() => setShowTaxNI(!showTaxNI)}
+            preview={niNumber ? `NI: ${niNumber}` : null}
+          />
           {showTaxNI && (
             <SectionBody>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label={req("NI Number")} error={niError}>
                   <input
                     value={niNumber}
                     onChange={e => { setNiNumber(e.target.value.toUpperCase()); if (niError) setNiError(""); }}
                     onBlur={() => validateNI(niNumber)}
                     placeholder="AB123456C"
-                    style={{ width:"100%", padding:"9px 11px", border:`1px solid ${niError?"#fca5a5":"#e8e8ec"}`, borderRadius:5, fontSize:15, fontFamily:"'Courier New', Courier, monospace", color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", letterSpacing:"0.06em", transition:"border 0.15s" }}
-                    onFocus={e => e.target.style.borderColor = niError ? "#dc2626" : "#1e6be0"}
+                    className={[
+                      "w-full h-9 px-3 rounded-[var(--radius-md)] text-sm bg-white outline-none box-border font-mono tracking-wider",
+                      niError
+                        ? "border border-[var(--danger-600)] focus:shadow-[var(--focus-ring)]"
+                        : "border border-[var(--border-default)] focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",
+                    ].join(" ")}
                   />
                 </Field>
                 <Field label={req("Tax Code")} error={taxCodeError}>
@@ -291,12 +298,16 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
                     onChange={e => { setTaxCode(e.target.value.toUpperCase()); if (taxCodeError) setTaxCodeError(""); }}
                     onBlur={() => validateTaxCode(taxCode)}
                     placeholder="1257L"
-                    style={{ width:"100%", padding:"9px 11px", border:`1px solid ${taxCodeError?"#fca5a5":"#e8e8ec"}`, borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-                    onFocus={e => e.target.style.borderColor = taxCodeError ? "#dc2626" : "#1e6be0"}
+                    className={[
+                      "w-full h-9 px-3 rounded-[var(--radius-md)] text-sm bg-white outline-none box-border",
+                      taxCodeError
+                        ? "border border-[var(--danger-600)] focus:shadow-[var(--focus-ring)]"
+                        : "border border-[var(--border-default)] focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",
+                    ].join(" ")}
                   />
                 </Field>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label={req("NI Category")}>
                   <Select value={niCategory} onChange={setNiCategory} options={NI_CATEGORIES} />
                 </Field>
@@ -308,13 +319,17 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
           )}
         </div>
 
-        {/* ── Section 3: Employment & Pay ──────────────────────────────────── */}
-        <div style={{ marginBottom:14 }}>
-          <SectionToggle label="Employment & Pay" open={showEmployment} onToggle={() => setShowEmployment(!showEmployment)}
-            preview={salaryAmount ? `${salaryType === "hourly" ? "Hourly" : "Annual"} · ${payFrequency}` : null} />
+        {/* Employment & Pay */}
+        <div className="mb-3.5">
+          <SectionToggle
+            label="Employment & Pay"
+            open={showEmployment}
+            onToggle={() => setShowEmployment(!showEmployment)}
+            preview={salaryAmount ? `${salaryType === "hourly" ? "Hourly" : "Annual"} · ${payFrequency}` : null}
+          />
           {showEmployment && (
             <SectionBody>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label={req("Start Date")}>
                   <Input value={startDate} onChange={setStartDate} type="date" />
                 </Field>
@@ -322,24 +337,40 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
                   <Input value={leaveDate} onChange={setLeaveDate} type="date" />
                 </Field>
               </div>
-              <div style={{ marginBottom:14 }}>
+              <div className="mb-3">
                 <Field label={req("Salary Type")}>
-                  <Toggle value={salaryType === "annual" ? "Annual" : "Hourly"} onChange={v => setSalaryType(v === "Annual" ? "annual" : "hourly")} options={["Annual", "Hourly"]} />
+                  <Toggle
+                    value={salaryType === "annual" ? "Annual" : "Hourly"}
+                    onChange={v => setSalaryType(v === "Annual" ? "annual" : "hourly")}
+                    options={["Annual", "Hourly"]}
+                  />
                 </Field>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label={req(salaryType === "hourly" ? "Hourly rate (£)" : "Annual salary (£)")}>
-                  <Input value={salaryAmount} onChange={setSalaryAmount} type="number" placeholder={salaryType === "hourly" ? "12.50" : "30000"} />
+                  <Input
+                    value={salaryAmount}
+                    onChange={setSalaryAmount}
+                    type="number"
+                    placeholder={salaryType === "hourly" ? "12.50" : "30000"}
+                  />
                 </Field>
                 <Field label={req("Pay Frequency")}>
-                  <Select value={payFrequency} onChange={setPayFrequency}
-                    options={[{ value:"weekly", label:"Weekly" }, { value:"fortnightly", label:"Fortnightly" }, { value:"monthly", label:"Monthly" }]} />
+                  <Select
+                    value={payFrequency}
+                    onChange={setPayFrequency}
+                    options={[
+                      { value: "weekly", label: "Weekly" },
+                      { value: "fortnightly", label: "Fortnightly" },
+                      { value: "monthly", label: "Monthly" },
+                    ]}
+                  />
                 </Field>
               </div>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, marginBottom:14, padding:"8px 0" }}>
+              <div className="flex items-center justify-between gap-4 mb-3 py-2">
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>Company Director</div>
-                  <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>
+                  <div className="text-sm font-semibold text-[var(--text-primary)]">Company Director</div>
+                  <div className="text-xs text-[var(--text-tertiary)] mt-0.5">
                     Mark if this employee is a director of the company (used for Employment Allowance eligibility checks).
                   </div>
                 </div>
@@ -349,19 +380,23 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
           )}
         </div>
 
-        {/* ── Section 4: Pension ───────────────────────────────────────────── */}
-        <div style={{ marginBottom:14 }}>
-          <SectionToggle label="Pension" open={showPension} onToggle={() => setShowPension(!showPension)}
-            preview={pensionEnrolled ? `${pensionEmployee}% / ${pensionEmployer}%` : "Not enrolled"} />
+        {/* Pension */}
+        <div className="mb-3.5">
+          <SectionToggle
+            label="Pension"
+            open={showPension}
+            onToggle={() => setShowPension(!showPension)}
+            preview={pensionEnrolled ? `${pensionEmployee}% / ${pensionEmployer}%` : "Not enrolled"}
+          />
           {showPension && (
             <SectionBody>
-              <div style={{ marginBottom:14 }}>
+              <div className="mb-3">
                 <Field label="Auto-enrolled in workplace pension">
                   <SlideToggle value={pensionEnrolled} onChange={setPensionEnrolled} />
                 </Field>
               </div>
               {pensionEnrolled && (
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <Field label="Employee contribution %" hint="Minimum 5%">
                     <Input value={pensionEmployee} onChange={setPensionEmployee} type="number" placeholder="5" />
                   </Field>
@@ -374,39 +409,42 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
           )}
         </div>
 
-        {/* ── Section 5: Bank Details ─────────────────────────────────────── */}
-        <div style={{ marginBottom:14 }}>
-          <SectionToggle label="Bank Details" open={showBank} onToggle={() => setShowBank(!showBank)}
-            preview={bankName || null} />
+        {/* Bank */}
+        <div className="mb-3.5">
+          <SectionToggle
+            label="Bank details"
+            open={showBank}
+            onToggle={() => setShowBank(!showBank)}
+            preview={bankName || null}
+          />
           {showBank && (
             <SectionBody>
-              <div style={{ marginBottom:14 }}>
+              <div className="mb-3">
                 <Field label="Bank Name">
                   <Input value={bankName} onChange={setBankName} placeholder="e.g. HSBC, Barclays" />
                 </Field>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <Field label="Sort Code">
                   <Input
                     value={sortCode}
-                    onChange={(v) => setSortCode(formatSortCode(v))}
+                    onChange={v => setSortCode(formatSortCode(v))}
                     placeholder="12-34-56"
-                    style={{ fontFamily:"'Courier New', Courier, monospace", letterSpacing:"0.06em" }}
+                    style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.06em" }}
                   />
                 </Field>
                 <Field label="Account Number">
                   <Input
                     value={accountNumber}
-                    onChange={(v) => setAccountNumber(v.replace(/\D/g, "").slice(0, 8))}
+                    onChange={v => setAccountNumber(v.replace(/\D/g, "").slice(0, 8))}
                     placeholder="12345678"
-                    style={{ fontFamily:"'Courier New', Courier, monospace", letterSpacing:"0.06em" }}
+                    style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.06em" }}
                   />
                 </Field>
               </div>
             </SectionBody>
           )}
         </div>
-
       </div>
     </div>
   );

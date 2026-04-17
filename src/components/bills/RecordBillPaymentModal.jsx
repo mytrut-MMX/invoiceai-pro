@@ -1,25 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
-import { ff, CUR_SYM } from "../../constants";
+import { CUR_SYM } from "../../constants";
 import { Btn, Field, Select } from "../atoms";
 import { todayStr, fmt } from "../../utils/helpers";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import { postBillPaymentEntry } from "../../utils/ledger/postBillPaymentEntry";
+import { Icons } from "../icons";
 
 const PAYMENT_METHODS = ["BACS", "Faster Payments", "CHAPS", "Cheque", "Cash", "Other"];
-
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+
+const dateInputCls =
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
 
 /**
  * Modal to record a (full or partial) bank payment against a supplier bill.
  * Posts a DR Accounts Payable / CR Bank journal via postBillPaymentEntry.
- * Does NOT update the bill row here — that's the caller's job (onPaymentRecorded).
- *
- * @param {{
- *   open: boolean,
- *   bill: object,
- *   onClose: () => void,
- *   onPaymentRecorded: (info: { paymentAmount: number, paidDate: string }) => void,
- * }} props
  */
 export default function RecordBillPaymentModal({ open, bill, onClose, onPaymentRecorded }) {
   const currSym = CUR_SYM.GBP || "£";
@@ -40,13 +35,11 @@ export default function RecordBillPaymentModal({ open, bill, onClose, onPaymentR
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [error, setError]                   = useState("");
 
-  // Bank accounts: asset accounts with a "1xxx" code (future-proof for extra banks).
   const bankAccounts = useMemo(
     () => (accounts || []).filter(a => a.type === "asset" && typeof a.code === "string" && a.code.startsWith("1")),
     [accounts],
   );
 
-  // On open: load chart of accounts
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -67,7 +60,6 @@ export default function RecordBillPaymentModal({ open, bill, onClose, onPaymentR
     return () => { cancelled = true; };
   }, [open]);
 
-  // Default bank account to 1200, then 1000, then first.
   useEffect(() => {
     if (!bankAccountId && bankAccounts.length > 0) {
       const preferred =
@@ -116,113 +108,127 @@ export default function RecordBillPaymentModal({ open, bill, onClose, onPaymentR
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }}
+      className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", width: 520, maxWidth: "92vw", boxShadow: "0 12px 40px rgba(0,0,0,0.18)", fontFamily: ff }}
+        className="bg-white rounded-2xl w-full max-w-[520px] shadow-[var(--shadow-popover)] overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1a1a2e", margin: "0 0 4px" }}>Record Bill Payment</h3>
-        <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 14px", lineHeight: 1.5 }}>
-          Posts a bank payment and clears the supplier's Accounts Payable balance.
-        </p>
-
-        {/* Bill summary */}
-        <div style={{ background: "#f9fafb", border: "1px solid #e8e8ec", borderRadius: 8, padding: "10px 12px", marginBottom: 14, fontSize: 12, color: "#374151" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ color: "#6b7280" }}>Bill</span>
-            <span style={{ fontWeight: 600, color: "#1a1a2e" }}>
-              {bill.bill_number || "—"} · {bill.supplier_name || "—"}
-            </span>
+        <div className="border-b border-[var(--border-subtle)] px-6 py-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] m-0">Record bill payment</h3>
+            <p className="text-xs text-[var(--text-tertiary)] mt-1 m-0">
+              Posts a bank payment and clears the supplier's Accounts Payable balance.
+            </p>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#6b7280" }}>Total</span>
-            <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{fmt(currSym, total)}</span>
-          </div>
-          {cisDeduction > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-              <span style={{ color: "#6b7280" }}>CIS deducted</span>
-              <span style={{ fontWeight: 600, color: "#7c3aed" }}>−{fmt(currSym, cisDeduction)}</span>
-            </div>
-          )}
-          {alreadyPaid > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-              <span style={{ color: "#6b7280" }}>Already paid</span>
-              <span style={{ fontWeight: 600, color: "#059669" }}>−{fmt(currSym, alreadyPaid)}</span>
-            </div>
-          )}
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, paddingTop: 6, borderTop: "1px solid #e5e7eb" }}>
-            <span style={{ color: "#6b7280", fontWeight: 600 }}>Outstanding</span>
-            <span style={{ fontWeight: 700, color: outstanding > 0 ? "#1a1a2e" : "#059669" }}>{fmt(currSym, outstanding)}</span>
-          </div>
+          <button
+            onClick={onClose}
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer flex"
+          >
+            <Icons.X />
+          </button>
         </div>
 
-        {error && (
-          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", marginBottom: 14, fontSize: 12, color: "#b91c1c" }}>
-            {error}
+        <div className="px-6 py-5 space-y-4">
+          {/* Bill summary */}
+          <div className="bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] px-3 py-2.5 text-xs">
+            <div className="flex justify-between mb-1">
+              <span className="text-[var(--text-tertiary)]">Bill</span>
+              <span className="font-medium text-[var(--text-primary)]">
+                {bill.bill_number || "—"} · {bill.supplier_name || "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-tertiary)]">Total</span>
+              <span className="font-medium text-[var(--text-primary)] tabular-nums">{fmt(currSym, total)}</span>
+            </div>
+            {cisDeduction > 0 && (
+              <div className="flex justify-between mt-0.5">
+                <span className="text-[var(--text-tertiary)]">CIS deducted</span>
+                <span className="font-medium text-[var(--brand-700)] tabular-nums">−{fmt(currSym, cisDeduction)}</span>
+              </div>
+            )}
+            {alreadyPaid > 0 && (
+              <div className="flex justify-between mt-0.5">
+                <span className="text-[var(--text-tertiary)]">Already paid</span>
+                <span className="font-medium text-[var(--success-700)] tabular-nums">−{fmt(currSym, alreadyPaid)}</span>
+              </div>
+            )}
+            <div className="flex justify-between mt-1.5 pt-1.5 border-t border-[var(--border-subtle)]">
+              <span className="text-[var(--text-tertiary)] font-semibold">Outstanding</span>
+              <span className={`font-semibold tabular-nums ${outstanding > 0 ? "text-[var(--text-primary)]" : "text-[var(--success-700)]"}`}>
+                {fmt(currSym, outstanding)}
+              </span>
+            </div>
           </div>
-        )}
 
-        {noBankAccounts && !error && (
-          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", marginBottom: 14, fontSize: 12, color: "#b91c1c" }}>
-            No bank accounts in your chart of accounts. Add one in Settings → Chart of Accounts.
-          </div>
-        )}
+          {error && (
+            <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3 py-2 text-xs text-[var(--danger-700)]">
+              {error}
+            </div>
+          )}
 
-        <Field label="Payment Date" required>
-          <input
-            type="date"
-            value={paidDate}
-            onChange={e => setPaidDate(e.target.value)}
-            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, boxSizing: "border-box" }}
-          />
-        </Field>
+          {noBankAccounts && !error && (
+            <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3 py-2 text-xs text-[var(--danger-700)]">
+              No bank accounts in your chart of accounts. Add one in Settings → Chart of Accounts.
+            </div>
+          )}
 
-        <Field label="From Bank Account" required>
-          <select
-            value={bankAccountId}
-            onChange={e => setBankAccountId(e.target.value)}
-            disabled={noBankAccounts}
-            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, boxSizing: "border-box", background: "#fff" }}
-          >
-            <option value="">-- Select bank account --</option>
-            {bankAccounts.map(a => (
-              <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
-            ))}
-          </select>
-        </Field>
+          <Field label="Payment Date" required>
+            <input
+              type="date"
+              value={paidDate}
+              onChange={e => setPaidDate(e.target.value)}
+              className={dateInputCls}
+            />
+          </Field>
 
-        <Field label="Payment Method" required>
-          <Select value={paymentMethod} onChange={setPaymentMethod} options={PAYMENT_METHODS} />
-        </Field>
+          <Field label="From Bank Account" required>
+            <select
+              value={bankAccountId}
+              onChange={e => setBankAccountId(e.target.value)}
+              disabled={noBankAccounts}
+              className="w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] cursor-pointer disabled:bg-[var(--surface-sunken)] disabled:cursor-not-allowed"
+            >
+              <option value="">-- Select bank account --</option>
+              {bankAccounts.map(a => (
+                <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
+              ))}
+            </select>
+          </Field>
 
-        <Field label="Payment Amount" required>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={paymentAmount}
-            onChange={e => setPaymentAmount(e.target.value)}
-            placeholder="0.00"
-            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, boxSizing: "border-box" }}
-          />
-        </Field>
+          <Field label="Payment Method" required>
+            <Select value={paymentMethod} onChange={setPaymentMethod} options={PAYMENT_METHODS} />
+          </Field>
 
-        <Field label="Reference">
-          <input
-            type="text"
-            value={reference}
-            onChange={e => setReference(e.target.value)}
-            placeholder="Optional bank reference"
-            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, boxSizing: "border-box" }}
-          />
-        </Field>
+          <Field label="Payment Amount" required>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={paymentAmount}
+              onChange={e => setPaymentAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] box-border tabular-nums"
+            />
+          </Field>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+          <Field label="Reference">
+            <input
+              type="text"
+              value={reference}
+              onChange={e => setReference(e.target.value)}
+              placeholder="Optional bank reference"
+              className="w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] box-border"
+            />
+          </Field>
+        </div>
+
+        <div className="border-t border-[var(--border-subtle)] px-6 py-4 flex justify-end gap-2">
           <Btn variant="outline" onClick={onClose} disabled={loading}>Cancel</Btn>
           <Btn variant="primary" onClick={handleSave} disabled={loading || noBankAccounts || accountsLoading}>
-            {loading ? "Saving…" : "Record Payment"}
+            {loading ? "Saving…" : "Record payment"}
           </Btn>
         </div>
       </div>

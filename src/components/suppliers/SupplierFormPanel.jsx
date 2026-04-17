@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  ff,
   CUR_SYM,
   PAYMENT_TERMS_OPTS,
   SUPPLIER_TYPES,
@@ -14,11 +13,15 @@ const TABS = ["Details", "Tax & Registration", "CIS", "Address", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
 const PAYMENT_TERMS = PAYMENT_TERMS_OPTS.filter((t) => t !== "Custom");
 
+const dateInputCls =
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+
+const textInputCls = dateInputCls;
+
 export default function SupplierFormPanel({ existing, onClose, onSave, suppliers = [] }) {
   const [activeTab, setActiveTab] = useState("Details");
   const [saved, setSaved] = useState(false);
 
-  // Details tab
   const [type, setType] = useState(existing?.type || "Business");
   const [salutation, setSalutation] = useState(existing?.salutation || "");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
@@ -31,14 +34,12 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
   const [currency, setCurrency] = useState(existing?.currency || "GBP");
   const [paymentTerms, setPaymentTerms] = useState(existing?.payment_terms || "Net 30");
 
-  // Tax & Registration tab
   const [companyNumber, setCompanyNumber] = useState(existing?.company_number || "");
   const [utr, setUtr] = useState(existing?.utr || "");
   const [vatNumber, setVatNumber] = useState(existing?.vat_number || "");
   const [isVatRegistered, setIsVatRegistered] = useState(existing?.is_vat_registered || false);
   const [defaultReverseCharge, setDefaultReverseCharge] = useState(existing?.default_reverse_charge || false);
 
-  // CIS tab
   const [isCis, setIsCis] = useState(existing?.cis?.is_subcontractor || false);
   const [cisRate, setCisRate] = useState(existing?.cis?.rate || "standard_20");
   const [cisTraderType, setCisTraderType] = useState(existing?.cis?.trader_type || "sole_trader");
@@ -46,7 +47,6 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
   const [cisVerificationDate, setCisVerificationDate] = useState(existing?.cis?.verification_date || "");
   const [cisLabourOnly, setCisLabourOnly] = useState(existing?.cis?.labour_only || false);
 
-  // Address tab
   const addr = existing?.billingAddress || {};
   const [billStreet1, setBillStreet1] = useState(addr.street1 || "");
   const [billStreet2, setBillStreet2] = useState(addr.street2 || "");
@@ -55,7 +55,6 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
   const [billZip, setBillZip] = useState(addr.zip || "");
   const [billCountry, setBillCountry] = useState(addr.country || "");
 
-  // Remarks tab
   const [notes, setNotes] = useState(existing?.notes || "");
 
   const handleSave = () => {
@@ -63,22 +62,14 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
     if (!name) return alert("Please enter a supplier name.");
 
     const supplier = {
-      id: existing?.id,
-      name,
+      id: existing?.id, name,
       legal_name: company || null,
       trading_name: null,
       type,
       email: email.trim() || null,
       phone: stripPhoneForStorage(phone) || null,
       website: website.trim() || null,
-      billingAddress: {
-        street1: billStreet1,
-        street2: billStreet2,
-        city: billCity,
-        state: billState,
-        zip: billZip,
-        country: billCountry,
-      },
+      billingAddress: { street1: billStreet1, street2: billStreet2, city: billCity, state: billState, zip: billZip, country: billCountry },
       company_number: companyNumber.trim() || null,
       utr: utr.trim() || null,
       vat_number: vatNumber.trim() || null,
@@ -104,90 +95,44 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
   };
 
   return (
-    <div style={{ background: "#FAFAF7", minHeight: "100vh", fontFamily: ff }}>
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: "#fff",
-          borderBottom: "1px solid #E8E6E0",
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#6b7280",
-              fontSize: 13,
-              fontFamily: ff,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: 0,
-            }}
-          >
-            ← Suppliers
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-3 flex items-center justify-between">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150"
+        >
+          ← Suppliers
+        </button>
+        <div className="flex gap-2">
           <Btn onClick={onClose} variant="outline">Cancel</Btn>
           <Btn onClick={handleSave} variant="primary" disabled={saved}>
-            {saved ? "Saved ✓" : existing ? "Save Changes" : "Save Supplier"}
+            {saved ? "Saved ✓" : existing ? "Save changes" : "Save supplier"}
           </Btn>
         </div>
       </div>
 
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 24px 0" }}>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 10,
-            border: "1px solid #E8E6E0",
-            padding: "18px 22px",
-            marginBottom: 0,
-          }}
-        >
-          <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+      <div className="max-w-[960px] mx-auto px-4 sm:px-6 py-5">
+        {/* Primary details card */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5 mb-4">
+          <div className="flex gap-5 mb-4 flex-wrap">
             {SUPPLIER_TYPES.map((t) => (
-              <label
-                key={t}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  color: "#374151",
-                }}
-              >
+              <label key={t} className="flex items-center gap-1.5 cursor-pointer text-sm text-[var(--text-secondary)]">
                 <input
                   type="radio"
                   name="supType"
                   checked={type === t}
                   onChange={() => setType(t)}
-                  style={{ accentColor: "#D97706" }}
+                  className="accent-[var(--brand-600)]"
                 />
                 {t}
               </label>
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <Field label="Salutation">
-              <Select
-                value={salutation}
-                onChange={setSalutation}
-                options={["Mr", "Mrs", "Ms", "Dr", "Prof", "Mx", "Rev"]}
-                placeholder="— Select —"
-              />
+              <Select value={salutation} onChange={setSalutation} options={["Mr", "Mrs", "Ms", "Dr", "Prof", "Mx", "Rev"]} placeholder="— Select —" />
             </Field>
             <Field label="First Name">
               <Input value={firstName} onChange={setFirstName} placeholder="First name" />
@@ -198,20 +143,18 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
           </div>
 
           {type === "Business" && (
-            <div style={{ marginBottom: 14 }}>
+            <div className="mb-3">
               <Field label="Legal / Company Name">
                 <Input value={company} onChange={setCompany} placeholder="Registered company name" />
               </Field>
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <Field label="Supplier Display Name">
               <Input value={displayName} onChange={setDisplayName} placeholder="How this supplier appears in lists" />
               {displayName && suppliers.some(s => s.id !== existing?.id && s.name?.toLowerCase() === displayName.toLowerCase()) && (
-                <div style={{ fontSize: 11, color: "#d97706", marginTop: 4 }}>
-                  ⚠ A supplier with this name already exists
-                </div>
+                <div className="text-[11px] text-[var(--warning-700)] mt-1">⚠ A supplier with this name already exists</div>
               )}
             </Field>
             <Field label="Email">
@@ -219,7 +162,7 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
             </Field>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="Phone">
               <input
                 type="text"
@@ -227,18 +170,7 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
                 onChange={e => setPhone(e.target.value)}
                 onBlur={() => setPhone(formatPhoneNumber(phone))}
                 placeholder="+44 …"
-                style={{
-                  width: "100%",
-                  padding: "9px 11px",
-                  border: "1px solid #e8e8ec",
-                  borderRadius: 5,
-                  fontSize: 15,
-                  fontFamily: ff,
-                  color: "#1A1A1A",
-                  background: "#fff",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
+                className={textInputCls}
               />
             </Field>
             <Field label="Website">
@@ -246,45 +178,32 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
             </Field>
           </div>
         </div>
-      </div>
 
-      <div style={{ maxWidth: 900, margin: "16px auto 0", padding: "0 24px 40px" }}>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 10,
-            border: "1px solid #E8E6E0",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ display: "flex", borderBottom: "1px solid #E8E6E0", padding: "0 4px" }}>
-            {TABS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "12px 16px 10px",
-                  fontSize: 13,
-                  fontWeight: activeTab === t ? 600 : 400,
-                  color: activeTab === t ? "#D97706" : "#6b7280",
-                  borderBottom: activeTab === t ? "2px solid #D97706" : "2px solid transparent",
-                  fontFamily: "inherit",
-                  transition: "all 0.15s",
-                  marginBottom: "-1px",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {t}
-              </button>
-            ))}
+        {/* Tabs card */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden mb-10">
+          <div className="flex border-b border-[var(--border-subtle)] px-1 overflow-x-auto">
+            {TABS.map(t => {
+              const active = activeTab === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setActiveTab(t)}
+                  className={[
+                    "py-3 px-4 text-sm cursor-pointer bg-transparent border-none -mb-px whitespace-nowrap transition-colors duration-150",
+                    active
+                      ? "text-[var(--brand-600)] font-semibold border-b-2 border-[var(--brand-600)]"
+                      : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] border-b-2 border-transparent",
+                  ].join(" ")}
+                >
+                  {t}
+                </button>
+              );
+            })}
           </div>
 
-          <div style={{ padding: "20px 22px" }}>
+          <div className="p-5">
             {activeTab === "Details" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Field label="Currency">
                   <Select value={currency} onChange={setCurrency} options={CURRENCIES} />
                 </Field>
@@ -295,13 +214,13 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
             )}
 
             {activeTab === "Tax & Registration" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="flex flex-col gap-3">
                 {type === "Business" && (
                   <Field label="Company Registration Number (Companies House)">
                     <Input value={companyNumber} onChange={setCompanyNumber} placeholder="e.g. 12345678" />
                   </Field>
                 )}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <Field label="UTR (Unique Taxpayer Reference)">
                     <Input value={utr} onChange={setUtr} placeholder="10-digit UTR" />
                   </Field>
@@ -309,26 +228,26 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
                     <Input value={vatNumber} onChange={setVatNumber} placeholder="GB123456789" />
                   </Field>
                 </div>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#374151" }}>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-secondary)]">
                   <input
                     type="checkbox"
                     checked={isVatRegistered}
                     onChange={e => setIsVatRegistered(e.target.checked)}
-                    style={{ accentColor: "#D97706" }}
+                    className="accent-[var(--brand-600)]"
                   />
                   VAT Registered
                 </label>
                 <div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#374151" }}>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-secondary)]">
                     <input
                       type="checkbox"
                       checked={defaultReverseCharge}
                       onChange={e => setDefaultReverseCharge(e.target.checked)}
-                      style={{ accentColor: "#D97706" }}
+                      className="accent-[var(--brand-600)]"
                     />
                     Default to Reverse Charge on bills
                   </label>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, marginLeft: 22 }}>
+                  <div className="text-[11px] text-[var(--text-tertiary)] mt-1 ml-6">
                     Enable for VAT-registered suppliers providing CIS-qualifying construction services (applies from 1 Mar 2021).
                   </div>
                 </div>
@@ -336,20 +255,20 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
             )}
 
             {activeTab === "CIS" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#1a1a2e" }}>
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-[var(--text-primary)]">
                   <input
                     type="checkbox"
                     checked={isCis}
                     onChange={e => setIsCis(e.target.checked)}
-                    style={{ accentColor: "#D97706" }}
+                    className="accent-[var(--brand-600)]"
                   />
                   This supplier is a CIS subcontractor
                 </label>
 
                 {isCis && (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Field label="CIS Rate">
                         <Select
                           value={cisRate}
@@ -365,31 +284,16 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
                         />
                       </Field>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Field label="Verification Number">
-                        <Input
-                          value={cisVerificationNumber}
-                          onChange={setCisVerificationNumber}
-                          placeholder="V1234567890"
-                        />
+                        <Input value={cisVerificationNumber} onChange={setCisVerificationNumber} placeholder="V1234567890" />
                       </Field>
                       <Field label="Verification Date">
                         <input
                           type="date"
                           value={cisVerificationDate}
                           onChange={e => setCisVerificationDate(e.target.value)}
-                          style={{
-                            width: "100%",
-                            padding: "9px 11px",
-                            border: "1px solid #e8e8ec",
-                            borderRadius: 5,
-                            fontSize: 15,
-                            fontFamily: ff,
-                            color: "#1A1A1A",
-                            background: "#fff",
-                            outline: "none",
-                            boxSizing: "border-box",
-                          }}
+                          className={dateInputCls}
                         />
                       </Field>
                     </div>
@@ -398,22 +302,22 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
                       const twoYearsAgo = new Date();
                       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
                       return d < twoYearsAgo ? (
-                        <div style={{ fontSize: 12, color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 6, padding: "8px 12px" }}>
+                        <div className="text-xs text-[var(--warning-700)] bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-[var(--radius-md)] px-3 py-2">
                           ⚠ HMRC recommends re-verifying subcontractors not paid in the past 2 tax years.
                         </div>
                       ) : null;
                     })()}
                     <div>
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#374151" }}>
+                      <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-secondary)]">
                         <input
                           type="checkbox"
                           checked={cisLabourOnly}
                           onChange={e => setCisLabourOnly(e.target.checked)}
-                          style={{ accentColor: "#D97706" }}
+                          className="accent-[var(--brand-600)]"
                         />
                         Labour only (no materials on invoices)
                       </label>
-                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, marginLeft: 22 }}>
+                      <div className="text-[11px] text-[var(--text-tertiary)] mt-1 ml-6">
                         When enabled, 100% of bills from this supplier are treated as labour for CIS deduction.
                       </div>
                     </div>
@@ -424,48 +328,22 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
 
             {activeTab === "Address" && (
               <div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#6b7280",
-                    letterSpacing: "0.05em",
-                    marginBottom: 12,
-                  }}
-                >
-                  BILLING ADDRESS
+                <div className="text-xs font-semibold text-[var(--text-tertiary)] tracking-wider mb-3 uppercase">
+                  Billing address
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <Field label="Street 1">
-                    <Input value={billStreet1} onChange={setBillStreet1} />
-                  </Field>
-                  <Field label="Street 2">
-                    <Input value={billStreet2} onChange={setBillStreet2} />
-                  </Field>
-                  <Field label="City">
-                    <Input value={billCity} onChange={setBillCity} />
-                  </Field>
-                  <Field label="State / County">
-                    <Input value={billState} onChange={setBillState} />
-                  </Field>
-                  <Field label="Postal / ZIP Code">
-                    <Input value={billZip} onChange={setBillZip} />
-                  </Field>
-                  <Field label="Country">
-                    <Input value={billCountry} onChange={setBillCountry} />
-                  </Field>
+                <div className="flex flex-col gap-2.5">
+                  <Field label="Street 1"><Input value={billStreet1} onChange={setBillStreet1} /></Field>
+                  <Field label="Street 2"><Input value={billStreet2} onChange={setBillStreet2} /></Field>
+                  <Field label="City"><Input value={billCity} onChange={setBillCity} /></Field>
+                  <Field label="State / County"><Input value={billState} onChange={setBillState} /></Field>
+                  <Field label="Postal / ZIP Code"><Input value={billZip} onChange={setBillZip} /></Field>
+                  <Field label="Country"><Input value={billCountry} onChange={setBillCountry} /></Field>
                 </div>
               </div>
             )}
 
             {activeTab === "Remarks" && (
-              <Field
-                label={
-                  <>
-                    Remarks <span style={{ color: "#9ca3af", fontWeight: 400 }}>(Internal notes)</span>
-                  </>
-                }
-              >
+              <Field label={<>Remarks <span className="text-[var(--text-tertiary)] font-normal">(Internal notes)</span></>}>
                 <Textarea value={notes} onChange={setNotes} rows={4} placeholder="Any notes about this supplier..." />
               </Field>
             )}

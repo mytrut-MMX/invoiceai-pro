@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { ff, CUR_SYM } from "../../constants";
-import { Btn } from "../atoms";
+import { CUR_SYM } from "../../constants";
+import { Btn, StatusBadge } from "../atoms";
 import { fmt, fmtDate } from "../../utils/helpers";
 import { fetchBillPayments } from "../../utils/ledger/fetchBillPayments";
 import { reverseEntry } from "../../utils/ledger/ledgerService";
@@ -10,17 +10,13 @@ import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
  * Payment history panel for a single bill.
  * Lists all `bill_payment` journal entries for bill.id, highlights those that
  * have been reversed, and lets the user reverse active payments.
- *
- * On reversal, calls reverseEntry() and then notifies the parent via
- * onPaymentReversed({ id, amount, date, ... }) so the parent can recalculate
- * bills.paid_amount and bills.status.
  */
 export default function BillPaymentsTab({ bill, onPaymentReversed }) {
   const currSym = CUR_SYM.GBP || "£";
-  const [rows, setRows]         = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [busyId, setBusyId]     = useState(null);
-  const [error, setError]       = useState("");
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -81,99 +77,54 @@ export default function BillPaymentsTab({ bill, onPaymentReversed }) {
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: "20px 4px", fontSize: 13, color: "#6b7280", fontFamily: ff }}>
-        Loading payments…
-      </div>
-    );
+    return <div className="py-5 px-1 text-sm text-[var(--text-secondary)]">Loading payments…</div>;
   }
 
   if (rows.length === 0) {
-    return (
-      <div style={{ padding: "24px 4px", fontSize: 13, color: "#6b7280", fontFamily: ff, textAlign: "center" }}>
-        No payments recorded yet.
-      </div>
-    );
+    return <div className="py-6 px-1 text-sm text-[var(--text-secondary)] text-center">No payments recorded yet.</div>;
   }
 
-  const thStyle = {
-    textAlign: "left",
-    padding: "8px 10px",
-    fontSize: 11,
-    fontWeight: 600,
-    color: "#6b7280",
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-    borderBottom: "1px solid #E8E6E0",
-    background: "#fafafa",
-  };
-  const tdBase = {
-    padding: "10px",
-    fontSize: 13,
-    color: "#1a1a2e",
-    borderBottom: "1px solid #f3f4f6",
-    verticalAlign: "middle",
-  };
-
   return (
-    <div style={{ fontFamily: ff }}>
+    <div>
       {error && (
-        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "#b91c1c" }}>
+        <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3 py-2 mb-3 text-xs text-[var(--danger-700)]">
           {error}
         </div>
       )}
 
-      <div style={{ border: "1px solid #E8E6E0", borderRadius: 8, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="border border-[var(--border-subtle)] rounded-[var(--radius-md)] overflow-hidden">
+        <table className="w-full border-collapse">
           <thead>
-            <tr>
-              <th style={thStyle}>Date</th>
-              <th style={{ ...thStyle, textAlign: "right" }}>Amount</th>
-              <th style={thStyle}>Method</th>
-              <th style={thStyle}>Reference</th>
-              <th style={thStyle}>Status</th>
-              <th style={{ ...thStyle, textAlign: "right" }}>Action</th>
+            <tr className="bg-[var(--surface-sunken)]">
+              <th className="text-left py-2 px-2.5 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Date</th>
+              <th className="text-right py-2 px-2.5 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Amount</th>
+              <th className="text-left py-2 px-2.5 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Method</th>
+              <th className="text-left py-2 px-2.5 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Reference</th>
+              <th className="text-left py-2 px-2.5 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Status</th>
+              <th className="text-right py-2 px-2.5 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Action</th>
             </tr>
           </thead>
           <tbody>
             {rows.map(p => {
-              const strike = p.reversed ? { textDecoration: "line-through", color: "#9ca3af" } : null;
+              const strikeCls = p.reversed ? "line-through text-[var(--text-tertiary)]" : "";
               return (
-                <tr key={p.id}>
-                  <td style={{ ...tdBase, ...strike }}>{fmtDate(p.date)}</td>
-                  <td style={{ ...tdBase, textAlign: "right", fontWeight: 600, ...strike }}>
+                <tr key={p.id} className="border-b border-[var(--border-subtle)] last:border-0">
+                  <td className={`py-2.5 px-2.5 text-sm text-[var(--text-primary)] ${strikeCls}`}>{fmtDate(p.date)}</td>
+                  <td className={`py-2.5 px-2.5 text-sm font-semibold text-right tabular-nums ${strikeCls || "text-[var(--text-primary)]"}`}>
                     {fmt(currSym, p.amount)}
                   </td>
-                  <td style={{ ...tdBase, ...strike }}>{p.method || "—"}</td>
-                  <td style={{ ...tdBase, ...strike, fontSize: 12, color: strike ? "#9ca3af" : "#6b7280" }}>
+                  <td className={`py-2.5 px-2.5 text-sm ${strikeCls || "text-[var(--text-secondary)]"}`}>{p.method || "—"}</td>
+                  <td className={`py-2.5 px-2.5 text-xs ${p.reversed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-secondary)]"}`}>
                     {p.reference || "—"}
                   </td>
-                  <td style={tdBase}>
-                    {p.reversed ? (
-                      <span style={{
-                        display: "inline-block", padding: "2px 8px", borderRadius: 999,
-                        background: "#fef2f2", color: "#b91c1c", fontSize: 11, fontWeight: 600,
-                      }}>
-                        Reversed
-                      </span>
-                    ) : (
-                      <span style={{
-                        display: "inline-block", padding: "2px 8px", borderRadius: 999,
-                        background: "#ecfdf5", color: "#059669", fontSize: 11, fontWeight: 600,
-                      }}>
-                        Active
-                      </span>
-                    )}
+                  <td className="py-2.5 px-2.5">
+                    <StatusBadge status={p.reversed ? "Refunded" : "Active"} />
                   </td>
-                  <td style={{ ...tdBase, textAlign: "right" }}>
+                  <td className="py-2.5 px-2.5 text-right">
                     {p.reversed ? (
-                      <span style={{ color: "#9ca3af", fontSize: 12 }}>—</span>
+                      <span className="text-[var(--text-tertiary)] text-xs">—</span>
                     ) : (
-                      <Btn
-                        variant="outline"
-                        onClick={() => handleReverse(p)}
-                        disabled={busyId === p.id}
-                      >
+                      <Btn variant="outline" size="sm" onClick={() => handleReverse(p)} disabled={busyId === p.id}>
                         {busyId === p.id ? "Reversing…" : "Reverse"}
                       </Btn>
                     )}

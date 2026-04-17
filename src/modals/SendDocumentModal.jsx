@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ff, PDF_TEMPLATES } from "../constants";
+import { PDF_TEMPLATES } from "../constants";
 import { Btn, Field, Input, Textarea } from "../components/atoms";
 import { Icons } from "../components/icons";
 import { buildInvoiceEmail, buildPaymentConfirmationEmail, buildQuoteEmail } from "../utils/emailTemplates";
@@ -8,19 +8,12 @@ import { A4InvoiceDoc } from "../components/shared/A4InvoiceDoc";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function formatCurrency(amount, currency = "GBP") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-  }).format(Number(amount || 0));
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(Number(amount || 0));
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function getDocumentNumber(documentType, document) {
@@ -35,21 +28,13 @@ function getDocumentLabel(documentType) {
 }
 
 function extractCompanyName(company) {
-  // orgSettings stores the org name as `orgName`; callers may also pass companyName/name
   return company?.orgName || company?.companyName || company?.name || "";
 }
 
 function buildDefaultSubject(documentType, document, company) {
   const companyName = extractCompanyName(company) || "Your Company";
-
-  if (documentType === "quote") {
-    return `Quote ${document?.quoteNumber || "—"} from ${companyName}`;
-  }
-
-  if (documentType === "payment_confirmation") {
-    return `Payment Received — Invoice ${document?.invoiceNumber || "—"}`;
-  }
-
+  if (documentType === "quote") return `Quote ${document?.quoteNumber || "—"} from ${companyName}`;
+  if (documentType === "payment_confirmation") return `Payment Received — Invoice ${document?.invoiceNumber || "—"}`;
   return `Invoice ${document?.invoiceNumber || "—"} from ${companyName}`;
 }
 
@@ -62,95 +47,59 @@ function buildDefaultMessage(documentType, document, company, customer) {
 
   if (documentType === "quote") {
     return [
-      `Hi ${customerName},`,
-      "",
-      `Please find your quote ${documentNumber} for ${total} below.`,
-      "",
-      "Thank you for your time.",
-      companyName,
+      `Hi ${customerName},`, "",
+      `Please find your quote ${documentNumber} for ${total} below.`, "",
+      "Thank you for your time.", companyName,
     ].join("\n");
   }
-
   if (documentType === "payment_confirmation") {
     return [
-      `Hi ${customerName},`,
-      "",
-      `We've received your payment for invoice ${documentNumber}.`,
-      "",
-      "Thank you for your business.",
-      companyName,
+      `Hi ${customerName},`, "",
+      `We've received your payment for invoice ${documentNumber}.`, "",
+      "Thank you for your business.", companyName,
     ].join("\n");
   }
-
   const dueDate = formatDate(document?.dueDate);
-
   return [
-    `Hi ${customerName},`,
-    "",
+    `Hi ${customerName},`, "",
     `Please find your invoice ${documentNumber} for ${total} below.`,
-    dueDate ? `Payment is due by ${dueDate}.` : "",
-    "",
-    "Thank you for your business.",
-    companyName,
-  ]
-    .filter((line, idx, arr) => !(line === "" && arr[idx - 1] === ""))
-    .join("\n");
+    dueDate ? `Payment is due by ${dueDate}.` : "", "",
+    "Thank you for your business.", companyName,
+  ].filter((line, idx, arr) => !(line === "" && arr[idx - 1] === "")).join("\n");
 }
 
 function buildEmailHtml({ documentType, document, company, customer, personalMessage }) {
   const trimmedMessage = (personalMessage || "").trim();
-
   const baseHtml =
     documentType === "quote"
       ? buildQuoteEmail({ quote: document, company, customer })
       : documentType === "payment_confirmation"
         ? buildPaymentConfirmationEmail({ invoice: document, company, customer })
         : buildInvoiceEmail({ invoice: document, company, customer });
-
   if (!trimmedMessage) return baseHtml;
-
   const personalBlock = trimmedMessage
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => `<p style=\"margin:0 0 10px;\">${line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+    .split("\n").map(l => l.trim()).filter(Boolean)
+    .map(l => `<p style="margin:0 0 10px;">${l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
     .join("");
-
   const marker = "</td>\n            </tr>";
   const insertAt = baseHtml.indexOf(marker);
   if (insertAt < 0) return baseHtml;
-
   const prefix = baseHtml.slice(0, insertAt);
   const suffix = baseHtml.slice(insertAt);
-  const injected = `${prefix}<div style=\"font-family:Arial,Helvetica,sans-serif;color:#27272A;font-size:15px;line-height:1.55;margin-bottom:16px;\">${personalBlock}</div>${suffix}`;
-
-  return injected;
+  return `${prefix}<div style="font-family:Arial,Helvetica,sans-serif;color:#27272A;font-size:15px;line-height:1.55;margin-bottom:16px;">${personalBlock}</div>${suffix}`;
 }
 
 export default function SendDocumentModal({
-  documentType,
-  document,
-  company,
-  customer,
-  onClose,
-  onSent,
-  // PDF generation props (optional — when provided, PDF is attached to the email)
-  docData,
-  currSymbol,
-  isVat,
-  pdfTemplate,
-  accentColor,
-  footerText,
-  invoiceTemplate,
+  documentType, document, company, customer,
+  onClose, onSent,
+  docData, currSymbol, isVat, pdfTemplate, accentColor, footerText, invoiceTemplate,
 }) {
   const [to, setTo] = useState(customer?.email || "");
   const [cc, setCc] = useState("");
   const [replyTo, setReplyTo] = useState(company?.email || "");
   const companyDisplayName = extractCompanyName(company);
   const [subject, setSubject] = useState(() => buildDefaultSubject(documentType, document, company));
-  const [personalMessage, setPersonalMessage] = useState(() =>
-    buildDefaultMessage(documentType, document, company, customer),
-  );
+  const [personalMessage, setPersonalMessage] = useState(() => buildDefaultMessage(documentType, document, company, customer));
   const [sendCopy, setSendCopy] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
@@ -160,29 +109,19 @@ export default function SendDocumentModal({
   const subjectError = subject && subject.trim().length < 3 ? "Subject must be at least 3 characters." : null;
   const missingCustomerEmail = !to && !customer?.email;
 
-  const titleLabel = useMemo(() => {
-    const docLabel = getDocumentLabel(documentType);
-    return `Send ${docLabel} ${getDocumentNumber(documentType, document)}`;
-  }, [documentType, document]);
+  const titleLabel = useMemo(
+    () => `Send ${getDocumentLabel(documentType)} ${getDocumentNumber(documentType, document)}`,
+    [documentType, document]
+  );
 
   async function handleSend() {
-    if (!to.trim()) {
-      setError("Recipient email is required.");
-      return;
-    }
-    if (!EMAIL_RE.test(to.trim())) {
-      setError("Please enter a valid recipient email.");
-      return;
-    }
-    if (subject.trim().length < 3) {
-      setError("Subject must be at least 3 characters.");
-      return;
-    }
+    if (!to.trim()) return setError("Recipient email is required.");
+    if (!EMAIL_RE.test(to.trim())) return setError("Please enter a valid recipient email.");
+    if (subject.trim().length < 3) return setError("Subject must be at least 3 characters.");
 
     setSending(true);
     setError(null);
 
-    // Generate a real PDF from the hidden invoice element
     let attachmentBase64 = null;
     let attachmentFilename = null;
     if (docData) {
@@ -192,7 +131,6 @@ export default function SendDocumentModal({
           const docNum = (document?.invoiceNumber || document?.quoteNumber || "").replace(/[^a-zA-Z0-9_-]/g, "");
           const docTypeLabel = documentType === "quote" ? "Quote" : "Invoice";
           attachmentFilename = `${docTypeLabel}-${docNum || "document"}.pdf`;
-
           const { default: html2pdf } = await import("html2pdf.js");
           const pdfBlob = await html2pdf()
             .set({
@@ -204,8 +142,6 @@ export default function SendDocumentModal({
             })
             .from(el)
             .outputPdf("blob");
-
-          // Convert blob to base64
           const arrayBuffer = await pdfBlob.arrayBuffer();
           const bytes = new Uint8Array(arrayBuffer);
           let binary = "";
@@ -217,14 +153,7 @@ export default function SendDocumentModal({
       }
     }
 
-    const htmlBody = buildEmailHtml({
-      documentType,
-      document,
-      company,
-      customer,
-      personalMessage,
-    });
-
+    const htmlBody = buildEmailHtml({ documentType, document, company, customer, personalMessage });
     const payload = {
       to: to.trim(),
       cc: sendCopy ? company?.email : (cc.trim() || undefined),
@@ -244,21 +173,12 @@ export default function SendDocumentModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const contentType = res.headers.get("content-type") || "";
       const isJson = contentType.toLowerCase().includes("application/json");
       const data = isJson ? await res.json() : null;
       const rawText = isJson ? "" : await res.text();
-
-      if (!res.ok) {
-        const fallbackError = rawText?.trim() || "Send failed";
-        throw new Error(data?.error || data?.message || fallbackError);
-      }
-
-      if (!data) {
-        throw new Error(rawText?.trim() || "Email sent, but the server response was not JSON.");
-      }
-
+      if (!res.ok) throw new Error(data?.error || data?.message || (rawText?.trim() || "Send failed"));
+      if (!data) throw new Error(rawText?.trim() || "Email sent, but the server response was not JSON.");
       setSent(true);
       setTimeout(() => onSent?.(data), 1500);
     } catch (err) {
@@ -269,56 +189,30 @@ export default function SendDocumentModal({
   }
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(17,17,16,0.55)",
-        display: "grid",
-        placeItems: "center",
-        zIndex: 1500,
-        padding: 16,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          background: "#FFFFFF",
-          borderRadius: 12,
-          border: "1px solid #E8E6E0",
-          boxShadow: "0 18px 40px rgba(17,17,16,0.2)",
-          overflow: "hidden",
-          fontFamily: ff,
-        }}
-      >
-        <div style={{ padding: "16px 18px", borderBottom: "1px solid #E8E6E0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 700, color: "#1F2937" }}>
+    <div className="fixed inset-0 bg-black/50 z-[1500] grid place-items-center p-4">
+      <div className="w-full max-w-[560px] bg-white rounded-2xl shadow-[var(--shadow-popover)] overflow-hidden">
+        {/* Header */}
+        <div className="border-b border-[var(--border-subtle)] px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
             <Icons.Send />
             <span>{titleLabel}</span>
           </div>
-          <button type="button" onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#6B7280", display: "flex" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer flex"
+          >
             <Icons.X />
           </button>
         </div>
 
         {sent ? (
-          <div
-            style={{
-              padding: "44px 22px",
-              textAlign: "center",
-              color: "#166534",
-              fontWeight: 700,
-              fontSize: 18,
-              opacity: 1,
-              animation: "fadeInSendSuccess 220ms ease-out",
-            }}
-          >
+          <div className="px-6 py-12 text-center text-[var(--success-700)] font-bold text-lg">
             ✓ Email sent to {to.trim()}
           </div>
         ) : (
           <>
-            <div style={{ padding: "16px 18px 8px", borderBottom: "1px solid #E8E6E0" }}>
+            <div className="px-6 py-4 space-y-3 border-b border-[var(--border-subtle)]">
               <Field label="To" required error={toError}>
                 <Input value={to} onChange={setTo} placeholder="john@acmecorp.com" type="email" error={!!toError} />
               </Field>
@@ -333,58 +227,58 @@ export default function SendDocumentModal({
               </Field>
             </div>
 
-            <div style={{ padding: "14px 18px", borderBottom: "1px solid #E8E6E0" }}>
-              <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 700, color: "#6B7280", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            <div className="px-6 py-4 border-b border-[var(--border-subtle)]">
+              <div className="mb-2 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
                 Message
               </div>
               <Textarea value={personalMessage} onChange={setPersonalMessage} rows={9} />
-              <div style={{ marginTop: 8, fontSize: 12, color: "#78716C" }}>
+              <div className="mt-2 text-xs text-[var(--text-tertiary)]">
                 (personalize message above — this is what the client will see before the invoice details)
               </div>
             </div>
 
-            <div style={{ padding: "12px 18px", borderBottom: "1px solid #E8E6E0" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#44403C", cursor: "pointer" }}>
+            <div className="px-6 py-3 border-b border-[var(--border-subtle)]">
+              <label className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={sendCopy}
-                  onChange={(event) => setSendCopy(event.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#D97706" }}
+                  onChange={e => setSendCopy(e.target.checked)}
+                  className="w-4 h-4 accent-[var(--brand-600)]"
                 />
                 <span>Send me a copy (CC to {company?.email || (companyDisplayName ? `${companyDisplayName} email` : "company email")})</span>
               </label>
               {docData && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 5 }}>
+                <div className="mt-2 text-xs text-[var(--text-tertiary)] flex items-center gap-1.5">
                   <Icons.Receipt /> A PDF copy of your {documentType === "quote" ? "quote" : "invoice"} will be attached to this email.
                 </div>
               )}
             </div>
 
             {(missingCustomerEmail || error) && (
-              <div style={{ padding: "12px 18px 0" }}>
+              <div className="px-6 pt-3 space-y-2">
                 {missingCustomerEmail && (
-                  <div style={{ fontSize: 12, color: "#B45309", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 10px", marginBottom: 8 }}>
+                  <div className="text-xs text-[var(--warning-700)] bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-[var(--radius-md)] px-3 py-2">
                     No email address saved for this client. Please enter one manually.
                   </div>
                 )}
                 {error && (
-                  <div style={{ fontSize: 12, color: "#B91C1C", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "8px 10px" }}>
+                  <div className="text-xs text-[var(--danger-700)] bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3 py-2">
                     {error}
                   </div>
                 )}
               </div>
             )}
 
-            <div style={{ padding: "16px 18px", display: "flex", justifyContent: "flex-end", gap: 10, background: "#F0EFE9" }}>
+            <div className="px-6 py-4 flex justify-end gap-2 bg-[var(--surface-sunken)]">
               <Btn variant="outline" onClick={onClose} disabled={sending}>Cancel</Btn>
               <Btn variant="accent" onClick={handleSend} disabled={sending || !!toError || !!subjectError} icon={<Icons.Send />}>
-                {sending ? "Sending…" : "Send Email →"}
+                {sending ? "Sending…" : "Send email →"}
               </Btn>
             </div>
 
-            {/* Hidden invoice render for PDF attachment capture */}
+            {/* Hidden render for PDF capture */}
             {docData && (
-              <div style={{ position: "fixed", left: -9999, top: 0, width: "210mm", visibility: "hidden", pointerEvents: "none", overflow: "hidden", height: 0 }}>
+              <div className="fixed -left-[9999px] top-0 w-[210mm] invisible pointer-events-none overflow-hidden h-0">
                 <A4InvoiceDoc
                   docId="send-modal-pdf-preview"
                   data={docData}
@@ -401,13 +295,6 @@ export default function SendDocumentModal({
           </>
         )}
       </div>
-
-      <style>{`
-        @keyframes fadeInSendSuccess {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

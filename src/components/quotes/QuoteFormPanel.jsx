@@ -1,6 +1,6 @@
 import { useState, useMemo, useContext } from "react";
 import { createPortal } from "react-dom";
-import { ff, CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from "../../constants";
+import { CUR_SYM, DEFAULT_QUOTE_TERMS, QUOTE_STATUSES } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { Field, Input, Textarea, Btn } from "../atoms";
@@ -9,6 +9,28 @@ import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../../utils/h
 import { calcTotals } from "../../utils/calcTotals";
 import ItemModal from "../../modals/ItemModal";
 import { useCISSettings } from "../../hooks/useCISSettings";
+
+const dateInputCls =
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+
+const selectInputCls =
+  "h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150";
+
+function SectionTitle({ children }) {
+  return (
+    <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+      {children}
+    </div>
+  );
+}
+
+function Section({ children }) {
+  return (
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5 mb-4">
+      {children}
+    </div>
+  );
+}
 
 export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToInvoice, asPage = false }) {
   const { customers, catalogItems, setCatalogItems, orgSettings, quotes } = useContext(AppCtx);
@@ -38,11 +60,29 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
   const isLockedAcceptedQuote = isEdit && q.status === "Invoiced";
 
-  const totals = useMemo(() => calcTotals(items, discType, discVal, showShipping ? shipping : 0, isVat, customer, cisEnabled, cisDefaultRate, true), [items, discType, discVal, shipping, isVat, customer, showShipping, cisEnabled, cisDefaultRate]);
+  const totals = useMemo(
+    () => calcTotals(items, discType, discVal, showShipping ? shipping : 0, isVat, customer, cisEnabled, cisDefaultRate, true),
+    [items, discType, discVal, shipping, isVat, customer, showShipping, cisEnabled, cisDefaultRate]
+  );
   const vatAmount = totals.taxBreakdown.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
   const vatRate = totals.taxBreakdown.length === 1 ? totals.taxBreakdown[0].rate : "mixed";
 
-  const docData = { docNumber: quoteNumber, customer, issueDate, dueDate: expiryDate, paymentTerms: `Valid until ${fmtDate(expiryDate)}`, items, ...totals, cisDeduction: totals.cisEstimate || totals.cisDeduction || 0, total: totals.hasCISItems ? totals.grossTotal - (totals.cisEstimate || 0) : totals.total, notes, terms, status, poNumber, docType: "quote" };
+  const docData = {
+    docNumber: quoteNumber,
+    customer,
+    issueDate,
+    dueDate: expiryDate,
+    paymentTerms: `Valid until ${fmtDate(expiryDate)}`,
+    items,
+    ...totals,
+    cisDeduction: totals.cisEstimate || totals.cisDeduction || 0,
+    total: totals.hasCISItems ? totals.grossTotal - (totals.cisEstimate || 0) : totals.total,
+    notes,
+    terms,
+    status,
+    poNumber,
+    docType: "quote",
+  };
 
   const handleShare = () => {
     const visibility = window.prompt("Share visibility: Public or Private and secure?", "Public");
@@ -50,16 +90,15 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
     const expiresOn = window.prompt("Link expiration date (YYYY-MM-DD)", expiryDate || addDays(todayStr(), 30));
     if (!expiresOn) return;
     const mode = visibility.toLowerCase().includes("private") ? "private" : "public";
-    // AUTH-005: Use full UUID (122 bits entropy) instead of truncated 8-char segment (32 bits)
     const token = crypto.randomUUID();
     const basePath = mode === "public" ? "public" : "secure";
-    // AUTH-006: Client-side expiry check — not tamper-proof.
-    // TODO: Move share link validation to a server-side API endpoint
-    // that verifies token + expiry from database before returning document.
     const shareUrl = `${window.location.origin}/${basePath}/quote/${quoteNumber}?token=${token}&expires=${expiresOn}`;
-    window.prompt(mode === "private"
-      ? "Private link created. Customer will use one-time passcode. Copy link:"
-      : "Public link created. Anyone with the link can access before expiry. Copy link:", shareUrl);
+    window.prompt(
+      mode === "private"
+        ? "Private link created. Customer will use one-time passcode. Copy link:"
+        : "Public link created. Anyone with the link can access before expiry. Copy link:",
+      shareUrl
+    );
   };
 
   const buildQuote = (newStatus) => ({
@@ -97,28 +136,56 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
 
   const handleNewItemSaved = (item) => {
     setCatalogItems(p => [...p, item]);
-    const newItem = { id: crypto.randomUUID(), name: item.name, description: item.description || "", quantity: 1, rate: item.rate, tax_rate: isVat ? (item.taxRate || 20) : 0, amount: item.rate, sort_order: items.length };
+    const newItem = {
+      id: crypto.randomUUID(),
+      name: item.name,
+      description: item.description || "",
+      quantity: 1,
+      rate: item.rate,
+      tax_rate: isVat ? (item.taxRate || 20) : 0,
+      amount: item.rate,
+      sort_order: items.length,
+    };
     setItems(p => [...p, newItem]);
     setShowItemModal(false);
   };
 
   const panelContent = (
-    <div style={{ position: asPage ? "relative" : "fixed", inset: asPage ? "auto" : 0, background: asPage ? "transparent" : "rgba(0,0,0,0.4)", zIndex: asPage ? "auto" : 900, display: "flex", justifyContent: asPage ? "center" : "flex-end" }}>
+    <div
+      className={asPage
+        ? "relative bg-[var(--surface-page)] min-h-screen"
+        : "fixed inset-0 bg-black/40 z-[900] flex justify-end"
+      }
+    >
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={() => setShowPrintModal(false)} />}
       {showItemModal && <ItemModal existing={null} onClose={() => setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: cisEnabled } }} />}
-      <div style={{ width: "100%", maxWidth: 860, height: asPage ? "auto" : "100%", minHeight: asPage ? "calc(100vh - 180px)" : "100%", background: "#f4f5f7", display: "flex", flexDirection: "column", boxShadow: asPage ? "0 12px 34px rgba(0,0,0,0.10)" : "-8px 0 40px rgba(0,0,0,0.16)", borderRadius: asPage ? 12 : 0, overflow: "hidden", fontFamily: ff }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, fontFamily: ff }}>
+
+      <div
+        className={asPage
+          ? "w-full max-w-[1280px] mx-auto bg-[var(--surface-page)] flex flex-col"
+          : "w-full max-w-[960px] h-full bg-[var(--surface-page)] flex flex-col shadow-[var(--shadow-lg)] overflow-hidden"
+        }
+      >
+        {/* Sticky header */}
+        <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-3 flex items-center justify-between gap-2 flex-wrap">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150"
+          >
             ← Quotes
           </button>
-          <div style={{ flex: 1, minWidth: 0 }} />
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div className="flex items-center gap-2 flex-wrap">
             {isEdit && (
-              <Btn onClick={() => onConvertToInvoice(buildQuote("Invoiced"))} disabled={isLockedAcceptedQuote} variant="outline" icon={<Icons.Receipt />}>
-                Convert to Invoice
+              <Btn
+                onClick={() => onConvertToInvoice(buildQuote("Invoiced"))}
+                disabled={isLockedAcceptedQuote}
+                variant="outline"
+                icon={<Icons.Receipt />}
+              >
+                Convert to invoice
               </Btn>
             )}
-            <Btn onClick={handleShare} variant="outline" icon={<Icons.Send />}>Share Link</Btn>
+            <Btn onClick={handleShare} variant="outline" icon={<Icons.Send />}>Share link</Btn>
             <Btn onClick={() => setShowPrintModal(true)} variant="outline" icon={<Icons.Receipt />}>Print / PDF</Btn>
             <SaveSplitBtn
               onSave={() => handleSave()}
@@ -130,16 +197,16 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
           {isLockedAcceptedQuote && (
-            <div style={{ marginBottom: 12, padding: "10px 12px", border: "1px solid #FECACA", background: "#FEF2F2", borderRadius: 8, fontSize: 13, color: "#B91C1C", fontWeight: 600 }}>
+            <div className="mb-3 px-3 py-2.5 border border-[var(--danger-100)] bg-[var(--danger-50)] rounded-[var(--radius-md)] text-sm font-semibold text-[var(--danger-700)]">
               You are not allowed to edit an accepted quote.
             </div>
           )}
 
           {/* Customer */}
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", padding: "16px 18px", marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Customer</div>
+          <Section>
+            <SectionTitle>Customer</SectionTitle>
             <CustomerPicker
               customers={customers}
               value={customer}
@@ -152,37 +219,50 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
               }}
               onClear={() => { setCustomer(null); setCustSearch(""); setCustOpen(false); }}
             />
-          </div>
+          </Section>
 
           {/* Quote details */}
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", padding: "16px 18px", marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Quote Details</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12 }}>
-              <Field label="Quote #"><Input value={quoteNumber} onChange={setQuoteNumber} /></Field>
+          <Section>
+            <SectionTitle>Quote details</SectionTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Field label="Quote #">
+                <Input value={quoteNumber} onChange={setQuoteNumber} />
+              </Field>
               <Field label="Issue Date">
-                <input value={issueDate} onChange={e => setIssueDate(e.target.value)} type="date"
-                  style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, outline: "none", boxSizing: "border-box" }} />
+                <input
+                  value={issueDate}
+                  onChange={e => setIssueDate(e.target.value)}
+                  type="date"
+                  className={dateInputCls}
+                />
               </Field>
               <Field label="Expiry Date">
-                <input value={expiryDate} onChange={e => setExpiryDate(e.target.value)} type="date"
-                  style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, outline: "none", boxSizing: "border-box" }} />
+                <input
+                  value={expiryDate}
+                  onChange={e => setExpiryDate(e.target.value)}
+                  type="date"
+                  className={dateInputCls}
+                />
               </Field>
               <Field label="PO / Reference">
                 <Input value={poNumber} onChange={setPoNumber} placeholder="Optional" />
               </Field>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid #F0F0F0" }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#333" }}>Status</span>
-              <select value={status} onChange={e => handleStatusChange(e.target.value)}
-                style={{ padding: "5px 10px", border: "1.5px solid #E0E0E0", borderRadius: 7, fontSize: 13, fontFamily: ff, background: "#f9fafb", outline: "none", cursor: "pointer" }}>
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-subtle)]">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">Status</span>
+              <select
+                value={status}
+                onChange={e => handleStatusChange(e.target.value)}
+                className={selectInputCls}
+              >
                 {QUOTE_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-          </div>
+          </Section>
 
           {/* Line items */}
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e8ec", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", padding: "16px 18px", marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Line Items</div>
+          <Section>
+            <SectionTitle>Line items</SectionTitle>
             <LineItemsTable
               items={items}
               onChange={setItems}
@@ -192,12 +272,12 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
               onAddNewItem={() => setShowItemModal(true)}
               isCISInvoice={cisEnabled && !!(customer?.cis?.registered || customer?.taxDetails?.cisRegistered)}
             />
-          </div>
+          </Section>
 
-          {/* Totals + Notes */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 14, alignItems: "start", marginBottom: 40 }}>
-            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e8ec", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", padding: "16px 18px" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Notes & Terms</div>
+          {/* Notes + Totals */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 mb-10 items-start">
+            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5">
+              <SectionTitle>Notes &amp; terms</SectionTitle>
               <Field label="Notes (shown on quote)">
                 <Textarea value={notes} onChange={setNotes} rows={3} placeholder="e.g. This quote is valid for 30 days." />
               </Field>
@@ -205,62 +285,88 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
                 <Textarea value={terms} onChange={setTerms} rows={3} />
               </Field>
             </div>
-            <div style={{ background: "#FAFAFA", borderRadius: 10, border: "1px solid #EBEBEB", padding: "14px 16px", minWidth: 260 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
-                <span style={{ fontSize: 13, color: "#666" }}>Discount</span>
-                <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-                  <div style={{ display: "flex", border: "1.5px solid #E0E0E0", borderRadius: 6, overflow: "hidden" }}>
-                    {[["percent", "%"], ["fixed", currSym]].map(([t, l]) => (
-                      <button key={t} onClick={() => setDiscType(t)}
-                        style={{ padding: "3px 8px", border: "none", background: discType === t ? "#1A1A1A" : "transparent", color: discType === t ? "#fff" : "#999", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: ff }}>{l}</button>
-                    ))}
+            <div className="bg-[var(--surface-sunken)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] p-4 min-w-[280px]">
+              {/* Discount */}
+              <div className="flex items-center justify-between py-1">
+                <span className="text-sm text-[var(--text-secondary)]">Discount</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border-default)] overflow-hidden">
+                    {[["percent", "%"], ["fixed", currSym]].map(([t, l]) => {
+                      const active = discType === t;
+                      return (
+                        <button
+                          key={t}
+                          onClick={() => setDiscType(t)}
+                          className={[
+                            "px-2 py-0.5 text-[11px] font-semibold cursor-pointer border-none transition-colors duration-150",
+                            active
+                              ? "bg-[var(--text-primary)] text-white"
+                              : "bg-transparent text-[var(--text-tertiary)] hover:bg-white",
+                          ].join(" ")}
+                        >
+                          {l}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <input value={discVal} onChange={e => setDiscVal(e.target.value)} type="number" min="0"
-                    style={{ width: 62, padding: "4px 6px", border: "1.5px solid #E0E0E0", borderRadius: 6, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }} />
+                  <input
+                    value={discVal}
+                    onChange={e => setDiscVal(e.target.value)}
+                    type="number"
+                    min="0"
+                    className="w-16 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+                  />
                 </div>
               </div>
               {showShipping && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
-                  <span style={{ fontSize: 13, color: "#666" }}>Shipping</span>
-                  <input value={shipping} onChange={e => setShipping(e.target.value)} type="number" min="0" placeholder="0.00" inputMode="decimal"
-                    style={{ width: 86, padding: "4px 6px", border: "1.5px solid #E0E0E0", borderRadius: 6, fontSize: 13, textAlign: "right", fontFamily: ff, background: "#fff", outline: "none" }} />
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-sm text-[var(--text-secondary)]">Shipping</span>
+                  <input
+                    value={shipping}
+                    onChange={e => setShipping(e.target.value)}
+                    type="number"
+                    min="0"
+                    placeholder="0.00"
+                    inputMode="decimal"
+                    className="w-24 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+                  />
                 </div>
               )}
 
               {/* Totals */}
-              <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e8e8ec" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 13 }}>
-                  <span style={{ color: "#6b7280" }}>Subtotal</span>
-                  <span>{fmt(currSym, totals.subtotal)}</span>
+              <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+                <div className="flex items-center justify-between py-1 text-sm">
+                  <span className="text-[var(--text-secondary)]">Subtotal</span>
+                  <span className="text-[var(--text-primary)] tabular-nums">{fmt(currSym, totals.subtotal)}</span>
                 </div>
 
                 {vatAmount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 13 }}>
-                    <span style={{ color: "#6b7280" }}>VAT ({vatRate}%)</span>
-                    <span>{fmt(currSym, vatAmount)}</span>
+                  <div className="flex items-center justify-between py-1 text-sm">
+                    <span className="text-[var(--text-secondary)]">VAT ({vatRate}%)</span>
+                    <span className="text-[var(--text-primary)] tabular-nums">{fmt(currSym, vatAmount)}</span>
                   </div>
                 )}
 
                 {totals.hasCISItems && (
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12, marginTop: 4, paddingTop: 8, borderTop: "1px dashed #e8e8ec", color: "#6b7280" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#d97706", flexShrink: 0 }} />
+                  <div className="flex items-center justify-between py-1 mt-1 pt-2 border-t border-dashed border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--warning-600)]" />
                       Est. CIS Deduction
-                      <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>
+                      <span className="text-[11px] text-[var(--text-tertiary)] ml-1">
                         ({totals.customerCIS?.rate || "20% — Standard"})
                       </span>
                     </span>
-                    <span>−{fmt(currSym, totals.cisEstimate)}</span>
+                    <span className="tabular-nums">−{fmt(currSym, totals.cisEstimate)}</span>
                   </div>
                 )}
 
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", marginTop: 6, borderTop: "2px solid #e8e8ec", fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>
-                  <span>Quote Total</span>
-                  <span>{fmt(currSym, totals.subtotal + vatAmount - (totals.cisEstimate || 0))}</span>
+                <div className="flex items-center justify-between pt-3 mt-3 border-t-2 border-[var(--text-primary)] text-base font-bold text-[var(--text-primary)]">
+                  <span>Quote total</span>
+                  <span className="tabular-nums">{fmt(currSym, totals.subtotal + vatAmount - (totals.cisEstimate || 0))}</span>
                 </div>
 
                 {totals.hasCISItems && (
-                  <div style={{ marginTop: 12, padding: "10px 12px", background: "#fffbeb", borderRadius: 8, border: "1px solid #fde68a", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+                  <div className="mt-3 px-3 py-2.5 bg-[var(--warning-50)] rounded-[var(--radius-md)] border border-[var(--warning-100)] text-xs text-[var(--warning-700)] leading-relaxed">
                     <strong>Note:</strong> This quote includes CIS-applicable items. If converted to an invoice, {fmt(currSym, totals.cisEstimate)} will be deducted at {totals.customerCIS?.rateValue ?? 20}% and paid directly to HMRC.
                   </div>
                 )}

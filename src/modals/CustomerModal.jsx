@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ff, CUR_SYM, PAYMENT_TERMS_OPTS } from "../constants";
+import { CUR_SYM, PAYMENT_TERMS_OPTS } from "../constants";
 import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
 import { formatPhoneNumber, stripPhoneForStorage } from "../utils/helpers";
 import { useCISSettings } from "../hooks/useCISSettings";
@@ -13,10 +13,14 @@ const CIS_RATES = [
   { label: "0% — Gross payment", value: 0 },
 ];
 
+const textInputCls =
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+
 export default function CustomerForm({ existing, onClose, onSave, settings, customers = [] }) {
   const [activeTab, setActiveTab] = useState("Other Details");
   const [saved, setSaved] = useState(false);
   const { cisEnabled } = useCISSettings();
+
   const [custType, setCustType] = useState(existing?.type || "Business");
   const [salutation, setSalutation] = useState(existing?.salutation || "");
   const [firstName, setFirstName] = useState(existing?.firstName || "");
@@ -49,7 +53,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [cisRate, setCisRate] = useState(existing?.cis?.rate || CIS_RATES[0].label);
   const [cisVerification, setCisVerification] = useState(existing?.cis?.verification || "Net");
   const [cisBusinessType, setCisBusinessType] = useState(existing?.cis?.businessType || "Subcontractor");
-  
+
   const copyBillingToShipping = () => {
     setShipStreet1(billStreet1);
     setShipStreet2(billStreet2);
@@ -65,15 +69,9 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
       type: custType,
       salutation,
       name: displayName || `${firstName} ${lastName}`.trim(),
-      firstName,
-      lastName,
-      company,
-      email,
+      firstName, lastName, company, email,
       phone: stripPhoneForStorage(phone),
-      website,
-      currency,
-      paymentTerms,
-      remarks,
+      website, currency, paymentTerms, remarks,
       contactPersons: (contactPersons || []).map(cp => ({
         ...cp,
         phone: stripPhoneForStorage(cp.phone),
@@ -88,20 +86,12 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
         businessType: cisBusinessType,
       },
       billingAddress: {
-        street1: billStreet1,
-        street2: billStreet2,
-        city: billCity,
-        state: billState,
-        zip: billZip,
-        country: billCountry,
+        street1: billStreet1, street2: billStreet2,
+        city: billCity, state: billState, zip: billZip, country: billCountry,
       },
-    shippingAddress: {
-        street1: shipStreet1,
-        street2: shipStreet2,
-        city: shipCity,
-        state: shipState,
-        zip: shipZip,
-        country: shipCountry,
+      shippingAddress: {
+        street1: shipStreet1, street2: shipStreet2,
+        city: shipCity, state: shipState, zip: shipZip, country: shipCountry,
       },
     };
     setSaved(true);
@@ -109,83 +99,42 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   };
 
   return (
-    <div style={{ background: "#FAFAF7", minHeight: "100vh", fontFamily: ff }}>
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: "#fff",
-          borderBottom: "1px solid #E8E6E0",
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#6b7280",
-              fontSize: 13,
-              fontFamily: ff,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: 0,
-            }}
-          >
-            ← Customers
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-3 flex items-center justify-between">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150"
+        >
+          ← Customers
+        </button>
+        <div className="flex gap-2">
           <Btn onClick={onClose} variant="outline">Cancel</Btn>
           <Btn onClick={handleSave} variant="primary" disabled={saved}>
-            {saved ? "Saved ✓" : existing ? "Save Changes" : "Save Customer"}
+            {saved ? "Saved ✓" : existing ? "Save changes" : "Save customer"}
           </Btn>
         </div>
       </div>
 
-       <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 24px 0" }}>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 10,
-            border: "1px solid #E8E6E0",
-            padding: "18px 22px",
-            marginBottom: 0,
-          }}
-        >
-          <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+      <div className="max-w-[960px] mx-auto px-4 sm:px-6 py-5 pb-10">
+        {/* Primary details card */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5 mb-4">
+          <div className="flex gap-5 mb-4 flex-wrap">
             {["Business", "Individual"].map((t) => (
-              <label
-                key={t}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  color: "#374151",
-                }}
-              >
+              <label key={t} className="flex items-center gap-1.5 cursor-pointer text-sm text-[var(--text-secondary)]">
                 <input
                   type="radio"
                   name="custType"
                   checked={custType === t}
                   onChange={() => setCustType(t)}
-                  style={{ accentColor: "#D97706" }}
+                  className="accent-[var(--brand-600)]"
                 />
                 {t}
               </label>
             ))}
           </div>
 
-           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <Field label="Salutation">
               <Select
                 value={salutation}
@@ -194,87 +143,71 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                 placeholder="— Select —"
               />
             </Field>
-<Field label="First Name">
-              <Input value={firstName} onChange={setFirstName} placeholder="First name" />
-            </Field>
-            <Field label="Last Name">
-              <Input value={lastName} onChange={setLastName} placeholder="Last name" />
-            </Field>
+            <Field label="First Name"><Input value={firstName} onChange={setFirstName} placeholder="First name" /></Field>
+            <Field label="Last Name"><Input value={lastName} onChange={setLastName} placeholder="Last name" /></Field>
           </div>
 
           {custType === "Business" && (
-            <div style={{ marginBottom: 14 }}>
+            <div className="mb-3">
               <Field label="Company Name">
                 <Input value={company} onChange={setCompany} placeholder="Company name" />
               </Field>
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <Field label="Customer Display Name">
               <Input value={displayName} onChange={setDisplayName} />
               {displayName && customers.some(c => c.id !== existing?.id && c.name?.toLowerCase() === displayName.toLowerCase()) && (
-                <div style={{ fontSize:11, color:"#d97706", marginTop:4, display:"flex", alignItems:"center", gap:4 }}>
+                <div className="text-[11px] text-[var(--warning-700)] mt-1">
                   ⚠ A customer with this name already exists
                 </div>
               )}
             </Field>
-            <Field label="Email">
-              <Input value={email} onChange={setEmail} type="email" />
-            </Field>
+            <Field label="Email"><Input value={email} onChange={setEmail} type="email" /></Field>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="Phone">
-              <input type="text" value={phone} onChange={e=>setPhone(e.target.value)} onBlur={()=>setPhone(formatPhoneNumber(phone))} placeholder="+44 …"
-                style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-                onFocus={e=>e.target.style.borderColor="#1e6be0"} />
+              <input
+                type="text"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                onBlur={() => setPhone(formatPhoneNumber(phone))}
+                placeholder="+44 …"
+                className={textInputCls}
+              />
             </Field>
-            <Field label="Website">
-              <Input value={website} onChange={setWebsite} placeholder="https://" />
-            </Field>
+            <Field label="Website"><Input value={website} onChange={setWebsite} placeholder="https://" /></Field>
           </div>
         </div>
-      </div>
 
-      <div style={{ maxWidth: 900, margin: "16px auto 0", padding: "0 24px 40px" }}>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 10,
-            border: "1px solid #E8E6E0",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ display: "flex", borderBottom: "1px solid #E8E6E0", padding: "0 4px" }}>
-            {TABS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "12px 16px 10px",
-                  fontSize: 13,
-                  fontWeight: activeTab === t ? 600 : 400,
-                  color: activeTab === t ? "#D97706" : "#6b7280",
-                  borderBottom: activeTab === t ? "2px solid #D97706" : "2px solid transparent",
-                  fontFamily: "inherit",
-                  transition: "all 0.15s",
-                  marginBottom: "-1px",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {t}
-              </button>
-            ))}
+        {/* Tabs card */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
+          <div className="flex border-b border-[var(--border-subtle)] px-1 overflow-x-auto">
+            {TABS.map(t => {
+              const active = activeTab === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setActiveTab(t)}
+                  className={[
+                    "py-3 px-4 text-sm cursor-pointer bg-transparent border-none -mb-px whitespace-nowrap transition-colors duration-150",
+                    active
+                      ? "text-[var(--brand-600)] font-semibold border-b-2 border-[var(--brand-600)]"
+                      : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] border-b-2 border-transparent",
+                  ].join(" ")}
+                >
+                  {t}
+                </button>
+              );
+            })}
           </div>
 
-          <div style={{ padding: "20px 22px" }}>
+          <div className="p-5">
             {activeTab === "Other Details" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <Field label="Currency">
                     <Select value={currency} onChange={setCurrency} options={CURRENCIES || ["GBP", "USD", "EUR"]} />
                   </Field>
@@ -288,22 +221,19 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                 </div>
 
                 {cisEnabled && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Field label="CIS Registered">
                       <Select
                         value={String(cisRegistered)}
-                        onChange={(v) => setCisRegistered(v === "true")}
-                        options={[
-                          { value: "true", label: "Yes" },
-                          { value: "false", label: "No" },
-                        ]}
+                        onChange={v => setCisRegistered(v === "true")}
+                        options={[{ value: "true", label: "Yes" }, { value: "false", label: "No" }]}
                       />
                     </Field>
                     <Field label="CIS UTR">
                       <Input value={cisUtr} onChange={setCisUtr} placeholder="1234567890" />
                     </Field>
                     <Field label="CIS Rate">
-                      <Select value={cisRate} onChange={setCisRate} options={CIS_RATES.map((r) => r.label)} />
+                      <Select value={cisRate} onChange={setCisRate} options={CIS_RATES.map(r => r.label)} />
                     </Field>
                     <Field label="Verification">
                       <Select value={cisVerification} onChange={setCisVerification} options={["Net", "Gross", "Unverified"]} />
@@ -315,128 +245,69 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                 )}
               </div>
             )}
-          
+
             {activeTab === "Address" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#6b7280",
-                      letterSpacing: "0.05em",
-                      marginBottom: 12,
-                    }}
-                  >
-                    BILLING ADDRESS
+                  <div className="text-xs font-semibold text-[var(--text-tertiary)] tracking-wider uppercase mb-3">
+                    Billing address
                   </div>
-                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <Field label="Street 1">
-                      <Input value={billStreet1} onChange={setBillStreet1} />
-                    </Field>
-                    <Field label="Street 2">
-                      <Input value={billStreet2} onChange={setBillStreet2} />
-                    </Field>
-                    <Field label="City">
-                      <Input value={billCity} onChange={setBillCity} />
-                    </Field>
-                    <Field label="State / County">
-                      <Input value={billState} onChange={setBillState} />
-                    </Field>
-                    <Field label="Postal / ZIP Code">
-                      <Input value={billZip} onChange={setBillZip} />
-                    </Field>
-                    <Field label="Country">
-                      <Input value={billCountry} onChange={setBillCountry} />
-                    </Field>
+                  <div className="flex flex-col gap-2.5">
+                    <Field label="Street 1"><Input value={billStreet1} onChange={setBillStreet1} /></Field>
+                    <Field label="Street 2"><Input value={billStreet2} onChange={setBillStreet2} /></Field>
+                    <Field label="City"><Input value={billCity} onChange={setBillCity} /></Field>
+                    <Field label="State / County"><Input value={billState} onChange={setBillState} /></Field>
+                    <Field label="Postal / ZIP Code"><Input value={billZip} onChange={setBillZip} /></Field>
+                    <Field label="Country"><Input value={billCountry} onChange={setBillCountry} /></Field>
                   </div>
                 </div>
-
                 <div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#6b7280",
-                      letterSpacing: "0.05em",
-                      marginBottom: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    SHIPPING ADDRESS
+                  <div className="text-xs font-semibold text-[var(--text-tertiary)] tracking-wider uppercase mb-3 flex items-center gap-2">
+                    Shipping address
                     <button
                       onClick={copyBillingToShipping}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "#D97706",
-                        fontSize: 11,
-                        fontFamily: "inherit",
-                        fontWeight: 400,
-                      }}
+                      className="text-[11px] text-[var(--brand-600)] hover:text-[var(--brand-700)] bg-transparent border-none cursor-pointer font-normal normal-case tracking-normal"
                     >
                       ↓ Copy billing
                     </button>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <Field label="Street 1">
-                      <Input value={shipStreet1} onChange={setShipStreet1} />
-                    </Field>
-                    <Field label="Street 2">
-                      <Input value={shipStreet2} onChange={setShipStreet2} />
-                    </Field>
-                    <Field label="City">
-                      <Input value={shipCity} onChange={setShipCity} />
-                    </Field>
-                    <Field label="State / County">
-                      <Input value={shipState} onChange={setShipState} />
-                    </Field>
-                    <Field label="Postal / ZIP Code">
-                      <Input value={shipZip} onChange={setShipZip} />
-                    </Field>
-                    <Field label="Country">
-                      <Input value={shipCountry} onChange={setShipCountry} />
-                    </Field>
+                  <div className="flex flex-col gap-2.5">
+                    <Field label="Street 1"><Input value={shipStreet1} onChange={setShipStreet1} /></Field>
+                    <Field label="Street 2"><Input value={shipStreet2} onChange={setShipStreet2} /></Field>
+                    <Field label="City"><Input value={shipCity} onChange={setShipCity} /></Field>
+                    <Field label="State / County"><Input value={shipState} onChange={setShipState} /></Field>
+                    <Field label="Postal / ZIP Code"><Input value={shipZip} onChange={setShipZip} /></Field>
+                    <Field label="Country"><Input value={shipCountry} onChange={setShipCountry} /></Field>
                   </div>
                 </div>
               </div>
             )}
-            
+
             {activeTab === "Contact Persons" && (
               <div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: "#F5F4F0" }}>
-                      {["Salutation", "First Name", "Last Name", "Email", "Phone", "Mobile", ""].map((h) => (
-                        <th
-                          key={h}
-                          style={{
-                            padding: "8px 10px",
-                            textAlign: "left",
-                            fontWeight: 600,
-                            color: "#6b7280",
-                            fontSize: 12,
-                            borderBottom: "1px solid #E8E6E0",
-                          }}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(contactPersons || [{ salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" }]).map(
-                      (cp, i) => (
-                        <tr key={i}>
-                          {["salutation", "firstName", "lastName", "email", "phone", "mobile"].map((f) => (
-                            <td key={f} style={{ padding: "6px 6px" }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-[var(--surface-sunken)]">
+                        {["Salutation", "First Name", "Last Name", "Email", "Phone", "Mobile", ""].map(h => (
+                          <th
+                            key={h}
+                            className="py-2 px-2.5 text-left text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border-subtle)] whitespace-nowrap"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(contactPersons || [{ salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" }]).map((cp, i) => (
+                        <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0">
+                          {["salutation", "firstName", "lastName", "email", "phone", "mobile"].map(f => (
+                            <td key={f} className="py-1.5 px-1.5 align-middle">
                               {f === "salutation" ? (
                                 <Select
                                   value={cp[f] || ""}
-                                  onChange={(v) => {
+                                  onChange={v => {
                                     const arr = [...(contactPersons || [{}])];
                                     arr[i] = { ...arr[i], [f]: v };
                                     setContactPersons(arr);
@@ -448,7 +319,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                                 <input
                                   type="text"
                                   value={cp[f] || ""}
-                                  onChange={(e) => {
+                                  onChange={e => {
                                     const arr = [...(contactPersons || [{}])];
                                     arr[i] = { ...arr[i], [f]: e.target.value };
                                     setContactPersons(arr);
@@ -458,13 +329,12 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                                     arr[i] = { ...arr[i], [f]: formatPhoneNumber(cp[f]) };
                                     setContactPersons(arr);
                                   }}
-                                  style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-                                  onFocus={e=>e.target.style.borderColor="#1e6be0"}
+                                  className={textInputCls}
                                 />
                               ) : (
                                 <Input
                                   value={cp[f] || ""}
-                                  onChange={(v) => {
+                                  onChange={v => {
                                     const arr = [...(contactPersons || [{}])];
                                     arr[i] = { ...arr[i], [f]: v };
                                     setContactPersons(arr);
@@ -473,30 +343,23 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                               )}
                             </td>
                           ))}
-                          <td style={{ padding: "6px 4px" }}>
+                          <td className="py-1.5 px-1">
                             <button
                               onClick={() => {
                                 const arr = [...(contactPersons || [])];
                                 arr.splice(i, 1);
                                 setContactPersons(arr);
                               }}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                color: "#9ca3af",
-                                fontSize: 16,
-                                lineHeight: 1,
-                              }}
+                              className="text-[var(--text-tertiary)] hover:text-[var(--danger-600)] bg-transparent border-none cursor-pointer text-base leading-none"
                             >
                               ✕
                             </button>
                           </td>
                         </tr>
-                      ),
-                    )}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
                 <button
                   onClick={() =>
                     setContactPersons([
@@ -504,42 +367,25 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                       { salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" },
                     ])
                   }
-                  style={{
-                    marginTop: 12,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#D97706",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
+                  className="mt-3 bg-transparent border-none cursor-pointer text-sm text-[var(--brand-600)] hover:text-[var(--brand-700)] flex items-center gap-1.5 font-medium"
                 >
-                  ＋ Add Contact Person
+                  ＋ Add contact person
                 </button>
               </div>
             )}
 
             {activeTab === "Custom Fields" && (
-              <div style={{ color: "#6b7280", fontSize: 13, textAlign: "center", padding: "30px 0" }}>
+              <div className="text-[var(--text-tertiary)] text-sm text-center py-8">
                 No custom fields configured for Customers.
               </div>
             )}
 
             {activeTab === "Remarks" && (
-              <div>
-                 <Field
-                  label={
-                    <>
-                      Remarks <span style={{ color: "#9ca3af", fontWeight: 400 }}>(For Internal Use)</span>
-                    </>
-                  }
-                >
-                  <Textarea value={remarks} onChange={setRemarks} rows={4} placeholder="Any notes about this customer..." />
-                </Field>
-              </div>
+              <Field
+                label={<>Remarks <span className="text-[var(--text-tertiary)] font-normal">(For Internal Use)</span></>}
+              >
+                <Textarea value={remarks} onChange={setRemarks} rows={4} placeholder="Any notes about this customer..." />
+              </Field>
             )}
           </div>
         </div>

@@ -1,7 +1,8 @@
 import { useState, useContext, useRef, useEffect, useCallback } from "react";
-import { ff, TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES } from "../constants";
+import { TAX_RATES, ITEM_TYPES, ITEM_UNITS, ACCOUNT_CATEGORIES } from "../constants";
 import { AppCtx } from "../context/AppContext";
-import { Field, Input, Select, SlideToggle, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
+import { Field, Input, Select, Textarea, Switch, Btn, InfoBox } from "../components/atoms";
+import { Icons } from "../components/icons";
 import { useCISSettings } from "../hooks/useCISSettings";
 import { validateImageDataUrl } from "../utils/security";
 
@@ -10,9 +11,7 @@ function UnitCombobox({ value, onChange, options }) {
   const [search, setSearch] = useState(value || "");
   const wrapRef = useRef(null);
 
-  useEffect(() => {
-    setSearch(value || "");
-  }, [value]);
+  useEffect(() => { setSearch(value || ""); }, [value]);
 
   useEffect(() => {
     const handler = e => {
@@ -22,9 +21,7 @@ function UnitCombobox({ value, onChange, options }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const filtered = options.filter(o =>
-    !search || o.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = options.filter(o => !search || o.toLowerCase().includes(search.toLowerCase()));
 
   const select = opt => {
     onChange(opt);
@@ -33,65 +30,49 @@ function UnitCombobox({ value, onChange, options }) {
   };
 
   return (
-    <div ref={wrapRef} style={{ position: "relative" }}>
+    <div ref={wrapRef} className="relative">
       <div
         onClick={() => setOpen(o => !o)}
-        style={{
-          display: "flex", alignItems: "center",
-          border: `1px solid ${open ? "#D97706" : "#E8E6E0"}`,
-          borderRadius: 5, background: "#fff", cursor: "text",
-          boxShadow: open ? "0 0 0 2px #D9770622" : "none",
-          transition: "border-color 0.15s, box-shadow 0.15s",
-        }}>
+        className={[
+          "flex items-center border rounded-[var(--radius-md)] bg-white cursor-text transition-[border-color,box-shadow] duration-150",
+          open ? "border-[var(--brand-600)] shadow-[var(--focus-ring)]" : "border-[var(--border-default)]",
+        ].join(" ")}
+      >
         <input
           value={search}
           onChange={e => { setSearch(e.target.value); onChange(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder="Select or type to add"
-          style={{
-            flex: 1, padding: "9px 4px 9px 11px",
-            border: "none", outline: "none",
-            fontSize: 14, fontFamily: ff, color: "#111110", background: "transparent",
-          }}
+          className="flex-1 h-9 pl-3 pr-1 border-none outline-none text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
         />
-        <span style={{ padding: "0 10px", display: "flex", alignItems: "center", color: "#9ca3af", flexShrink: 0 }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 512 512"
-            style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
-            <path d="M2.157 159.57c0 13.773 5.401 27.542 16.195 38.02l198.975 192.867c21.411 20.725 55.94 20.725 77.34 0L493.63 197.59c21.508-20.846 21.637-54.778.269-75.773-21.35-20.994-56.104-21.098-77.612-.26L256.004 276.93 95.721 121.562c-21.528-20.833-56.268-20.734-77.637.26C7.472 132.261 2.157 145.923 2.157 159.57z" fill="currentColor" />
-          </svg>
+        <span className={`pr-3 flex items-center text-[var(--text-tertiary)] flex-shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`}>
+          <Icons.ChevDown />
         </span>
       </div>
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 3px)", left: 0, right: 0,
-          background: "#fff", border: "1.5px solid #E8E6E0", borderRadius: 7,
-          boxShadow: "0 6px 20px rgba(0,0,0,0.10)", zIndex: 500,
-          maxHeight: 200, overflowY: "auto",
-        }}>
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-[var(--border-default)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] z-[500] max-h-[200px] overflow-y-auto">
           {filtered.length === 0 && search ? (
             <div
               onMouseDown={() => select(search)}
-              style={{ padding: "9px 13px", fontSize: 13, color: "#D97706", cursor: "pointer", fontFamily: ff }}
-              onMouseEnter={e => e.currentTarget.style.background = "#FEF3C7"}
-              onMouseLeave={e => e.currentTarget.style.background = ""}>
+              className="px-3 py-2.5 text-sm text-[var(--brand-600)] cursor-pointer hover:bg-[var(--brand-50)] transition-colors duration-150"
+            >
               Add "{search}"
             </div>
-          ) : filtered.map(opt => (
-            <div
-              key={opt}
-              onMouseDown={() => select(opt)}
-              style={{
-                padding: "9px 13px", fontSize: 13,
-                color: opt === value ? "#D97706" : "#111110",
-                fontWeight: opt === value ? 600 : 400,
-                cursor: "pointer", fontFamily: ff,
-                background: opt === value ? "#FEF3C7" : "",
-              }}
-              onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = "#f7f7f9"; }}
-              onMouseLeave={e => { if (opt !== value) e.currentTarget.style.background = ""; }}>
-              {opt}
-            </div>
-          ))}
+          ) : filtered.map(opt => {
+            const active = opt === value;
+            return (
+              <div
+                key={opt}
+                onMouseDown={() => select(opt)}
+                className={[
+                  "px-3 py-2.5 text-sm cursor-pointer transition-colors duration-150",
+                  active ? "bg-[var(--brand-50)] text-[var(--brand-700)] font-medium" : "text-[var(--text-primary)] hover:bg-[var(--surface-sunken)]",
+                ].join(" ")}
+              >
+                {opt}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -101,7 +82,7 @@ function UnitCombobox({ value, onChange, options }) {
 function ImageUpload({ value, onChange }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
-  const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+  const MAX_SIZE = 2 * 1024 * 1024;
 
   const loadFile = useCallback(file => {
     if (!file) return;
@@ -116,7 +97,8 @@ function ImageUpload({ value, onChange }) {
   }, [onChange]);
 
   const onDrop = e => {
-    e.preventDefault(); setDragging(false);
+    e.preventDefault();
+    setDragging(false);
     loadFile(e.dataTransfer.files[0]);
   };
 
@@ -125,43 +107,53 @@ function ImageUpload({ value, onChange }) {
       onDragOver={e => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
-      style={{
-        border: `2px dashed ${dragging ? "#D97706" : "#E8E6E0"}`,
-        borderRadius: 10, background: dragging ? "#FEF3C7" : "#fafafa",
-        transition: "border-color 0.15s, background 0.15s",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        minHeight: 130, padding: 16, gap: 20, flexWrap: "wrap",
-      }}>
+      className={[
+        "border-2 border-dashed rounded-[var(--radius-lg)] transition-colors duration-150 flex items-center justify-center min-h-[130px] p-4 gap-5 flex-wrap",
+        dragging
+          ? "border-[var(--brand-600)] bg-[var(--brand-50)]"
+          : "border-[var(--border-subtle)] bg-[var(--surface-sunken)]",
+      ].join(" ")}
+    >
       {value ? (
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <img src={value} alt="item" style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 8, border: "1px solid #E8E6E0" }} />
-          <button onClick={() => onChange("")}
-            style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 13, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: ff }}>
+        <div className="relative flex-shrink-0">
+          <img src={value} alt="item" className="w-[90px] h-[90px] object-cover rounded-[var(--radius-md)] border border-[var(--border-subtle)]" />
+          <button
+            onClick={() => onChange("")}
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--danger-600)] border-none text-white text-xs leading-none cursor-pointer flex items-center justify-center"
+          >
             ×
           </button>
         </div>
       ) : (
-        <div style={{ textAlign: "center" }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 472.7 386.4" style={{ width: 44, height: 36, color: "#9ca3af", display: "block", margin: "0 auto 8px" }}>
-            <path d="M392 0H81C36 0 0 36 0 81v224a81 81 0 0081 81h311c44 0 81-36 81-81V81c0-45-37-81-81-81zM42 81c0-21 18-39 39-39h311c21 0 39 18 39 39v101l-112 76c-10 7-23 7-33-1l-94-66a72 72 0 00-82 1l-68 48V81zm389 224c0 22-18 39-39 39H81c-21 0-39-17-39-39v-14l92-65c10-7 24-7 34 0l94 66a71 71 0 0081 1l88-60v72z" fill="currentColor"/>
-            <path d="M301 83a56 56 0 100 113 56 56 0 000-113zm0 78a21 21 0 110-43 21 21 0 010 43z" fill="currentColor"/>
-          </svg>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>Drag image here or</div>
-          <button onClick={() => inputRef.current?.click()}
-            style={{ fontSize: 12, color: "#D97706", background: "none", border: "none", cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: 0 }}>
+        <div className="text-center">
+          <div className="text-[var(--text-tertiary)] mb-2 flex justify-center">
+            <Icons.Items />
+          </div>
+          <div className="text-xs text-[var(--text-tertiary)] mb-1.5">Drag image here or</div>
+          <button
+            onClick={() => inputRef.current?.click()}
+            className="text-xs text-[var(--brand-600)] hover:text-[var(--brand-700)] bg-transparent border-none cursor-pointer font-semibold p-0"
+          >
             Browse images
           </button>
-          <div style={{ fontSize: 11, color: "#c4c4c4", marginTop: 4 }}>JPG, PNG, GIF — max 2 MB</div>
+          <div className="text-[11px] text-[var(--text-tertiary)] mt-1">JPG, PNG, GIF — max 2 MB</div>
         </div>
       )}
       {value && (
-        <button onClick={() => inputRef.current?.click()}
-          style={{ fontSize: 12, color: "#D97706", background: "none", border: "1px solid #D97706", borderRadius: 6, cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: "6px 12px" }}>
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="text-xs text-[var(--brand-600)] hover:text-[var(--brand-700)] bg-transparent border border-[var(--brand-600)] rounded-[var(--radius-md)] cursor-pointer font-semibold px-3 py-1.5"
+        >
           Change image
         </button>
       )}
-      <input ref={inputRef} type="file" accept="image/gif,image/jpeg,image/png,image/bmp,image/jpg"
-        style={{ display: "none" }} onChange={e => loadFile(e.target.files[0])} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/gif,image/jpeg,image/png,image/bmp,image/jpg"
+        className="hidden"
+        onChange={e => loadFile(e.target.files[0])}
+      />
     </div>
   );
 }
@@ -181,7 +173,6 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
   const [sku, setSku] = useState(existing?.sku || "");
   const [account, setAccount] = useState(existing?.account || "");
   const [photo, setPhoto] = useState(existing?.photo || "");
-
   const [saved, setSaved] = useState(false);
 
   const { cisEnabled } = useCISSettings();
@@ -203,11 +194,7 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
       account,
       photo: photo || "",
       cis: isCIS
-        ? {
-            enabled: true,
-            labour: Number(cisLabour),
-            material: Number(cisMaterial),
-          }
+        ? { enabled: true, labour: Number(cisLabour), material: Number(cisMaterial) }
         : { enabled: false },
     };
 
@@ -216,84 +203,96 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
   };
 
   return (
-    <div style={{ background: "#FAFAF7", minHeight: "100vh", fontFamily: ff }}>
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 0 40px" }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #E8E6E0", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#111110" }}>
-            {isEdit ? existing.name : "New Item"}
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      <div className="max-w-[720px] mx-auto pb-10">
+        {/* Sticky header */}
+        <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-6 py-3 flex items-center justify-between">
+          <span className="text-lg font-semibold text-[var(--text-primary)]">
+            {isEdit ? existing.name : "New item"}
           </span>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="flex gap-2">
             <Btn onClick={onClose} variant="outline">Cancel</Btn>
             <Btn onClick={handleSave} variant="primary" disabled={!name || !rate || saved}>
-              {saved ? "Saved ✓" : isEdit ? "Save Changes" : "Save Item"}
+              {saved ? "Saved ✓" : isEdit ? "Save changes" : "Save item"}
             </Btn>
           </div>
         </div>
 
-        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #E8E6E0", padding: "18px 22px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#111110", marginBottom: 16 }}>Item Details</div>
+        <div className="px-6 py-5 space-y-4">
+          {/* Item details card */}
+          <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+              Item details
+            </div>
+
             <Field label="Photo">
               <ImageUpload value={photo} onChange={setPhoto} />
             </Field>
             <Field label="Item Type" required>
               <Select value={itemType} onChange={setItemType} options={ITEM_TYPES.map(t => ({ value: t, label: t }))} />
             </Field>
-
             <Field label="Item Name" required>
               <Input value={name} onChange={setName} placeholder="e.g. Web Design Package" />
               {name && items.some(i => i.id !== existing?.id && i.name?.toLowerCase() === name.toLowerCase()) && (
-                <div style={{ fontSize:11, color:"#d97706", marginTop:4 }}>⚠ An item with this name already exists</div>
+                <div className="text-[11px] text-[var(--warning-700)] mt-1">
+                  ⚠ An item with this name already exists
+                </div>
               )}
             </Field>
-            <Field label="Description"><Textarea value={description} onChange={setDescription} placeholder="Brief description…" rows={2} /></Field>
+            <Field label="Description">
+              <Textarea value={description} onChange={setDescription} placeholder="Brief description…" rows={2} />
+            </Field>
 
-            <div style={{ display: "grid", gridTemplateColumns: isVat ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
-              <Field label="Rate" required><Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" /></Field>
+            <div className={`grid gap-3 ${isVat ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
+              <Field label="Rate" required>
+                <Input value={rate} onChange={setRate} placeholder="0.00" type="number" align="right" />
+              </Field>
               <Field label="Unit">
                 <UnitCombobox value={unit} onChange={setUnit} options={ITEM_UNITS} />
               </Field>
               {isVat && (
                 <Field label="VAT Rate">
-                  <Select value={String(taxRate)} onChange={v => setTaxRate(Number(v))} options={TAX_RATES.map(r => ({ value: String(r), label: `${r}%` }))} />
+                  <Select
+                    value={String(taxRate)}
+                    onChange={v => setTaxRate(Number(v))}
+                    options={TAX_RATES.map(r => ({ value: String(r), label: `${r}%` }))}
+                  />
                 </Field>
               )}
             </div>
 
-            {!isVat && <InfoBox color="#D97706">VAT Rate hidden — your organisation is not VAT registered.</InfoBox>}
+            {!isVat && (
+              <InfoBox color="var(--warning-600)">
+                VAT Rate hidden — your organisation is not VAT registered.
+              </InfoBox>
+            )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
-              <Field label="SKU / Code"><Input value={sku} onChange={setSku} placeholder="e.g. WD-001" /></Field>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+              <Field label="SKU / Code">
+                <Input value={sku} onChange={setSku} placeholder="e.g. WD-001" />
+              </Field>
               <Field label="Account / Category">
                 <Select value={account} onChange={setAccount} options={ACCOUNT_CATEGORIES} placeholder="Select category…" />
               </Field>
             </div>
           </div>
 
+          {/* CIS card */}
           {cisEnabled && (
-            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #E8E6E0", padding: "18px 22px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  marginBottom: isCIS ? 16 : 0,
-                }}
-              >
+            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5">
+              <div className="flex items-start justify-between">
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#111110" }}>
-                    CIS Details
-                  </div>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                  <div className="text-sm font-semibold text-[var(--text-primary)]">CIS details</div>
+                  <div className="text-xs text-[var(--text-tertiary)] mt-0.5">
                     Mark this item as subject to CIS deductions
                   </div>
                 </div>
                 <Switch checked={isCIS} onChange={setIsCIS} />
               </div>
-                
+
               {isCIS && (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="grid grid-cols-2 gap-3 mt-4">
                     <Field label="Labour (%)">
                       <Input
                         type="number"
@@ -319,40 +318,21 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
                   </div>
 
                   {Number(cisLabour) + Number(cisMaterial) !== 100 && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: "#dc2626" }}>
+                    <div className="mt-2 text-xs text-[var(--danger-600)]">
                       ⚠ Labour + Material must equal 100%
                     </div>
                   )}
 
                   {Number(rate) > 0 && (
-                    <div
-                      style={{
-                        marginTop: 12,
-                        padding: "10px 14px",
-                        background: "#FEF3C7",
-                        borderRadius: 8,
-                        border: "1px solid #FDE68A",
-                        fontSize: 12,
-                        color: "#374151",
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 6,
-                      }}
-                    >
+                    <div className="mt-3 px-3 py-2.5 bg-[var(--warning-50)] rounded-[var(--radius-md)] border border-[var(--warning-100)] text-xs text-[var(--warning-700)] grid grid-cols-2 gap-1.5">
                       <div>
-                        Labour value: <strong>
-                          £{((Number(rate) * Number(cisLabour)) / 100).toFixed(2)}
-                        </strong>
+                        Labour value: <strong>£{((Number(rate) * Number(cisLabour)) / 100).toFixed(2)}</strong>
                       </div>
                       <div>
-                        Material value: <strong>
-                          £{((Number(rate) * Number(cisMaterial)) / 100).toFixed(2)}
-                        </strong>
+                        Material value: <strong>£{((Number(rate) * Number(cisMaterial)) / 100).toFixed(2)}</strong>
                       </div>
-                      <div style={{ gridColumn: "1/-1", color: "#D97706", marginTop: 4 }}>
-                        Est. CIS deduction (20%): <strong>
-                          £{((Number(rate) * Number(cisLabour) / 100) * 0.20).toFixed(2)}
-                        </strong> per unit @ standard rate
+                      <div className="col-span-full mt-1">
+                        Est. CIS deduction (20%): <strong>£{((Number(rate) * Number(cisLabour) / 100) * 0.20).toFixed(2)}</strong> per unit @ standard rate
                       </div>
                     </div>
                   )}
@@ -361,10 +341,11 @@ export default function ItemForm({ existing, onClose, onSave, settings, items = 
             </div>
           )}
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#F9F9F9", borderRadius: 8, border: "1px solid #EBEBEB" }}>
+          {/* Active toggle */}
+          <div className="flex items-center justify-between px-3 py-2.5 bg-[var(--surface-sunken)] rounded-[var(--radius-md)] border border-[var(--border-subtle)]">
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>Active</div>
-              <div style={{ fontSize: 11, color: "#AAA", marginTop: 1 }}>Available in invoices and quotes</div>
+              <div className="text-sm font-semibold text-[var(--text-primary)]">Active</div>
+              <div className="text-[11px] text-[var(--text-tertiary)] mt-0.5">Available in invoices and quotes</div>
             </div>
             <Switch checked={active} onChange={setActive} />
           </div>
