@@ -9,6 +9,7 @@ import AdminOrchestratorRunner from '../components/admin/AdminOrchestratorRunner
 import AdminOrchestratorHistory from '../components/admin/AdminOrchestratorHistory';
 import FrontendLeadPanel from '../components/admin/FrontendLeadPanel';
 import DataLedgerLeadPanel from '../components/admin/DataLedgerLeadPanel';
+import BackendIntegrationsLeadPanel from '../components/admin/BackendIntegrationsLeadPanel';
 import { s } from '../components/admin/adminShared';
 
 // ── Admin Dashboard (authenticated view) ────────────────────────────────────
@@ -158,6 +159,10 @@ function AdminDashboard({ onLogout, token }) {
 
           {section === 'data-ledger-lead' && (
             <DataLedgerLeadPanel token={token} />
+          )}
+
+          {section === 'backend-integrations-lead' && (
+            <BackendIntegrationsLeadPanel token={token} />
           )}
         </AdminLayout>
       </div>
