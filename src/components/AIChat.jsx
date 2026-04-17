@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 // SEC-005: apiKey prop removed — server-side ANTHROPIC_API_KEY used via /api/claude-proxy
-export default function AIChat({ company, clients, products, invoices, onCreateInvoice, onAction, onClose }) {
+export default function AIChat({ company, clients, products, invoices, expenses = [], bills = [], onCreateInvoice, onAction, onClose }) {
   const [aiConsent, setAiConsent] = useState(() =>
     localStorage.getItem('invoicesaga_ai_consent') === 'true'
   )
@@ -16,18 +16,53 @@ export default function AIChat({ company, clients, products, invoices, onCreateI
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  // SEC-010: Aggregated financial summaries only — no per-record amounts or PII
   const outstanding = invoices.filter(i => ["Sent", "Partial"].includes(i.status))
   const overdue = invoices.filter(i => i.status === "Overdue")
   const draft = invoices.filter(i => i.status === "Draft")
   const paid = invoices.filter(i => i.status === "Paid")
   const sum = arr => arr.reduce((s, i) => s + Number(i.total || 0), 0).toFixed(2)
 
+  const invoiceDetails = invoices.slice(0, 20).map(i => ({
+    number: i.invoice_number,
+    customer: i.customer?.name || i.customer?.company || "Unknown",
+    status: i.status,
+    total: Number(i.total || 0),
+    issue_date: i.issue_date,
+    due_date: i.due_date,
+    payment_terms: i.payment_terms,
+  }))
+
+  const expensesByCategory = {}
+  ;(expenses || []).forEach(e => {
+    const cat = e.category || "Uncategorised"
+    expensesByCategory[cat] = (expensesByCategory[cat] || 0) + Number(e.total || e.amount || 0)
+  })
+  const totalExpenses = Object.values(expensesByCategory).reduce((s, v) => s + v, 0)
+  const unpaidExpenses = (expenses || []).filter(e => e.status === "Draft" || e.status === "Pending").length
+
+  const unpaidBills = (bills || []).filter(b => !["Paid", "Void"].includes(b.status))
+  const overdueBills = unpaidBills.filter(b => b.due_date && b.due_date < new Date().toISOString().slice(0, 10))
+  const totalBillsDue = unpaidBills.reduce((s, b) => s + Number(b.total || 0), 0)
+
+  const billDetails = unpaidBills.slice(0, 10).map(b => ({
+    number: b.bill_number,
+    supplier: b.supplier_name || "Unknown",
+    status: b.status,
+    total: Number(b.total || 0),
+    due_date: b.due_date,
+    cis_deduction: Number(b.cis_deduction || 0),
+  }))
+
   const contextBlock = `BUSINESS SUMMARY:
 - Outstanding invoices: ${outstanding.length} (£${sum(outstanding)})
 - Overdue invoices: ${overdue.length} (£${sum(overdue)})
 - Draft invoices: ${draft.length}
-- Paid invoices: ${paid.length}
+- Paid invoices (all time): ${paid.length} (£${sum(paid)})
+- Unpaid bills: ${unpaidBills.length} (£${totalBillsDue.toFixed(2)})
+- Overdue bills: ${overdueBills.length}
+- Total expenses: £${totalExpenses.toFixed(2)}
+- Active clients: ${(clients || []).length}
+- Products/services: ${(products || []).length}
 - VAT registered: ${company.vat ? "Yes" : "No"}
 - CIS enabled: ${company.cis_enabled ? "Yes" : "No"}
 - Business type: ${company.business_type}`
@@ -61,9 +96,21 @@ Rules:
 - When suggesting actions, be specific ("Invoice INV-042 is 15 days overdue — consider sending a reminder")
 
 COMPANY: ${JSON.stringify({ name: company.name, currency: company.currency, vat: company.vat, tax_rate: company.tax_rate })}
-CLIENTS: ${JSON.stringify(clients.map(c => ({ id: c.id, label: (c.name || '').split(' ')[0] || 'Client' })))}
+CLIENTS: ${JSON.stringify(clients.slice(0, 30).map(c => ({ id: c.id, name: c.name || 'Unknown', company: c.company || null, type: c.type || null })))}
 PRODUCTS/SERVICES: ${JSON.stringify(products.map(p => ({ id: p.id, name: p.name, unit: p.unit })))}
-RECENT INVOICES: ${JSON.stringify(invoices.slice(0, 10).map(i => ({ number: i.number, status: i.status, date: i.date })))}
+
+INVOICES (most recent 20):
+${JSON.stringify(invoiceDetails)}
+
+EXPENSES SUMMARY:
+- Total expenses: £${totalExpenses.toFixed(2)} across ${(expenses || []).length} records
+- Unpaid/draft: ${unpaidExpenses}
+- By category: ${JSON.stringify(expensesByCategory)}
+
+BILLS (unpaid, up to 10):
+- Total bills due: £${totalBillsDue.toFixed(2)} across ${unpaidBills.length} bills
+- Overdue bills: ${overdueBills.length}
+${JSON.stringify(billDetails)}
 
 ${contextBlock}
 
@@ -134,7 +181,13 @@ Always respond in valid JSON only, no text outside JSON.`
     }
   }
 
-  const QUICK = ['Create invoice for new client', 'Show overdue invoices', 'Total outstanding amount', 'Draft payment reminder']
+  const QUICK = [
+    'What invoices are overdue?',
+    'Which bills need paying?',
+    'Expense breakdown this year',
+    'Create invoice for new client',
+    'Am I near the VAT threshold?',
+  ]
 
   // SEC-010: AI data processing consent dialog (GDPR)
   if (!aiConsent) {
@@ -154,7 +207,7 @@ Always respond in valid JSON only, no text outside JSON.`
               InvoiceSaga's AI assistant processes some of your business data (client first names, invoice numbers, product names) through Anthropic's Claude API to provide helpful suggestions.
             </p>
             <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, margin: '0 0 8px' }}>
-              <strong>No email addresses or financial amounts are shared.</strong> Anthropic does not use your data for model training.
+              <strong>No email addresses are shared.</strong> Financial summaries and invoice totals are processed to provide personalized advice. Anthropic does not use your data for model training.
             </p>
             <p style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, margin: '0 0 20px' }}>
               By continuing, you consent to this data processing. You can revoke consent at any time in Settings.

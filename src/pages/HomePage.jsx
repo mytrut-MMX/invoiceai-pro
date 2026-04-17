@@ -318,6 +318,8 @@ export default function HomePage() {
         clients={customers || []}
         products={catalogItems || []}
         invoices={invoices || []}
+        expenses={expenses || []}
+        bills={bills || []}
         onCreateInvoice={() => {}}
       />
       <ReportsCenter invoices={invoices} bills={bills} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
