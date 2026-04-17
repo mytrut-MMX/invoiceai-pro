@@ -16,13 +16,58 @@ export default function AIChat({ company, clients, products, invoices, onCreateI
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  // SEC-010: Minimise PII sent to AI — no emails, no financial amounts
-  const systemPrompt = `You are an AI invoice assistant for ${company.name}.
+  // SEC-010: Aggregated financial summaries only — no per-record amounts or PII
+  const outstanding = invoices.filter(i => ["Sent", "Partial"].includes(i.status))
+  const overdue = invoices.filter(i => i.status === "Overdue")
+  const draft = invoices.filter(i => i.status === "Draft")
+  const paid = invoices.filter(i => i.status === "Paid")
+  const sum = arr => arr.reduce((s, i) => s + Number(i.total || 0), 0).toFixed(2)
+
+  const contextBlock = `BUSINESS SUMMARY:
+- Outstanding invoices: ${outstanding.length} (£${sum(outstanding)})
+- Overdue invoices: ${overdue.length} (£${sum(overdue)})
+- Draft invoices: ${draft.length}
+- Paid invoices: ${paid.length}
+- VAT registered: ${company.vat ? "Yes" : "No"}
+- CIS enabled: ${company.cis_enabled ? "Yes" : "No"}
+- Business type: ${company.business_type}`
+
+  const ukKnowledge = `UK ACCOUNTING KNOWLEDGE:
+- VAT registration threshold: £90,000 turnover (from 1 April 2024). Deregistration threshold £88,000.
+- Standard VAT rate 20%; reduced 5%; zero 0%. VAT returns typically quarterly, filed via MTD.
+- Corporation Tax: 19% small profits rate (<£50k), 25% main rate (>£250k), marginal relief between £50k–£250k. Pay 9 months + 1 day after period end; file CT600 within 12 months.
+- Self Assessment: file online by 31 January following tax year end (5 April); payments on account due 31 January and 31 July.
+- CIS deduction rates: 20% for verified subcontractors, 30% for unverified, 0% for gross payment status. Monthly CIS300 return due by 19th.
+- Standard payment terms: Net 14 / Net 30 most common; late payment interest = Bank of England base rate + 8% (Late Payment of Commercial Debts Act).`
+
+  const systemPrompt = `You are a knowledgeable UK accounting assistant for ${company.name}, powered by InvoiceSaga.
+You act as the user's personal bookkeeper — friendly, concise, and practical.
+
+You can help with:
+- Understanding their financial position (outstanding invoices, overdue payments, cash flow)
+- UK tax questions (VAT, Corporation Tax, Self Assessment, CIS)
+- Creating invoices from natural language descriptions
+- HMRC deadline reminders
+- Explaining accounting concepts in plain English
+- Suggesting actions (chase overdue invoices, prepare for VAT return, etc.)
+
+Rules:
+- Always answer in the context of UK accounting law and HMRC rules
+- Use the user's actual data to give personalized advice
+- Be concise — max 3-4 short paragraphs per response
+- If asked something outside accounting/invoicing, politely redirect
+- Never make up data — if you don't have the information, say so
+- Format currency as £X,XXX.XX
+- When suggesting actions, be specific ("Invoice INV-042 is 15 days overdue — consider sending a reminder")
 
 COMPANY: ${JSON.stringify({ name: company.name, currency: company.currency, vat: company.vat, tax_rate: company.tax_rate })}
 CLIENTS: ${JSON.stringify(clients.map(c => ({ id: c.id, label: (c.name || '').split(' ')[0] || 'Client' })))}
 PRODUCTS/SERVICES: ${JSON.stringify(products.map(p => ({ id: p.id, name: p.name, unit: p.unit })))}
 RECENT INVOICES: ${JSON.stringify(invoices.slice(0, 10).map(i => ({ number: i.number, status: i.status, date: i.date })))}
+
+${contextBlock}
+
+${ukKnowledge}
 
 When the user wants to create an invoice, respond with JSON:
 {
@@ -66,7 +111,7 @@ Always respond in valid JSON only, no text outside JSON.`
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
           system: systemPrompt,
-          messages: [{ role: 'user', content: txt }]
+          messages: messages.slice(-10).map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: txt }])
         })
       })
       const data = await res.json()

@@ -9,7 +9,7 @@ import { useCISSettings } from "../hooks/useCISSettings";
 import { ROUTES } from "../router/routes";
 import { calculateVATReturn } from "../utils/vat/vatReturnCalculator";
 import SmartAlerts from "../components/home/SmartAlerts";
-import AIChatPanel from "../components/home/AIChatPanel";
+import AIChat from "../components/AIChat";
 import ReportsCenter from "../components/home/ReportsCenter";
 import CashFlowForecast from "../components/home/CashFlowForecast";
 import CashFlowWidget from "../components/home/CashFlowWidget";
@@ -81,7 +81,7 @@ function calculateNextPayDate(lastPayDate, frequency, payDay) {
 }
 
 export default function HomePage() {
-  const { user, invoices, expenses, payments, orgSettings, bills } = useContext(AppCtx);
+  const { user, invoices, expenses, payments, orgSettings, bills, customers, catalogItems } = useContext(AppCtx);
   const { cisEnabled } = useCISSettings();
   const navigate = useNavigate();
   const [hoveredStat, setHoveredStat] = useState(null);
@@ -306,7 +306,20 @@ export default function HomePage() {
       />
       <CashFlowWidget />
       <DebtorInsightsWidget />
-      <AIChatPanel user={user} />
+      <AIChat
+        company={{
+          name: orgSettings?.bName || orgSettings?.name || user?.name || "My Business",
+          currency: orgSettings?.currency || "GBP",
+          vat: orgSettings?.vatReg === "Yes",
+          tax_rate: orgSettings?.vatRate || 20,
+          cis_enabled: cisEnabled,
+          business_type: orgSettings?.bType || "Unknown",
+        }}
+        clients={customers || []}
+        products={catalogItems || []}
+        invoices={invoices || []}
+        onCreateInvoice={() => {}}
+      />
       <ReportsCenter invoices={invoices} bills={bills} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
       <CashFlowForecast invoices={invoices} payments={payments} currencySymbol={currencySymbol} />
     </div>
