@@ -1,186 +1,401 @@
 import { useState } from "react";
-import { ff } from "../../constants";
 import { Icons } from "../icons";
 
+// ─── FIELD ───────────────────────────────────────────────────────────────────
 export const Field = ({ label, children, required, hint, error }) => (
-  <div style={{ marginBottom:14 }}>
-    {label && <label style={{ display:"block", fontSize:13, fontWeight:700, color:error?"#dc2626":"#6b7280", marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase" }}>
-      {label}{required && <span style={{ color:"#E86C4A", marginLeft:2 }}>*</span>}
-    </label>}
+  <div className="mb-3.5">
+    {label && (
+      <label
+        className={[
+          "block mb-1.5 text-xs font-semibold uppercase tracking-wide",
+          error ? "text-[var(--danger-600)]" : "text-[var(--text-secondary)]",
+        ].join(" ")}
+      >
+        {label}
+        {required && <span className="text-[var(--danger-600)] ml-0.5">*</span>}
+      </label>
+    )}
     {children}
-    {error && <div style={{ fontSize:11, color:"#dc2626", marginTop:4, display:"flex", alignItems:"center", gap:4 }}><Icons.Alert />{error}</div>}
-    {!error && hint && <div style={{ fontSize:11, color:"#AAA", marginTop:3 }}>{hint}</div>}
+    {error && (
+      <div className="mt-1 flex items-center gap-1 text-xs text-[var(--danger-600)]">
+        <Icons.Alert />
+        {error}
+      </div>
+    )}
+    {!error && hint && (
+      <div className="mt-1 text-xs text-[var(--text-tertiary)]">{hint}</div>
+    )}
   </div>
 );
 
-export const Input = ({ value, onChange, placeholder, type="text", style:sx={}, readOnly, align="left", error }) => (
-  <input type={type} value={value??""} onChange={e=>onChange?.(e.target.value)} placeholder={placeholder} readOnly={readOnly}
-    style={{ width:"100%", padding:"9px 11px", border:`1px solid ${error?"#fca5a5":"#e8e8ec"}`, borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:readOnly?"#f9fafb":"#fff", outline:"none", boxSizing:"border-box", textAlign:align, transition:"border 0.15s", ...sx }}
-    onFocus={e=>{ if(!readOnly) e.target.style.borderColor=error?"#dc2626":"#1e6be0"; }}
-    onBlur={e=>e.target.style.borderColor=error?"#fca5a5":"#e8e8ec"} />
-);
-
-export const Textarea = ({ value, onChange, placeholder, rows=3 }) => (
-  <textarea value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
-    style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:13, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.6, transition:"border 0.15s" }}
-    onFocus={e=>e.target.style.borderColor="#1e6be0"} onBlur={e=>e.target.style.borderColor="#e8e8ec"} />
-);
-
-export const Select = ({ value, onChange, options, placeholder, style:sx={} }) => (
-  <div style={{ position:"relative" }}>
-    <select value={value??""} onChange={e=>onChange(e.target.value)}
-      style={{ width:"100%", padding:"9px 30px 9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:13, fontFamily:ff, color:value?"#1A1A1A":"#999", background:"#fff", outline:"none", appearance:"none", cursor:"pointer", boxSizing:"border-box", ...sx }}>
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map(o=>typeof o==="string"?<option key={o} value={o}>{o}</option>:<option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
-    <div style={{ position:"absolute", right:9, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", color:"#AAA" }}><Icons.ChevDown /></div>
-  </div>
-);
-
-export const Toggle = ({ value, onChange, options }) => (
-  <div style={{ display:"flex", gap:5 }}>
-    {options.map(o=>(
-      <button key={o} onClick={()=>onChange(o)}
-        style={{ flex:1, padding:"9px 0", border:`1px solid ${value===o?"#1e6be0":"#e8e8ec"}`, borderRadius:5, background:value===o?"#1e6be0":"#fff", color:value===o?"#fff":"#374151", fontSize:13, fontWeight:value===o?700:400, cursor:"pointer", fontFamily:ff, transition:"all 0.18s" }}>
-        {o}
-      </button>
-    ))}
-  </div>
-);
-
-export const Switch = ({ checked, onChange }) => (
-  <button onClick={()=>onChange(!checked)}
-    style={{ width:40, height:22, borderRadius:11, border:"none", background:checked?"#1e6be0":"#d1d5db", cursor:"pointer", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
-    <div style={{ width:16, height:16, borderRadius:"50%", background:"#fff", position:"absolute", top:3, left:checked?21:3, transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
-  </button>
-);
-
-export const SlideToggle = ({ value, onChange }) => (
-  <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-    <span style={{ fontSize:12, fontWeight:700, color:value?"#9ca3af":"#dc2626", minWidth:24, textAlign:"right" }}>No</span>
-    <button onClick={()=>onChange(!value)}
-      style={{ width:48, height:26, borderRadius:13, border:"none", background:value?"#059669":"#d1d5db", cursor:"pointer", position:"relative", transition:"background 0.25s", flexShrink:0 }}>
-      <div style={{ width:20, height:20, borderRadius:"50%", background:"#fff", position:"absolute", top:3, left:value?25:3, transition:"left 0.25s", boxShadow:"0 1px 4px rgba(0,0,0,0.25)" }} />
-    </button>
-    <span style={{ fontSize:12, fontWeight:700, color:value?"#059669":"#9ca3af", minWidth:24 }}>Yes</span>
-  </div>
-);
-
-export const Checkbox = ({ checked, onChange, label }) => (
-  <label style={{ display:"flex", alignItems:"flex-start", gap:10, cursor:"pointer", marginBottom:8 }}>
-    <div onClick={()=>onChange(!checked)}
-      style={{ width:18, height:18, minWidth:18, border:`2px solid ${checked?"#1e6be0":"#d1d5db"}`, borderRadius:4, background:checked?"#1e6be0":"#fff", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s", marginTop:1 }}>
-      {checked && <Icons.Check />}
-    </div>
-    <span style={{ fontSize:13, color:"#444", lineHeight:1.5 }}>{label}</span>
-  </label>
-);
-
-export const Btn = ({ onClick, children, variant="primary", size="md", disabled, icon, style:sx={} }) => {
-  const sizes = { sm:{padding:"6px 11px",fontSize:12}, md:{padding:"9px 16px",fontSize:13}, lg:{padding:"11px 22px",fontSize:14} };
-  const variants = { primary:{background:"#1e6be0",color:"#fff",border:"none"}, accent:{background:"#0891b2",color:"#fff",border:"none"}, outline:{background:"#fff",color:"#374151",border:"1px solid #e8e8ec"}, ghost:{background:"transparent",color:"#555",border:"none"}, danger:{background:"#FEF2F2",color:"#dc2626",border:"1px solid #FECACA"} };
+// ─── INPUT ───────────────────────────────────────────────────────────────────
+export const Input = ({ value, onChange, placeholder, type = "text", style: sx = {}, readOnly, align = "left", error }) => {
+  const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
   return (
-    <button onClick={onClick} disabled={disabled}
-      style={{ display:"inline-flex", alignItems:"center", gap:7, borderRadius:6, cursor:disabled?"not-allowed":"pointer", fontFamily:ff, fontWeight:700, transition:"all 0.15s", opacity:disabled?0.5:1, whiteSpace:"nowrap", ...sizes[size], ...variants[variant], ...sx }}>
-      {icon}{children}
-    </button>
+    <input
+      type={type}
+      value={value ?? ""}
+      onChange={e => onChange?.(e.target.value)}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      className={[
+        "w-full h-9 px-3 border rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] box-border transition-colors duration-150",
+        "outline-none focus:shadow-[var(--focus-ring)]",
+        error
+          ? "border-[var(--danger-600)]"
+          : "border-[var(--border-default)] focus:border-[var(--brand-600)]",
+        readOnly ? "bg-[var(--surface-sunken)]" : "bg-white",
+        alignCls,
+      ].join(" ")}
+      style={sx}
+    />
   );
 };
 
-export const Tag = ({ children, color="#1A1A1A" }) => (
-  <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:color+"18", color }}>{children}</span>
+// ─── TEXTAREA ────────────────────────────────────────────────────────────────
+export const Textarea = ({ value, onChange, placeholder, rows = 3 }) => (
+  <textarea
+    value={value ?? ""}
+    onChange={e => onChange(e.target.value)}
+    placeholder={placeholder}
+    rows={rows}
+    className="w-full min-h-[80px] px-3 py-2 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none resize-y box-border leading-6 transition-colors duration-150 focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]"
+  />
 );
 
+// ─── SELECT ──────────────────────────────────────────────────────────────────
+export const Select = ({ value, onChange, options, placeholder, style: sx = {} }) => (
+  <div className="relative">
+    <select
+      value={value ?? ""}
+      onChange={e => onChange(e.target.value)}
+      className={[
+        "w-full h-9 pl-3 pr-8 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white outline-none appearance-none cursor-pointer box-border transition-colors duration-150",
+        "focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",
+        value ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]",
+      ].join(" ")}
+      style={sx}
+    >
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map(o =>
+        typeof o === "string"
+          ? <option key={o} value={o}>{o}</option>
+          : <option key={o.value} value={o.value}>{o.label}</option>
+      )}
+    </select>
+    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-tertiary)]">
+      <Icons.ChevDown />
+    </div>
+  </div>
+);
+
+// ─── TOGGLE (button group) ───────────────────────────────────────────────────
+export const Toggle = ({ value, onChange, options }) => (
+  <div className="flex">
+    {options.map((o, i) => {
+      const active = value === o;
+      return (
+        <button
+          key={o}
+          onClick={() => onChange(o)}
+          className={[
+            "flex-1 h-9 px-3 text-sm border transition-colors duration-150 cursor-pointer",
+            i === 0 ? "rounded-l-[var(--radius-md)]" : "-ml-px",
+            i === options.length - 1 ? "rounded-r-[var(--radius-md)]" : "",
+            active
+              ? "bg-[var(--brand-600)] text-white border-[var(--brand-600)] font-semibold z-10 relative"
+              : "bg-white text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
+          ].join(" ")}
+        >
+          {o}
+        </button>
+      );
+    })}
+  </div>
+);
+
+// ─── SWITCH ──────────────────────────────────────────────────────────────────
+export const Switch = ({ checked, onChange }) => (
+  <button
+    onClick={() => onChange(!checked)}
+    className={[
+      "relative w-10 h-[22px] rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+      checked ? "bg-[var(--brand-600)]" : "bg-[var(--border-default)]",
+    ].join(" ")}
+  >
+    <div
+      className={[
+        "absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200",
+        checked ? "left-[21px]" : "left-[3px]",
+      ].join(" ")}
+    />
+  </button>
+);
+
+// ─── SLIDE TOGGLE ────────────────────────────────────────────────────────────
+export const SlideToggle = ({ value, onChange }) => (
+  <div className="flex items-center gap-2.5">
+    <span
+      className={[
+        "text-xs font-bold min-w-[24px] text-right",
+        value ? "text-[var(--text-tertiary)]" : "text-[var(--danger-600)]",
+      ].join(" ")}
+    >
+      No
+    </span>
+    <button
+      onClick={() => onChange(!value)}
+      className={[
+        "relative w-12 h-[26px] rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+        value ? "bg-[var(--success-600)]" : "bg-[var(--border-default)]",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200",
+          value ? "left-[25px]" : "left-[3px]",
+        ].join(" ")}
+      />
+    </button>
+    <span
+      className={[
+        "text-xs font-bold min-w-[24px]",
+        value ? "text-[var(--success-600)]" : "text-[var(--text-tertiary)]",
+      ].join(" ")}
+    >
+      Yes
+    </span>
+  </div>
+);
+
+// ─── CHECKBOX ────────────────────────────────────────────────────────────────
+export const Checkbox = ({ checked, onChange, label }) => (
+  <label className="flex items-start gap-2.5 cursor-pointer mb-2">
+    <div
+      onClick={() => onChange(!checked)}
+      className={[
+        "w-[18px] h-[18px] min-w-[18px] mt-0.5 border-2 rounded-[var(--radius-sm)] flex items-center justify-center transition-colors duration-150",
+        checked
+          ? "bg-[var(--brand-600)] border-[var(--brand-600)] text-white"
+          : "bg-white border-[var(--border-default)]",
+      ].join(" ")}
+    >
+      {checked && <Icons.Check />}
+    </div>
+    <span className="text-sm text-[var(--text-secondary)] leading-relaxed">{label}</span>
+  </label>
+);
+
+// ─── BUTTON ──────────────────────────────────────────────────────────────────
+const BTN_SIZES = {
+  sm: "h-7 px-2.5 text-xs",
+  md: "h-9 px-4 text-sm",
+  lg: "h-10 px-5 text-sm",
+};
+const BTN_VARIANTS = {
+  primary: "bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white border border-transparent",
+  accent:  "bg-[var(--info-600)] hover:bg-[var(--info-700)] text-white border border-transparent",
+  outline: "bg-white border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]",
+  ghost:   "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] border border-transparent",
+  danger:  "bg-[var(--danger-50)] text-[var(--danger-600)] border border-[var(--danger-100)] hover:bg-[var(--danger-100)]",
+};
+
+export const Btn = ({ onClick, children, variant = "primary", size = "md", disabled, icon, style: sx = {} }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={[
+      "inline-flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] font-medium whitespace-nowrap",
+      "transition-colors duration-150",
+      "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]",
+      "disabled:opacity-50 disabled:cursor-not-allowed",
+      BTN_SIZES[size] || BTN_SIZES.md,
+      BTN_VARIANTS[variant] || BTN_VARIANTS.primary,
+    ].join(" ")}
+    style={sx}
+  >
+    {icon}
+    {children}
+  </button>
+);
+
+// ─── TAG ─────────────────────────────────────────────────────────────────────
+export const Tag = ({ children, color = "#1A1A1A" }) => (
+  <span
+    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+    style={{ background: color + "18", color }}
+  >
+    {children}
+  </span>
+);
+
+// ─── RIBBON ──────────────────────────────────────────────────────────────────
 const RIBBON_COLORS = {
-  Draft:    "#9ca3af",
-  Sent:     "#3b82f6",
-  Paid:     "#16a34a",
-  Overdue:  "#dc2626",
-  Partial:  "#d97706",
-  Accepted: "#059669",
-  Declined: "#dc2626",
-  Invoiced: "#6366f1",
-  Expired:  "#f97316",
-  Pending:  "#9ca3af",
+  Draft:    "var(--text-tertiary)",
+  Sent:     "var(--info-600)",
+  Paid:     "var(--success-600)",
+  Overdue:  "var(--danger-600)",
+  Partial:  "var(--warning-600)",
+  Accepted: "var(--success-600)",
+  Declined: "var(--danger-600)",
+  Invoiced: "var(--brand-500)",
+  Expired:  "var(--warning-600)",
+  Pending:  "var(--text-tertiary)",
 };
 export const Ribbon = ({ status }) => {
-  const color = RIBBON_COLORS[status] || "#9ca3af";
+  const color = RIBBON_COLORS[status] || "var(--text-tertiary)";
   return (
-    <div style={{ position:"absolute", top:0, right:0, width:88, height:88, overflow:"hidden", zIndex:10, pointerEvents:"none" }}>
-      <div style={{
-        position:"absolute", top:22, right:-26, width:110,
-        background:color, color:"#fff",
-        fontSize:9, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em",
-        textAlign:"center", padding:"5px 0",
-        transform:"rotate(45deg)",
-        boxShadow:"0 2px 6px rgba(0,0,0,0.25)",
-      }}>
+    <div className="absolute top-0 right-0 w-[88px] h-[88px] overflow-hidden z-10 pointer-events-none">
+      <div
+        className="absolute top-[22px] -right-[26px] w-[110px] text-white text-center py-1 rotate-45 shadow-[var(--shadow-md)]"
+        style={{
+          background: color,
+          fontSize: 9,
+          fontWeight: 800,
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+        }}
+      >
         {status}
       </div>
     </div>
   );
 };
 
+// ─── STATUS BADGE (new) ──────────────────────────────────────────────────────
+const STATUS_BADGE_STYLES = {
+  Draft:   { bg: "var(--neutral-50)",  text: "var(--neutral-600)",   dot: "var(--neutral-600)" },
+  Sent:    { bg: "var(--info-50)",     text: "var(--info-600)",      dot: "var(--info-600)" },
+  Paid:    { bg: "var(--success-50)",  text: "var(--success-600)",   dot: "var(--success-600)" },
+  Overdue: { bg: "var(--danger-50)",   text: "var(--danger-600)",    dot: "var(--danger-600)" },
+  Partial: { bg: "var(--warning-50)",  text: "var(--warning-600)",   dot: "var(--warning-600)" },
+  Void:    { bg: "var(--neutral-50)",  text: "var(--text-tertiary)", dot: "var(--text-disabled)" },
+};
+export const StatusBadge = ({ status }) => {
+  const s = STATUS_BADGE_STYLES[status] || STATUS_BADGE_STYLES.Draft;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-sm)] text-xs font-semibold"
+      style={{ background: s.bg, color: s.text }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.dot }} />
+      {status}
+    </span>
+  );
+};
+
+// ─── SECTION CARD ────────────────────────────────────────────────────────────
 export const SectionCard = ({ title, subtitle, children }) => (
-  <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e8e8ec", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", padding:"18px 20px", marginBottom:14 }}>
-    {(title||subtitle) && <div style={{ marginBottom:14 }}>
-      {title && <div style={{ fontSize:13, fontWeight:700, color:"#1a1a2e" }}>{title}</div>}
-      {subtitle && <div style={{ fontSize:11, color:"#AAA", marginTop:2 }}>{subtitle}</div>}
-    </div>}
+  <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] shadow-[var(--shadow-sm)] p-5 mb-3.5">
+    {(title || subtitle) && (
+      <div className="mb-3.5">
+        {title && <div className="text-sm font-bold text-[var(--text-primary)]">{title}</div>}
+        {subtitle && <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{subtitle}</div>}
+      </div>
+    )}
     {children}
   </div>
 );
 
-export const InfoBox = ({ children, color="#1e6be0" }) => (
-  <div style={{ display:"flex", gap:8, padding:"10px 12px", background:color+"10", borderRadius:6, border:`1px solid ${color}30`, marginTop:8 }}>
-    <div style={{ color, marginTop:1, flexShrink:0 }}><Icons.Info /></div>
-    <p style={{ margin:0, fontSize:12, color, lineHeight:1.6 }}>{children}</p>
+// ─── INFO BOX ────────────────────────────────────────────────────────────────
+export const InfoBox = ({ children, color = "var(--info-600)" }) => (
+  <div
+    className="flex gap-2 px-3 py-2.5 rounded-[var(--radius-md)] border-l-4 mt-2"
+    style={{
+      background: `color-mix(in srgb, ${color} 8%, transparent)`,
+      borderLeftColor: color,
+      color,
+    }}
+  >
+    <div className="mt-0.5 flex-shrink-0">
+      <Icons.Info />
+    </div>
+    <p className="m-0 text-xs leading-relaxed" style={{ color }}>
+      {children}
+    </p>
   </div>
 );
 
-export const ExpandSection = ({ title, children, defaultOpen=false }) => {
+// ─── EXPAND SECTION ──────────────────────────────────────────────────────────
+export const ExpandSection = ({ title, children, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ borderTop:"1px solid #f0f0f4" }}>
-      <button onClick={()=>setOpen(!open)}
-        style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 0", background:"none", border:"none", cursor:"pointer", fontFamily:ff, fontSize:13, fontWeight:600, color:"#374151" }}>
+    <div className="border-t border-[var(--border-subtle)]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-3.5 bg-transparent border-none cursor-pointer text-sm font-semibold text-[var(--text-secondary)]"
+      >
         {title}
-        <span style={{ color:"#AAA", transition:"transform 0.2s", transform:open?"rotate(180deg)":"none", display:"flex" }}><Icons.ChevDown /></span>
+        <span
+          className={[
+            "flex text-[var(--text-tertiary)] transition-transform duration-200",
+            open ? "rotate-180" : "",
+          ].join(" ")}
+        >
+          <Icons.ChevDown />
+        </span>
       </button>
-      {open && <div style={{ paddingBottom:16 }}>{children}</div>}
+      {open && <div className="pb-4">{children}</div>}
     </div>
   );
 };
 
-export const AddressForm = ({ address={}, onChange, label }) => {
-  const u = (k,v) => onChange({ ...address, [k]:v });
+// ─── ADDRESS FORM ────────────────────────────────────────────────────────────
+export const AddressForm = ({ address = {}, onChange, label }) => {
+  const u = (k, v) => onChange({ ...address, [k]: v });
   return (
     <div>
-      {label && <div style={{ fontSize:12, fontWeight:700, color:"#999", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:10 }}>{label}</div>}
-      <Field label="Street"><Input value={address.street} onChange={v=>u("street",v)} placeholder="123 High Street" /></Field>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-        <Field label="City"><Input value={address.city} onChange={v=>u("city",v)} placeholder="London" /></Field>
-        <Field label="County / State"><Input value={address.county} onChange={v=>u("county",v)} placeholder="Greater London" /></Field>
+      {label && (
+        <div className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
+          {label}
+        </div>
+      )}
+      <Field label="Street">
+        <Input value={address.street} onChange={v => u("street", v)} placeholder="123 High Street" />
+      </Field>
+      <div className="grid grid-cols-2 gap-2.5">
+        <Field label="City">
+          <Input value={address.city} onChange={v => u("city", v)} placeholder="London" />
+        </Field>
+        <Field label="County / State">
+          <Input value={address.county} onChange={v => u("county", v)} placeholder="Greater London" />
+        </Field>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-        <Field label="Postcode / ZIP"><Input value={address.postcode} onChange={v=>u("postcode",v)} placeholder="EC1A 1BB" /></Field>
+      <div className="grid grid-cols-2 gap-2.5">
+        <Field label="Postcode / ZIP">
+          <Input value={address.postcode} onChange={v => u("postcode", v)} placeholder="EC1A 1BB" />
+        </Field>
         <Field label="Country">
-          <Select value={address.country} onChange={v=>u("country",v)} options={["United Kingdom","Australia","Austria","Belgium","Brazil","Canada","United States"]} placeholder="Select…" />
+          <Select
+            value={address.country}
+            onChange={v => u("country", v)}
+            options={["United Kingdom", "Australia", "Austria", "Belgium", "Brazil", "Canada", "United States"]}
+            placeholder="Select…"
+          />
         </Field>
       </div>
     </div>
   );
 };
 
+// ─── PAYMENT TERMS FIELD ─────────────────────────────────────────────────────
 export const PaymentTermsField = ({ value, onChange, customDays, onCustomDaysChange }) => {
-  const PAYMENT_TERMS_OPTS = ["Due on Receipt","Net 7","Net 14","Net 30","Net 60","Net 90","Custom"];
+  const PAYMENT_TERMS_OPTS = ["Due on Receipt", "Net 7", "Net 14", "Net 30", "Net 60", "Net 90", "Custom"];
   return (
     <div>
       <Select value={value} onChange={onChange} options={PAYMENT_TERMS_OPTS} />
-      {value==="Custom" && (
-        <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:8 }}>
-          <Input value={customDays} onChange={onCustomDaysChange} type="number" placeholder="e.g. 45" style={{ maxWidth:90 }} />
-          <span style={{ fontSize:12, color:"#666", whiteSpace:"nowrap" }}>days from invoice date</span>
+      {value === "Custom" && (
+        <div className="mt-2 flex items-center gap-2">
+          <Input
+            value={customDays}
+            onChange={onCustomDaysChange}
+            type="number"
+            placeholder="e.g. 45"
+            style={{ maxWidth: 90 }}
+          />
+          <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap">
+            days from invoice date
+          </span>
         </div>
       )}
     </div>
