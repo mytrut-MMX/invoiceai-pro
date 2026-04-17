@@ -2,10 +2,9 @@ import { Suspense, useContext, useState, useEffect, useCallback } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AppCtx } from "../../context/AppContext";
 import { ROUTES } from "../../router/routes";
-import { Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from ".";
+import { TopBar, Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from ".";
 import UserEditModal from "../../modals/UserEditModal";
 import { signOut } from "../../lib/supabase";
-import { ff } from "../../constants";
 import PageLoader from "../ui/PageLoader";
 import { useInactivityTimer } from "../../hooks/useInactivityTimer";
 
@@ -18,13 +17,6 @@ function lsGet(key, fallback) {
   }
 }
 
-/**
- * Layout wrapper for all authenticated app pages.
- * Provides the sidebar, mobile top bar, mobile bottom nav, mobile drawer,
- * and the user-edit modal. Renders page content via <Outlet />.
- *
- * Reads appTheme and user from AppCtx; all sidebar UI state is local.
- */
 export default function AppShell() {
   const { user, setUser, appTheme, setAppTheme } = useContext(AppCtx);
   const navigate = useNavigate();
@@ -54,11 +46,6 @@ export default function AppShell() {
 
   const { inactive: showInactivityPrompt, dismiss: dismissInactivityPrompt } = useInactivityTimer();
 
-  const sidebarBg =
-    appTheme.type === "gradient"
-      ? `linear-gradient(160deg,${appTheme.color},${appTheme.color2})`
-      : appTheme.color;
-
   const doLogout = useCallback(async () => {
     try { await signOut(); } catch {}
     localStorage.removeItem("ai_invoice_user");
@@ -76,86 +63,103 @@ export default function AppShell() {
 
   return (
     <>
+      {/* ── Banners (fixed, above everything) ── */}
       {storageError && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999, background: "#7F1D1D", color: "#FEE2E2", fontSize: 13, fontWeight: 600, padding: "10px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontFamily: ff }}>
+        <div className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-between gap-3 bg-red-900 text-red-200 text-[13px] font-semibold px-4 py-2.5">
           <span>⚠ {storageError}</span>
-          <button onClick={() => setStorageError(null)} style={{ background: "none", border: "none", color: "#FCA5A5", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
+          <button
+            onClick={() => setStorageError(null)}
+            className="bg-transparent border-none text-red-400 cursor-pointer text-lg leading-none p-0"
+          >
+            ×
+          </button>
         </div>
       )}
 
       {showInactivityPrompt && (
-        <div style={{ position: "fixed", top: storageError ? 44 : 0, left: 0, right: 0, zIndex: 9998, background: "#78350F", color: "#FEF3C7", fontSize: 13, fontWeight: 600, padding: "10px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontFamily: ff }}>
+        <div
+          className="fixed left-0 right-0 z-[9998] flex items-center justify-between gap-3 bg-amber-900 text-amber-100 text-[13px] font-semibold px-4 py-2.5"
+          style={{ top: storageError ? 44 : 0 }}
+        >
           <span>Still there? You've been inactive for a while.</span>
-          <button onClick={() => { extendSession(); dismissInactivityPrompt(); }} style={{ background: "#FEF3C7", color: "#78350F", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: ff }}>Stay logged in</button>
+          <button
+            onClick={() => { extendSession(); dismissInactivityPrompt(); }}
+            className="bg-amber-100 text-amber-900 border-none rounded-[var(--radius-md)] px-3 py-1 text-[12px] font-bold cursor-pointer"
+          >
+            Stay logged in
+          </button>
         </div>
       )}
 
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: ff, background: "#f4f5f7" }}>
-        <div className="desktop-only">
+      {/* ── Desktop layout (lg+) ── */}
+      <div className="hidden lg:flex flex-col h-screen overflow-hidden bg-[var(--surface-page)]">
+        <TopBar
+          user={user}
+          userAvatar={userAvatar}
+          onUserClick={() => setShowUserModal(true)}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+          onMenuOpen={() => setMobileDrawerOpen(true)}
+        />
+        <div className="flex flex-1 overflow-hidden">
           <Sidebar
             collapsed={sidebarCollapsed}
             onCollapsedChange={setSidebarCollapsed}
-            accent={appTheme.accent}
-            sidebarBg={sidebarBg}
             user={user}
             userAvatar={userAvatar}
             onUserClick={() => setShowUserModal(true)}
             onLogout={doLogout}
           />
-        </div>
-
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, background: "#fff", borderBottom: "1px solid #e8e8ec" }}>
-          <div className="mobile-only">
-            <MobileTopBar
-              onMenuOpen={() => setMobileDrawerOpen(true)}
-              sidebarBg={sidebarBg}
-              accent={appTheme.accent}
-              user={user}
-              userAvatar={userAvatar}
-              onUserClick={() => setShowUserModal(true)}
-            />
-            <div style={{ height: 52 }} />
-          </div>
-
-          <main className="main-content" style={{ flex: 1, overflowY: "auto" }}>
+          <main className="flex-1 overflow-y-auto">
             <Suspense fallback={<PageLoader />}>
               <Outlet />
             </Suspense>
           </main>
-
-          <div className="mobile-only">
-            <MobileBottomNav accent={appTheme.accent} />
-            <div style={{ height: 60 }} />
-          </div>
         </div>
-
-        {mobileDrawerOpen && (
-          <MobileDrawer
-            onClose={() => setMobileDrawerOpen(false)}
-            sidebarBg={sidebarBg}
-            accent={appTheme.accent}
-            user={user}
-            userAvatar={userAvatar}
-            onUserClick={() => { setShowUserModal(true); setMobileDrawerOpen(false); }}
-            onLogout={doLogout}
-          />
-        )}
-
-        {showUserModal && (
-          <UserEditModal
-            user={user}
-            onClose={() => setShowUserModal(false)}
-            onSave={u => setUser(prev => ({ ...prev, ...u }))}
-            userAvatar={userAvatar}
-            setUserAvatar={setUserAvatar}
-            appTheme={appTheme}
-            setAppTheme={setAppTheme}
-            sidebarPinned={sidebarPinned}
-            setSidebarPinned={setSidebarPinned}
-            onLogout={doLogout}
-          />
-        )}
       </div>
+
+      {/* ── Mobile layout (< lg) ── */}
+      <div className="flex lg:hidden flex-col h-screen overflow-hidden bg-[var(--surface-page)]">
+        <MobileTopBar
+          onMenuOpen={() => setMobileDrawerOpen(true)}
+          user={user}
+          userAvatar={userAvatar}
+          onUserClick={() => setShowUserModal(true)}
+        />
+        <main className="flex-1 overflow-y-auto">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </main>
+        <MobileBottomNav />
+      </div>
+
+      {/* ── Mobile drawer ── */}
+      {mobileDrawerOpen && (
+        <MobileDrawer
+          onClose={() => setMobileDrawerOpen(false)}
+          user={user}
+          userAvatar={userAvatar}
+          onUserClick={() => { setShowUserModal(true); setMobileDrawerOpen(false); }}
+          onLogout={doLogout}
+        />
+      )}
+
+      {/* ── User edit modal ── */}
+      {showUserModal && (
+        <UserEditModal
+          user={user}
+          onClose={() => setShowUserModal(false)}
+          onSave={u => setUser(prev => ({ ...prev, ...u }))}
+          userAvatar={userAvatar}
+          setUserAvatar={setUserAvatar}
+          appTheme={appTheme}
+          setAppTheme={setAppTheme}
+          sidebarPinned={sidebarPinned}
+          setSidebarPinned={setSidebarPinned}
+          onLogout={doLogout}
+        />
+      )}
     </>
   );
 }
