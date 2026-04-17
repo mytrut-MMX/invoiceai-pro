@@ -2,12 +2,12 @@ import { useMemo, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppCtx } from "../../context/AppContext";
 import { ROUTES } from "../../router/routes";
-import { ff } from "../../constants";
+import { Icons } from "../icons";
 
 export default function MonthEndChecklist() {
   const { invoices, payments, expenses, orgSettings } = useContext(AppCtx);
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const today = new Date();
   const isLastWeek = today.getDate() >= 24;
@@ -15,18 +15,17 @@ export default function MonthEndChecklist() {
   const checks = useMemo(() => {
     const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
     const monthInvoices = invoices.filter(i => (i.issue_date || "").startsWith(month));
-    const monthPayments = payments.filter(p => (p.date || "").startsWith(month));
     const monthExpenses = expenses.filter(e => (e.date || "").startsWith(month));
     const pendingPayments = payments.filter(p => p.status === "Pending");
     const draftInvoices = invoices.filter(i => i.status === "Draft");
     const missingReceipts = expenses.filter(e => !e.receipt && !e.receipt_url && e.status !== "Reimbursed");
 
     return [
-      { id: "invoices_sent", label: `${monthInvoices.length} invoice(s) created this month`, done: monthInvoices.length > 0, action: ROUTES.INVOICES },
-      { id: "no_drafts", label: `${draftInvoices.length} draft invoice(s) pending`, done: draftInvoices.length === 0, action: ROUTES.INVOICES + "?status=Draft" },
-      { id: "payments_reconciled", label: `${pendingPayments.length} payment(s) unreconciled`, done: pendingPayments.length === 0, action: ROUTES.PAYMENTS },
-      { id: "expenses_logged", label: `${monthExpenses.length} expense(s) this month`, done: monthExpenses.length > 0, action: ROUTES.EXPENSES },
-      { id: "receipts_attached", label: `${missingReceipts.length} expense(s) missing receipts`, done: missingReceipts.length === 0, action: ROUTES.EXPENSES },
+      { id: "invoices_sent",       label: `${monthInvoices.length} invoice(s) created this month`, done: monthInvoices.length > 0,    action: ROUTES.INVOICES },
+      { id: "no_drafts",           label: `${draftInvoices.length} draft invoice(s) pending`,       done: draftInvoices.length === 0,  action: ROUTES.INVOICES + "?status=Draft" },
+      { id: "payments_reconciled", label: `${pendingPayments.length} payment(s) unreconciled`,      done: pendingPayments.length === 0,action: ROUTES.PAYMENTS },
+      { id: "expenses_logged",     label: `${monthExpenses.length} expense(s) this month`,          done: monthExpenses.length > 0,    action: ROUTES.EXPENSES },
+      { id: "receipts_attached",   label: `${missingReceipts.length} expense(s) missing receipts`,  done: missingReceipts.length === 0,action: ROUTES.EXPENSES },
       ...(orgSettings?.vatReg === "Yes" ? [
         { id: "vat_reviewed", label: "Review VAT for this period", done: false, action: ROUTES.LEDGER_PL },
       ] : []),
@@ -39,29 +38,67 @@ export default function MonthEndChecklist() {
   if (!isLastWeek) return null;
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e8e8ec", overflow: "hidden", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-      <button onClick={() => setOpen(o => !o)} style={{
-        width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "12px 16px", background: "#f9fafb", border: "none", cursor: "pointer", fontFamily: ff,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14 }}>📋</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e" }}>Month-End Checklist</span>
-          <span style={{ fontSize: 11, color: "#6b7280" }}>{completedCount}/{checks.length}</span>
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-5 py-3 bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-[var(--text-secondary)] flex flex-shrink-0">
+            <Icons.Check />
+          </span>
+          <span className="text-sm font-semibold text-[var(--text-primary)] truncate">Month-end checklist</span>
+          <span className="text-xs text-[var(--text-tertiary)] flex-shrink-0">
+            {completedCount}/{checks.length}
+          </span>
         </div>
-        <div style={{ width: 60, height: 6, background: "#e8e8ec", borderRadius: 3, overflow: "hidden" }}>
-          <div style={{ width: `${progress}%`, height: "100%", background: progress === 100 ? "#059669" : "#1e6be0", borderRadius: 3, transition: "width 0.3s" }} />
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="w-14 h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden">
+            <div
+              className={[
+                "h-full rounded-full transition-all duration-300",
+                progress === 100 ? "bg-[var(--success-600)]" : "bg-[var(--brand-600)]",
+              ].join(" ")}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span
+            className={[
+              "text-[var(--text-tertiary)] flex transition-transform duration-200",
+              open ? "" : "rotate-180",
+            ].join(" ")}
+          >
+            <Icons.ChevDown />
+          </span>
         </div>
       </button>
 
       {open && (
-        <div style={{ padding: "8px 16px 14px" }}>
-          {checks.map(check => (
-            <div key={check.id}
+        <div className="border-t border-[var(--border-subtle)] px-5 py-2">
+          {checks.map((check, idx) => (
+            <div
+              key={check.id}
               onClick={() => !check.done && navigate(check.action)}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid #f3f4f6", cursor: check.done ? "default" : "pointer", fontSize: 12 }}>
-              <span style={{ fontSize: 14 }}>{check.done ? "✅" : "⬜"}</span>
-              <span style={{ color: check.done ? "#059669" : "#374151", textDecoration: check.done ? "line-through" : "none" }}>
+              className={[
+                "flex items-center gap-2.5 py-2 text-xs",
+                idx < checks.length - 1 ? "border-b border-[var(--border-subtle)]" : "",
+                check.done ? "" : "cursor-pointer hover:text-[var(--text-primary)]",
+              ].join(" ")}
+            >
+              {check.done ? (
+                <span className="w-4 h-4 rounded-full bg-[var(--success-600)] flex items-center justify-center text-white flex-shrink-0">
+                  <Icons.Check />
+                </span>
+              ) : (
+                <span className="w-4 h-4 rounded-full border-2 border-[var(--border-default)] flex-shrink-0" />
+              )}
+              <span
+                className={[
+                  check.done
+                    ? "line-through text-[var(--text-tertiary)]"
+                    : "text-[var(--text-secondary)]",
+                ].join(" ")}
+              >
                 {check.label}
               </span>
             </div>

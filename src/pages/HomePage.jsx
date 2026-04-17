@@ -1,329 +1,309 @@
 import { useState, useMemo, useContext } from "react";
-import { useDashboardCache } from "../hooks/useDashboardCache";
-import { useDashboardModuleData } from "../hooks/useDashboardModuleData";
 import { useNavigate } from "react-router-dom";
-import { ff, CUR_SYM } from "../constants";
+import { CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { fmt } from "../utils/helpers";
-import { useCISSettings } from "../hooks/useCISSettings";
+import { useDashboardModuleData } from "../hooks/useDashboardModuleData";
 import { ROUTES } from "../router/routes";
-import { calculateVATReturn } from "../utils/vat/vatReturnCalculator";
+import { Icons } from "../components/icons";
 import SmartAlerts from "../components/home/SmartAlerts";
-import AIChat from "../components/AIChat";
-import ReportsCenter from "../components/home/ReportsCenter";
-import CashFlowForecast from "../components/home/CashFlowForecast";
 import CashFlowWidget from "../components/home/CashFlowWidget";
-import DebtorInsightsWidget from "../components/home/DebtorInsightsWidget";
-import QuickActionsBar from "../components/home/QuickActionsBar";
+import NeedsAttention from "../components/home/NeedsAttention";
+import RecentInvoices from "../components/home/RecentInvoices";
 import MonthEndChecklist from "../components/home/MonthEndChecklist";
 
-const STAT_FILTERS = { "Outstanding": "Sent,Partial", "Overdue": "Overdue", "Paid": "Paid", "Draft": "Draft" };
-const STAT_ROUTES = {
-  "Bills Due": ROUTES.BILLS,
-  "VAT Tracked": ROUTES.LEDGER_PL,
-  "CIS Suffered (YTD)": ROUTES.ITSA,
-  "CIS Deducted (YTD)": ROUTES.BILLS + "?cis=cis_only",
-  "CIS Return (Tax Month)": ROUTES.BILLS + "?cis=cis_only",
-  "Next VAT Return": ROUTES.VAT_RETURN,
-  "ITSA Quarter": ROUTES.ITSA,
-  "Next Payroll": ROUTES.PAYROLL,
-  "PAYE Due": ROUTES.PAYROLL,
-};
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function currentCISTaxYearStart() {
-  const today = new Date();
-  const year = today.getMonth() < 3 || (today.getMonth() === 3 && today.getDate() < 6)
-    ? today.getFullYear() - 1
-    : today.getFullYear();
-  return `${year}-04-06`;
-}
+const PERIOD_OPTIONS = [
+  { value: "this_month",   label: "This month" },
+  { value: "last_month",   label: "Last month" },
+  { value: "this_quarter", label: "This quarter" },
+  { value: "last_quarter", label: "Last quarter" },
+  { value: "this_year",    label: "This year" },
+];
 
-function currentCISTaxMonthRange() {
-  const today = new Date();
-  const day = today.getDate();
-  const month = today.getMonth();
-  const year = today.getFullYear();
-  // Tax month runs 6th to 5th. If today < 6th of current calendar month, we're in previous tax month.
-  const startMonth = day < 6 ? month - 1 : month;
-  const start = new Date(year, startMonth, 6);
-  const end = new Date(year, startMonth + 1, 5);
-  const pad = (n) => String(n).padStart(2, "0");
-  const toStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const deadline = new Date(year, startMonth + 1, 19);
-  return { start: toStr(start), end: toStr(end), deadline: toStr(deadline) };
-}
+function startOfMonth(d)      { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function endOfMonth(d)        { return new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+function addMonths(d, n)      { return new Date(d.getFullYear(), d.getMonth() + n, 1); }
+function startOfQuarter(d)    { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1); }
+function addQuarters(d, n)    { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3 + n * 3, 1); }
 
-/** Estimate next pay date from frequency + pay day setting (monthly only for now). */
-function calculateNextPayDate(lastPayDate, frequency, payDay) {
-  // TODO: handle weekly/fortnightly — currently falls back to monthly
-  const today = new Date();
-  let next = new Date(today.getFullYear(), today.getMonth() + 1, 0); // last day of current month
-  if (payDay === "last-working" || payDay === "last-working-day") {
-    while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() - 1);
-  } else if (payDay === "last-friday") {
-    while (next.getDay() !== 5) next.setDate(next.getDate() - 1);
-  } else if (payDay === "25th") {
-    next = new Date(today.getFullYear(), today.getMonth(), 25);
+function getPeriodRange(period) {
+  const now = new Date();
+  switch (period) {
+    case "this_month": {
+      const start = startOfMonth(now);
+      const end = endOfMonth(now);
+      return { start, end, prevStart: addMonths(start, -1), prevEnd: start };
+    }
+    case "last_month": {
+      const start = addMonths(startOfMonth(now), -1);
+      const end = startOfMonth(now);
+      return { start, end, prevStart: addMonths(start, -1), prevEnd: start };
+    }
+    case "this_quarter": {
+      const start = startOfQuarter(now);
+      const end = addQuarters(start, 1);
+      return { start, end, prevStart: addQuarters(start, -1), prevEnd: start };
+    }
+    case "last_quarter": {
+      const start = addQuarters(startOfQuarter(now), -1);
+      const end = startOfQuarter(now);
+      return { start, end, prevStart: addQuarters(start, -1), prevEnd: start };
+    }
+    case "this_year": {
+      const start = new Date(now.getFullYear(), 0, 1);
+      const end = new Date(now.getFullYear() + 1, 0, 1);
+      return { start, end, prevStart: new Date(now.getFullYear() - 1, 0, 1), prevEnd: start };
+    }
+    default: {
+      const start = startOfMonth(now);
+      const end = endOfMonth(now);
+      return { start, end, prevStart: addMonths(start, -1), prevEnd: start };
+    }
   }
-  // If already passed this month, move to next month
-  if (next < today) {
-    const nm = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-    if (payDay === "last-working" || payDay === "last-working-day") {
-      while (nm.getDay() === 0 || nm.getDay() === 6) nm.setDate(nm.getDate() - 1);
-    } else if (payDay === "last-friday") {
-      while (nm.getDay() !== 5) nm.setDate(nm.getDate() - 1);
-    } else if (payDay === "25th") {
-      nm.setDate(25);
-    }
-    return nm;
-  }
-  return next;
 }
 
-export default function HomePage() {
-  const { user, invoices, expenses, payments, orgSettings, bills, customers, catalogItems } = useContext(AppCtx);
-  const { cisEnabled } = useCISSettings();
-  const navigate = useNavigate();
-  const [hoveredStat, setHoveredStat] = useState(null);
-  const currencySymbol = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
-  const moduleData = useDashboardModuleData(user?.id, orgSettings);
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
 
-  const stats = useDashboardCache(() => {
-    const now = new Date();
-    const startOfCurr = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfNext = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const startOfPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const getAccountingDate = (inv) => { const dateStr = inv.tax_point || inv.issue_date; return dateStr ? new Date(dateStr) : null; };
-    const inCurr = inv => { const d = getAccountingDate(inv); return !!d && d >= startOfCurr && d < startOfNext; };
-    const inPrev = inv => { const d = getAccountingDate(inv); return !!d && d >= startOfPrev && d < startOfCurr; };
-    const sumAmt = (arr, pred) => arr.filter(pred).reduce((s, i) => s + Number(i.total || 0), 0);
+function parseDate(str) {
+  if (!str) return null;
+  const d = new Date(str);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
-    const calcTrend = (curr, prev, positiveUp) => {
-      if (prev === 0) return null;
-      const pct = Math.round((curr - prev) / prev * 100);
-      if (pct === 0) return null;
-      const up = pct > 0;
-      const isGood = positiveUp ? up : !up;
-      return { text: `${up ? "↑" : "↓"} ${Math.abs(pct)}% vs last month`, color: isGood ? "#059669" : "#dc2626" };
-    };
+function sumInRange(items, dateField, start, end) {
+  let total = 0;
+  for (const it of items) {
+    const d = parseDate(it[dateField]);
+    if (!d) continue;
+    if (d >= start && d < end) total += Number(it.total ?? it.amount ?? 0);
+  }
+  return total;
+}
 
-    const outstanding = invoices.filter(i => ["Sent", "Partial"].includes(i.status)).reduce((sum, i) => sum + Number(i.total || 0), 0);
-    const overdue     = invoices.filter(i => i.status === "Overdue").reduce((sum, i) => sum + Number(i.total || 0), 0);
-    const paid        = invoices.filter(i => i.status === "Paid").reduce((sum, i) => sum + Number(i.total || 0), 0);
-    const draft       = invoices.filter(i => i.status === "Draft").reduce((sum, i) => sum + Number(i.total || 0), 0);
-    const vatDue      = orgSettings?.vatReg === "Yes"
-      ? invoices.reduce((sum, inv) => sum + (inv.taxBreakdown || []).reduce((t, tx) => t + Number(tx.amount || 0), 0), 0)
-      : 0;
-    // CIS Suffered = from invoices (customers deducting from us as subcontractor)
-    // CIS Deducted = from bills (we deduct from our subcontractors as contractor)
-    // Both reported in UK fiscal year 6 Apr → 5 Apr
-    const cisYearStart = currentCISTaxYearStart();
-    const cisTaxMonth = currentCISTaxMonthRange();
-    const cisSufferedYTD = cisEnabled
-      ? invoices
-          .filter(inv => (inv.issue_date || "") >= cisYearStart && Number(inv.cisDeduction || 0) > 0)
-          .reduce((sum, inv) => sum + Number(inv.cisDeduction || 0), 0)
-      : 0;
-    const cisDeductedYTD = cisEnabled
-      ? bills
-          .filter(b => b.status === "Paid" && (b.paid_date || "") >= cisYearStart && Number(b.cis_deduction || 0) > 0)
-          .reduce((sum, b) => sum + Number(b.cis_deduction || 0), 0)
-      : 0;
-    // CIS300 return for current tax month (paid bills only — HMRC reports payments made, not accruals)
-    const cisReturnTaxMonth = cisEnabled
-      ? bills
-          .filter(b => b.status === "Paid" && (b.paid_date || "") >= cisTaxMonth.start && (b.paid_date || "") <= cisTaxMonth.end && Number(b.cis_deduction || 0) > 0)
-          .reduce((sum, b) => sum + Number(b.cis_deduction || 0), 0)
-      : 0;
-    const daysUntilCisDeadline = Math.ceil((new Date(cisTaxMonth.deadline) - new Date()) / 86400000);
+function pctDelta(current, prev) {
+  if (prev === 0) return null;
+  return Math.round(((current - prev) / prev) * 100);
+}
 
-    const currInv = invoices.filter(inCurr);
-    const prevInv = invoices.filter(inPrev);
+// ─── KPI Card ────────────────────────────────────────────────────────────────
 
-    // ─── Next VAT Return KPI ────────────────────────────────────────────────
-    let vatStat = null;
-    if (moduleData.isVatRegistered && moduleData.vatPeriods) {
-      const nextVatPeriod = moduleData.vatPeriods.find(p => p.status === "open" || p.status === "draft");
-      if (nextVatPeriod) {
-        let vatValue = "—";
-        try {
-          const vatCalc = calculateVATReturn(
-            invoices, bills, expenses,
-            { periodStart: nextVatPeriod.period_start, periodEnd: nextVatPeriod.period_end },
-            nextVatPeriod.scheme || "Standard"
-          );
-          vatValue = fmt(currencySymbol, Math.abs(vatCalc.box5));
-        } catch { /* calculator may fail with incomplete data */ }
-        const daysUntilDue = Math.ceil((new Date(nextVatPeriod.due_date) - new Date()) / 86400000);
-        const isOverdue = daysUntilDue < 0;
-        const isUrgent = daysUntilDue <= 14 && daysUntilDue >= 0;
-        vatStat = {
-          label: "Next VAT Return",
-          value: vatValue,
-          sub: isOverdue ? `Overdue by ${Math.abs(daysUntilDue)} days` : `Due in ${daysUntilDue} days`,
-          color: isOverdue ? "#dc2626" : isUrgent ? "#d97706" : "#2563eb",
-        };
-      }
-    }
-
-    // ─── ITSA Quarter KPI ───────────────────────────────────────────────────
-    let itsaStat = null;
-    if (moduleData.isSoleTrader && moduleData.itsaPeriods) {
-      const today = new Date();
-      const currentItsaPeriod = moduleData.itsaPeriods.find(p =>
-        new Date(p.period_start) <= today && new Date(p.period_end) >= today
-      );
-      if (currentItsaPeriod) {
-        const daysUntilDeadline = Math.ceil((new Date(currentItsaPeriod.submission_deadline) - today) / 86400000);
-        itsaStat = {
-          label: "ITSA Quarter",
-          value: currentItsaPeriod.quarter || "—",
-          sub: currentItsaPeriod.status === "submitted" ? "Submitted ✓" : `Due in ${daysUntilDeadline} days`,
-          color: currentItsaPeriod.status === "submitted" ? "#059669" : daysUntilDeadline < 14 ? "#d97706" : "#7c3aed",
-        };
-      }
-    }
-
-    // ─── Next Payroll KPI ───────────────────────────────────────────────────
-    let nextPayrollStat = null;
-    if (moduleData.hasEmployees) {
-      const lastRun = (moduleData.payrollRuns || []).find(r => r.status !== 'voided');
-      const nextPayDate = calculateNextPayDate(
-        lastRun?.pay_date,
-        orgSettings?.defaultPayFrequency || "monthly",
-        orgSettings?.defaultPayDay || "last-friday"
-      );
-      const daysUntilPayDate = Math.ceil((nextPayDate - new Date()) / 86400000);
-      const estimatedNet = lastRun?.total_net || 0;
-      nextPayrollStat = {
-        label: "Next Payroll",
-        value: estimatedNet > 0 ? fmt(currencySymbol, estimatedNet) : "Pending",
-        sub: daysUntilPayDate <= 0 ? "Due now" : `In ${daysUntilPayDate} days`,
-        color: daysUntilPayDate <= 3 ? "#d97706" : "#7c3aed",
-      };
-    }
-
-    // ─── PAYE Due KPI ───────────────────────────────────────────────────────
-    let payeDueStat = null;
-    if (moduleData.hmrcBills.length > 0) {
-      const totalPayeDue = moduleData.hmrcBills.reduce((sum, b) => sum + Number(b.total || 0), 0);
-      const earliestDue = moduleData.hmrcBills[0];
-      const daysUntilDue = Math.ceil((new Date(earliestDue.due_date) - new Date()) / 86400000);
-      const isOverdue = daysUntilDue < 0;
-      payeDueStat = {
-        label: "PAYE Due",
-        value: fmt(currencySymbol, totalPayeDue),
-        sub: isOverdue ? `Overdue by ${Math.abs(daysUntilDue)} days` : `Due in ${daysUntilDue} days`,
-        color: isOverdue ? "#dc2626" : daysUntilDue <= 7 ? "#d97706" : "#0891b2",
-      };
-    }
-
-    return [
-      { label: "Outstanding", value: fmt(currencySymbol, outstanding), sub: `${invoices.filter(i => ["Sent", "Partial"].includes(i.status)).length} invoices`, color: "#1e6be0",
-        trend: calcTrend(sumAmt(currInv, i => ["Sent", "Partial"].includes(i.status)), sumAmt(prevInv, i => ["Sent", "Partial"].includes(i.status)), false) },
-      { label: "Overdue",     value: fmt(currencySymbol, overdue),      sub: `${invoices.filter(i => i.status === "Overdue").length} invoices`, color: "#dc2626",
-        trend: calcTrend(sumAmt(currInv, i => i.status === "Overdue"), sumAmt(prevInv, i => i.status === "Overdue"), false) },
-      { label: "Paid",        value: fmt(currencySymbol, paid),         sub: "Received", color: "#059669",
-        trend: calcTrend(sumAmt(currInv, i => i.status === "Paid"), sumAmt(prevInv, i => i.status === "Paid"), true) },
-      { label: "Draft",       value: fmt(currencySymbol, draft),        sub: "Needs action", color: "#6b7280",
-        trend: calcTrend(sumAmt(currInv, i => i.status === "Draft"), sumAmt(prevInv, i => i.status === "Draft"), false) },
-      { label: "Bills Due",  value: fmt(currencySymbol, bills.filter(b => !["Paid","Void"].includes(b.status)).reduce((s,b) => s + Number(b.total||0), 0)),
-        sub: `${bills.filter(b => b.status === "Overdue").length} overdue`, color: "#dc2626" },
-      { label: "VAT Tracked", value: orgSettings?.vatReg === "Yes" ? fmt(currencySymbol, vatDue) : "Disabled", sub: orgSettings?.vatReg === "Yes" ? "Output VAT" : "Enable VAT in Settings", color: "#2563EB" },
-      ...(cisEnabled ? [
-        { label: "CIS Suffered (YTD)", value: fmt(currencySymbol, cisSufferedYTD), sub: "Reclaim via EPS", color: "#7C3AED" },
-        { label: "CIS Deducted (YTD)", value: fmt(currencySymbol, cisDeductedYTD), sub: "Owed to HMRC", color: "#D97706" },
-        { label: "CIS Return (Tax Month)", value: fmt(currencySymbol, cisReturnTaxMonth), sub: daysUntilCisDeadline < 0 ? `Overdue by ${Math.abs(daysUntilCisDeadline)}d` : `Due in ${daysUntilCisDeadline}d (CIS300)`, color: daysUntilCisDeadline < 0 ? "#dc2626" : daysUntilCisDeadline <= 7 ? "#d97706" : "#0891b2" },
-      ] : [
-        { label: "CIS Suffered (YTD)", value: "Disabled", sub: "Enable CIS in Settings", color: "#7C3AED" },
-      ]),
-      ...(vatStat ? [vatStat] : []),
-      ...(itsaStat ? [itsaStat] : []),
-      ...(nextPayrollStat ? [nextPayrollStat] : []),
-      ...(payeDueStat ? [payeDueStat] : []),
-    ];
-  }, [invoices, expenses, bills, orgSettings, currencySymbol, cisEnabled, moduleData.vatPeriods, moduleData.itsaPeriods, moduleData.isVatRegistered, moduleData.isSoleTrader, moduleData.hasEmployees, moduleData.payrollRuns, moduleData.hmrcBills, orgSettings?.defaultPayFrequency, orgSettings?.defaultPayDay]);
-
-  const overdueInvoices = useMemo(() => invoices.filter(i => i.status === "Overdue"), [invoices]);
-
+function KPICard({ icon: Icon, label, value, delta, onClick }) {
+  const clickable = typeof onClick === "function";
   return (
-    <div style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth: 1100, fontFamily: ff, background: "#f4f5f7", minHeight: "100vh" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: "#1a1a2e", margin: "0 0 3px" }}>
-          Good morning, {user?.name?.split(" ")[0] || "there"} 👋
-        </h1>
-        <p style={{ color: "#6b7280", fontSize: 12, margin: 0 }}>{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · Financial overview</p>
+    <button
+      onClick={clickable ? onClick : undefined}
+      disabled={!clickable}
+      className={[
+        "bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-sm)] text-left w-full",
+        "transition-colors duration-150",
+        clickable
+          ? "cursor-pointer hover:border-[var(--border-default)] hover:bg-[var(--surface-sunken)]"
+          : "cursor-default",
+      ].join(" ")}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[var(--text-tertiary)] flex">
+          <Icon />
+        </span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{label}</span>
       </div>
-
-      <QuickActionsBar />
-
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 24 }}>
-        {stats.map(s => {
-          const filter = STAT_FILTERS[s.label];
-          const route = STAT_ROUTES[s.label];
-          const isDisabled = s.value === "Disabled";
-          const isClickable = !isDisabled && (!!filter || !!route);
-          const isHovered = hoveredStat === s.label;
-          return (
-            <div key={s.label}
-              onClick={isClickable ? () => navigate(route || `${ROUTES.INVOICES}?status=${filter}`) : undefined}
-              onMouseEnter={isClickable ? () => setHoveredStat(s.label) : undefined}
-              onMouseLeave={isClickable ? () => setHoveredStat(null) : undefined}
-              style={{ position: "relative", background: isHovered ? "#f8faff" : "#fff", borderRadius: 12, padding: "16px 18px", border: `1px solid ${isHovered ? "#c5d8f0" : "#e8e8ec"}`, boxShadow: isHovered ? "0 2px 8px rgba(30,107,224,0.08)" : "0 1px 3px rgba(0,0,0,0.04)", cursor: isClickable ? "pointer" : "default", transition: "all 0.15s" }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", letterSpacing: "0.06em", marginBottom: 6 }}>{s.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: "#AAA", marginTop: 2 }}>{s.sub}</div>
-              {s.trend && <div style={{ fontSize: 10, fontWeight: 600, color: s.trend.color, marginTop: 4 }}>{s.trend.text}</div>}
-              {isClickable && <span style={{ position: "absolute", bottom: 8, right: 10, fontSize: 11, color: isHovered ? "#1e6be0" : "#d0d0d0", transition: "color 0.15s" }}>→</span>}
-            </div>
-          );
-        })}
+      <div className="text-2xl font-semibold text-[var(--text-primary)] tabular-nums">
+        {value}
       </div>
-
-      {/* Overdue alert */}
-      {overdueInvoices.length > 0 && (
-        <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "12px 18px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#DC2626" }}>
-            ⚠ You have {overdueInvoices.length} overdue invoice{overdueInvoices.length !== 1 ? "s" : ""} totalling {fmt(currencySymbol, overdueInvoices.reduce((s, i) => s + Number(i.total || 0), 0))}.
+      {delta && (
+        <div className="text-xs mt-1 flex items-center gap-1">
+          <span className={delta.tone === "positive" ? "text-[var(--success-600)]" : delta.tone === "negative" ? "text-[var(--danger-600)]" : "text-[var(--text-tertiary)]"}>
+            {delta.value}
           </span>
-          <button onClick={() => navigate(ROUTES.INVOICES)}
-            style={{ background: "#DC2626", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-            Take action →
-          </button>
+          {delta.caption && <span className="text-[var(--text-tertiary)]">{delta.caption}</span>}
         </div>
       )}
+    </button>
+  );
+}
 
-      <MonthEndChecklist />
+// ─── HomePage ────────────────────────────────────────────────────────────────
+
+export default function HomePage() {
+  const { user, invoices, expenses, payments, bills, orgSettings } = useContext(AppCtx);
+  const navigate = useNavigate();
+  const [period, setPeriod] = useState("this_month");
+  const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
+  const moduleData = useDashboardModuleData(user?.id, orgSettings);
+
+  const kpis = useMemo(() => {
+    const { start, end, prevStart, prevEnd } = getPeriodRange(period);
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+
+    // ── Cash position (all time) ──
+    const allPaidIn = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const allPaidOut = (bills || [])
+      .filter(b => b.status === "Paid")
+      .reduce((s, b) => s + Number(b.total || 0), 0)
+      + (expenses || []).reduce((s, e) => s + Number(e.total || 0), 0);
+    const cashPosition = allPaidIn - allPaidOut;
+
+    // Cash position 30 days ago
+    const paidIn30 = payments
+      .filter(p => { const d = parseDate(p.date); return d && d < thirtyDaysAgo; })
+      .reduce((s, p) => s + Number(p.amount || 0), 0);
+    const paidOut30 = (bills || [])
+      .filter(b => { const d = parseDate(b.paid_date); return b.status === "Paid" && d && d < thirtyDaysAgo; })
+      .reduce((s, b) => s + Number(b.total || 0), 0)
+      + (expenses || [])
+        .filter(e => { const d = parseDate(e.date); return d && d < thirtyDaysAgo; })
+        .reduce((s, e) => s + Number(e.total || 0), 0);
+    const cashPosition30 = paidIn30 - paidOut30;
+    const cashDelta = cashPosition - cashPosition30;
+
+    // ── Money in (period) ──
+    const moneyIn = sumInRange(payments, "date", start, end);
+    const moneyInPrev = sumInRange(payments, "date", prevStart, prevEnd);
+    const moneyInPct = pctDelta(moneyIn, moneyInPrev);
+
+    // ── Money out (period) ──
+    const paidBillsInPeriod = (bills || [])
+      .filter(b => b.status === "Paid")
+      .reduce((s, b) => {
+        const d = parseDate(b.paid_date);
+        if (!d || d < start || d >= end) return s;
+        return s + Number(b.total || 0);
+      }, 0);
+    const paidBillsPrev = (bills || [])
+      .filter(b => b.status === "Paid")
+      .reduce((s, b) => {
+        const d = parseDate(b.paid_date);
+        if (!d || d < prevStart || d >= prevEnd) return s;
+        return s + Number(b.total || 0);
+      }, 0);
+    const expensesInPeriod = sumInRange(expenses || [], "date", start, end);
+    const expensesPrev = sumInRange(expenses || [], "date", prevStart, prevEnd);
+    const moneyOut = paidBillsInPeriod + expensesInPeriod;
+    const moneyOutPrev = paidBillsPrev + expensesPrev;
+    const moneyOutPct = pctDelta(moneyOut, moneyOutPrev);
+
+    // ── Overdue (current) ──
+    const overdueInvoices = invoices.filter(i => i.status === "Overdue");
+    const overdueTotal = overdueInvoices.reduce((s, i) => s + Number(i.total || 0), 0);
+    const overdueCount = overdueInvoices.length;
+
+    return {
+      cashPosition: {
+        value: fmt(currSym, cashPosition),
+        delta: {
+          tone: cashDelta >= 0 ? "positive" : "negative",
+          value: `${cashDelta >= 0 ? "+" : "−"}${fmt(currSym, Math.abs(cashDelta))}`,
+          caption: "vs 30 days ago",
+        },
+      },
+      moneyIn: {
+        value: fmt(currSym, moneyIn),
+        delta: moneyInPct === null
+          ? { tone: "neutral", value: "—", caption: "no prior data" }
+          : {
+              tone: moneyInPct >= 0 ? "positive" : "negative",
+              value: `${moneyInPct >= 0 ? "↑" : "↓"} ${Math.abs(moneyInPct)}%`,
+              caption: "vs prev period",
+            },
+      },
+      moneyOut: {
+        value: fmt(currSym, moneyOut),
+        delta: moneyOutPct === null
+          ? { tone: "neutral", value: "—", caption: "no prior data" }
+          : {
+              tone: moneyOutPct >= 0 ? "negative" : "positive",
+              value: `${moneyOutPct >= 0 ? "↑" : "↓"} ${Math.abs(moneyOutPct)}%`,
+              caption: "vs prev period",
+            },
+      },
+      overdue: {
+        value: fmt(currSym, overdueTotal),
+        delta: {
+          tone: overdueCount > 0 ? "negative" : "neutral",
+          value: `${overdueCount} invoice${overdueCount !== 1 ? "s" : ""}`,
+        },
+      },
+    };
+  }, [invoices, bills, expenses, payments, period, currSym]);
+
+  const firstName = user?.name?.split(" ")[0] || "there";
+  const dateLine = new Date().toLocaleDateString("en-GB", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1280px] mx-auto">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
+            {greeting()}, {firstName}
+          </h1>
+          <p className="text-sm text-[var(--text-tertiary)] mt-1">{dateLine}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="period-select" className="text-xs font-medium text-[var(--text-secondary)]">
+            Period
+          </label>
+          <select
+            id="period-select"
+            value={period}
+            onChange={e => setPeriod(e.target.value)}
+            className="h-9 pl-3 pr-8 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-white text-sm text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]"
+          >
+            {PERIOD_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <KPICard icon={Icons.Bank}     label="Cash position" value={kpis.cashPosition.value} delta={kpis.cashPosition.delta} />
+        <KPICard icon={Icons.Download} label="Money in"      value={kpis.moneyIn.value}      delta={kpis.moneyIn.delta} />
+        <KPICard icon={Icons.Send}     label="Money out"     value={kpis.moneyOut.value}     delta={kpis.moneyOut.delta} />
+        <KPICard icon={Icons.Alert}    label="Overdue"       value={kpis.overdue.value}      delta={kpis.overdue.delta}
+                 onClick={() => navigate(`${ROUTES.INVOICES}?status=Overdue`)} />
+      </div>
+
+      {/* 2/3 + 1/3 grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="lg:col-span-2 space-y-4">
+          <CashFlowWidget />
+          <RecentInvoices invoices={invoices} orgSettings={orgSettings} />
+        </div>
+        <div className="space-y-4">
+          <NeedsAttention
+            invoices={invoices}
+            bills={bills || []}
+            orgSettings={orgSettings}
+            moduleData={moduleData}
+          />
+          <MonthEndChecklist />
+        </div>
+      </div>
+
+      {/* Full-width smart alerts (only renders when there are alerts) */}
       <SmartAlerts
-        invoices={invoices} payments={payments} expenses={expenses} orgSettings={orgSettings} bills={bills}
+        invoices={invoices}
+        payments={payments}
+        expenses={expenses}
+        orgSettings={orgSettings}
+        bills={bills}
         vatPeriods={moduleData.vatPeriods}
         itsaPeriods={moduleData.itsaPeriods}
         payrollRuns={moduleData.payrollRuns}
         employees={moduleData.employees}
-        hmrcBills={moduleData.hmrcBills}
-        hasEmployees={moduleData.hasEmployees}
       />
-      <CashFlowWidget />
-      <DebtorInsightsWidget />
-      <AIChat
-        company={{
-          name: orgSettings?.bName || orgSettings?.name || user?.name || "My Business",
-          currency: orgSettings?.currency || "GBP",
-          vat: orgSettings?.vatReg === "Yes",
-          tax_rate: orgSettings?.vatRate || 20,
-          cis_enabled: cisEnabled,
-          business_type: orgSettings?.bType || "Unknown",
-        }}
-        clients={customers || []}
-        products={catalogItems || []}
-        invoices={invoices || []}
-        expenses={expenses || []}
-        bills={bills || []}
-        onCreateInvoice={() => {}}
-      />
-      <ReportsCenter invoices={invoices} bills={bills} expenses={expenses} payments={payments} orgSettings={orgSettings} currencySymbol={currencySymbol} />
-      <CashFlowForecast invoices={invoices} payments={payments} currencySymbol={currencySymbol} />
     </div>
   );
 }

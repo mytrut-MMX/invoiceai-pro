@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { ff } from "../../constants";
 import { generateAlerts } from "../../utils/ledger/generateAlerts";
 import { ROUTES } from "../../router/routes";
 import { AppCtx } from "../../context/AppContext";
 import { supabase, supabaseReady } from "../../lib/supabase";
+import { Icons } from "../icons";
 
 const ALERT_PAGE_ROUTES = {
   "invoices":     ROUTES.INVOICES,
@@ -23,15 +23,39 @@ const getDismissed = () => { try { return JSON.parse(localStorage.getItem(LS_DIS
 const saveDismissed = (ids) => { try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify(ids)); } catch {} };
 
 const SEV = {
-  critical: { bg: "#fef2f2", border: "#fecaca", dot: "#dc2626", label: "Critical", labelColor: "#dc2626" },
-  warning:  { bg: "#fffbeb", border: "#fde68a", dot: "#d97706", label: "Warning",  labelColor: "#d97706" },
-  info:     { bg: "#eff6ff", border: "#bfdbfe", dot: "#2563eb", label: "Info",     labelColor: "#2563eb" },
+  critical: {
+    row:        "bg-[var(--danger-50)]",
+    divider:    "border-[var(--danger-100)]",
+    dot:        "bg-[var(--danger-600)]",
+    label:      "Critical",
+    labelColor: "text-[var(--danger-700)]",
+    border:     "border-[var(--danger-100)]",
+    badgeBg:    "bg-[var(--danger-50)]",
+    badgeText:  "text-[var(--danger-700)]",
+  },
+  warning: {
+    row:        "bg-[var(--warning-50)]",
+    divider:    "border-[var(--warning-100)]",
+    dot:        "bg-[var(--warning-600)]",
+    label:      "Warning",
+    labelColor: "text-[var(--warning-700)]",
+    border:     "border-[var(--warning-100)]",
+    badgeBg:    "bg-[var(--warning-50)]",
+    badgeText:  "text-[var(--warning-700)]",
+  },
+  info: {
+    row:        "bg-[var(--info-50)]",
+    divider:    "border-[var(--info-100)]",
+    dot:        "bg-[var(--info-600)]",
+    label:      "Info",
+    labelColor: "text-[var(--info-700)]",
+    border:     "border-[var(--info-100)]",
+    badgeBg:    "bg-[var(--info-50)]",
+    badgeText:  "text-[var(--info-700)]",
+  },
 };
 
-// ─── Payroll alert helpers ────────────────────────────────────────────────────
-
 const todayStr = () => new Date().toISOString().slice(0, 10);
-
 function daysUntil(dateStr) {
   if (!dateStr) return Infinity;
   const d = new Date(dateStr + "T00:00:00");
@@ -39,11 +63,9 @@ function daysUntil(dateStr) {
   now.setHours(0, 0, 0, 0);
   return Math.round((d - now) / 86400000);
 }
-
 function fmtGBP(n) {
   return Number(n).toLocaleString("en-GB", { style: "currency", currency: "GBP" });
 }
-
 function fmtDateShort(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
@@ -56,11 +78,6 @@ function generatePayrollAlerts(employees, payrollRuns, bills) {
 
   const today = todayStr();
   const activeCount = employees.filter(e => e.status === "active").length;
-
-  // ── Alert A: Payroll run due ────────────────────────────────────────────
-  // Check if any employee's next pay date is within 3 days and no run exists
-  // For monthly employees, the next pay date is roughly the end of the current month
-  // We approximate by checking if there's a run covering the current month
   const now = new Date();
   const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -71,7 +88,6 @@ function generatePayrollAlerts(employees, payrollRuns, bills) {
   );
 
   if (!hasRunThisMonth && activeCount > 0) {
-    // Assume pay date is last working day — check if month end is within 3 days
     const daysToMonthEnd = daysUntil(currentMonthEnd);
     if (daysToMonthEnd >= 0 && daysToMonthEnd <= 3) {
       const label = daysToMonthEnd === 0 ? "today" : `in ${daysToMonthEnd} day${daysToMonthEnd !== 1 ? "s" : ""}`;
@@ -87,7 +103,6 @@ function generatePayrollAlerts(employees, payrollRuns, bills) {
     }
   }
 
-  // ── Alert B: PAYE payment due to HMRC ──────────────────────────────────
   const hmrcBills = (bills || []).filter(b =>
     b.supplier_name === "HMRC"
     && b.category === "Tax & Government"
@@ -99,10 +114,8 @@ function generatePayrollAlerts(employees, payrollRuns, bills) {
   for (const bill of hmrcBills) {
     const days = daysUntil(bill.due_date);
     if (days > 7) continue;
-
     const isOverdue = days < 0;
     const amt = fmtGBP(bill.total || bill.amount || 0);
-
     alerts.push({
       id: `paye_due_${bill.id}`,
       severity: isOverdue ? "critical" : "warning",
@@ -116,11 +129,9 @@ function generatePayrollAlerts(employees, payrollRuns, bills) {
     });
   }
 
-  // ── Alert C: FPS submission overdue ────────────────────────────────────
   const overdueRuns = (payrollRuns || []).filter(r =>
     r.status === "approved" && r.pay_date && r.pay_date <= today
   );
-
   for (const run of overdueRuns) {
     alerts.push({
       id: `fps_overdue_${run.id}`,
@@ -136,19 +147,16 @@ function generatePayrollAlerts(employees, payrollRuns, bills) {
   return alerts;
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 export default function SmartAlerts({
   invoices, payments, expenses, orgSettings, bills,
   vatPeriods, itsaPeriods, payrollRuns: propsPayrollRuns,
-  employees: propsEmployees, hmrcBills, hasEmployees,
+  employees: propsEmployees,
 }) {
   const navigate = useNavigate();
   const { user } = useContext(AppCtx);
   const [dismissedIds, setDismissedIds] = useState(() => getDismissed());
   const [alertsOpen, setAlertsOpen] = useState(true);
 
-  // ── Load payroll data locally as fallback (if not passed via props) ─────
   const [localEmployees, setLocalEmployees] = useState(null);
   const [localPayrollRuns, setLocalPayrollRuns] = useState(null);
 
@@ -156,10 +164,8 @@ export default function SmartAlerts({
   const payrollRuns = propsPayrollRuns ?? localPayrollRuns;
 
   useEffect(() => {
-    // Skip local loading if data was passed via props
     if (propsEmployees !== undefined) return;
     if (!supabaseReady || !user?.id) return;
-
     let cancelled = false;
 
     (async () => {
@@ -175,17 +181,8 @@ export default function SmartAlerts({
       }
 
       const [empRes, runRes] = await Promise.all([
-        supabase
-          .from("employees")
-          .select("id, status, pay_frequency, leave_date")
-          .eq("user_id", user.id)
-          .eq("status", "active"),
-        supabase
-          .from("payroll_runs")
-          .select("id, status, period_start, period_end, pay_date, tax_year, tax_month")
-          .eq("user_id", user.id)
-          .order("pay_date", { ascending: false })
-          .limit(20),
+        supabase.from("employees").select("id, status, pay_frequency, leave_date").eq("user_id", user.id).eq("status", "active"),
+        supabase.from("payroll_runs").select("id, status, period_start, period_end, pay_date, tax_year, tax_month").eq("user_id", user.id).order("pay_date", { ascending: false }).limit(20),
       ]);
 
       if (!cancelled) {
@@ -197,7 +194,6 @@ export default function SmartAlerts({
     return () => { cancelled = true; };
   }, [user?.id, propsEmployees]);
 
-  // ── Merge existing + payroll alerts ────────────────────────────────────
   const baseAlerts = useMemo(
     () => generateAlerts(invoices, payments, expenses, orgSettings, bills),
     [invoices, payments, expenses, orgSettings, bills]
@@ -206,12 +202,10 @@ export default function SmartAlerts({
   const allAlerts = useMemo(() => {
     const extra = [];
 
-    // Payroll alerts (existing)
     if (employees && employees.length > 0) {
       extra.push(...generatePayrollAlerts(employees, payrollRuns, bills));
     }
 
-    // ── VAT Return Due ──────────────────────────────────────────────────
     if (vatPeriods?.length > 0 && orgSettings?.vatReg === "Yes") {
       const openPeriod = vatPeriods.find(p => p.status === "open" || p.status === "draft");
       if (openPeriod) {
@@ -221,9 +215,7 @@ export default function SmartAlerts({
             id: `vat_due_${openPeriod.id}`,
             severity: days < 0 ? "critical" : days <= 7 ? "warning" : "info",
             category: "vat",
-            title: days < 0
-              ? `VAT Return overdue by ${Math.abs(days)} days`
-              : `VAT Return due in ${days} days`,
+            title: days < 0 ? `VAT Return overdue by ${Math.abs(days)} days` : `VAT Return due in ${days} days`,
             description: `Period ${fmtDateShort(openPeriod.period_start)} to ${fmtDateShort(openPeriod.period_end)}`,
             actionPage: "vat",
             dismissable: days > 7,
@@ -232,11 +224,8 @@ export default function SmartAlerts({
       }
     }
 
-    // ── ITSA Quarterly Update Due ───────────────────────────────────────
     if (itsaPeriods?.length > 0 && orgSettings?.bType === "Sole Trader / Freelancer") {
-      const openItsaPeriod = itsaPeriods.find(
-        p => p.status !== "submitted" && new Date(p.period_end) <= new Date()
-      );
+      const openItsaPeriod = itsaPeriods.find(p => p.status !== "submitted" && new Date(p.period_end) <= new Date());
       if (openItsaPeriod) {
         const days = daysUntil(openItsaPeriod.submission_deadline);
         if (days <= 30) {
@@ -244,9 +233,7 @@ export default function SmartAlerts({
             id: `itsa_due_${openItsaPeriod.id}`,
             severity: days < 0 ? "critical" : days <= 7 ? "warning" : "info",
             category: "itsa",
-            title: days < 0
-              ? `ITSA submission overdue by ${Math.abs(days)} days`
-              : `ITSA quarterly update due in ${days} days`,
+            title: days < 0 ? `ITSA submission overdue by ${Math.abs(days)} days` : `ITSA quarterly update due in ${days} days`,
             description: `${openItsaPeriod.quarter} ${openItsaPeriod.tax_year}`,
             actionPage: "itsa",
             dismissable: days > 7,
@@ -255,7 +242,6 @@ export default function SmartAlerts({
       }
     }
 
-    // ── Missing supply date (VAT compliance) ─────────────────────────────
     if (orgSettings?.vatReg === "Yes" && invoices?.length > 0) {
       const missingSupplyDate = invoices.filter(inv => {
         if (inv.supply_date) return false;
@@ -293,63 +279,87 @@ export default function SmartAlerts({
     saveDismissed(next);
   };
 
-  if (visibleAlerts.length === 0) return (
-    <div style={{ marginBottom: 16, padding: "14px 18px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: 18 }}>✅</span>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#166534" }}>All clear</div>
-        <div style={{ fontSize: 12, color: "#15803d" }}>No outstanding alerts. Your finances look healthy.</div>
-      </div>
-    </div>
-  );
+  if (visibleAlerts.length === 0) return null;
+
+  const topSev = visibleAlerts.some(a => a.severity === "critical")
+    ? "critical"
+    : visibleAlerts.some(a => a.severity === "warning")
+    ? "warning"
+    : "info";
+  const badge = SEV[topSev];
 
   return (
-    <div style={{ marginBottom: 16, border: "1px solid #e8e8ec", borderRadius: 12, background: "#fff", overflow: "hidden" }}>
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
       <button
         onClick={() => setAlertsOpen(o => !o)}
-        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", background: "#f9fafb", border: "none", cursor: "pointer", fontFamily: ff, borderBottom: alertsOpen ? "1px solid #e8e8ec" : "none" }}
+        className="w-full flex items-center justify-between px-5 py-3 bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14 }}>🔔</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e" }}>Smart Alerts</span>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10,
-            background: visibleAlerts.some(a => a.severity === "critical") ? "#fef2f2" : visibleAlerts.some(a => a.severity === "warning") ? "#fffbeb" : "#eff6ff",
-            color:      visibleAlerts.some(a => a.severity === "critical") ? "#dc2626" : visibleAlerts.some(a => a.severity === "warning") ? "#d97706" : "#2563eb",
-          }}>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[var(--text-secondary)] flex">
+            <Icons.Alert />
+          </span>
+          <span className="text-sm font-semibold text-[var(--text-primary)]">Smart alerts</span>
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${badge.badgeBg} ${badge.badgeText}`}>
             {visibleAlerts.length}
           </span>
         </div>
-        <span style={{ fontSize: 11, color: "#9ca3af" }}>{alertsOpen ? "▲" : "▼"}</span>
+        <span
+          className={[
+            "text-[var(--text-tertiary)] flex transition-transform duration-200",
+            alertsOpen ? "" : "rotate-180",
+          ].join(" ")}
+        >
+          <Icons.ChevDown />
+        </span>
       </button>
 
       {alertsOpen && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <div className="border-t border-[var(--border-subtle)]">
           {visibleAlerts.map((alert, idx) => {
-            const s = SEV[alert.severity];
+            const s = SEV[alert.severity] || SEV.info;
             return (
-              <div key={alert.id} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, padding: "11px 16px", background: s.bg, borderBottom: idx < visibleAlerts.length - 1 ? `1px solid ${s.border}` : "none" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.dot, flexShrink: 0, marginTop: 4 }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 1 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a2e" }}>{alert.title}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: s.labelColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</span>
+              <div
+                key={alert.id}
+                className={[
+                  "flex items-start justify-between gap-3 px-5 py-3",
+                  s.row,
+                  idx < visibleAlerts.length - 1 ? `border-b ${s.divider}` : "",
+                ].join(" ")}
+              >
+                <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${s.dot}`} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-semibold text-[var(--text-primary)]">{alert.title}</span>
+                      <span className={`text-[10px] font-semibold uppercase tracking-wider ${s.labelColor}`}>
+                        {s.label}
+                      </span>
                     </div>
-                    {alert.description && <div style={{ fontSize: 11, color: "#6b7280" }}>{alert.description}</div>}
+                    {alert.description && (
+                      <div className="text-xs text-[var(--text-secondary)] mt-0.5">{alert.description}</div>
+                    )}
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <div className="flex items-center gap-1 flex-shrink-0">
                   {alert.actionPage && (
                     <button
                       onClick={() => navigate(ALERT_PAGE_ROUTES[alert.actionPage] || ROUTES.DASHBOARD)}
-                      style={{ fontSize: 11, fontWeight: 700, color: s.labelColor, background: "none", border: `1px solid ${s.border}`, borderRadius: 6, padding: "3px 9px", cursor: "pointer", fontFamily: ff, whiteSpace: "nowrap" }}>
+                      className={[
+                        "text-xs font-semibold bg-white border rounded-[var(--radius-sm)] px-2 py-1 cursor-pointer whitespace-nowrap transition-colors duration-150 hover:bg-[var(--surface-sunken)]",
+                        s.border,
+                        s.labelColor,
+                      ].join(" ")}
+                    >
                       View →
                     </button>
                   )}
                   {alert.dismissable && (
-                    <button onClick={() => dismissAlert(alert.id)} title="Dismiss"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 14, lineHeight: 1, padding: "2px 4px", borderRadius: 4, display: "flex", alignItems: "center" }}>
-                      ×
+                    <button
+                      onClick={() => dismissAlert(alert.id)}
+                      title="Dismiss"
+                      className="bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] w-6 h-6 rounded flex items-center justify-center transition-colors duration-150"
+                    >
+                      <Icons.X />
                     </button>
                   )}
                 </div>
