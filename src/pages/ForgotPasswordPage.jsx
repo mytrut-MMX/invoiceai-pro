@@ -45,7 +45,6 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
 
       if (!sbError) {
         setSentTo(normalizedEmail);
-        setPendingLocalReset(readPendingLocalReset());
         setStatus("sent");
         return;
       }
