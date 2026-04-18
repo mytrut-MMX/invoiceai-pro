@@ -15,6 +15,7 @@ import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { usePagination } from "../hooks/usePagination";
 import { useCISSettings } from "../hooks/useCISSettings";
 import Pagination from "../components/shared/Pagination";
+import { useToast } from "../components/ui/Toast";
 
 const FILTER_OPTS = [{ key: "all", label: "All Bills" }, ...BILL_STATUSES.map(s => ({ key: s, label: s }))];
 
@@ -90,6 +91,7 @@ export default function BillsPage({ initialShowForm = false }) {
   const { bills, setBills, orgSettings, user } = useContext(AppCtx);
   const { cisEnabled } = useCISSettings();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isVat   = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
@@ -152,6 +154,7 @@ export default function BillsPage({ initialShowForm = false }) {
       if (idx >= 0) { const u = [...prev]; u[idx] = bill; return u; }
       return [bill, ...prev];
     });
+    toast({ title: "Bill saved", variant: "success" });
     if (initialShowForm) { navigate(ROUTES.BILLS, { replace: true }); return; }
     setShowForm(false);
     setEditingBill(null);
@@ -166,9 +169,10 @@ export default function BillsPage({ initialShowForm = false }) {
     if (error) {
       console.error("[BillsPage] deleteBill failed:", error);
       setBills(snapshot);
-      alert("Failed to delete bill: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to delete bill", description: error.message, variant: "danger" });
       return;
     }
+    toast({ title: "Bill deleted", variant: "success" });
     ;(async () => {
       try {
         const { userId } = await fetchUserAccounts();
@@ -192,6 +196,7 @@ export default function BillsPage({ initialShowForm = false }) {
   const handleApprove = (bill) => {
     const updated = { ...bill, status: 'Approved' };
     setBills(prev => prev.map(b => b.id === bill.id ? updated : b));
+    toast({ title: "Bill approved", variant: "success" });
     if (user?.id) {
       ;(async () => {
         const { error } = await saveBill(user.id, updated);
@@ -219,6 +224,7 @@ export default function BillsPage({ initialShowForm = false }) {
                       : bill.status;
     const updated = { ...bill, paid_amount: newPaidAmt, paid_date: paidDate, status: newStatus };
     setBills(prev => prev.map(b => (b.id === bill.id ? updated : b)));
+    toast({ title: "Payment recorded", variant: "success" });
     setPaymentModalBill(null);
     if (user?.id) {
       ;(async () => {

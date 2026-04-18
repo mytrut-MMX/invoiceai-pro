@@ -12,6 +12,7 @@ import { postInvoiceEntry, reverseEntry, findEntryBySource } from "../../utils/l
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
 import { calculateTaxPoint, taxPointExplanation } from "../../utils/taxPoint";
+import { useToast } from "../ui/Toast";
 
 const STATUSES = ["Draft", "Sent", "Overdue", "Paid", "Void", "Partial"];
 
@@ -40,6 +41,7 @@ function Section({ children }) {
 export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertFromQuote }) {
   const { customers, catalogItems, setCatalogItems, orgSettings, invoices, setPayments, payments, quotes, user } = useContext(AppCtx);
   const { cisEnabled, cisDefaultRate } = useCISSettings();
+  const { toast } = useToast();
   const isVat = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const isEdit = !!existing;
@@ -123,6 +125,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     const duplicate = invoices.some(x => x.invoice_number === invNumber && x.id !== inv.id);
     if (duplicate) {
       setInvNumError(`Invoice number "${invNumber}" already exists. Please use a unique number.`);
+      toast({ title: "Duplicate invoice number", variant: "warning" });
       return;
     }
     setInvNumError("");
@@ -141,6 +144,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
         { action, timestamp: new Date().toISOString(), actor: user?.name || "Unknown" },
       ];
       onSave(savedInvoice);
+      toast({ title: `Invoice ${invNumber} saved`, variant: "success" });
       ;(async () => {
         try {
           const { accounts, userId } = await fetchUserAccounts();
@@ -179,6 +183,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
       { action: "Marked Paid", timestamp: new Date().toISOString(), actor: user?.name || "Unknown" },
     ];
     onSave(saved);
+    toast({ title: "Invoice marked as paid", variant: "success" });
     const existingPaid = (payments || [])
       .filter(p => p.invoice_id === saved.id)
       .reduce((s, p) => s + Number(p.amount || 0), 0);

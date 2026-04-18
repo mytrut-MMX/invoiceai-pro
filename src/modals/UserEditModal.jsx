@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icons } from "../components/icons";
+import { useToast } from "../components/ui/Toast";
 import { Field, Input, Select, Toggle, SlideToggle, Btn } from "../components/atoms";
 import { validateImageDataUrl } from "../utils/security";
 
@@ -16,6 +17,7 @@ const PRESET_THEMES = [
 ];
 
 export default function UserEditModal({ user, onClose, onSave, userAvatar, setUserAvatar, appTheme, setAppTheme, sidebarPinned, setSidebarPinned, onLogout }) {
+  const { toast } = useToast();
   const [name, setName] = useState(user.name || "");
   const [role, setRole] = useState(user.role || "Admin");
   const [email, setEmail] = useState(user.email || "");
@@ -48,6 +50,7 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
     setUserAvatar(localAvatar);
     setAppTheme({ type: themeType, color: themeColor, color2: themeColor2, accent: themeAccent });
     setSidebarPinned(pinned);
+    toast({ title: "Profile updated", variant: "success" });
     onClose();
   };
 

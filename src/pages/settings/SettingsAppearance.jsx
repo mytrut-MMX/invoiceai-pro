@@ -3,6 +3,7 @@ import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../../components/icons";
 import { Field, Input, Btn } from "../../components/atoms";
 import Section from "../../components/settings/Section";
+import { useToast } from "../../components/ui/Toast";
 
 const ACCENT_PRESETS = ["#E86C4A", "#2563EB", "#16A34A", "#D97706", "#9333EA", "#0891B2", "#E11D48", "#1A1A1A"];
 const SIDEBAR_PRESETS = [
@@ -16,6 +17,7 @@ const SIDEBAR_PRESETS = [
 
 export default function SettingsAppearance() {
   const { appTheme, setAppTheme } = useContext(AppCtx);
+  const { toast } = useToast();
 
   const [themeType,   setThemeType]   = useState(appTheme?.type || "solid");
   const [themeColor,  setThemeColor]  = useState(appTheme?.color || "#1A1A1A");
@@ -36,9 +38,11 @@ export default function SettingsAppearance() {
     try {
       setAppTheme({ type: themeType, color: themeColor, color2: themeColor2, accent: accentColor });
       setSaved(true);
+      toast({ title: "Appearance saved", variant: "success" });
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setSaveError("Something went wrong. Please try again.");
+      toast({ title: "Failed to save appearance", variant: "danger" });
     }
   };
 

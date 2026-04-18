@@ -5,9 +5,11 @@ import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../../components/atoms";
 import { fmtDate } from "../../utils/helpers";
 import Section from "../../components/settings/Section";
+import { useToast } from "../../components/ui/Toast";
 
 export default function SettingsHMRC({ orgSettings, onSave }) {
   const { user } = useContext(AppCtx);
+  const { toast } = useToast();
   const org = orgSettings || {};
 
   const [vatStagger,             setVatStagger]             = useState(org.vatStagger || 1);
@@ -80,9 +82,11 @@ export default function SettingsHMRC({ orgSettings, onSave }) {
         itsaQuarterlyReminders,
       });
       setSaved(true);
+      toast({ title: "HMRC settings saved", variant: "success" });
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setSaveError("Something went wrong. Please try again.");
+      toast({ title: "Failed to save HMRC settings", variant: "danger" });
     }
   };
 

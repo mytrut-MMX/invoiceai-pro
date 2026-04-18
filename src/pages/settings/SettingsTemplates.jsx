@@ -7,9 +7,11 @@ import { Icons } from "../../components/icons";
 import { Field, Btn } from "../../components/atoms";
 import { validateImageDataUrl } from "../../utils/security";
 import Section from "../../components/settings/Section";
+import { useToast } from "../../components/ui/Toast";
 
 export default function SettingsTemplates({ onPreview }) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     pdfTemplate, setPdfTemplate,
     companyLogo, setCompanyLogo,
@@ -36,9 +38,11 @@ export default function SettingsTemplates({ onPreview }) {
       setCompanyLogoSize(logoSize);
       setFooterText(footer);
       setSaved(true);
+      toast({ title: "Template settings saved", variant: "success" });
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setSaveError("Something went wrong. Please try again.");
+      toast({ title: "Failed to save template settings", variant: "danger" });
     }
   };
 
