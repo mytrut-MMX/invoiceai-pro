@@ -354,6 +354,13 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
               <div className="border-t border-[var(--border-subtle)]" />
               <button
                 role="menuitem"
+                onClick={() => { setMenuOpen(false); onUserClick?.(); }}
+                className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+              >
+                Edit profile
+              </button>
+              <button
+                role="menuitem"
                 onClick={() => { setMenuOpen(false); navigate(ROUTES.SETTINGS_GENERAL); }}
                 className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
               >
