@@ -4,6 +4,7 @@ import { AppCtx } from "../../context/AppContext";
 import { ROUTES } from "../../router/routes";
 import { TopBar, Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from ".";
 import UserEditModal from "../../modals/UserEditModal";
+import CommandPalette from "../CommandPalette";
 import { signOut } from "../../lib/supabase";
 import PageLoader from "../ui/PageLoader";
 import { useInactivityTimer } from "../../hooks/useInactivityTimer";
@@ -25,6 +26,7 @@ export default function AppShell() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showUserModal,    setShowUserModal]    = useState(false);
   const [storageError,     setStorageError]     = useState(null);
+  const [paletteOpen,      setPaletteOpen]      = useState(false);
 
   const [userAvatar,    setUserAvatar]    = useState(() => lsGet("ai_invoice_avatar", null));
   const [sidebarPinned, setSidebarPinned] = useState(() => lsGet("ai_invoice_sidebar_pinned", true));
@@ -42,6 +44,18 @@ export default function AppShell() {
       setStorageError(`Storage full — data may not be saved (${e.detail.keys.length} key(s) failed).`);
     window.addEventListener("storage-error", handler);
     return () => window.removeEventListener("storage-error", handler);
+  }, []);
+
+  // Global ⌘K / Ctrl+K toggles the command palette
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const { inactive: showInactivityPrompt, dismiss: dismissInactivityPrompt } = useInactivityTimer();
@@ -100,6 +114,7 @@ export default function AppShell() {
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           onMenuOpen={() => setMobileDrawerOpen(true)}
+          onSearchClick={() => setPaletteOpen(true)}
         />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar
@@ -144,6 +159,9 @@ export default function AppShell() {
           onLogout={doLogout}
         />
       )}
+
+      {/* ── Command palette ── */}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* ── User edit modal ── */}
       {showUserModal && (

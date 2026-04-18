@@ -188,7 +188,7 @@ function NavItem({ item, collapsed, pathname, navigate }) {
 
 // ─── TOP BAR (desktop) ───────────────────────────────────────────────────────
 
-export function TopBar({ user, userAvatar, onUserClick, onMenuOpen, collapsed, onCollapsedChange }) {
+export function TopBar({ user, userAvatar, onUserClick, onMenuOpen, collapsed, onCollapsedChange, onSearchClick }) {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -230,7 +230,10 @@ export function TopBar({ user, userAvatar, onUserClick, onMenuOpen, collapsed, o
       </div>
 
       {/* Search trigger (desktop only) */}
-      <button className="hidden lg:flex flex-1 max-w-sm items-center gap-2 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--surface-dark-2)] border border-white/10 text-[var(--text-tertiary)] text-[13px] cursor-pointer hover:border-white/20 transition-all duration-200">
+      <button
+        onClick={onSearchClick}
+        className="hidden lg:flex flex-1 max-w-sm items-center gap-2 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--surface-dark-2)] border border-white/10 text-[var(--text-tertiary)] text-[13px] cursor-pointer hover:border-white/20 transition-all duration-200"
+      >
         <Icons.Search />
         <span className="flex-1 text-left">Search invoices, customers...</span>
         <kbd className="text-[11px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 font-sans">⌘K</kbd>
