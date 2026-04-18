@@ -137,10 +137,13 @@ export function isMfaPending() {
 /** Read MFA preference for an email — Supabase first, localStorage fallback. */
 export async function getMfaPreference({ userId, email }) {
   const key = mfaLsKey(email);
-  let lsValue = null;
+  let lsValue = false;
   try { lsValue = localStorage.getItem(key) === "1"; } catch {}
 
-  if (!supabase || !userId) return !!lsValue;
+  if (!supabase || !userId) {
+    console.debug("[mfa] getMfaPreference: no supabase/userId, ls=", lsValue);
+    return lsValue;
+  }
 
   try {
     const { data, error } = await supabase
@@ -148,15 +151,20 @@ export async function getMfaPreference({ userId, email }) {
       .select("mfa_email_enabled")
       .eq("user_id", userId)
       .maybeSingle();
-    if (error) return !!lsValue;
+    if (error) {
+      console.warn("[mfa] getMfaPreference query error, falling back to ls:", error.message || error);
+      return lsValue;
+    }
     const enabled = !!data?.mfa_email_enabled;
+    console.debug("[mfa] getMfaPreference:", { userId, email, supabase: enabled, ls: lsValue });
     try {
       if (enabled) localStorage.setItem(key, "1");
       else         localStorage.removeItem(key);
     } catch {}
     return enabled;
-  } catch {
-    return !!lsValue;
+  } catch (err) {
+    console.warn("[mfa] getMfaPreference threw, falling back to ls:", err);
+    return lsValue;
   }
 }
 
@@ -171,11 +179,19 @@ export async function setMfaPreference({ userId, email, enabled }) {
   if (!supabase || !userId) return { error: null };
 
   try {
+    // Upsert only the columns we own — `name` is left untouched on conflict
+    // because it isn't in the payload, so PostgREST won't include it in the
+    // ON CONFLICT DO UPDATE SET clause.
     const { error } = await supabase
       .from("profiles")
-      .upsert({ user_id: userId, email, mfa_email_enabled: !!enabled }, { onConflict: "user_id" });
+      .upsert(
+        { user_id: userId, email, mfa_email_enabled: !!enabled },
+        { onConflict: "user_id" }
+      );
+    if (error) console.warn("[mfa] setMfaPreference upsert error:", error.message || error);
     return { error: error || null };
   } catch (err) {
+    console.warn("[mfa] setMfaPreference threw:", err);
     return { error: err };
   }
 }
