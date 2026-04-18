@@ -1,66 +1,92 @@
-import React from 'react';
-
-import SharedFooter from '../../components/SharedFooter';
-import SharedNav from '../../components/SharedNav';
-
-const nav = {
-  position: 'sticky', top: 0, zIndex: 100,
-  background: '#0F172A', borderBottom: '1px solid #1E293B',
-  padding: '0 2rem', display: 'flex', alignItems: 'center',
-  justifyContent: 'space-between', height: 64,
-};
+import SharedNav from "../../components/SharedNav";
+import SharedFooter from "../../components/SharedFooter";
 
 export default function LegalLayout({ title, lastUpdated, children }) {
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin: 0, background: '#FAFAF7', minHeight: '100vh' }}>
-
+    <div className="bg-[var(--surface-page)] min-h-screen">
       <SharedNav />
 
       {/* Page header */}
-      <div style={{ background: '#F5F4F0', padding: '56px 2rem 48px', textAlign: 'center', borderBottom: '1px solid #E8E6E0' }}>
-        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, color: '#111110', margin: '0 0 12px', letterSpacing: -0.5, fontFamily: 'Georgia, "Times New Roman", serif' }}>{title}</h1>
+      <div className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)] px-6 py-12 text-center">
+        <h1 className="text-3xl sm:text-4xl font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-2">
+          {title}
+        </h1>
         {lastUpdated && (
-          <p style={{ fontSize: 14, color: '#6B6B6B', margin: 0 }}>Last updated: {lastUpdated}</p>
+          <p className="text-sm text-[var(--text-secondary)] m-0">Last updated: {lastUpdated}</p>
         )}
       </div>
 
       {/* Content */}
-      <main style={{ maxWidth: 780, margin: '0 auto', padding: '56px 2rem 80px' }}>
+      <main className="max-w-[800px] mx-auto px-6 py-12">
         {children}
       </main>
 
       <SharedFooter />
-
     </div>
   );
 }
 
 /* ─── Shared prose helpers ───────────────────────────────────────────────── */
+
 export function Section({ title, children }) {
   return (
-    <section style={{ marginBottom: 40 }}>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111110', margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>{title}</h2>
-      <div style={{ fontSize: 15, color: '#374151', lineHeight: 1.75 }}>{children}</div>
+    <section className="mb-10">
+      <h2 className="text-lg font-semibold text-[var(--text-primary)] mt-8 mb-3 pb-2 border-b border-[var(--border-subtle)]">
+        {title}
+      </h2>
+      <div className="text-sm text-[var(--text-secondary)] leading-relaxed">
+        {children}
+      </div>
     </section>
   );
 }
 
-export function P({ children, style }) {
-  return <p style={{ margin: '0 0 14px', ...style }}>{children}</p>;
+export function P({ children, className = "" }) {
+  return <p className={`m-0 mb-3 ${className}`}>{children}</p>;
 }
 
 export function UL({ items }) {
   return (
-    <ul style={{ margin: '0 0 14px', paddingLeft: 22, display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <ul className="m-0 mb-3 pl-6 flex flex-col gap-1.5 list-disc">
       {items.map((item, i) => <li key={i}>{item}</li>)}
     </ul>
   );
 }
 
-export function InfoCard({ children, color = '#D97706' }) {
+const TONE_TO_CLASSES = {
+  // Common usages from the legal pages → token-mapped tones.
+  "#D97706": { bg: "bg-[var(--warning-50)]", border: "border-[var(--warning-100)]", text: "text-[var(--warning-700)]" },
+  "#0EA5E9": { bg: "bg-[var(--info-50)]",    border: "border-[var(--info-100)]",    text: "text-[var(--info-700)]" },
+  "#8B5CF6": { bg: "bg-[var(--brand-50)]",   border: "border-[var(--brand-100)]",   text: "text-[var(--brand-700)]" },
+  "#16A34A": { bg: "bg-[var(--success-50)]", border: "border-[var(--success-100)]", text: "text-[var(--success-700)]" },
+  "#10B981": { bg: "bg-[var(--success-50)]", border: "border-[var(--success-100)]", text: "text-[var(--success-700)]" },
+  "#dc2626": { bg: "bg-[var(--danger-50)]",  border: "border-[var(--danger-100)]",  text: "text-[var(--danger-700)]" },
+  "#EF4444": { bg: "bg-[var(--danger-50)]",  border: "border-[var(--danger-100)]",  text: "text-[var(--danger-700)]" },
+  "#F59E0B": { bg: "bg-[var(--warning-50)]", border: "border-[var(--warning-100)]", text: "text-[var(--warning-700)]" },
+  "#0F172A": { bg: "bg-[var(--neutral-50)]", border: "border-[var(--border-subtle)]", text: "text-[var(--text-primary)]" },
+  "#64748B": { bg: "bg-[var(--neutral-50)]", border: "border-[var(--border-subtle)]", text: "text-[var(--text-secondary)]" },
+};
+
+export function InfoCard({ children, color = "#D97706" }) {
+  const tone = TONE_TO_CLASSES[color] || TONE_TO_CLASSES["#D97706"];
   return (
-    <div style={{ background: color + '10', border: `1px solid ${color}30`, borderRadius: 10, padding: '16px 20px', marginBottom: 14, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
+    <div className={`rounded-[var(--radius-lg)] border px-5 py-4 mb-3.5 text-sm leading-relaxed ${tone.bg} ${tone.border} text-[var(--text-secondary)]`}>
       {children}
+    </div>
+  );
+}
+
+/**
+ * Right-card helper used by GdprPage to highlight individual rights.
+ * Uses the same tone-to-token mapping so all colors stay consistent
+ * across the legal pages.
+ */
+export function RightCard({ title, color, children }) {
+  const tone = TONE_TO_CLASSES[color] || TONE_TO_CLASSES["#0EA5E9"];
+  return (
+    <div className={`bg-white border rounded-[var(--radius-md)] px-4 py-3.5 mb-3 ${tone.border} border-l-4`}>
+      <div className={`text-sm font-semibold mb-1 ${tone.text}`}>{title}</div>
+      <div className="text-sm text-[var(--text-secondary)] leading-relaxed">{children}</div>
     </div>
   );
 }

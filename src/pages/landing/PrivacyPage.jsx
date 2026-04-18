@@ -98,7 +98,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="9. Cookies">
-        <P>We use cookies to operate the service and understand how it is used. For full details, please read our <Link to={ROUTES.COOKIES} style={{ color: '#0EA5E9' }}>Cookie Policy</Link>.</P>
+        <P>We use cookies to operate the service and understand how it is used. For full details, please read our <Link to={ROUTES.COOKIES} className="text-[var(--info-600)] hover:text-[var(--info-700)]">Cookie Policy</Link>.</P>
       </Section>
 
       <Section title="10. Changes to This Policy">

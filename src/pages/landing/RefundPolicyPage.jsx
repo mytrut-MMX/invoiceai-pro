@@ -37,7 +37,7 @@ export default function RefundPolicyPage() {
           InvoiceSaga's Free plan carries no charge. There is nothing to refund, and you
           may cancel or delete your account at any time without penalty. Your data can be
           exported before deletion — see our{' '}
-          <a href="/privacy" style={{ color: '#0EA5E9' }}>Privacy Policy</a> for details.
+          <a href="/privacy" className="text-[var(--info-600)] hover:text-[var(--info-700)]">Privacy Policy</a> for details.
         </P>
       </Section>
 
@@ -217,7 +217,7 @@ export default function RefundPolicyPage() {
         </P>
         <P>
           <strong>Email:</strong>{' '}
-          <a href="mailto:support@invoicesaga.com" style={{ color: '#D97706' }}>
+          <a href="mailto:support@invoicesaga.com" className="text-[var(--brand-600)] hover:text-[var(--brand-700)]">
             support@invoicesaga.com
           </a>
           <br />

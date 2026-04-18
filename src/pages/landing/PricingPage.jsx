@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
 import SharedNav from '../../components/SharedNav';
+import SharedFooter from '../../components/SharedFooter';
+import { Btn } from '../../components/atoms';
 
 const faqs = [
   { q: 'Is InvoiceSaga really free to start?', a: 'Yes — no credit card needed. The Free plan gives you everything to get started. Upgrade to Pro only when you need more.' },
@@ -10,108 +12,108 @@ const faqs = [
   { q: 'Do I need accounting knowledge to use InvoiceSaga?', a: 'No. InvoiceSaga is built for freelancers, not accountants. If you can fill in a form, you can send an invoice.' },
 ];
 
+const FREE_FEATURES = [
+  'Up to 5 active clients',
+  'Unlimited invoices',
+  'PDF generation',
+  'Email delivery',
+  'Payment status tracking',
+  'InvoiceSaga branding on invoices',
+];
+
+const PRO_FEATURES = [
+  'Everything in Free',
+  'Unlimited active clients',
+  'Remove InvoiceSaga branding',
+  'Automatic payment reminders',
+  'Recurring invoices',
+  'Priority support',
+];
+
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState(null);
 
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin: 0, background: '#FAFAF7', minHeight: '100vh' }}>
+    <div className="m-0 bg-[var(--surface-page)] min-h-screen">
       <SharedNav activePage="pricing" />
 
       {/* Hero */}
-      <section style={{ background: '#F5F4F0', padding: '80px 2rem 56px', textAlign: 'center' }}>
-        <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 400, color: '#111110', margin: '0 0 16px', letterSpacing: -0.5 }}>
+      <section className="bg-[var(--surface-sunken)] px-6 pt-20 pb-14 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[var(--text-primary)] mb-4 tracking-tight m-0">
           Simple pricing. No surprises.
         </h1>
-        <p style={{ fontSize: 16, color: '#6B6B6B', margin: 0, lineHeight: 1.6 }}>
+        <p className="text-base text-[var(--text-secondary)] m-0 leading-relaxed">
           Free to start. Upgrade only when you're ready.
         </p>
       </section>
 
       {/* Pricing cards */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '64px 2rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
-
+      <section className="max-w-[900px] mx-auto px-6 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* FREE card */}
-          <div style={{ background: '#FFFFFF', border: '1px solid #E8E6E0', borderRadius: 12, padding: '36px 32px' }}>
-            <div style={{ display: 'inline-block', background: '#FEF3C7', color: '#92400E', borderRadius: 4, padding: '3px 10px', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-9">
+            <div className="inline-block bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-4">
               Free forever
             </div>
-            <div style={{ fontSize: 48, fontWeight: 300, color: '#111110', fontFamily: 'Georgia, "Times New Roman", serif', marginBottom: 4 }}>£0</div>
-            <div style={{ fontSize: 14, color: '#9A9A9A', marginBottom: 28 }}>per month · always free</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                'Up to 5 active clients',
-                'Unlimited invoices',
-                'PDF generation',
-                'Email delivery',
-                'Payment status tracking',
-                'InvoiceSaga branding on invoices',
-              ].map((item) => (
-                <li key={item} style={{ fontSize: 14, color: '#374151', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#D97706', fontWeight: 700 }}>✓</span>{item}
+            <div className="text-5xl font-semibold text-[var(--text-primary)] mb-1">£0</div>
+            <div className="text-sm text-[var(--text-tertiary)] mb-7">per month · always free</div>
+            <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-3">
+              {FREE_FEATURES.map((item) => (
+                <li key={item} className="text-sm text-[var(--text-secondary)] flex items-center gap-2">
+                  <span className="text-[var(--brand-600)] font-bold">✓</span>{item}
                 </li>
               ))}
             </ul>
-            <Link to={ROUTES.SIGNUP} style={{ display: 'block', textAlign: 'center', padding: '13px 28px', borderRadius: 6, border: '1px solid #E8E6E0', background: 'transparent', color: '#111110', fontSize: 15, fontWeight: 500, textDecoration: 'none' }}>
-              Start free
+            <Link to={ROUTES.SIGNUP} className="block">
+              <Btn variant="outline" size="lg" className="w-full">Start free</Btn>
             </Link>
           </div>
 
           {/* PRO card */}
-          <div style={{ background: '#111110', border: '1px solid #111110', borderRadius: 12, padding: '36px 32px' }}>
-            <div style={{ display: 'inline-block', background: '#D97706', color: '#fff', borderRadius: 4, padding: '3px 10px', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div className="bg-[var(--surface-dark)] border-2 border-[var(--brand-600)] rounded-[var(--radius-xl)] p-9 relative">
+            <div className="inline-block bg-[var(--brand-600)] text-white rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-4">
               Most popular
             </div>
-            <div style={{ fontSize: 48, fontWeight: 300, color: '#FAFAF7', fontFamily: 'Georgia, "Times New Roman", serif', marginBottom: 4 }}>£9</div>
-            <div style={{ fontSize: 14, color: '#9A9A9A', marginBottom: 28 }}>per month · cancel anytime</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                'Everything in Free',
-                'Unlimited active clients',
-                'Remove InvoiceSaga branding',
-                'Automatic payment reminders',
-                'Recurring invoices',
-                'Priority support',
-              ].map((item) => (
-                <li key={item} style={{ fontSize: 14, color: '#D1D5DB', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#D97706', fontWeight: 700 }}>✓</span>{item}
+            <div className="text-5xl font-semibold text-white mb-1">£9</div>
+            <div className="text-sm text-white/50 mb-7">per month · cancel anytime</div>
+            <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-3">
+              {PRO_FEATURES.map((item) => (
+                <li key={item} className="text-sm text-white/80 flex items-center gap-2">
+                  <span className="text-[var(--brand-300)] font-bold">✓</span>{item}
                 </li>
               ))}
             </ul>
-            <Link to={ROUTES.SIGNUP} style={{ display: 'block', textAlign: 'center', padding: '13px 28px', borderRadius: 6, border: 'none', background: '#D97706', color: '#fff', fontSize: 15, fontWeight: 500, textDecoration: 'none' }}>
-              Start free — upgrade later
+            <Link to={ROUTES.SIGNUP} className="block">
+              <Btn variant="primary" size="lg" className="w-full">Start free — upgrade later</Btn>
             </Link>
           </div>
-
         </div>
       </section>
 
       {/* FAQ */}
-      <section style={{ maxWidth: 640, margin: '0 auto', padding: '0 2rem 80px' }}>
-        <h2 style={{ fontSize: 22, fontWeight: 400, color: '#111110', marginBottom: 32, fontFamily: 'Georgia, "Times New Roman", serif' }}>Common questions</h2>
+      <section className="max-w-[640px] mx-auto px-6 pb-20">
+        <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-8 tracking-tight">
+          Common questions
+        </h2>
         <div>
           {faqs.map((faq, i) => (
-            <div key={i} style={{ borderBottom: '1px solid #E8E6E0' }}>
+            <div key={i} className="border-b border-[var(--border-subtle)]">
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                style={{ width: '100%', background: 'none', border: 'none', padding: '20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', textAlign: 'left', gap: 16 }}
+                className="w-full bg-transparent border-none py-5 flex items-center justify-between cursor-pointer text-left gap-4"
               >
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#111110', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>{faq.q}</span>
-                <span style={{ fontSize: 18, color: '#9A9A9A', flexShrink: 0, lineHeight: 1 }}>{openFaq === i ? '−' : '+'}</span>
+                <span className="text-[15px] font-semibold text-[var(--text-primary)]">{faq.q}</span>
+                <span className="text-lg text-[var(--text-tertiary)] flex-shrink-0 leading-none">{openFaq === i ? '−' : '+'}</span>
               </button>
               {openFaq === i && (
-                <div style={{ paddingBottom: 20, fontSize: 14, color: '#6B6B6B', lineHeight: 1.7, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>{faq.a}</div>
+                <div className="pb-5 text-sm text-[var(--text-secondary)] leading-relaxed">{faq.a}</div>
               )}
             </div>
           ))}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0A0A09', padding: '32px 2rem', textAlign: 'center', color: '#6B6B6B', fontSize: 14, borderTop: '1px solid #1C1C1B' }}>
-        <div style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#FAFAF7' }}>Invoice<span style={{ color: '#D97706' }}>Saga</span></div>
-        <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }

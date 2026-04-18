@@ -1,33 +1,16 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
 import SharedNav from '../../components/SharedNav';
+import SharedFooter from '../../components/SharedFooter';
+import { Btn } from '../../components/atoms';
 
 const features = [
-  {
-    title: 'Create invoices in minutes',
-    desc: 'Open a new invoice, fill in your client details and line items, and hit send. Most freelancers send their first invoice in under 2 minutes.',
-  },
-  {
-    title: 'PDF generation with your branding',
-    desc: 'Every invoice is exported as a clean, professional PDF with your logo and business details. No InvoiceSaga watermark on Pro.',
-  },
-  {
-    title: 'Email delivery built in',
-    desc: 'Send invoices directly to clients from InvoiceSaga. No copy-pasting into Gmail. Track when they open it.',
-  },
-  {
-    title: 'Payment status tracking',
-    desc: 'See at a glance which invoices are sent, viewed, paid, or overdue. No spreadsheet required.',
-  },
-  {
-    title: 'Automatic payment reminders',
-    desc: 'Set it and forget it. InvoiceSaga sends polite reminders to clients before and after the due date. Pro feature.',
-  },
-  {
-    title: 'Recurring invoices',
-    desc: 'Bill the same client every month? Set up a recurring invoice and InvoiceSaga handles it automatically. Pro feature.',
-  },
+  { title: 'Create invoices in minutes',          desc: 'Open a new invoice, fill in your client details and line items, and hit send. Most freelancers send their first invoice in under 2 minutes.' },
+  { title: 'PDF generation with your branding',   desc: 'Every invoice is exported as a clean, professional PDF with your logo and business details. No InvoiceSaga watermark on Pro.' },
+  { title: 'Email delivery built in',             desc: 'Send invoices directly to clients from InvoiceSaga. No copy-pasting into Gmail. Track when they open it.' },
+  { title: 'Payment status tracking',             desc: 'See at a glance which invoices are sent, viewed, paid, or overdue. No spreadsheet required.' },
+  { title: 'Automatic payment reminders',         desc: 'Set it and forget it. InvoiceSaga sends polite reminders to clients before and after the due date. Pro feature.' },
+  { title: 'Recurring invoices',                  desc: 'Bill the same client every month? Set up a recurring invoice and InvoiceSaga handles it automatically. Pro feature.' },
 ];
 
 const comparisonRows = [
@@ -40,32 +23,32 @@ const comparisonRows = [
 
 export default function FeaturesPage() {
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin: 0, background: '#FAFAF7', minHeight: '100vh' }}>
+    <div className="m-0 bg-[var(--surface-page)] min-h-screen">
       <SharedNav activePage="features" />
 
       {/* Hero */}
-      <section style={{ background: '#F5F4F0', padding: '80px 2rem 56px', textAlign: 'center' }}>
-        <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 400, color: '#111110', margin: '0 0 16px', letterSpacing: -0.5 }}>
+      <section className="bg-[var(--surface-sunken)] px-6 pt-20 pb-14 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[var(--text-primary)] mb-4 tracking-tight m-0">
           Everything you need to get paid. Nothing you don't.
         </h1>
-        <p style={{ fontSize: 16, color: '#6B6B6B', margin: 0, lineHeight: 1.6 }}>
+        <p className="text-base text-[var(--text-secondary)] m-0 leading-relaxed">
           Built for freelancers who bill clients — not for accountants.
         </p>
       </section>
 
       {/* Features detail */}
-      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 2rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40 }}>
+      <section className="max-w-[1100px] mx-auto px-6 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {features.map((f) => (
-            <div key={f.title} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div key={f.title} className="flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--brand-600)] flex items-center justify-center flex-shrink-0">
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
                   <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="#fff" />
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize: 17, fontWeight: 600, color: '#111110', marginBottom: 6 }}>{f.title}</div>
-                <div style={{ fontSize: 15, color: '#6B6B6B', lineHeight: 1.7 }}>{f.desc}</div>
+                <div className="text-[17px] font-semibold text-[var(--text-primary)] mb-1.5">{f.title}</div>
+                <div className="text-[15px] text-[var(--text-secondary)] leading-relaxed">{f.desc}</div>
               </div>
             </div>
           ))}
@@ -73,25 +56,25 @@ export default function FeaturesPage() {
       </section>
 
       {/* Comparison */}
-      <section style={{ background: '#F5F4F0', padding: '80px 2rem' }}>
-        <h2 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 28, fontWeight: 400, color: '#111110', textAlign: 'center', margin: '0 0 48px', letterSpacing: -0.5 }}>
+      <section className="bg-[var(--surface-sunken)] px-6 py-20">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] text-center mb-12 tracking-tight m-0">
           Why not just use a spreadsheet?
         </h2>
-        <div style={{ maxWidth: 720, margin: '0 auto', borderRadius: 12, overflow: 'hidden', border: '1px solid #E8E6E0' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="max-w-[720px] mx-auto rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-subtle)]">
+          <table className="w-full border-collapse">
             <thead>
-              <tr style={{ background: '#FFFFFF' }}>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: 14, fontWeight: 600, color: '#111110', borderBottom: '1px solid #E8E6E0' }}> </th>
-                <th style={{ textAlign: 'center', padding: '14px 20px', fontSize: 14, fontWeight: 600, color: '#6B6B6B', borderBottom: '1px solid #E8E6E0', width: 140 }}>Spreadsheet</th>
-                <th style={{ textAlign: 'center', padding: '14px 20px', fontSize: 14, fontWeight: 600, color: '#111110', borderBottom: '1px solid #E8E6E0', width: 140 }}>InvoiceSaga</th>
+              <tr className="bg-[var(--surface-card)]">
+                <th className="text-left px-5 py-3.5 text-sm font-semibold text-[var(--text-primary)] border-b border-[var(--border-subtle)]"> </th>
+                <th className="text-center px-5 py-3.5 text-sm font-semibold text-[var(--text-secondary)] border-b border-[var(--border-subtle)] w-[140px]">Spreadsheet</th>
+                <th className="text-center px-5 py-3.5 text-sm font-semibold text-[var(--text-primary)] border-b border-[var(--border-subtle)] w-[140px]">InvoiceSaga</th>
               </tr>
             </thead>
             <tbody>
               {comparisonRows.map((row, i) => (
-                <tr key={row} style={{ background: i % 2 === 0 ? '#F5F4F0' : '#FFFFFF' }}>
-                  <td style={{ padding: '14px 20px', fontSize: 14, color: '#374151', borderBottom: '1px solid #E8E6E0' }}>{row}</td>
-                  <td style={{ textAlign: 'center', padding: '14px 20px', fontSize: 16, color: '#EF4444', fontWeight: 700, borderBottom: '1px solid #E8E6E0' }}>✗</td>
-                  <td style={{ textAlign: 'center', padding: '14px 20px', fontSize: 16, color: '#D97706', fontWeight: 700, borderBottom: '1px solid #E8E6E0' }}>✓</td>
+                <tr key={row} className={i % 2 === 0 ? 'bg-[var(--surface-sunken)]' : 'bg-[var(--surface-card)]'}>
+                  <td className="px-5 py-3.5 text-sm text-[var(--text-secondary)] border-b border-[var(--border-subtle)]">{row}</td>
+                  <td className="text-center px-5 py-3.5 text-base text-[var(--danger-600)] font-bold border-b border-[var(--border-subtle)]">✗</td>
+                  <td className="text-center px-5 py-3.5 text-base text-[var(--brand-600)] font-bold border-b border-[var(--border-subtle)]">✓</td>
                 </tr>
               ))}
             </tbody>
@@ -100,23 +83,19 @@ export default function FeaturesPage() {
       </section>
 
       {/* Final CTA */}
-      <section style={{ background: '#111110', padding: '80px 2rem', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '2rem', fontWeight: 400, color: '#FAFAF7', margin: '0 0 12px' }}>
+      <section className="bg-[var(--surface-dark)] px-6 py-20 text-center">
+        <h2 className="text-3xl font-semibold text-white mb-3 tracking-tight m-0">
           Start sending professional invoices today.
         </h2>
-        <p style={{ fontSize: 15, color: '#9A9A9A', margin: '0 0 32px' }}>
+        <p className="text-[15px] text-white/60 mb-8 m-0">
           Free to start — no credit card required.
         </p>
-        <Link to={ROUTES.SIGNUP} style={{ display: 'inline-block', background: '#D97706', color: '#fff', borderRadius: 8, padding: '14px 32px', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>
-          Create your free account
+        <Link to={ROUTES.SIGNUP}>
+          <Btn variant="primary" size="lg">Create your free account</Btn>
         </Link>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0A0A09', padding: '32px 2rem', textAlign: 'center', color: '#6B6B6B', fontSize: 14, borderTop: '1px solid #1C1C1B' }}>
-        <div style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#FAFAF7' }}>Invoice<span style={{ color: '#D97706' }}>Saga</span></div>
-        <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }

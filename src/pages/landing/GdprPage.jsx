@@ -1,14 +1,4 @@
-import React from 'react';
-import LegalLayout, { Section, P, UL, InfoCard } from './LegalLayout';
-
-function RightCard({ title, color, children }) {
-  return (
-    <div style={{ background: '#fff', border: `1.5px solid ${color}30`, borderLeft: `4px solid ${color}`, borderRadius: 8, padding: '14px 18px', marginBottom: 12 }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color, marginBottom: 4 }}>{title}</div>
-      <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.65 }}>{children}</div>
-    </div>
-  );
-}
+import LegalLayout, { Section, P, UL, InfoCard, RightCard } from './LegalLayout';
 
 export default function GdprPage() {
   return (
@@ -117,7 +107,7 @@ export default function GdprPage() {
 
       <Section title="11. Supervisory Authority">
         <P>If you are based in the UK, your supervisory authority is the <strong>Information Commissioner's Office (ICO)</strong>:<br />
-        Website: <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer" style={{ color: '#0EA5E9' }}>ico.org.uk</a><br />
+        Website: <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer" className="text-[var(--info-600)] hover:text-[var(--info-700)]">ico.org.uk</a><br />
         Helpline: 0303 123 1113</P>
         <P>If you are based in the EU, please contact the supervisory authority in your Member State.</P>
         <P>You have the right to lodge a complaint with your supervisory authority if you believe we have not handled your data correctly, though we encourage you to contact us first so we can resolve the matter directly.</P>

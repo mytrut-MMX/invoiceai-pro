@@ -1,35 +1,78 @@
-import { Link } from 'react-router-dom';
-import { ROUTES } from '../router/routes';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "../router/routes";
+import InvoiceSagaLogo from "./InvoiceSagaLogo";
+import { Btn } from "./atoms";
+import { Icons } from "./icons";
 
-const navStyle = {
-  position: 'sticky', top: 0, zIndex: 100,
-  background: '#FAFAF7', borderBottom: '1px solid #E8E6E0',
-  padding: '0 2rem', display: 'flex', alignItems: 'center',
-  justifyContent: 'space-between', height: 60,
-};
+const NAV_LINKS = [
+  { id: "features",  label: "Features",  to: ROUTES.FEATURES },
+  { id: "pricing",   label: "Pricing",   to: ROUTES.PRICING },
+  { id: "templates", label: "Templates", to: ROUTES.TEMPLATES },
+];
 
-export default function SharedNav({ activePage = '' }) {
-  const linkStyle = (page) => ({
-    color: activePage === page ? '#111110' : '#6B6B6B',
-    fontSize: 14,
-    fontWeight: activePage === page ? 500 : 400,
-    textDecoration: 'none',
-  });
+export default function SharedNav({ activePage = "" }) {
+  const [open, setOpen] = useState(false);
+
+  const linkCls = (id) => [
+    "text-sm transition-colors duration-150",
+    activePage === id
+      ? "text-[var(--text-primary)] font-medium"
+      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
+  ].join(" ");
 
   return (
-    <nav style={navStyle}>
-      <Link to={ROUTES.LANDING} style={{ fontSize: 20, fontWeight: 700, color: '#111110', letterSpacing: -0.5, textDecoration: 'none' }}>
-        Invoice<span style={{ color: '#D97706' }}>Saga</span>
-      </Link>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <Link to={ROUTES.FEATURES} style={linkStyle('features')}>Features</Link>
-        <Link to={ROUTES.PRICING} style={linkStyle('pricing')}>Pricing</Link>
-        <Link to={ROUTES.TEMPLATES} style={linkStyle('templates')}>Templates</Link>
-        <Link to={ROUTES.LOGIN} style={{ background: 'transparent', color: '#374151', border: '1px solid #E8E6E0', borderRadius: 6, padding: '7px 16px', fontWeight: 400, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>Log in</Link>
-        <Link to={ROUTES.SIGNUP} style={{ background: '#111110', color: '#FAFAF7', border: 'none', borderRadius: 6, padding: '7px 18px', fontWeight: 500, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>
-          Start free →
+    <nav className="sticky top-0 z-50 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] h-14">
+      <div className="max-w-[1280px] mx-auto h-full px-6 flex items-center justify-between">
+        <Link to={ROUTES.LANDING} className="no-underline">
+          <InvoiceSagaLogo height={22} />
         </Link>
+
+        <div className="hidden lg:flex items-center gap-6">
+          {NAV_LINKS.map(l => (
+            <Link key={l.id} to={l.to} className={linkCls(l.id)}>{l.label}</Link>
+          ))}
+          <div className="flex items-center gap-2 ml-2">
+            <Link to={ROUTES.LOGIN}>
+              <Btn variant="outline" size="sm">Log in</Btn>
+            </Link>
+            <Link to={ROUTES.SIGNUP}>
+              <Btn variant="primary" size="sm">Start free →</Btn>
+            </Link>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="lg:hidden flex items-center justify-center w-9 h-9 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] bg-transparent border-none cursor-pointer transition-colors duration-150"
+          aria-label="Toggle menu"
+        >
+          {open ? <Icons.X /> : <Icons.ChevDown />}
+        </button>
       </div>
+
+      {open && (
+        <div className="lg:hidden border-t border-[var(--border-subtle)] bg-[var(--surface-card)] px-6 py-4 flex flex-col gap-3">
+          {NAV_LINKS.map(l => (
+            <Link
+              key={l.id}
+              to={l.to}
+              onClick={() => setOpen(false)}
+              className={linkCls(l.id)}
+            >
+              {l.label}
+            </Link>
+          ))}
+          <div className="flex flex-col gap-2 pt-3 border-t border-[var(--border-subtle)]">
+            <Link to={ROUTES.LOGIN} onClick={() => setOpen(false)}>
+              <Btn variant="outline" size="sm">Log in</Btn>
+            </Link>
+            <Link to={ROUTES.SIGNUP} onClick={() => setOpen(false)}>
+              <Btn variant="primary" size="sm">Start free →</Btn>
+            </Link>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

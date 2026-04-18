@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
 import './TemplatesPage.css';
 import SharedNav from '../../components/SharedNav';
+import SharedFooter from '../../components/SharedFooter';
 
 const compareRows = [
   { feature: 'Quote & Invoice modes',           general: true,  construction: true  },
@@ -56,10 +57,10 @@ export default function TemplatesPage() {
   }, []);
 
   return (
-    <div style={{ minHeight:'100vh', background:'#FAFAF7', padding:'clamp(24px, 5vw, 48px) clamp(16px, 5vw, 40px)', fontFamily:"'Lato','DM Sans','Helvetica Neue',sans-serif", boxSizing:'border-box' }}>
-      <div style={{ maxWidth:960, margin:'0 auto' }}>
-
+    <div className="min-h-screen bg-[var(--surface-page)]">
       <SharedNav activePage="templates" />
+
+      <div className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10 lg:py-12 box-border">
 
       {/* PAGE HERO */}
       <section className="tp-page-hero">
@@ -68,8 +69,8 @@ export default function TemplatesPage() {
           <span>›</span>
           <span>Templates</span>
         </div>
-        <h1 style={{ fontSize:'clamp(20px, 4vw, 28px)', fontWeight:400, fontFamily:'Georgia, serif', color:'#111110', margin:'0 0 8px', letterSpacing:-0.5 }}>Invoice Templates</h1>
-        <p style={{ fontSize:14, color:'#6B6B6B', margin:'0 0 32px', lineHeight:1.6 }}>Customize your template, then download or send directly from your account.</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] m-0 mb-2 tracking-tight">Invoice Templates</h1>
+        <p className="text-sm text-[var(--text-secondary)] m-0 mb-8 leading-relaxed">Customize your template, then download or send directly from your account.</p>
       </section>
 
       {/* TEMPLATES GRID */}
@@ -251,26 +252,10 @@ export default function TemplatesPage() {
         ))}
       </section>
 
-      {/* FOOTER */}
-      <footer style={{ background:'#0A0A09', padding:'32px 2rem', textAlign:'center', color:'#6B6B6B', fontSize:14, borderTop:'1px solid #1C1C1B' }}>
-        <div style={{ marginBottom:8 }}>
-          <span style={{ color:'#D97706', fontWeight:700 }}>InvoiceSaga</span>
-          {' · '}
-          <Link to={ROUTES.LANDING}   style={{ color:'#475569', textDecoration:'none' }}>Home</Link>
-          {' · '}
-          <Link to={ROUTES.TEMPLATES} style={{ color:'#475569', textDecoration:'none' }}>Templates</Link>
-          {' · '}
-          <Link to={ROUTES.CONTACT}   style={{ color:'#475569', textDecoration:'none' }}>Contact</Link>
-          {' · '}
-          <Link to={ROUTES.PRIVACY}   style={{ color:'#475569', textDecoration:'none' }}>Privacy Policy</Link>
-          {' · '}
-          <Link to={ROUTES.TERMS}     style={{ color:'#475569', textDecoration:'none' }}>Terms of Service</Link>
-        </div>
-        <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
-      </footer>
-
       <script src="https://assets.lemonsqueezy.com/lemon.js" defer />
       </div>
+
+      <SharedFooter />
     </div>
   );
 }

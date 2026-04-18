@@ -1,7 +1,7 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
 import SharedNav from '../../components/SharedNav';
+import SharedFooter from '../../components/SharedFooter';
 
 const articles = [
   {
@@ -13,7 +13,7 @@ const articles = [
   {
     tag: 'Getting paid',
     title: 'How to chase a late payment without losing the client',
-    excerpt: 'Late payments are part of freelancing, but awkward emails don\'t have to be. Here\'s a step-by-step approach to following up firmly and professionally.',
+    excerpt: "Late payments are part of freelancing, but awkward emails don't have to be. Here's a step-by-step approach to following up firmly and professionally.",
     to: ROUTES.BLOG_POST_LATE_PAYMENT,
   },
   {
@@ -26,30 +26,38 @@ const articles = [
 
 export default function BlogPage() {
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', margin: 0, background: '#FAFAF7', minHeight: '100vh' }}>
+    <div className="m-0 bg-[var(--surface-page)] min-h-screen">
       <SharedNav activePage="blog" />
 
       {/* Hero */}
-      <section style={{ background: '#F5F4F0', padding: '80px 2rem 56px', textAlign: 'center' }}>
-        <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 400, color: '#111110', margin: '0 0 16px', letterSpacing: -0.5 }}>
+      <section className="bg-[var(--surface-sunken)] px-6 pt-20 pb-14 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[var(--text-primary)] mb-4 tracking-tight m-0">
           Invoicing advice for freelancers
         </h1>
-        <p style={{ fontSize: 16, color: '#6B6B6B', margin: 0, lineHeight: 1.6 }}>
+        <p className="text-base text-[var(--text-secondary)] m-0 leading-relaxed">
           Practical guides to help you invoice better, chase less, and get paid faster.
         </p>
       </section>
 
       {/* Article grid */}
-      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 2rem 80px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+      <section className="max-w-[1100px] mx-auto px-6 pt-16 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {articles.map((a) => (
-            <div key={a.title} style={{ background: '#FFFFFF', border: '1px solid #E8E6E0', borderRadius: 12, padding: '32px 28px', display: 'flex', flexDirection: 'column' }}>
-              <span style={{ display: 'inline-block', alignSelf: 'flex-start', background: '#FEF3C7', color: '#92400E', borderRadius: 4, padding: '3px 10px', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 16 }}>
+            <div
+              key={a.title}
+              className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-8 flex flex-col"
+            >
+              <span className="inline-block self-start bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-4">
                 {a.tag}
               </span>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#111110', margin: '0 0 12px', lineHeight: 1.4 }}>{a.title}</h2>
-              <p style={{ fontSize: 14, color: '#6B6B6B', lineHeight: 1.7, margin: '0 0 24px', flex: 1 }}>{a.excerpt}</p>
-              <Link to={a.to} style={{ fontSize: 14, fontWeight: 600, color: '#D97706', textDecoration: 'none' }}>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] m-0 mb-3 leading-snug">
+                {a.title}
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0 mb-6 flex-1">{a.excerpt}</p>
+              <Link
+                to={a.to}
+                className="text-sm font-semibold text-[var(--brand-600)] hover:text-[var(--brand-700)] no-underline"
+              >
                 Read article →
               </Link>
             </div>
@@ -57,11 +65,7 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0A0A09', padding: '32px 2rem', textAlign: 'center', color: '#6B6B6B', fontSize: 14, borderTop: '1px solid #1C1C1B' }}>
-        <div style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#FAFAF7' }}>Invoice<span style={{ color: '#D97706' }}>Saga</span></div>
-        <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }

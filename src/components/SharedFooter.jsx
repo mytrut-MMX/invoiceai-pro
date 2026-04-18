@@ -1,67 +1,43 @@
-import React from 'react';
+import { Link } from "react-router-dom";
 
-const footerStyle = {
-  background: '#0A0A09',
-  padding: '32px 2rem',
-  textAlign: 'center',
-  color: '#6B6B6B',
-  fontSize: 14,
-  borderTop: '1px solid #1C1C1B',
-};
+const FULL_LINKS = [
+  { href: "/",              label: "Home" },
+  { href: "/templates",     label: "Templates" },
+  { href: "/contact",       label: "Contact" },
+  { href: "/feedback",      label: "Feedback" },
+  { href: "/privacy",       label: "Privacy Policy" },
+  { href: "/terms",         label: "Terms of Service" },
+  { href: "/cookies",       label: "Cookie Policy" },
+  { href: "/gdpr",          label: "GDPR" },
+  { href: "/refund-policy", label: "Refund Policy" },
+];
 
-export default function SharedFooter({ links = 'full' }) {
-  const fullLinks = [
+const MIN_LINKS = [
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms",   label: "Terms of Service" },
+  { href: "/contact", label: "Contact" },
+];
 
-    { href: '/',          label: 'Home' },
-    { href: '/templates', label: 'Templates' },
-    { href: '/contact',   label: 'Contact' },
-    { href: '/feedback',  label: 'Feedback' },
-    { href: '/privacy',   label: 'Privacy Policy' },
-    { href: '/terms',     label: 'Terms of Service' },
-    { href: '/cookies',   label: 'Cookie Policy' },
-    { href: '/gdpr',      label: 'GDPR' },
-    { href: '/refund-policy', label: 'Refund Policy' },
-
-
-  ];
-
-  const minLinks = [
-    { href: '/privacy', label: 'Privacy Policy' },
-
-    { href: '/terms',   label: 'Terms of Service' },
-    { href: '/contact', label: 'Contact' },
-  ];
-
-  const activeLinks = links === 'min' ? minLinks : fullLinks;
-
+export default function SharedFooter({ links = "full" }) {
+  const activeLinks = links === "min" ? MIN_LINKS : FULL_LINKS;
   return (
-    <footer style={footerStyle}>
-      <div style={{ marginBottom: 8 }}>
-        <span style={{ color: '#D97706', fontWeight: 700 }}>InvoiceSaga</span>
+    <footer className="bg-[var(--surface-dark)] py-8 px-6">
+      <div className="max-w-[1280px] mx-auto text-center">
+        <div className="mb-3">
+          <span className="text-[var(--brand-500)] font-bold tracking-wider text-base">InvoiceSaga</span>
+        </div>
+        <div className="text-sm text-white/50 leading-relaxed">
+          {activeLinks.map((link, i) => (
+            <span key={link.href}>
+              {i > 0 && <span className="mx-2 text-white/30">·</span>}
+              <Link to={link.href} className="text-white/50 hover:text-white/70 no-underline transition-colors duration-150">
+                {link.label}
+              </Link>
+            </span>
+          ))}
+        </div>
+        <div className="text-xs text-white/40 mt-4">© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
       </div>
-      <div style={{ marginBottom: 8 }}>
-        {activeLinks.map((link, i) => (
-          <span key={link.href}>
-            {i > 0 && ' · '}
-            <a
-              href={link.href}
-              style={{ color: '#475569', textDecoration: 'none' }}
-
-   
-              onMouseEnter={(e) => {
-                e.target.style.color = '#6B6B6B';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = '#475569';
-              }}
-
-            >
-              {link.label}
-            </a>
-          </span>
-        ))}
-      </div>
-      <div>© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
     </footer>
   );
 }

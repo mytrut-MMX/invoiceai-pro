@@ -29,7 +29,7 @@ export const Field = ({ label, children, required, hint, error }) => (
 );
 
 // ─── INPUT ───────────────────────────────────────────────────────────────────
-export const Input = ({ value, onChange, placeholder, type = "text", style: sx = {}, readOnly, align = "left", error }) => {
+export const Input = ({ value, onChange, placeholder, type = "text", style: sx = {}, readOnly, align = "left", error, maxLength }) => {
   const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
   return (
     <input
@@ -38,6 +38,7 @@ export const Input = ({ value, onChange, placeholder, type = "text", style: sx =
       onChange={e => onChange?.(e.target.value)}
       placeholder={placeholder}
       readOnly={readOnly}
+      maxLength={maxLength}
       className={[
         "w-full h-9 px-3 border rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] box-border transition-colors duration-150",
         "outline-none focus:shadow-[var(--focus-ring)]",
@@ -53,12 +54,13 @@ export const Input = ({ value, onChange, placeholder, type = "text", style: sx =
 };
 
 // ─── TEXTAREA ────────────────────────────────────────────────────────────────
-export const Textarea = ({ value, onChange, placeholder, rows = 3 }) => (
+export const Textarea = ({ value, onChange, placeholder, rows = 3, maxLength }) => (
   <textarea
     value={value ?? ""}
     onChange={e => onChange(e.target.value)}
     placeholder={placeholder}
     rows={rows}
+    maxLength={maxLength}
     className="w-full min-h-[80px] px-3 py-2 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none resize-y box-border leading-6 transition-colors duration-150 focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]"
   />
 );
@@ -202,8 +204,9 @@ const BTN_VARIANTS = {
   danger:  "bg-[var(--danger-50)] text-[var(--danger-600)] border border-[var(--danger-100)] hover:bg-[var(--danger-100)]",
 };
 
-export const Btn = ({ onClick, children, variant = "primary", size = "md", disabled, icon, style: sx = {} }) => (
+export const Btn = ({ onClick, children, variant = "primary", size = "md", disabled, icon, className = "", style: sx = {}, type = "button" }) => (
   <button
+    type={type}
     onClick={onClick}
     disabled={disabled}
     className={[
@@ -213,6 +216,7 @@ export const Btn = ({ onClick, children, variant = "primary", size = "md", disab
       "disabled:opacity-50 disabled:cursor-not-allowed",
       BTN_SIZES[size] || BTN_SIZES.md,
       BTN_VARIANTS[variant] || BTN_VARIANTS.primary,
+      className,
     ].join(" ")}
     style={sx}
   >

@@ -1,47 +1,17 @@
 import { useState } from 'react';
 import SharedNav from '../../components/SharedNav';
 import SharedFooter from '../../components/SharedFooter';
-
-const s = {
-  nav: { position:'sticky', top:0, zIndex:100, background:'#FAFAF7', borderBottom:'1px solid #E8E6E0', padding:'0 2rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:60 },
-  logo: { fontSize:20, fontWeight:700, color:'#111110', letterSpacing:-0.5, textDecoration:'none' },
-  logoAccent: { color:'#D97706' },
-  navCta: { background:'#111110', color:'#FAFAF7', border:'none', borderRadius:6, padding:'7px 18px', fontWeight:500, fontSize:13, cursor:'pointer', textDecoration:'none' },
-  page: { background:'#FAFAF7', minHeight:'100vh', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
-  hero: { background:'#F5F4F0', padding:'64px 2rem 56px', textAlign:'center', borderBottom:'1px solid #E8E6E0' },
-  heroH1: { fontSize:'clamp(1.8rem, 4vw, 2.8rem)', fontWeight:400, color:'#111110', marginBottom:12, letterSpacing:-0.5, fontFamily:'Georgia, "Times New Roman", serif' },
-  heroSub: { fontSize:16, color:'#6B6B6B', maxWidth:480, margin:'0 auto' },
-  wrap: { maxWidth:900, margin:'0 auto', padding:'56px 2rem' },
-  grid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:32 },
-  card: { background:'#fff', border:'1px solid #E2E8F0', borderRadius:16, padding:'32px 28px' },
-  cardTitle: { fontSize:18, fontWeight:700, color:'#0F172A', marginBottom:6 },
-  cardSub: { fontSize:14, color:'#64748B', marginBottom:24, lineHeight:1.6 },
-  emailLink: { display:'inline-flex', alignItems:'center', gap:8, color:'#D97706', fontWeight:600, fontSize:15, textDecoration:'none' },
-  label: { display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:6 },
-  input: { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit', color:'#0F172A', background:'#fff', transition:'border 0.15s' },
-  textarea: { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit', resize:'vertical', minHeight:130, color:'#0F172A', background:'#fff', transition:'border 0.15s' },
-  select: { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit', color:'#0F172A', background:'#fff', appearance:'none', cursor:'pointer' },
-  btn: { width:'100%', padding:'12px', background:'#111110', color:'#fff', border:'none', borderRadius:8, fontSize:15, fontWeight:700, cursor:'pointer', marginTop:8, transition:'background 0.15s' },
-  btnDisabled: { width:'100%', padding:'12px', background:'#6B6B6B', color:'#fff', border:'none', borderRadius:8, fontSize:15, fontWeight:700, cursor:'not-allowed', marginTop:8 },
-  success: { background:'#ECFDF5', border:'1px solid #6EE7B7', borderRadius:10, padding:'16px 20px', textAlign:'center' },
-  error: { background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, padding:'10px 14px', fontSize:13, color:'#DC2626', marginBottom:12 },
-  infoRow: { display:'flex', alignItems:'flex-start', gap:12, marginBottom:20 },
-  infoIcon: { width:40, height:40, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:18 },
-  infoText: { flex:1 },
-  infoLabel: { fontSize:13, fontWeight:600, color:'#374151', marginBottom:2 },
-  infoValue: { fontSize:14, color:'#D97706', fontWeight:500 },
-  footer: { background:'#0A0A09', padding:'32px 2rem', textAlign:'center', color:'#6B6B6B', fontSize:14, borderTop:'1px solid #1C1C1B' },
-};
+import { Field, Input, Textarea, Select, Btn } from '../../components/atoms';
 
 const SUBJECTS = ['General Inquiry', 'Feedback', 'Bug Report', 'Complaint', 'Billing', 'Other'];
 
 export default function ContactPage() {
-  const [form, setForm] = useState({ name:'', email:'', subject:'General Inquiry', message:'' });
+  const [form, setForm] = useState({ name: '', email: '', subject: 'General Inquiry', message: '' });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
-  const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
+  const set = (k) => (v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,103 +36,97 @@ export default function ContactPage() {
   };
 
   return (
-    <div style={s.page}>
+    <div className="bg-[var(--surface-page)] min-h-screen">
       <SharedNav />
 
       {/* Hero */}
-      <div style={s.hero}>
-        <h1 style={s.heroH1}>Get in touch</h1>
-        <p style={s.heroSub}>We're here to help. Send us a message and we'll respond as soon as possible.</p>
+      <div className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)] px-6 pt-16 pb-14 text-center">
+        <h1 className="text-3xl sm:text-4xl font-semibold text-[var(--text-primary)] mb-3 tracking-tight m-0">Get in touch</h1>
+        <p className="text-base text-[var(--text-secondary)] max-w-[480px] mx-auto m-0">
+          We're here to help. Send us a message and we'll respond as soon as possible.
+        </p>
       </div>
 
-      <div style={s.wrap}>
-        <div style={s.grid}>
+      <div className="max-w-[900px] mx-auto px-6 py-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
           {/* Contact info */}
-          <div style={s.card}>
-            <div style={s.cardTitle}>Contact Information</div>
-            <div style={s.cardSub}>Reach out directly or use the form. We typically respond within 24 hours on business days.</div>
-
-            <div style={s.infoRow}>
-              <div style={{ ...s.infoIcon, background:'#EFF6FF' }}>✉️</div>
-              <div style={s.infoText}>
-                <div style={s.infoLabel}>Support & General</div>
-                <a href="mailto:support@invoicesaga.com" style={s.emailLink}>support@invoicesaga.com</a>
-              </div>
+          <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-8">
+            <div className="text-lg font-bold text-[var(--text-primary)] mb-1.5">Contact Information</div>
+            <div className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">
+              Reach out directly or use the form. We typically respond within 24 hours on business days.
             </div>
 
-            <div style={s.infoRow}>
-              <div style={{ ...s.infoIcon, background:'#FEF3C7' }}>💬</div>
-              <div style={s.infoText}>
-                <div style={s.infoLabel}>Feedback & Suggestions</div>
-                <a href="mailto:support@invoicesaga.com?subject=Feedback" style={s.emailLink}>support@invoicesaga.com</a>
+            {[
+              { iconBg: 'bg-[var(--info-50)]',    icon: '✉️', label: 'Support & General',         href: 'mailto:support@invoicesaga.com' },
+              { iconBg: 'bg-[var(--brand-50)]',   icon: '💬', label: 'Feedback & Suggestions',    href: 'mailto:support@invoicesaga.com?subject=Feedback' },
+              { iconBg: 'bg-[var(--danger-50)]',  icon: '🚨', label: 'Complaints & Billing',      href: 'mailto:support@invoicesaga.com?subject=Complaint' },
+            ].map(({ iconBg, icon, label, href }) => (
+              <div key={label} className="flex items-start gap-3 mb-5">
+                <div className={`w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0 text-lg ${iconBg}`}>{icon}</div>
+                <div className="flex-1">
+                  <div className="text-[13px] font-semibold text-[var(--text-secondary)] mb-0.5">{label}</div>
+                  <a href={href} className="inline-flex items-center gap-2 text-[var(--brand-600)] hover:text-[var(--brand-700)] font-semibold text-[15px] no-underline">
+                    support@invoicesaga.com
+                  </a>
+                </div>
               </div>
-            </div>
+            ))}
 
-            <div style={s.infoRow}>
-              <div style={{ ...s.infoIcon, background:'#FEE2E2' }}>🚨</div>
-              <div style={s.infoText}>
-                <div style={s.infoLabel}>Complaints & Billing</div>
-                <a href="mailto:support@invoicesaga.com?subject=Complaint" style={s.emailLink}>support@invoicesaga.com</a>
+            <div className="mt-8 p-4 bg-[var(--brand-50)] rounded-[var(--radius-md)] border border-[var(--brand-100)]">
+              <div className="text-[13px] font-semibold text-[var(--brand-700)] mb-1">Response Time</div>
+              <div className="text-[13px] text-[var(--brand-700)]">
+                We aim to respond to all messages within <strong>24 hours</strong> on business days (Mon–Fri).
               </div>
-            </div>
-
-            <div style={{ marginTop:32, padding:'16px', background:'#FEF3C7', borderRadius:10, border:'1px solid #FDE68A' }}>
-              <div style={{ fontSize:13, fontWeight:600, color:'#92400E', marginBottom:4 }}>Response Time</div>
-              <div style={{ fontSize:13, color:'#92400E' }}>We aim to respond to all messages within <strong>24 hours</strong> on business days (Mon–Fri).</div>
             </div>
           </div>
 
           {/* Contact form */}
-          <div style={s.card}>
-            <div style={s.cardTitle}>Send a Message</div>
-            <div style={s.cardSub}>Fill in the form below and we'll get back to you.</div>
+          <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-8">
+            <div className="text-lg font-bold text-[var(--text-primary)] mb-1.5">Send a Message</div>
+            <div className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">Fill in the form below and we'll get back to you.</div>
 
             {sent ? (
-              <div style={s.success}>
-                <div style={{ fontSize:32, marginBottom:10 }}>✅</div>
-                <div style={{ fontSize:16, fontWeight:700, color:'#065F46', marginBottom:6 }}>Message sent!</div>
-                <div style={{ fontSize:14, color:'#047857' }}>Thank you for reaching out. We'll reply to <strong>{form.email}</strong> as soon as possible.</div>
+              <div className="bg-[var(--success-50)] border border-[var(--success-200)] rounded-[var(--radius-lg)] p-5 text-center">
+                <div className="text-3xl mb-2.5">✅</div>
+                <div className="text-base font-bold text-[var(--success-700)] mb-1.5">Message sent!</div>
+                <div className="text-sm text-[var(--success-700)]">
+                  Thank you for reaching out. We'll reply to <strong>{form.email}</strong> as soon as possible.
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                {error && <div style={s.error}>{error}</div>}
-
-                <div style={{ marginBottom:14 }}>
-                  <label style={s.label}>Name <span style={{ color:'#9CA3AF', fontWeight:400 }}>(optional)</span></label>
-                  <input style={s.input} placeholder="Your name" value={form.name} onChange={set('name')} />
-                </div>
-
-                <div style={{ marginBottom:14 }}>
-                  <label style={s.label}>Email <span style={{ color:'#EF4444' }}>*</span></label>
-                  <input style={s.input} type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} required />
-                </div>
-
-                <div style={{ marginBottom:14 }}>
-                  <label style={s.label}>Subject</label>
-                  <div style={{ position:'relative' }}>
-                    <select style={s.select} value={form.subject} onChange={set('subject')}>
-                      {SUBJECTS.map(sub => <option key={sub} value={sub}>{sub}</option>)}
-                    </select>
-                    <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none', color:'#9CA3AF', fontSize:12 }}>▼</span>
+                {error && (
+                  <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3.5 py-2.5 text-[13px] text-[var(--danger-600)] mb-3">
+                    {error}
                   </div>
-                </div>
+                )}
 
-                <div style={{ marginBottom:16 }}>
-                  <label style={s.label}>Message <span style={{ color:'#EF4444' }}>*</span></label>
-                  <textarea style={s.textarea} placeholder="Tell us how we can help…" value={form.message} onChange={set('message')} required />
-                </div>
+                <Field label={<>Name <span className="text-[var(--text-tertiary)] font-normal">(optional)</span></>}>
+                  <Input value={form.name} onChange={set('name')} placeholder="Your name" />
+                </Field>
 
-                <button type="submit" style={loading ? s.btnDisabled : s.btn} disabled={loading}>
+                <Field label="Email" required>
+                  <Input type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" />
+                </Field>
+
+                <Field label="Subject">
+                  <Select value={form.subject} onChange={set('subject')} options={SUBJECTS} />
+                </Field>
+
+                <Field label="Message" required>
+                  <Textarea value={form.message} onChange={set('message')} placeholder="Tell us how we can help…" rows={5} />
+                </Field>
+
+                <Btn type="submit" variant="dark" size="lg" disabled={loading} className="w-full mt-2">
                   {loading ? 'Sending…' : 'Send Message →'}
-                </button>
+                </Btn>
               </form>
             )}
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       <SharedFooter />
     </div>
   );

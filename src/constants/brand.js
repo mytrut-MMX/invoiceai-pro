@@ -1,27 +1,29 @@
+// Aligned with src/styles/tokens.css. Prefer importing tokens via CSS variables
+// in components — this object is kept for any non-React or build-time consumer.
 export const brand = {
   colors: {
-    primary:       '#111110',
-    background:    '#FAFAF7',
-    surface:       '#F5F4F0',
-    border:        '#E8E6E0',
-    accent:        '#D97706',
-    accentLight:   '#FEF3C7',
-    accentDark:    '#92400E',
-    textPrimary:   '#111110',
-    textSecondary: '#6B6B6B',
-    textMuted:     '#9A9A9A',
-    dark:          '#0A0A09',
+    primary:       '#1C1917',  // var(--text-primary)
+    background:    '#F8F7F4',  // var(--surface-page)
+    surface:       '#F1F0EC',  // var(--surface-sunken)
+    border:        '#E7E5E4',  // var(--border-subtle)
+    accent:        '#4F46E5',  // var(--brand-600)
+    accentLight:   '#EEF2FF',  // var(--brand-50)
+    accentDark:    '#4338CA',  // var(--brand-700)
+    textPrimary:   '#1C1917',  // var(--text-primary)
+    textSecondary: '#57534E',  // var(--text-secondary)
+    textMuted:     '#A8A29E',  // var(--text-tertiary)
+    dark:          '#1C1917',  // var(--surface-dark)
   },
   fonts: {
-    sans:  '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    sans:  '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
     serif: 'Georgia, "Times New Roman", serif',
   },
-  radii: { sm:4, md:6, lg:10, xl:12 },
+  radii: { sm: 4, md: 6, lg: 8, xl: 12 },
   nav: {
-    height: 60,
-    background: '#FAFAF7',
-    borderBottom: '1px solid #E8E6E0',
+    height: 56,
+    background: '#FFFFFF',
+    borderBottom: '1px solid #E7E5E4',
   },
   tagline: 'Invoicing built for freelancers',
   description: 'Professional invoices in minutes. Get paid faster.',
-}
+};
