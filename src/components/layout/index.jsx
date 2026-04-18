@@ -152,8 +152,8 @@ function NavItem({ item, collapsed, pathname, navigate }) {
       <button
         onClick={() => navigate(route)}
         className={[
-          "relative w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-md)] border-none cursor-pointer transition-all duration-200 text-[13px] text-left",
-          addRoute ? "pr-8" : "pr-3",
+          "relative w-full flex items-center gap-[10px] px-[13px] py-[7px] rounded-[var(--radius-md)] border-none cursor-pointer transition-all duration-200 text-[12.5px] text-left",
+          addRoute ? "pr-8" : "",
           on
             ? "bg-[var(--brand-50)] text-[var(--brand-700)] font-medium"
             : "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]",
@@ -318,11 +318,11 @@ export function Sidebar({ user, onUserClick, onLogout, collapsed = false, onColl
       style={{ width: collapsed ? SIDEBAR_ICON : SIDEBAR_FULL }}
     >
       {/* Scrollable nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2">
+      <nav className="flex-1 overflow-y-auto py-[13px] px-[8px]">
         {visibleGroups.map(group => (
-          <div key={group.id} className="mb-3">
+          <div key={group.id} className="mb-[21px]">
             {!collapsed && group.label && (
-              <div className="px-3 py-1 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-[0.06em] mb-1 select-none">
+              <div className="px-[13px] py-1 text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-[0.06em] mb-[5px] select-none">
                 {group.label}
               </div>
             )}
