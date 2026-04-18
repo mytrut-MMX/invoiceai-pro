@@ -4,6 +4,7 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { supabase } from "../lib/supabase";
+import { SkeletonCard } from "../components/ui/Skeleton";
 
 const JournalTab      = lazy(() => import("./ledger/JournalTab"));
 const AccountsTab     = lazy(() => import("./ledger/AccountsTab"));
@@ -18,7 +19,10 @@ const TABS = [
 ];
 
 const TabFallback = () => (
-  <div style={{ textAlign:"center", padding:40, color:"#9ca3af", fontSize:14 }}>Loading…</div>
+  <div className="space-y-4 p-4">
+    <SkeletonCard />
+    <SkeletonCard />
+  </div>
 );
 
 export default function LedgerPage() {

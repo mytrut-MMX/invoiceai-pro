@@ -17,6 +17,7 @@ import { useCISSettings } from "../hooks/useCISSettings";
 import Pagination from "../components/shared/Pagination";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const FILTER_OPTS = [{ key: "all", label: "All Bills" }, ...BILL_STATUSES.map(s => ({ key: s, label: s }))];
 
@@ -77,7 +78,7 @@ function SummaryCard({ label, value, tone = "neutral" }) {
 
 
 export default function BillsPage({ initialShowForm = false }) {
-  const { bills, setBills, orgSettings, user } = useContext(AppCtx);
+  const { bills, setBills, orgSettings, user, businessDataHydrated } = useContext(AppCtx);
   const { cisEnabled } = useCISSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -222,6 +223,8 @@ export default function BillsPage({ initialShowForm = false }) {
       })();
     }
   };
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (showForm) return (
     <BillFormPanel

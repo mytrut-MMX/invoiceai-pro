@@ -5,6 +5,7 @@ import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 import { StatusBadge } from "../components/shared/moduleListUI";
 import { upsert, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
@@ -197,11 +198,7 @@ export default function EmployeesPage() {
 
   // ─── loading state ─────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:T.pageBg, minHeight:"100vh", fontFamily:ff }}>
-        <div style={{ textAlign:"center", padding:"80px 24px", color:T.muted, fontSize:14 }}>Loading employees…</div>
-      </div>
-    );
+    return <ListSkeleton />;
   }
 
   // ─── render ───────────────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import { saveSupplier, deleteSupplier } from "../lib/dataAccess";
 import SupplierFormPanel from "../components/suppliers/SupplierFormPanel";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -66,7 +67,7 @@ function SummaryCard({ label, value, tone = "neutral" }) {
 
 
 export default function SuppliersPage({ initialShowForm = false }) {
-  const { suppliers, setSuppliers, orgSettings, user, bills } = useContext(AppCtx);
+  const { suppliers, setSuppliers, orgSettings, user, bills, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const { toast } = useToast();
@@ -155,6 +156,8 @@ export default function SuppliersPage({ initialShowForm = false }) {
     });
     return map;
   }, [bills]);
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (showForm) {
     return (

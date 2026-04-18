@@ -12,6 +12,7 @@ import { Field, Input, Select, Textarea, Btn, StatusBadge } from "../components/
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const METHOD_ICON = {
   "Bank Transfer": "🏦", "Credit Card": "💳", "Cash": "💵",
@@ -241,7 +242,7 @@ function PaymentModal({ existing, onClose, onSave }) {
 
 // ─── Payments Page ────────────────────────────────────────────────────────────
 export default function PaymentsPage({ initialShowForm = false }) {
-  const { payments, setPayments, orgSettings, user } = useContext(AppCtx);
+  const { payments, setPayments, orgSettings, user, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -312,6 +313,8 @@ export default function PaymentsPage({ initialShowForm = false }) {
   const totalReceived = payments.filter(p=>p.status!=="Refunded").reduce((s,p)=>s+Number(p.amount||0),0);
   const unreconciledCount = payments.filter(p=>p.status!=="Reconciled").length;
   const hasFilters = search || filterMethod !== "All" || filterStatus !== "All";
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   // Detail view
   if (viewingPayment) {

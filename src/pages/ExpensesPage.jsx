@@ -14,6 +14,7 @@ import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 function expNextNum(expenses) {
   return nextNum("EXP", expenses.map(e => ({ invoice_number: e.expense_number })));
@@ -106,7 +107,7 @@ function SummaryCard({ label, value, tone = "neutral" }) {
 
 
 export default function ExpensesPage({ initialShowForm = false }) {
-  const { expenses, setExpenses, orgSettings, user } = useContext(AppCtx);
+  const { expenses, setExpenses, orgSettings, user, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -183,6 +184,8 @@ export default function ExpensesPage({ initialShowForm = false }) {
       }
     })();
   };
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (showForm) return (
     <ExpenseForm

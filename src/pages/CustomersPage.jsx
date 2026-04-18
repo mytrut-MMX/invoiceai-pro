@@ -10,6 +10,7 @@ import CustomerForm from "../modals/CustomerModal";
 import { deleteCustomer as deleteCustomerFromDb } from "../lib/dataAccess";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -42,7 +43,7 @@ function ActionBtn({ onClick, title, icon, tone = "neutral" }) {
 }
 
 export default function CustomersPage({ initialShowForm = false }) {
-  const { customers, setCustomers, orgSettings, invoices, quotes, payments, user } = useContext(AppCtx);
+  const { customers, setCustomers, orgSettings, invoices, quotes, payments, user, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -116,6 +117,8 @@ export default function CustomersPage({ initialShowForm = false }) {
       outstanding: Math.max(0, totalInvoiced - totalCollected),
     };
   }, [customers, invoices, payments]);
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (showForm) {
     return (

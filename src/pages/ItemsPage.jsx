@@ -9,6 +9,7 @@ import ItemForm from "../modals/ItemModal";
 import { deleteCatalogItem } from "../lib/dataAccess";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const TYPE_COLORS = {
   Service:   "var(--info-600)",
@@ -68,7 +69,7 @@ function SummaryCard({ label, value, tone = "neutral" }) {
 
 
 export default function ItemsPage({ initialShowForm = false }) {
-  const { orgSettings, catalogItems, setCatalogItems, invoices, quotes, user } = useContext(AppCtx);
+  const { orgSettings, catalogItems, setCatalogItems, invoices, quotes, user, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const { toast } = useToast();
   const isVat = orgSettings?.vatReg === "Yes";
@@ -127,6 +128,8 @@ export default function ItemsPage({ initialShowForm = false }) {
   const servicesCount = catalogItems.filter(i => i.type === "Service").length;
   const materialsCount = catalogItems.filter(i => i.type === "Material").length;
   const hasFilters = search || typeFilter !== "All" || statusFilter !== "All";
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (showForm) return (
     <ItemForm

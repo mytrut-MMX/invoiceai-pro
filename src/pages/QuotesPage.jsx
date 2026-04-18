@@ -12,6 +12,7 @@ import QuoteFormPanel from "../components/quotes/QuoteFormPanel";
 import QuoteViewPanel from "../components/quotes/QuoteViewPanel";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -63,7 +64,7 @@ function SummaryCard({ label, value, tone = "neutral" }) {
 
 
 export default function QuotesPage({ initialShowForm = false }) {
-  const { quotes, setQuotes, invoices, setInvoices, orgSettings } = useContext(AppCtx);
+  const { quotes, setQuotes, invoices, setInvoices, orgSettings, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -156,6 +157,8 @@ export default function QuotesPage({ initialShowForm = false }) {
     invoiced: quotes.filter(q => q.status === "Invoiced").length,
   };
   const hasFilters = search || filterStatus !== "All";
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (isViewPage) {
     return (
