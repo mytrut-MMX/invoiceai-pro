@@ -47,17 +47,17 @@ export default function FeedbackPage() {
     <div className="bg-[var(--surface-page)] min-h-screen">
       <SharedNav activePage="feedback" />
 
-      <div className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)] px-6 pt-16 pb-12 text-center">
-        <h1 className="text-3xl sm:text-4xl font-semibold text-[var(--text-primary)] mb-3 tracking-tight m-0">
+      <div className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)] px-[21px] sm:px-[34px] py-[55px] text-center">
+        <h1 className="text-[34px] font-semibold text-[var(--text-primary)] mb-[13px] tracking-tight m-0">
           We want to hear from you
         </h1>
-        <p className="text-base text-[var(--text-secondary)] max-w-[520px] mx-auto m-0 leading-relaxed">
+        <p className="text-[16px] text-[var(--text-secondary)] max-w-[520px] mx-auto m-0 leading-relaxed">
           Something broken? Have an idea? Not happy with something? Tell us — we read and respond to every message.
         </p>
       </div>
 
-      <div className="max-w-[900px] mx-auto px-6 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="max-w-[900px] mx-auto px-[21px] sm:px-[34px] py-[55px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[21px]">
 
           {/* Left — How we handle feedback */}
           <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-8 shadow-[0_2px_24px_rgba(0,0,0,0.06)]">
@@ -132,7 +132,7 @@ export default function FeedbackPage() {
                   <div className="text-[11px] text-[var(--text-tertiary)] text-right mt-1">{form.message.length}/4000</div>
                 </Field>
 
-                <Btn onClick={handleSubmit} variant="dark" size="lg" disabled={loading} className="w-full mt-2">
+                <Btn onClick={handleSubmit} variant="dark" size="lg" disabled={loading} className="w-full mt-[34px]">
                   {loading ? 'Sending…' : 'Send feedback →'}
                 </Btn>
               </div>

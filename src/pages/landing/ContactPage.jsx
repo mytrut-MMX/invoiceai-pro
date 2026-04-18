@@ -40,15 +40,15 @@ export default function ContactPage() {
       <SharedNav />
 
       {/* Hero */}
-      <div className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)] px-6 pt-16 pb-14 text-center">
-        <h1 className="text-3xl sm:text-4xl font-semibold text-[var(--text-primary)] mb-3 tracking-tight m-0">Get in touch</h1>
-        <p className="text-base text-[var(--text-secondary)] max-w-[480px] mx-auto m-0">
+      <div className="bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)] px-[21px] sm:px-[34px] py-[55px] text-center">
+        <h1 className="text-[34px] font-semibold text-[var(--text-primary)] mb-[13px] tracking-tight m-0">Get in touch</h1>
+        <p className="text-[16px] text-[var(--text-secondary)] max-w-[480px] mx-auto m-0">
           We're here to help. Send us a message and we'll respond as soon as possible.
         </p>
       </div>
 
-      <div className="max-w-[900px] mx-auto px-6 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="max-w-[900px] mx-auto px-[21px] sm:px-[34px] py-[55px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[21px]">
 
           {/* Contact info */}
           <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-8">
@@ -118,7 +118,7 @@ export default function ContactPage() {
                   <Textarea value={form.message} onChange={set('message')} placeholder="Tell us how we can help…" rows={5} />
                 </Field>
 
-                <Btn type="submit" variant="dark" size="lg" disabled={loading} className="w-full mt-2">
+                <Btn type="submit" variant="dark" size="lg" disabled={loading} className="w-full mt-[34px]">
                   {loading ? 'Sending…' : 'Send Message →'}
                 </Btn>
               </form>

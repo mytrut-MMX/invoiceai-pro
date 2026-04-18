@@ -36,15 +36,15 @@ function FeatureIcon({ Icon, tone = 'brand' }) {
 function FeatureCard({ feature, dark = false }) {
   const Icon = feature.icon;
   return dark ? (
-    <div className="bg-[var(--surface-dark)] rounded-[var(--radius-lg)] px-9 py-10 h-full">
+    <div className="bg-[var(--surface-dark)] rounded-[var(--radius-lg)] p-[21px] sm:p-[34px] h-full">
       <FeatureIcon Icon={Icon} tone="dark" />
-      <div className="text-lg font-semibold text-white mb-2">{feature.title}</div>
+      <div className="text-lg font-semibold text-white mb-[8px]">{feature.title}</div>
       <div className="text-sm text-white/60 leading-relaxed">{feature.desc}</div>
     </div>
   ) : (
-    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] px-6 py-7 h-full">
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-[21px] sm:p-[34px] h-full">
       <FeatureIcon Icon={Icon} />
-      <div className="text-base font-semibold text-[var(--text-primary)] mb-2">{feature.title}</div>
+      <div className="text-base font-semibold text-[var(--text-primary)] mb-[8px]">{feature.title}</div>
       <div className="text-sm text-[var(--text-secondary)] leading-relaxed">{feature.desc}</div>
     </div>
   );
@@ -53,9 +53,9 @@ function FeatureCard({ feature, dark = false }) {
 function FaqSection() {
   const [open, setOpen] = useState(null);
   return (
-    <div className="bg-[var(--surface-page)] px-6 py-16">
+    <div className="bg-[var(--surface-page)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
       <div className="max-w-[680px] mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] text-center mb-12 tracking-tight">
+        <h2 className="text-[34px] font-semibold text-[var(--text-primary)] text-center mb-[55px] tracking-tight">
           Got questions?
         </h2>
         <div>
@@ -135,20 +135,20 @@ export default function LandingPage() {
       </div>
 
       {/* Hero */}
-      <section className="bg-[var(--surface-page)] px-6 pt-24 pb-20">
-        <div className="max-w-[1100px] mx-auto grid gap-16 items-center grid-cols-1 lg:grid-cols-2">
+      <section className="bg-[var(--surface-page)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+        <div className="max-w-[1280px] mx-auto grid gap-[34px] lg:gap-[55px] items-center grid-cols-1 lg:grid-cols-2">
           {/* Left column */}
           <div>
-            <div className="inline-block bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-3 py-1 text-xs font-medium mb-6 tracking-wide">
+            <div className="inline-block bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-[13px] py-1 text-xs font-medium mb-[21px] tracking-wide">
               ✨ Invoicing built for freelancers
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-[var(--text-primary)] leading-[1.1] mb-5 tracking-tight">
+            <h1 className="text-[34px] lg:text-[55px] font-semibold text-[var(--text-primary)] leading-[1.1] mb-[21px] tracking-tight">
               Professional invoices. Sent in minutes. Get paid faster.
             </h1>
-            <p className="text-lg text-[var(--text-secondary)] max-w-[560px] mb-10 leading-relaxed">
+            <p className="text-[21px] text-[var(--text-secondary)] max-w-[560px] mb-[34px] leading-[34px]">
               No learning curve, no bloat. Just clean invoices you can send in minutes — so you can get back to the work you actually love.
             </p>
-            <div className="flex gap-3 flex-wrap items-center">
+            <div className="flex gap-[13px] flex-wrap items-center">
               <Link to={ROUTES.SIGNUP}>
                 <Btn variant="primary" size="lg">Start free — no card needed</Btn>
               </Link>
@@ -213,27 +213,27 @@ export default function LandingPage() {
 
       {/* Features */}
       <div className="bg-[var(--surface-sunken)]">
-        <div className="max-w-[1100px] mx-auto px-6 py-24">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[var(--text-primary)] text-center mb-3 tracking-tight">
+        <div className="max-w-[1280px] mx-auto px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+          <h2 className="text-[34px] font-semibold text-[var(--text-primary)] text-center mb-[21px] tracking-tight">
             Built around how you actually work.
           </h2>
-          <p className="text-base text-[var(--text-secondary)] text-center mb-14 max-w-[520px] mx-auto">
+          <p className="text-[16px] text-[var(--text-secondary)] text-center mb-[55px] max-w-[520px] mx-auto">
             No bloat. Every feature earns its place.
           </p>
 
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-[21px]">
             {/* Row 1 — wide left, narrow right */}
-            <div className="grid gap-5 grid-cols-1 lg:grid-cols-[2fr_1fr]">
+            <div className="grid gap-[21px] grid-cols-1 lg:grid-cols-[2fr_1fr]">
               <FeatureCard feature={features[0]} dark />
               <FeatureCard feature={features[1]} />
             </div>
             {/* Row 2 — narrow left, wide right */}
-            <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1fr_2fr]">
+            <div className="grid gap-[21px] grid-cols-1 lg:grid-cols-[1fr_2fr]">
               <FeatureCard feature={features[2]} />
               <FeatureCard feature={features[3]} dark />
             </div>
             {/* Row 3 — three equal */}
-            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-[21px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               <FeatureCard feature={features[4]} />
               <FeatureCard feature={features[5]} />
               <FeatureCard feature={{ icon: Icons.Check, title: 'PDF Export', desc: 'Download any invoice as a professional PDF — ready to send or archive.' }} />
@@ -244,11 +244,11 @@ export default function LandingPage() {
 
       {/* How it works */}
       <div id="how-it-works" className="bg-[var(--surface-card)]">
-        <div className="max-w-[1100px] mx-auto px-6 py-24">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[var(--text-primary)] text-center mb-3 tracking-tight">
+        <div className="max-w-[1280px] mx-auto px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+          <h2 className="text-[34px] font-semibold text-[var(--text-primary)] text-center mb-[21px] tracking-tight">
             Three steps. Zero confusion.
           </h2>
-          <p className="text-base text-[var(--text-secondary)] text-center mb-14 max-w-[520px] mx-auto">
+          <p className="text-[16px] text-[var(--text-secondary)] text-center mb-[55px] max-w-[520px] mx-auto">
             You'll send your first invoice before finishing your coffee.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 relative">
@@ -278,12 +278,12 @@ export default function LandingPage() {
       </div>
 
       {/* Comparison */}
-      <div className="bg-[var(--surface-page)] px-6 py-24">
+      <div className="bg-[var(--surface-page)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
         <div className="max-w-[900px] mx-auto">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[var(--text-primary)] text-center mb-3 tracking-tight">
+          <h2 className="text-[34px] font-semibold text-[var(--text-primary)] text-center mb-[21px] tracking-tight">
             Finally, an invoicing tool that gets out of your way.
           </h2>
-          <p className="text-base text-[var(--text-secondary)] text-center mb-12 max-w-[520px] mx-auto">
+          <p className="text-[16px] text-[var(--text-secondary)] text-center mb-[55px] max-w-[520px] mx-auto">
             You don't need a CFO to use InvoiceSaga.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -327,12 +327,12 @@ export default function LandingPage() {
       </div>
 
       {/* Social proof */}
-      <div className="bg-[var(--surface-sunken)] px-6 py-20">
+      <div className="bg-[var(--surface-sunken)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
         <div className="max-w-[900px] mx-auto">
-          <h2 className="text-2xl font-semibold text-[var(--text-primary)] text-center mb-10 tracking-tight">
+          <h2 className="text-2xl font-semibold text-[var(--text-primary)] text-center mb-[34px] tracking-tight">
             Built for how freelancers actually work
           </h2>
-          <div className="flex gap-6 justify-center flex-wrap">
+          <div className="flex gap-[21px] justify-center flex-wrap">
             {[
               { headline: '2 min',    sub: 'Average time to send first invoice' },
               { headline: 'Free',     sub: 'Start invoicing with zero upfront cost' },
@@ -355,25 +355,25 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <div id="pricing" className="bg-[var(--surface-sunken)]">
-        <div className="max-w-[1100px] mx-auto px-6 py-24">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[var(--text-primary)] text-center mb-3 tracking-tight">
+        <div className="max-w-[1280px] mx-auto px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+          <h2 className="text-[34px] font-semibold text-[var(--text-primary)] text-center mb-[21px] tracking-tight">
             Simple, honest pricing
           </h2>
-          <p className="text-base text-[var(--text-secondary)] text-center mb-4 max-w-[520px] mx-auto">
+          <p className="text-[16px] text-[var(--text-secondary)] text-center mb-[8px] max-w-[520px] mx-auto">
             Start free, upgrade when you need more.
           </p>
-          <div className="text-center mb-10 text-sm text-[var(--text-tertiary)]">
+          <div className="text-center mb-[55px] text-sm text-[var(--text-tertiary)]">
             Free during beta · No credit card required · Cancel anytime
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[700px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[21px] max-w-[700px] mx-auto">
             {/* Free */}
-            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-9">
+            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-[34px]">
               <div className="text-lg font-semibold text-[var(--text-primary)] mb-2">Free</div>
               <div className="text-4xl font-semibold text-[var(--text-primary)] mb-1">Free</div>
               <div className="text-sm text-[var(--text-tertiary)] mb-6">always free · no card needed</div>
-              <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-3">
+              <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-[13px]">
                 {['Up to 5 invoices/month', '2 clients', 'Basic templates', 'Email support'].map((item, i) => (
-                  <li key={i} className="text-sm text-[var(--text-secondary)] flex items-center gap-2">
+                  <li key={i} className="text-sm text-[var(--text-secondary)] flex items-center gap-[8px]">
                     <span className="text-[var(--brand-600)] font-bold">✓</span>
                     {item}
                   </li>
@@ -385,17 +385,17 @@ export default function LandingPage() {
             </div>
 
             {/* Pro */}
-            <div className="bg-[var(--surface-dark)] border-2 border-[var(--brand-600)] rounded-[var(--radius-xl)] p-9 relative">
+            <div className="bg-[var(--surface-dark)] border-2 border-[var(--brand-600)] rounded-[var(--radius-xl)] p-[34px] relative">
               <div className="inline-block bg-[var(--brand-600)] text-white rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold mb-4 tracking-wider">
                 Most popular
               </div>
               <div className="text-lg font-semibold text-white mb-2">Pro</div>
               <div className="text-4xl font-semibold text-white mb-1">£9</div>
               <div className="text-sm text-white/50 mb-6">per month · cancel anytime</div>
-              <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-3">
+              <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-[13px]">
                 <li className="text-[13px] italic text-white/50 mb-1">Everything in Free, plus:</li>
                 {['Unlimited invoices', 'Unlimited clients', 'Recurring invoices', 'Auto email reminders', 'Analytics & reports', 'Priority support'].map((item, i) => (
-                  <li key={i} className="text-sm text-white/80 flex items-center gap-2">
+                  <li key={i} className="text-sm text-white/80 flex items-center gap-[8px]">
                     <span className="text-[var(--brand-300)] font-bold">✓</span>
                     {item}
                   </li>
@@ -416,8 +416,8 @@ export default function LandingPage() {
       </div>
 
       {/* CTA */}
-      <section className="bg-[var(--surface-dark)] px-6 py-24">
-        <div className="max-w-[1100px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <section className="bg-[var(--surface-dark)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+        <div className="max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-[34px] lg:gap-[55px] items-center">
           {/* Left */}
           <div>
             <div className="text-[11px] font-semibold tracking-widest uppercase text-white/60 mb-4">

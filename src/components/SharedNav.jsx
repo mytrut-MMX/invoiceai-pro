@@ -15,24 +15,24 @@ export default function SharedNav({ activePage = "" }) {
   const [open, setOpen] = useState(false);
 
   const linkCls = (id) => [
-    "text-sm transition-colors duration-150",
+    "text-[13px] transition-colors duration-150",
     activePage === id
       ? "text-[var(--text-primary)] font-medium"
       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
   ].join(" ");
 
   return (
-    <nav className="sticky top-0 z-50 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] h-14">
-      <div className="max-w-[1280px] mx-auto h-full px-6 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] h-[55px]">
+      <div className="max-w-[1280px] mx-auto h-full px-[13px] lg:px-[34px] flex items-center justify-between">
         <Link to={ROUTES.LANDING} className="no-underline">
           <InvoiceSagaLogo height={22} />
         </Link>
 
-        <div className="hidden lg:flex items-center gap-6">
+        <div className="hidden lg:flex items-center gap-[21px]">
           {NAV_LINKS.map(l => (
             <Link key={l.id} to={l.to} className={linkCls(l.id)}>{l.label}</Link>
           ))}
-          <div className="flex items-center gap-2 ml-2">
+          <div className="flex items-center gap-[8px] ml-2">
             <Link to={ROUTES.LOGIN}>
               <Btn variant="outline" size="sm">Log in</Btn>
             </Link>
@@ -52,7 +52,7 @@ export default function SharedNav({ activePage = "" }) {
       </div>
 
       {open && (
-        <div className="lg:hidden border-t border-[var(--border-subtle)] bg-[var(--surface-card)] px-6 py-4 flex flex-col gap-3">
+        <div className="lg:hidden border-t border-[var(--border-subtle)] bg-[var(--surface-card)] px-[13px] py-[13px] flex flex-col gap-[13px]">
           {NAV_LINKS.map(l => (
             <Link
               key={l.id}
@@ -63,7 +63,7 @@ export default function SharedNav({ activePage = "" }) {
               {l.label}
             </Link>
           ))}
-          <div className="flex flex-col gap-2 pt-3 border-t border-[var(--border-subtle)]">
+          <div className="flex flex-col gap-[8px] pt-[13px] border-t border-[var(--border-subtle)]">
             <Link to={ROUTES.LOGIN} onClick={() => setOpen(false)}>
               <Btn variant="outline" size="sm">Log in</Btn>
             </Link>

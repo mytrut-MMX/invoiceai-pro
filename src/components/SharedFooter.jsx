@@ -21,12 +21,12 @@ const MIN_LINKS = [
 export default function SharedFooter({ links = "full" }) {
   const activeLinks = links === "min" ? MIN_LINKS : FULL_LINKS;
   return (
-    <footer className="bg-[var(--surface-dark)] py-8 px-6">
+    <footer className="bg-[var(--surface-dark)] py-[55px] px-[21px] sm:px-[34px]">
       <div className="max-w-[1280px] mx-auto text-center">
-        <div className="mb-3">
+        <div className="mb-[8px]">
           <span className="text-[var(--brand-500)] font-bold tracking-wider text-base">InvoiceSaga</span>
         </div>
-        <div className="text-sm text-white/50 leading-relaxed">
+        <div className="text-[13px] text-white/50 leading-relaxed">
           {activeLinks.map((link, i) => (
             <span key={link.href}>
               {i > 0 && <span className="mx-2 text-white/30">·</span>}
@@ -36,7 +36,7 @@ export default function SharedFooter({ links = "full" }) {
             </span>
           ))}
         </div>
-        <div className="text-xs text-white/40 mt-4">© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
+        <div className="text-xs text-white/40 mt-[21px]">© {new Date().getFullYear()} InvoiceSaga. All rights reserved.</div>
       </div>
     </footer>
   );

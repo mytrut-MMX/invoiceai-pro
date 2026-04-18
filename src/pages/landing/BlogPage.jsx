@@ -30,30 +30,30 @@ export default function BlogPage() {
       <SharedNav activePage="blog" />
 
       {/* Hero */}
-      <section className="bg-[var(--surface-sunken)] px-6 pt-20 pb-14 text-center">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[var(--text-primary)] mb-4 tracking-tight m-0">
+      <section className="bg-[var(--surface-sunken)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px] text-center">
+        <h1 className="text-[34px] lg:text-[55px] font-semibold text-[var(--text-primary)] mb-[21px] tracking-tight m-0">
           Invoicing advice for freelancers
         </h1>
-        <p className="text-base text-[var(--text-secondary)] m-0 leading-relaxed">
+        <p className="text-[16px] text-[var(--text-secondary)] m-0 leading-relaxed">
           Practical guides to help you invoice better, chase less, and get paid faster.
         </p>
       </section>
 
       {/* Article grid */}
-      <section className="max-w-[1100px] mx-auto px-6 pt-16 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="max-w-[1280px] mx-auto px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[21px]">
           {articles.map((a) => (
             <div
               key={a.title}
-              className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-8 flex flex-col"
+              className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-[21px] flex flex-col"
             >
-              <span className="inline-block self-start bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-4">
+              <span className="inline-block self-start bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-[13px]">
                 {a.tag}
               </span>
-              <h2 className="text-lg font-semibold text-[var(--text-primary)] m-0 mb-3 leading-snug">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] m-0 mt-[8px] leading-snug">
                 {a.title}
               </h2>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0 mb-6 flex-1">{a.excerpt}</p>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0 mt-[13px] mb-[21px] flex-1">{a.excerpt}</p>
               <Link
                 to={a.to}
                 className="text-sm font-semibold text-[var(--brand-600)] hover:text-[var(--brand-700)] no-underline"

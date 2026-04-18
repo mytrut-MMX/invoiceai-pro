@@ -27,27 +27,27 @@ export default function FeaturesPage() {
       <SharedNav activePage="features" />
 
       {/* Hero */}
-      <section className="bg-[var(--surface-sunken)] px-6 pt-20 pb-14 text-center">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[var(--text-primary)] mb-4 tracking-tight m-0">
+      <section className="bg-[var(--surface-sunken)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px] text-center">
+        <h1 className="text-[34px] lg:text-[55px] font-semibold text-[var(--text-primary)] mb-[21px] tracking-tight m-0">
           Everything you need to get paid. Nothing you don't.
         </h1>
-        <p className="text-base text-[var(--text-secondary)] m-0 leading-relaxed">
+        <p className="text-[16px] text-[var(--text-secondary)] m-0 leading-relaxed">
           Built for freelancers who bill clients — not for accountants.
         </p>
       </section>
 
       {/* Features detail */}
-      <section className="max-w-[1100px] mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+      <section className="max-w-[1280px] mx-auto px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[34px]">
           {features.map((f) => (
-            <div key={f.title} className="flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--brand-600)] flex items-center justify-center flex-shrink-0">
-                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+            <div key={f.title} className="flex gap-[13px] items-start">
+              <div className="w-[55px] h-[55px] rounded-[var(--radius-md)] bg-[var(--brand-600)] flex items-center justify-center flex-shrink-0">
+                <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
                   <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="#fff" />
                 </svg>
               </div>
               <div>
-                <div className="text-[17px] font-semibold text-[var(--text-primary)] mb-1.5">{f.title}</div>
+                <div className="text-[17px] font-semibold text-[var(--text-primary)] mt-[13px] mb-[8px]">{f.title}</div>
                 <div className="text-[15px] text-[var(--text-secondary)] leading-relaxed">{f.desc}</div>
               </div>
             </div>
@@ -56,8 +56,8 @@ export default function FeaturesPage() {
       </section>
 
       {/* Comparison */}
-      <section className="bg-[var(--surface-sunken)] px-6 py-20">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] text-center mb-12 tracking-tight m-0">
+      <section className="bg-[var(--surface-sunken)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+        <h2 className="text-[34px] font-semibold text-[var(--text-primary)] text-center mb-[55px] tracking-tight m-0">
           Why not just use a spreadsheet?
         </h2>
         <div className="max-w-[720px] mx-auto rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-subtle)]">
@@ -83,11 +83,11 @@ export default function FeaturesPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="bg-[var(--surface-dark)] px-6 py-20 text-center">
-        <h2 className="text-3xl font-semibold text-white mb-3 tracking-tight m-0">
+      <section className="bg-[var(--surface-dark)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px] text-center">
+        <h2 className="text-[34px] font-semibold text-white mb-[13px] tracking-tight m-0">
           Start sending professional invoices today.
         </h2>
-        <p className="text-[15px] text-white/60 mb-8 m-0">
+        <p className="text-[15px] text-white/60 mb-[34px] m-0">
           Free to start — no credit card required.
         </p>
         <Link to={ROUTES.SIGNUP}>

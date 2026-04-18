@@ -38,28 +38,28 @@ export default function PricingPage() {
       <SharedNav activePage="pricing" />
 
       {/* Hero */}
-      <section className="bg-[var(--surface-sunken)] px-6 pt-20 pb-14 text-center">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[var(--text-primary)] mb-4 tracking-tight m-0">
+      <section className="bg-[var(--surface-sunken)] px-[21px] sm:px-[34px] py-[55px] lg:py-[89px] text-center">
+        <h1 className="text-[34px] lg:text-[55px] font-semibold text-[var(--text-primary)] mb-[21px] tracking-tight m-0">
           Simple pricing. No surprises.
         </h1>
-        <p className="text-base text-[var(--text-secondary)] m-0 leading-relaxed">
+        <p className="text-[16px] text-[var(--text-secondary)] m-0 leading-relaxed">
           Free to start. Upgrade only when you're ready.
         </p>
       </section>
 
       {/* Pricing cards */}
-      <section className="max-w-[900px] mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section className="max-w-[900px] mx-auto px-[21px] sm:px-[34px] py-[55px] lg:py-[89px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[21px]">
           {/* FREE card */}
-          <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-9">
-            <div className="inline-block bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-4">
+          <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-xl)] p-[34px]">
+            <div className="inline-block bg-[var(--brand-50)] text-[var(--brand-700)] rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-[13px]">
               Free forever
             </div>
-            <div className="text-5xl font-semibold text-[var(--text-primary)] mb-1">£0</div>
-            <div className="text-sm text-[var(--text-tertiary)] mb-7">per month · always free</div>
-            <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-3">
+            <div className="text-[34px] font-bold text-[var(--text-primary)] mb-1">£0</div>
+            <div className="text-sm text-[var(--text-tertiary)] mb-[21px]">per month · always free</div>
+            <ul className="list-none p-0 m-0 mb-[34px] flex flex-col gap-[13px]">
               {FREE_FEATURES.map((item) => (
-                <li key={item} className="text-sm text-[var(--text-secondary)] flex items-center gap-2">
+                <li key={item} className="text-sm text-[var(--text-secondary)] flex items-center gap-[8px]">
                   <span className="text-[var(--brand-600)] font-bold">✓</span>{item}
                 </li>
               ))}
@@ -70,15 +70,15 @@ export default function PricingPage() {
           </div>
 
           {/* PRO card */}
-          <div className="bg-[var(--surface-dark)] border-2 border-[var(--brand-600)] rounded-[var(--radius-xl)] p-9 relative">
-            <div className="inline-block bg-[var(--brand-600)] text-white rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-4">
+          <div className="bg-[var(--surface-dark)] border-2 border-[var(--brand-600)] rounded-[var(--radius-xl)] p-[34px] relative">
+            <div className="inline-block bg-[var(--brand-600)] text-white rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase mb-[13px]">
               Most popular
             </div>
-            <div className="text-5xl font-semibold text-white mb-1">£9</div>
-            <div className="text-sm text-white/50 mb-7">per month · cancel anytime</div>
-            <ul className="list-none p-0 m-0 mb-8 flex flex-col gap-3">
+            <div className="text-[34px] font-bold text-white mb-1">£9</div>
+            <div className="text-sm text-white/50 mb-[21px]">per month · cancel anytime</div>
+            <ul className="list-none p-0 m-0 mb-[34px] flex flex-col gap-[13px]">
               {PRO_FEATURES.map((item) => (
-                <li key={item} className="text-sm text-white/80 flex items-center gap-2">
+                <li key={item} className="text-sm text-white/80 flex items-center gap-[8px]">
                   <span className="text-[var(--brand-300)] font-bold">✓</span>{item}
                 </li>
               ))}
@@ -91,7 +91,7 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="max-w-[640px] mx-auto px-6 pb-20">
+      <section className="max-w-[640px] mx-auto px-[21px] sm:px-[34px] pb-[55px] lg:pb-[89px]">
         <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-8 tracking-tight">
           Common questions
         </h2>

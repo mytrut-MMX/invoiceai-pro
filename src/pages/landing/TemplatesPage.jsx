@@ -60,7 +60,7 @@ export default function TemplatesPage() {
     <div className="min-h-screen bg-[var(--surface-page)]">
       <SharedNav activePage="templates" />
 
-      <div className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10 lg:py-12 box-border">
+      <div className="max-w-[960px] mx-auto px-[21px] sm:px-[34px] py-[34px] sm:py-[55px] box-border">
 
       {/* PAGE HERO */}
       <section className="tp-page-hero">
@@ -69,8 +69,8 @@ export default function TemplatesPage() {
           <span>›</span>
           <span>Templates</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] m-0 mb-2 tracking-tight">Invoice Templates</h1>
-        <p className="text-sm text-[var(--text-secondary)] m-0 mb-8 leading-relaxed">Customize your template, then download or send directly from your account.</p>
+        <h1 className="text-[34px] font-semibold text-[var(--text-primary)] m-0 mb-[13px] tracking-tight">Invoice Templates</h1>
+        <p className="text-sm text-[var(--text-secondary)] m-0 mb-[34px] leading-relaxed">Customize your template, then download or send directly from your account.</p>
       </section>
 
       {/* TEMPLATES GRID */}
