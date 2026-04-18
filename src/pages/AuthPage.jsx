@@ -1,9 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Icons } from "../components/icons";
 import { Field, Btn } from "../components/atoms";
 import InvoiceSagaLogo from "../components/InvoiceSagaLogo";
-import { supabase, supabaseReady, signInWithGoogle, getSession, supabaseConfigError } from "../lib/supabase";
+import {
+  supabase,
+  supabaseReady,
+  signInWithGoogle,
+  getSession,
+  supabaseConfigError,
+  getMfaPreference,
+  sendEmailOtp,
+  verifyEmailOtp,
+  setMfaPending,
+} from "../lib/supabase";
 import ForgotPasswordPage from "./ForgotPasswordPage";
+import OTPInput from "../components/ui/OTPInput";
+
+const RESEND_COOLDOWN_S = 30;
 
 // AUTH-008: In-memory brute-force lockout (per email, 5 attempts → 15 min lockout)
 const loginAttempts = new Map();
@@ -41,6 +54,14 @@ export default function AuthPage({ onAuth }) {
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
 
+  // ── MFA (email OTP) state ──────────────────────────────────────────────────
+  const [mfaStage,    setMfaStage]    = useState("idle"); // idle | sending | verify
+  const [mfaCode,     setMfaCode]     = useState("");
+  const [mfaError,    setMfaError]    = useState("");
+  const [mfaCooldown, setMfaCooldown] = useState(0);
+  const [mfaEmail,    setMfaEmail]    = useState("");
+  const mfaUserRef = useRef(null);
+
   useEffect(() => {
     getSession().then(session => {
       if (session?.user) {
@@ -55,6 +76,13 @@ export default function AuthPage({ onAuth }) {
       }
     });
   }, []);
+
+  // ── MFA cooldown ticker ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (mfaCooldown <= 0) return;
+    const t = setInterval(() => setMfaCooldown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [mfaCooldown]);
 
   const oauthErrorMessage = (provider, error) => {
     const msg = typeof error === "string" ? error : (error?.message || "");
@@ -144,11 +172,17 @@ export default function AuthPage({ onAuth }) {
         setLoading(false);
         return;
       } else {
+        // Speculatively gate against the MFA race: if THIS device already
+        // has a positive cache for this email, set the pending flag before
+        // the SIGNED_IN event can promote us. We always clear it again below
+        // when we know the real answer.
+        setMfaPending(true);
         const { data, error } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password,
         });
         if (error || !data?.user) {
+          setMfaPending(false);
           recordFailure(normalizedEmail);
           setError(oauthErrorMessage("Email", error || "Incorrect email or password."));
           setLoading(false);
@@ -156,18 +190,169 @@ export default function AuthPage({ onAuth }) {
         }
         clearAttempts(normalizedEmail);
         const sbName = await fetchNameFromSupabase(data.user.id);
-        onAuth({
+        const authUser = {
           id: data.user.id,
           name: sbName || data.user.user_metadata?.full_name || data.user.email,
           email: data.user.email,
           role: "Admin",
           expiresAt: Date.now() + 8 * 60 * 60 * 1000,
           provider: data.user.app_metadata?.provider || "email",
+        };
+
+        // MFA gate: if enabled for this account, sign out and require an
+        // emailed OTP before completing login.
+        const mfaRequired = await getMfaPreference({
+          userId: data.user.id,
+          email:  data.user.email,
         });
+        if (mfaRequired) {
+          mfaUserRef.current = authUser;
+          setMfaEmail(data.user.email);
+          // Pending flag stays SET; signOut would race with the OTP flow.
+          // App.jsx's listener already ignores SIGNED_IN while pending.
+          await supabase.auth.signOut();
+          const { error: otpErr } = await sendEmailOtp(data.user.email);
+          if (otpErr) {
+            setMfaPending(false);
+            setError(otpErr.message || "Could not send verification code.");
+            mfaUserRef.current = null;
+            setLoading(false);
+            return;
+          }
+          setMfaStage("verify");
+          setMfaCode("");
+          setMfaError("");
+          setMfaCooldown(RESEND_COOLDOWN_S);
+          setLoading(false);
+          return;
+        }
+
+        // No MFA required — drop the pending flag and proceed.
+        setMfaPending(false);
+        onAuth(authUser);
         setLoading(false);
       }
     }, 600);
   };
+
+  const cancelMfa = async () => {
+    try { await supabase?.auth.signOut(); } catch {}
+    setMfaPending(false);
+    mfaUserRef.current = null;
+    setMfaStage("idle");
+    setMfaCode("");
+    setMfaError("");
+    setMfaEmail("");
+    setPassword("");
+  };
+
+  const resendMfaCode = async () => {
+    if (mfaCooldown > 0 || !mfaEmail) return;
+    setMfaError("");
+    const { error: err } = await sendEmailOtp(mfaEmail);
+    if (err) {
+      setMfaError(err.message || "Could not resend verification code.");
+      return;
+    }
+    setMfaCode("");
+    setMfaCooldown(RESEND_COOLDOWN_S);
+  };
+
+  const verifyMfa = async (token) => {
+    if (!mfaEmail || token.length !== 6) return;
+    setLoading(true);
+    setMfaError("");
+    const { data, error: err } = await verifyEmailOtp(mfaEmail, token);
+    if (err || !data?.user) {
+      setMfaError(err?.message || "Invalid code. Please check your email and try again.");
+      setLoading(false);
+      return;
+    }
+    const authUser = mfaUserRef.current || {
+      id: data.user.id,
+      name: data.user.user_metadata?.full_name || data.user.email,
+      email: data.user.email,
+      role: "Admin",
+      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+      provider: data.user.app_metadata?.provider || "email",
+    };
+    mfaUserRef.current = null;
+    setMfaPending(false);
+    setMfaStage("idle");
+    setMfaCode("");
+    setLoading(false);
+    onAuth(authUser);
+  };
+
+  if (mfaStage === "verify") {
+    return (
+      <div className="min-h-screen bg-[var(--surface-sunken)] flex items-center justify-center p-4">
+        <div className="w-full max-w-[440px]">
+          <div className="flex justify-center mb-6">
+            <InvoiceSagaLogo height={32} />
+          </div>
+
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-[var(--shadow-lg)] p-8">
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-[var(--brand-50)] text-[var(--brand-700)] flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect width="20" height="16" x="2" y="4" rx="2" />
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                </svg>
+              </div>
+            </div>
+
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)] text-center leading-tight m-0 mb-2">
+              Check your email
+            </h1>
+            <p className="text-sm text-[var(--text-secondary)] text-center leading-relaxed m-0 mb-5">
+              We sent a 6-digit code to <strong>{mfaEmail}</strong>.
+            </p>
+
+            <OTPInput
+              value={mfaCode}
+              onChange={setMfaCode}
+              onComplete={verifyMfa}
+              disabled={loading}
+              error={!!mfaError}
+            />
+
+            {mfaError && (
+              <div className="mt-3 bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] px-3 py-2 flex items-center gap-2">
+                <span className="text-[var(--danger-600)] flex"><Icons.Info /></span>
+                <span className="text-xs text-[var(--danger-700)] font-medium">{mfaError}</span>
+              </div>
+            )}
+
+            <button
+              onClick={() => verifyMfa(mfaCode)}
+              disabled={loading || mfaCode.length !== 6}
+              className="w-full h-11 mt-5 bg-[var(--brand-600)] hover:bg-[var(--brand-700)] disabled:bg-[var(--surface-sunken)] disabled:text-[var(--text-tertiary)] disabled:cursor-not-allowed text-white border-none rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-colors duration-150"
+            >
+              {loading ? "Verifying…" : "Verify"}
+            </button>
+
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                onClick={resendMfaCode}
+                disabled={mfaCooldown > 0 || loading}
+                className="text-sm text-[var(--brand-600)] hover:text-[var(--brand-700)] disabled:text-[var(--text-tertiary)] disabled:cursor-not-allowed bg-transparent border-none cursor-pointer"
+              >
+                {mfaCooldown > 0 ? `Resend in ${mfaCooldown}s` : "Resend code"}
+              </button>
+              <button
+                onClick={cancelMfa}
+                disabled={loading}
+                className="text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer"
+              >
+                Use a different account
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (showForgot) {
     return (

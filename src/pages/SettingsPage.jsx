@@ -12,6 +12,7 @@ import SettingsPayments from "./settings/SettingsPayments";
 import SettingsLedger from "./settings/SettingsLedger";
 import SettingsPayroll from "./settings/SettingsPayroll";
 import SettingsHMRC from "./settings/SettingsHMRC";
+import SettingsSecurity from "./settings/SettingsSecurity";
 
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, onClose }) {
@@ -65,6 +66,7 @@ const NAV_GROUPS = [
     items: [
       { id: "org",        label: "Organisation" },
       { id: "bank",       label: "Bank details" },
+      { id: "security",   label: "Security" },
       { id: "appearance", label: "Appearance" },
     ],
   },
@@ -168,6 +170,7 @@ export default function SettingsPage() {
             {activeTab === "org"        && <SettingsOrganization orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "tax"        && <SettingsTax          orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "bank"       && <SettingsBank         orgSettings={orgSettings} onSave={handleSavePartial} />}
+            {activeTab === "security"   && <SettingsSecurity />}
             {activeTab === "templates"  && <SettingsTemplates    onPreview={setPreviewTpl} />}
             {activeTab === "appearance" && <SettingsAppearance />}
             {activeTab === "payments"   && <SettingsPayments />}

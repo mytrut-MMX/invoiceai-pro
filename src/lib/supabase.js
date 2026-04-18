@@ -104,3 +104,93 @@ export async function getSession() {
   const { data } = await supabase.auth.getSession();
   return data?.session ?? null;
 }
+
+// ─── MFA: email OTP as a second factor ─────────────────────────────────────
+//
+// The MFA preference is stored in `profiles.mfa_email_enabled` (boolean) and
+// mirrored in localStorage as a fast-path check for the login screen:
+//   ai_invoice_mfa_email_<lowercased-email>  →  "1" | absent
+//
+// The localStorage mirror is per-device and best-effort. The Supabase column
+// is the source of truth; if the column doesn't exist yet, getMfaPreference
+// falls back to localStorage so the feature degrades gracefully on databases
+// that haven't been migrated.
+
+const MFA_LS_PREFIX = "ai_invoice_mfa_email_";
+const MFA_PENDING_KEY = "ai_invoice_mfa_pending";
+
+const mfaLsKey = (email) => `${MFA_LS_PREFIX}${(email || "").trim().toLowerCase()}`;
+
+/** While true, App.jsx's auth listener must not promote the user past the
+ *  MFA gate. AuthPage sets this around the password→OTP transition. */
+export function setMfaPending(on) {
+  try {
+    if (on) sessionStorage.setItem(MFA_PENDING_KEY, "1");
+    else    sessionStorage.removeItem(MFA_PENDING_KEY);
+  } catch {}
+}
+
+export function isMfaPending() {
+  try { return sessionStorage.getItem(MFA_PENDING_KEY) === "1"; } catch { return false; }
+}
+
+/** Read MFA preference for an email — Supabase first, localStorage fallback. */
+export async function getMfaPreference({ userId, email }) {
+  const key = mfaLsKey(email);
+  let lsValue = null;
+  try { lsValue = localStorage.getItem(key) === "1"; } catch {}
+
+  if (!supabase || !userId) return !!lsValue;
+
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("mfa_email_enabled")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) return !!lsValue;
+    const enabled = !!data?.mfa_email_enabled;
+    try {
+      if (enabled) localStorage.setItem(key, "1");
+      else         localStorage.removeItem(key);
+    } catch {}
+    return enabled;
+  } catch {
+    return !!lsValue;
+  }
+}
+
+/** Persist MFA preference: Supabase + localStorage mirror. */
+export async function setMfaPreference({ userId, email, enabled }) {
+  const key = mfaLsKey(email);
+  try {
+    if (enabled) localStorage.setItem(key, "1");
+    else         localStorage.removeItem(key);
+  } catch {}
+
+  if (!supabase || !userId) return { error: null };
+
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ user_id: userId, email, mfa_email_enabled: !!enabled }, { onConflict: "user_id" });
+    return { error: error || null };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
+/** Send a 6-digit email OTP. Used both at login (after password) and from Settings. */
+export async function sendEmailOtp(email) {
+  if (!supabase) return { error: { message: "Supabase not configured" } };
+  return supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false },
+  });
+}
+
+/** Verify an emailed 6-digit OTP. On success the client gets a fresh session. */
+export async function verifyEmailOtp(email, token) {
+  if (!supabase) return { error: { message: "Supabase not configured" } };
+  return supabase.auth.verifyOtp({ email, token, type: "email" });
+}

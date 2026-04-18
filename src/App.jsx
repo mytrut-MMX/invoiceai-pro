@@ -4,7 +4,7 @@ import { DEFAULT_INV_TERMS, DEFAULT_QUOTE_TERMS } from "./constants";
 import { AppCtx } from "./context/AppContext";
 import { todayStr } from "./utils/helpers";
 import { saveAll } from "./utils/storage";
-import { getSession, supabase } from "./lib/supabase";
+import { getSession, supabase, isMfaPending } from "./lib/supabase";
 import AppRouter from "./router";
 import { loadBusinessData, saveBusinessData, migrateLegacyBusinessDataIfNeeded } from "./lib/businessData";
 import {
@@ -37,6 +37,9 @@ export default function App() {
 
     const applySession = (session) => {
       if (!active) return;
+      // While AuthPage is mid-MFA, ignore SIGNED_IN sessions so the user
+      // isn't promoted past the OTP gate.
+      if (session?.user && isMfaPending()) return;
       if (!session?.user) { setUser(null); return; }
       const u = {
         id:        session.user.id,
