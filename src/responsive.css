@@ -7,27 +7,6 @@ html, body, #root {
   text-rendering: optimizeLegibility;
 }
 
-/* ── Responsive layout helpers ───────────────────────────────── */
-
-/* Desktop sidebar: visible only on screens >= 640px */
-.desktop-only {
-  display: block;
-}
-
-/* Mobile elements: hidden on desktop */
-.mobile-only {
-  display: none;
-}
-
-@media (max-width: 639px) {
-  .desktop-only {
-    display: none;
-  }
-  .mobile-only {
-    display: block;
-  }
-}
-
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -36,11 +15,4 @@ input[type="number"]::-webkit-inner-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
-}
-
-@media (min-width: 1023px) {
-  .auth-page-bg {
-    background-image: linear-gradient(135deg, #dbeafe 0%, #eff6ff 40%, #e0f2fe 100%);
-    background-size: cover;
-  }
 }
