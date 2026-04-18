@@ -10,6 +10,7 @@ import { calcTotals } from "../utils/calcTotals";
 import { useCISSettings } from "../hooks/useCISSettings";
 import QuoteFormPanel from "../components/quotes/QuoteFormPanel";
 import QuoteViewPanel from "../components/quotes/QuoteViewPanel";
+import { useToast } from "../components/ui/Toast";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -75,6 +76,7 @@ function EmptyState({ icon, title, message, cta }) {
 export default function QuotesPage({ initialShowForm = false }) {
   const { quotes, setQuotes, invoices, setInvoices, orgSettings } = useContext(AppCtx);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { cisEnabled, cisDefaultRate } = useCISSettings();
   const [panel, setPanel] = useState(initialShowForm ? { mode: "new-page" } : null);
@@ -101,11 +103,14 @@ export default function QuotesPage({ initialShowForm = false }) {
     return matchSearch && matchStatus;
   });
 
-  const onSave = q => setQuotes(p => {
-    const i = p.findIndex(x => x.id === q.id);
-    if (i >= 0) { const u = [...p]; u[i] = q; return u; }
-    return [q, ...p];
-  });
+  const onSave = q => {
+    setQuotes(p => {
+      const i = p.findIndex(x => x.id === q.id);
+      if (i >= 0) { const u = [...p]; u[i] = q; return u; }
+      return [q, ...p];
+    });
+    toast({ title: "Quote saved", variant: "success" });
+  };
 
   const handleConvertToInvoice = (quote) => {
     const alreadyInvoiced = invoices.some(inv => inv.converted_from_quote === quote.quote_number);
@@ -172,6 +177,7 @@ export default function QuotesPage({ initialShowForm = false }) {
         onDelete={() => {
           if (!window.confirm(`Delete ${panel.quote.quote_number}?`)) return;
           setQuotes(prev => prev.filter(x => x.id !== panel.quote.id));
+          toast({ title: "Quote deleted", variant: "success" });
           setPanel(null);
         }}
         onConvert={() => handleConvertToInvoice(panel.quote)}
@@ -343,7 +349,11 @@ export default function QuotesPage({ initialShowForm = false }) {
                             disabled={q.status === "Invoiced"}
                           />
                           <ActionBtn
-                            onClick={() => window.confirm(`Delete ${q.quote_number}?`) && setQuotes(prev => prev.filter(x => x.id !== q.id))}
+                            onClick={() => {
+                              if (!window.confirm(`Delete ${q.quote_number}?`)) return;
+                              setQuotes(prev => prev.filter(x => x.id !== q.id));
+                              toast({ title: "Quote deleted", variant: "success" });
+                            }}
                             title="Delete quote"
                             icon={<Icons.Trash />}
                             tone="danger"

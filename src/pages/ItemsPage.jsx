@@ -7,6 +7,7 @@ import { Btn, Tag, Switch, InfoBox } from "../components/atoms";
 import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 import { deleteCatalogItem } from "../lib/dataAccess";
+import { useToast } from "../components/ui/Toast";
 
 const TYPE_COLORS = {
   Service:   "var(--info-600)",
@@ -80,6 +81,7 @@ function EmptyState({ icon, title, message, cta }) {
 export default function ItemsPage({ initialShowForm = false }) {
   const { orgSettings, catalogItems, setCatalogItems, invoices, quotes, user } = useContext(AppCtx);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isVat = orgSettings?.vatReg === "Yes";
   const isCisOrg = orgSettings?.cisReg === "Yes";
   const [showForm, setShowForm] = useState(initialShowForm);
@@ -103,8 +105,10 @@ export default function ItemsPage({ initialShowForm = false }) {
     if (error) {
       console.error("[ItemsPage] deleteCatalogItem failed:", error);
       setCatalogItems(snapshot);
-      alert("Failed to delete item: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to delete item", description: error.message, variant: "danger" });
+      return;
     }
+    toast({ title: "Item deleted", variant: "success" });
   };
 
   const filtered = catalogItems.filter(i => {
@@ -122,6 +126,7 @@ export default function ItemsPage({ initialShowForm = false }) {
       if (i >= 0) { const u = [...p]; u[i] = item; return u; }
       return [...p, item];
     });
+    toast({ title: "Item saved", variant: "success" });
     if (initialShowForm) { navigate(ROUTES.ITEMS, { replace: true }); return; }
     setShowForm(false);
     setEditingItem(null);

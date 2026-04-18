@@ -8,6 +8,7 @@ import { Btn, StatusBadge } from "../components/atoms";
 import { formatPhoneNumber, fmt } from "../utils/helpers";
 import { saveSupplier, deleteSupplier } from "../lib/dataAccess";
 import SupplierFormPanel from "../components/suppliers/SupplierFormPanel";
+import { useToast } from "../components/ui/Toast";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -79,6 +80,7 @@ export default function SuppliersPage({ initialShowForm = false }) {
   const { suppliers, setSuppliers, orgSettings, user, bills } = useContext(AppCtx);
   const navigate = useNavigate();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
+  const { toast } = useToast();
 
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [showForm, setShowForm] = useState(initialShowForm);
@@ -90,7 +92,7 @@ export default function SuppliersPage({ initialShowForm = false }) {
     const { data, error } = await saveSupplier(user.id, supplier);
     if (error) {
       console.error("[SuppliersPage] saveSupplier failed:", error);
-      alert("Failed to save supplier: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to save supplier", description: error.message, variant: "danger" });
       return;
     }
     setSuppliers(prev => {
@@ -98,6 +100,7 @@ export default function SuppliersPage({ initialShowForm = false }) {
       if (idx >= 0) { const u = [...prev]; u[idx] = data; return u; }
       return [data, ...prev];
     });
+    toast({ title: "Supplier saved", variant: "success" });
     if (initialShowForm) { navigate(ROUTES.SUPPLIERS, { replace: true }); return; }
     setShowForm(false);
     setEditingSupplier(null);
@@ -109,10 +112,11 @@ export default function SuppliersPage({ initialShowForm = false }) {
     const { error } = await deleteSupplier(user.id, sup.id);
     if (error) {
       console.error("[SuppliersPage] deleteSupplier failed:", error);
-      alert("Failed to delete: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to delete supplier", description: error.message, variant: "danger" });
       return;
     }
     setSuppliers(prev => prev.filter(x => x.id !== sup.id));
+    toast({ title: "Supplier deleted", variant: "success" });
   };
 
   const openNew   = () => { setEditingSupplier(null); setShowForm(true); };

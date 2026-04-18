@@ -4,6 +4,7 @@ import { Field, Input, Select, Btn, SlideToggle, Toggle } from "../components/at
 import { Icons } from "../components/icons";
 import { formatPhoneNumber, stripPhoneForStorage, formatSortCode, stripSortCode } from "../utils/helpers";
 import * as dataAccess from "../lib/dataAccess";
+import { useToast } from "../components/ui/Toast";
 
 const NI_REGEX = /^[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z]\d{6}[A-D]$/i;
 const TAX_CODE_REGEX = /^[SC]?(\d{1,4}[LMNT]|BR|D0|D1|D2|0T|NT|K\d+)( ?[WM]1)?$/i;
@@ -59,6 +60,7 @@ const req = (label) => <>{label} <span className="text-[var(--danger-600)]">*</s
 
 export default function EmployeeForm({ existing, onClose, onSave }) {
   const { user } = useContext(AppCtx);
+  const { toast } = useToast();
 
   const [showPersonal, setShowPersonal] = useState(true);
   const [showTaxNI, setShowTaxNI] = useState(!existing);
@@ -175,6 +177,7 @@ export default function EmployeeForm({ existing, onClose, onSave }) {
         if (result?.error) { setSaveError(typeof result.error === "string" ? result.error : "Failed to save"); setSaving(false); return; }
       }
       onSave(employee);
+      toast({ title: "Employee saved", variant: "success" });
     } catch (err) {
       setSaveError(err?.message || "Failed to save");
       setSaving(false);

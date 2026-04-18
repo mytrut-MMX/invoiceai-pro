@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { PDF_TEMPLATES } from "../constants";
+import { useToast } from "../components/ui/Toast";
 import { Btn, Field, Input, Textarea } from "../components/atoms";
 import { Icons } from "../components/icons";
 import { buildInvoiceEmail, buildPaymentConfirmationEmail, buildQuoteEmail } from "../utils/emailTemplates";
@@ -104,6 +105,7 @@ export default function SendDocumentModal({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [sent, setSent] = useState(false);
+  const { toast } = useToast();
 
   const toError = to && !EMAIL_RE.test(to.trim()) ? "Please enter a valid email address." : null;
   const subjectError = subject && subject.trim().length < 3 ? "Subject must be at least 3 characters." : null;
@@ -180,9 +182,11 @@ export default function SendDocumentModal({
       if (!res.ok) throw new Error(data?.error || data?.message || (rawText?.trim() || "Send failed"));
       if (!data) throw new Error(rawText?.trim() || "Email sent, but the server response was not JSON.");
       setSent(true);
+      toast({ title: "Document sent successfully", variant: "success" });
       setTimeout(() => onSent?.(data), 1500);
     } catch (err) {
       setError(err?.message || "Send failed");
+      toast({ title: "Failed to send document", description: err?.message, variant: "danger" });
     } finally {
       setSending(false);
     }

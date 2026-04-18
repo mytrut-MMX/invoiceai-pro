@@ -10,6 +10,7 @@ import { calcTotals } from "../../utils/calcTotals";
 import { useCISSettings } from "../../hooks/useCISSettings";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
 import { calculateLatePaymentClaim } from "../../utils/latePayment";
+import { useToast } from "../ui/Toast";
 
 function MetaCard({ label, value }) {
   return (
@@ -25,6 +26,7 @@ function MetaCard({ label, value }) {
 export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
   const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig, setInvoices } = useContext(AppCtx);
   const { cisEnabled, cisDefaultRate } = useCISSettings();
+  const { toast } = useToast();
   const isVat = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -151,6 +153,7 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
                 onClick={() => {
                   if (window.confirm(`Delete ${invoice.invoice_number}?`)) {
                     setInvoices(prev => prev.filter(x => x.id !== invoice.id));
+                    toast({ title: "Invoice deleted", variant: "success" });
                     onClose();
                   }
                 }}

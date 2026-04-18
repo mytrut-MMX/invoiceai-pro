@@ -3,6 +3,7 @@ import { CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../../constants";
 import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../../components/atoms";
 import Section from "../../components/settings/Section";
+import { useToast } from "../../components/ui/Toast";
 
 function ChipToggle({ value, onChange, options }) {
   return (
@@ -31,6 +32,7 @@ function ChipToggle({ value, onChange, options }) {
 }
 
 export default function SettingsTax({ orgSettings, onSave }) {
+  const { toast } = useToast();
   const org = orgSettings || {};
 
   const [accountingBasis, setAccountingBasis] = useState(org.accountingBasis || "Accrual");
@@ -107,9 +109,11 @@ export default function SettingsTax({ orgSettings, onSave }) {
       });
       setVatNumberLocked(Boolean(vatNum));
       setSaved(true);
+      toast({ title: "Tax settings saved", variant: "success" });
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setSaveError("Something went wrong. Please try again.");
+      toast({ title: "Failed to save tax settings", variant: "danger" });
     }
   };
 

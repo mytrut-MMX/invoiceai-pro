@@ -8,6 +8,7 @@ import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
 import { deleteCustomer as deleteCustomerFromDb } from "../lib/dataAccess";
+import { useToast } from "../components/ui/Toast";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -44,6 +45,7 @@ export default function CustomersPage({ initialShowForm = false }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
+  const { toast } = useToast();
 
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [showForm, setShowForm] = useState(initialShowForm);
@@ -68,12 +70,15 @@ export default function CustomersPage({ initialShowForm = false }) {
     if (error) {
       console.error("[CustomersPage] deleteCustomer failed:", error);
       setCustomers(snapshot);
-      alert("Failed to delete customer: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to delete customer", description: error.message, variant: "danger" });
+      return;
     }
+    toast({ title: "Customer deleted", variant: "success" });
   };
 
   const onSave = c => {
     setCustomers(p => upsert(p, c));
+    toast({ title: "Customer saved", variant: "success" });
     if (initialShowForm) { navigate(ROUTES.CUSTOMERS, { replace: true }); return; }
     setShowForm(false);
     setEditingCustomer(null);

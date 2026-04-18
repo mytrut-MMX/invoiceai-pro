@@ -11,10 +11,12 @@ import { saveInvoice, deleteInvoice } from "../lib/dataAccess";
 import { supabase } from "../lib/supabase";
 import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
+import { useToast } from "../components/ui/Toast";
 
 export default function InvoicesPage({ initialShowForm = false }) {
   const { invoices, setInvoices, quotes, setQuotes, user } = useContext(AppCtx);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [panel, setPanel] = useState(initialShowForm ? { mode: "new" } : null);
 
   const onSave = inv => {
@@ -39,9 +41,10 @@ export default function InvoicesPage({ initialShowForm = false }) {
     if (error) {
       console.error("[InvoicesPage] deleteInvoice failed:", error);
       setInvoices(snapshot);
-      alert("Failed to delete invoice: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to delete invoice", description: error.message, variant: "danger" });
       return;
     }
+    toast({ title: "Invoice deleted", variant: "success" });
     // Fire-and-forget ledger reversal — never blocks the UI delete path
     ;(async () => {
       try {
@@ -73,6 +76,7 @@ export default function InvoicesPage({ initialShowForm = false }) {
       if (!shouldInvoiceAgain) return;
     }
     setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status: "Invoiced" } : q));
+    toast({ title: "Quote converted to invoice", variant: "success" });
     setPanel({ mode: "edit", invoice: {
       invoice_number: nextNum("INV", invoices),
       customer: quote.customer,

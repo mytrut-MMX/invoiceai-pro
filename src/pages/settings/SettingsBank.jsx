@@ -3,8 +3,10 @@ import { Icons } from "../../components/icons";
 import { Field, Input, Btn } from "../../components/atoms";
 import { formatSortCode, stripSortCode } from "../../utils/helpers";
 import Section from "../../components/settings/Section";
+import { useToast } from "../../components/ui/Toast";
 
 export default function SettingsBank({ orgSettings, onSave }) {
+  const { toast } = useToast();
   const org = orgSettings || {};
 
   const [bankName,  setBankName]  = useState(org.bankName || "");
@@ -37,9 +39,11 @@ export default function SettingsBank({ orgSettings, onSave }) {
     try {
       onSave({ bankName, bankSort: stripSortCode(bankSort), bankAcc, bankIban, bankSwift });
       setSaved(true);
+      toast({ title: "Bank details saved", variant: "success" });
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setSaveError("Something went wrong. Please try again.");
+      toast({ title: "Failed to save bank details", variant: "danger" });
     }
   };
 

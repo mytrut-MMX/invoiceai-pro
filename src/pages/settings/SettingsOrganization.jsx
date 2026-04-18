@@ -12,12 +12,14 @@ import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn } from "../../components/atoms";
 import { validateUkCrn, formatPhoneNumber, stripPhoneForStorage } from "../../utils/helpers";
 import Section from "../../components/settings/Section";
+import { useToast } from "../../components/ui/Toast";
 
 const textInputCls =
   "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
 
 export default function SettingsOrganization({ orgSettings, onSave }) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const org = orgSettings || {};
 
   const [orgName,  setOrgName]  = useState(org.orgName || "");
@@ -68,9 +70,11 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
         currency: normalizeCurrencyCode(currency), timezone, industry, crn,
       });
       setSaved(true);
+      toast({ title: "Organisation settings saved", variant: "success" });
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setSaveError("Something went wrong. Please try again.");
+      toast({ title: "Failed to save settings", variant: "danger" });
     }
   };
 

@@ -10,6 +10,7 @@ import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { Icons } from "../components/icons";
 import { Field, Input, Select, Textarea, Btn, StatusBadge } from "../components/atoms";
 import { fmt, fmtDate, todayStr, nextNum } from "../utils/helpers";
+import { useToast } from "../components/ui/Toast";
 
 const METHOD_ICON = {
   "Bank Transfer": "🏦", "Credit Card": "💳", "Cash": "💵",
@@ -241,6 +242,7 @@ function PaymentModal({ existing, onClose, onSave }) {
 export default function PaymentsPage({ initialShowForm = false }) {
   const { payments, setPayments, orgSettings, user } = useContext(AppCtx);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency||"GBP"]||"£";
   const [showForm, setShowForm] = useState(initialShowForm);
@@ -268,11 +270,14 @@ export default function PaymentsPage({ initialShowForm = false }) {
     return matchSearch && matchMethod && matchStatus;
   });
 
-  const onSave = pmt => setPayments(p=>{
-    const i = p.findIndex(x=>x.id===pmt.id);
-    if(i>=0){ const u=[...p]; u[i]=pmt; return u; }
-    return [pmt,...p];
-  });
+  const onSave = pmt => {
+    setPayments(p=>{
+      const i = p.findIndex(x=>x.id===pmt.id);
+      if(i>=0){ const u=[...p]; u[i]=pmt; return u; }
+      return [pmt,...p];
+    });
+    toast({ title: "Payment recorded", variant: "success" });
+  };
 
   const del = async (id) => {
     if (!window.confirm("Delete this payment?")) return;
@@ -284,9 +289,10 @@ export default function PaymentsPage({ initialShowForm = false }) {
     if (error) {
       console.error("[PaymentsPage] deletePayment failed:", error);
       setPayments(snapshot);
-      alert("Failed to delete payment: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to delete payment", description: error.message, variant: "danger" });
       return;
     }
+    toast({ title: "Payment deleted", variant: "success" });
     // Fire-and-forget ledger reversal — never blocks the UI delete path
     ;(async () => {
       try {

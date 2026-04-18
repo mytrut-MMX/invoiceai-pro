@@ -12,6 +12,7 @@ import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
+import { useToast } from "../components/ui/Toast";
 
 function expNextNum(expenses) {
   return nextNum("EXP", expenses.map(e => ({ invoice_number: e.expense_number })));
@@ -119,6 +120,7 @@ export default function ExpensesPage({ initialShowForm = false }) {
   const { expenses, setExpenses, orgSettings, user } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const isVat   = orgSettings?.vatReg === "Yes";
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
@@ -162,6 +164,7 @@ export default function ExpensesPage({ initialShowForm = false }) {
       if (idx >= 0) { const u = [...prev]; u[idx] = item; return u; }
       return [item, ...prev];
     });
+    toast({ title: "Expense saved", variant: "success" });
     if (initialShowForm) { navigate(ROUTES.EXPENSES, { replace: true }); return; }
     setShowForm(false);
     setEditingExp(null);
@@ -176,9 +179,10 @@ export default function ExpensesPage({ initialShowForm = false }) {
     if (error) {
       console.error("[ExpensesPage] deleteExpense failed:", error);
       setExpenses(snapshot);
-      alert("Failed to delete expense: " + (error.message || "Unknown error"));
+      toast({ title: "Failed to delete expense", description: error.message, variant: "danger" });
       return;
     }
+    toast({ title: "Expense deleted", variant: "success" });
     ;(async () => {
       try {
         const { userId } = await fetchUserAccounts();

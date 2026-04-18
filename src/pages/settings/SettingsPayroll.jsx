@@ -3,8 +3,10 @@ import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn, InfoBox } from "../../components/atoms";
 import Section from "../../components/settings/Section";
 import EmploymentAllowanceSection from "./EmploymentAllowanceSection";
+import { useToast } from "../../components/ui/Toast";
 
 export default function SettingsPayroll({ orgSettings, onSave }) {
+  const { toast } = useToast();
   const org = orgSettings || {};
 
   const [payeRef,                 setPayeRef]                 = useState(org.payeRef || "");
@@ -56,9 +58,11 @@ export default function SettingsPayroll({ orgSettings, onSave }) {
         defaultPayDay,
       });
       setSaved(true);
+      toast({ title: "Payroll settings saved", variant: "success" });
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setSaveError("Something went wrong. Please try again.");
+      toast({ title: "Failed to save payroll settings", variant: "danger" });
     }
   };
 
