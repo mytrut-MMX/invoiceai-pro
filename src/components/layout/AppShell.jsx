@@ -5,6 +5,7 @@ import { ROUTES } from "../../router/routes";
 import { TopBar, Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from ".";
 import UserEditModal from "../../modals/UserEditModal";
 import CommandPalette from "../CommandPalette";
+import { ToastProvider } from "../ui/Toast";
 import { signOut } from "../../lib/supabase";
 import PageLoader from "../ui/PageLoader";
 import { useInactivityTimer } from "../../hooks/useInactivityTimer";
@@ -76,7 +77,7 @@ export default function AppShell() {
   }, [setUser]);
 
   return (
-    <>
+    <ToastProvider>
       {/* ── Banners (fixed, above everything) ── */}
       {storageError && (
         <div className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-between gap-3 bg-red-900 text-red-200 text-[13px] font-semibold px-4 py-2.5">
@@ -178,6 +179,6 @@ export default function AppShell() {
           onLogout={doLogout}
         />
       )}
-    </>
+    </ToastProvider>
   );
 }
