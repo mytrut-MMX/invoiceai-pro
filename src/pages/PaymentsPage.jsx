@@ -83,11 +83,11 @@ function PaymentDetailView({ payment, onClose, onEdit, onDelete }) {
             </div>
             <div style={{ padding:"16px 22px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ width:34, height:34, borderRadius:8, background:"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ width:34, height:34, borderRadius:8, background:"var(--brand-50)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <Icons.Invoices />
                 </div>
                 <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#4F46E5" }}>{p.invoice_number}</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"var(--brand-600)" }}>{p.invoice_number}</div>
                   {p.quote_number && <div style={{ fontSize:11, color:"#AAA", marginTop:1 }}>from {p.quote_number}</div>}
                 </div>
               </div>

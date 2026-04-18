@@ -47,7 +47,7 @@ export function SupplierPicker({ suppliers = [], value, onChange, onClear }) {
         }}>
         {value ? (
           <>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#6366F122", color: "#6366F1", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "color-mix(in srgb, var(--brand-500) 13%, transparent)", color: "var(--brand-500)", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 10 }}>
               {value.name?.[0]}
             </div>
             <div style={{ flex: 1, minWidth: 0, padding: "0 8px" }}>
@@ -98,7 +98,7 @@ export function SupplierPicker({ suppliers = [], value, onChange, onClear }) {
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: ff, textAlign: "left" }}
               onMouseEnter={e => e.currentTarget.style.background = "#f4f5f7"}
               onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#6366F122", color: "#6366F1", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "color-mix(in srgb, var(--brand-500) 13%, transparent)", color: "var(--brand-500)", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {c.name?.[0]}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
