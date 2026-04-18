@@ -1,15 +1,9 @@
 import { useState, useEffect } from "react";
-import { ff } from "../../constants";
 import { Icons } from "../../components/icons";
 import { Field, Input, Btn } from "../../components/atoms";
 import { formatSortCode, stripSortCode } from "../../utils/helpers";
 import Section from "../../components/settings/Section";
 
-/**
- * Bank Details settings tab.
- * Self-contained: owns its own state, syncs from orgSettings prop,
- * calls onSave with partial settings object.
- */
 export default function SettingsBank({ orgSettings, onSave }) {
   const org = orgSettings || {};
 
@@ -41,13 +35,7 @@ export default function SettingsBank({ orgSettings, onSave }) {
     }
     setSaveError("");
     try {
-      onSave({
-        bankName,
-        bankSort: stripSortCode(bankSort),
-        bankAcc,
-        bankIban,
-        bankSwift,
-      });
+      onSave({ bankName, bankSort: stripSortCode(bankSort), bankAcc, bankIban, bankSwift });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -57,34 +45,52 @@ export default function SettingsBank({ orgSettings, onSave }) {
 
   return (
     <>
-      <Section title="Bank Details (shown on invoices)">
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
-          <Field label="Bank Name"><Input value={bankName} onChange={setBankName} placeholder="e.g. Barclays" /></Field>
-          <Field label="Sort Code" error={sortCodeError}>
-            <input type="text" value={bankSort} onChange={e=>setBankSort(e.target.value.replace(/[^0-9-]/g, ""))} onBlur={()=>setBankSort(formatSortCode(bankSort))} placeholder="00-00-00" maxLength={8}
-              style={{ width:"100%", padding:"9px 11px", border:`1px solid ${sortCodeError ? "#fca5a5" : "#e8e8ec"}`, borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-              onFocus={e=>e.target.style.borderColor="#1e6be0"} />
+      <Section title="Bank details (shown on invoices)">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <Field label="Bank Name">
+            <Input value={bankName} onChange={setBankName} placeholder="e.g. Barclays" />
           </Field>
-          <Field label="Account Number"><Input value={bankAcc} onChange={setBankAcc} placeholder="12345678" /></Field>
-          <Field label="IBAN (optional)"><Input value={bankIban} onChange={setBankIban} /></Field>
-          <Field label="SWIFT / BIC (optional)"><Input value={bankSwift} onChange={setBankSwift} /></Field>
+          <Field label="Sort Code" error={sortCodeError}>
+            <input
+              type="text"
+              value={bankSort}
+              onChange={e => setBankSort(e.target.value.replace(/[^0-9-]/g, ""))}
+              onBlur={() => setBankSort(formatSortCode(bankSort))}
+              placeholder="00-00-00"
+              maxLength={8}
+              className={[
+                "w-full h-9 px-3 rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none transition-colors duration-150 box-border",
+                sortCodeError
+                  ? "border border-[var(--danger-600)] focus:shadow-[var(--focus-ring)]"
+                  : "border border-[var(--border-default)] focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",
+              ].join(" ")}
+            />
+          </Field>
+          <Field label="Account Number">
+            <Input value={bankAcc} onChange={setBankAcc} placeholder="12345678" />
+          </Field>
+          <Field label="IBAN (optional)">
+            <Input value={bankIban} onChange={setBankIban} />
+          </Field>
+          <Field label="SWIFT / BIC (optional)">
+            <Input value={bankSwift} onChange={setBankSwift} />
+          </Field>
         </div>
       </Section>
 
-      {/* Save actions */}
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, marginTop:16 }}>
+      <div className="flex flex-col items-end gap-2 mt-4">
         {saveError && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#dc2626", fontWeight:600 }}>
+          <div className="flex items-center gap-1.5 text-sm text-[var(--danger-600)] font-semibold">
             <Icons.Alert /> {saveError}
           </div>
         )}
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div className="flex items-center gap-2.5">
           {saved && (
-            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
-              <Icons.Check /> Bank details saved.
+            <div className="flex items-center gap-1.5 text-sm text-[var(--success-700)] font-semibold">
+              <Icons.Check /> Saved.
             </div>
           )}
-          <Btn onClick={handleSave} variant="primary" icon={<Icons.Save />} style={{ background: saved ? "#059669" : "#1e6be0", color:"#fff" }}>
+          <Btn onClick={handleSave} variant={saved ? "success" : "primary"} icon={<Icons.Save />}>
             Save bank settings
           </Btn>
         </div>

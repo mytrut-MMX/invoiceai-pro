@@ -23,16 +23,15 @@ const fmtDateShort = isoStr => {
 export default function EmploymentAllowanceSection() {
   const { user } = useContext(AppCtx);
 
-  const [taxYear]      = useState(getCurrentTaxYear());
-  const [status,       setStatus]       = useState(null);
-  const [eligibility,  setEligibility]  = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [loadError,    setLoadError]    = useState("");
-  const [confirmed,    setConfirmed]    = useState(false);
-  const [saving,       setSaving]       = useState(false);
-  const [actionError,  setActionError]  = useState("");
+  const [taxYear] = useState(getCurrentTaxYear());
+  const [status,       setStatus]      = useState(null);
+  const [eligibility,  setEligibility] = useState(null);
+  const [loading,      setLoading]     = useState(true);
+  const [loadError,    setLoadError]   = useState("");
+  const [confirmed,    setConfirmed]   = useState(false);
+  const [saving,       setSaving]      = useState(false);
+  const [actionError,  setActionError] = useState("");
 
-  // Load status + eligibility on mount and when user changes
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
@@ -77,8 +76,8 @@ export default function EmploymentAllowanceSection() {
   const handleStop = async () => {
     if (!user?.id) return;
     if (!window.confirm(
-      "Stop claiming Employment Allowance? Future payroll runs will not absorb employer NI " +
-      "into the allowance until you re-enable it. Existing usage for this tax year will be preserved."
+      "Stop claiming Employment Allowance? Future payroll runs will not absorb employer NI "
+      + "into the allowance until you re-enable it. Existing usage for this tax year will be preserved."
     )) return;
 
     setSaving(true);
@@ -93,24 +92,20 @@ export default function EmploymentAllowanceSection() {
     }
   };
 
-  // ─── Loading state ────────────────────────────────────────────────────
   if (loading) {
     return (
       <Section title="Employment Allowance">
-        <div style={{ padding:"20px 0", textAlign:"center", color:"#6b7280", fontSize:13 }}>
+        <div className="py-5 text-center text-[var(--text-secondary)] text-sm">
           Checking Employment Allowance status…
         </div>
       </Section>
     );
   }
 
-  // ─── Load error ────────────────────────────────────────────────────────
   if (loadError) {
     return (
       <Section title="Employment Allowance">
-        <InfoBox color="#dc2626">
-          {loadError}
-        </InfoBox>
+        <InfoBox color="var(--danger-600)">{loadError}</InfoBox>
       </Section>
     );
   }
@@ -121,7 +116,6 @@ export default function EmploymentAllowanceSection() {
   const remaining = round2(annualLimit - usedAmount);
   const usedPct = annualLimit > 0 ? Math.min(100, round2((usedAmount / annualLimit) * 100)) : 0;
 
-  // Eligibility warnings (informational)
   const warnings = [];
   if (eligibility?.noEmployees) {
     warnings.push({
@@ -137,66 +131,69 @@ export default function EmploymentAllowanceSection() {
   }
 
   const claimDisabled =
-    !confirmed ||
-    saving ||
-    eligibility?.noEmployees ||
-    eligibility?.singleDirectorViolation;
+    !confirmed || saving
+    || eligibility?.noEmployees
+    || eligibility?.singleDirectorViolation;
 
   return (
     <Section title="Employment Allowance">
-      {/* Header info */}
-      <div style={{ marginBottom:14, fontSize:13, color:"#374151" }}>
+      <div className="mb-3.5 text-sm text-[var(--text-secondary)]">
         Tax year <strong>{taxYear}</strong> · Annual allowance <strong>{fmtMoney(annualLimit)}</strong>
       </div>
 
-      <p style={{ margin:"0 0 14px", fontSize:12, color:"#6b7280", lineHeight:1.6 }}>
+      <p className="m-0 mb-3.5 text-xs text-[var(--text-tertiary)] leading-relaxed">
         Employment Allowance reduces your employer Class 1 National Insurance bill by up to {fmtMoney(annualLimit)} per tax year.
-        Most businesses with employees are eligible. <a href="https://www.gov.uk/claim-employment-allowance" target="_blank" rel="noopener noreferrer" style={{ color:"#1e6be0" }}>HMRC eligibility rules</a>.
+        Most businesses with employees are eligible.{" "}
+        <a
+          href="https://www.gov.uk/claim-employment-allowance"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[var(--brand-600)] hover:text-[var(--brand-700)]"
+        >
+          HMRC eligibility rules
+        </a>.
       </p>
 
-      {/* Warnings */}
       {warnings.map((w, i) => (
-        <div key={i} style={{ marginBottom:12 }}>
-          <InfoBox color="#D97706">
-            {w.msg}
-          </InfoBox>
+        <div key={i} className="mb-3">
+          <InfoBox color="var(--warning-600)">{w.msg}</InfoBox>
         </div>
       ))}
 
-      {/* ─── ACTIVE STATE ──────────────────────────────────────────────── */}
       {isActive && (
         <>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-            <div style={{ width:10, height:10, borderRadius:"50%", background:"#16A34A" }} />
-            <span style={{ fontSize:14, fontWeight:700, color:"#16A34A" }}>Active</span>
+          <div className="flex items-center gap-2 mb-3.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--success-600)]" />
+            <span className="text-sm font-semibold text-[var(--success-700)]">Active</span>
             {status?.claimed_at && (
-              <span style={{ fontSize:12, color:"#6b7280", marginLeft:8 }}>
+              <span className="text-xs text-[var(--text-tertiary)] ml-2">
                 Claimed on {fmtDateShort(status.claimed_at)}
               </span>
             )}
           </div>
 
-          {/* Usage progress bar */}
-          <div style={{ background:"#f9fafb", borderRadius:8, border:"1px solid #e8e8ec", padding:"14px 16px", marginBottom:14 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:12, color:"#374151" }}>
+          <div className="bg-[var(--surface-sunken)] rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3.5 mb-3.5">
+            <div className="flex justify-between mb-2 text-xs text-[var(--text-secondary)]">
               <span>Used: <strong>{fmtMoney(usedAmount)}</strong> / {fmtMoney(annualLimit)}</span>
-              <span>Remaining: <strong style={{ color:"#16A34A" }}>{fmtMoney(remaining)}</strong></span>
+              <span>Remaining: <strong className="text-[var(--success-700)]">{fmtMoney(remaining)}</strong></span>
             </div>
-            <div style={{ background:"#e5e7eb", borderRadius:6, height:10, overflow:"hidden" }}>
-              <div style={{ background:"#1e6be0", height:"100%", width:`${usedPct}%`, transition:"width 0.3s ease" }} />
+            <div className="bg-[var(--border-subtle)] rounded-[3px] h-2.5 overflow-hidden">
+              <div
+                className="bg-[var(--brand-600)] h-full transition-all duration-300"
+                style={{ width: `${usedPct}%` }}
+              />
             </div>
-            <div style={{ marginTop:6, fontSize:11, color:"#6b7280", textAlign:"right" }}>{usedPct}% used</div>
+            <div className="mt-1.5 text-[11px] text-[var(--text-tertiary)] text-right">{usedPct}% used</div>
           </div>
 
-          {/* Cumulative employer NI display (informational) */}
           {eligibility?.cumulativeEmployerNi > 0 && (
-            <div style={{ marginBottom:14, fontSize:12, color:"#6b7280" }}>
+            <div className="mb-3.5 text-xs text-[var(--text-tertiary)]">
               Cumulative employer NI for this tax year: <strong>{fmtMoney(eligibility.cumulativeEmployerNi)}</strong>
             </div>
           )}
 
           {actionError && (
-            <div style={{ marginBottom:12, fontSize:13, color:"#dc2626", fontWeight:600, display:"flex", alignItems:"center", gap:6 }}>
+            <div className="mb-3 text-sm text-[var(--danger-600)] font-semibold flex items-center gap-1.5">
               <Icons.Alert /> {actionError}
             </div>
           )}
@@ -207,27 +204,33 @@ export default function EmploymentAllowanceSection() {
         </>
       )}
 
-      {/* ─── NOT CLAIMING STATE ────────────────────────────────────────── */}
       {!isActive && (
         <>
-          <div style={{ marginBottom:14 }}>
-            <label style={{ display:"flex", alignItems:"flex-start", gap:8, cursor:"pointer", fontSize:13, color:"#374151", lineHeight:1.5 }}>
+          <div className="mb-3.5">
+            <label className="flex items-start gap-2 cursor-pointer text-sm text-[var(--text-secondary)] leading-relaxed">
               <input
                 type="checkbox"
                 checked={confirmed}
                 onChange={e => setConfirmed(e.target.checked)}
-                style={{ marginTop:3, accentColor:"#1e6be0", cursor:"pointer" }}
+                className="mt-0.5 accent-[var(--brand-600)] cursor-pointer"
               />
               <span>
                 I confirm my business is eligible for Employment Allowance under{" "}
-                <a href="https://www.gov.uk/claim-employment-allowance/eligibility" target="_blank" rel="noopener noreferrer" style={{ color:"#1e6be0" }}>HMRC's eligibility rules</a>{" "}
+                <a
+                  href="https://www.gov.uk/claim-employment-allowance/eligibility"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--brand-600)] hover:text-[var(--brand-700)]"
+                >
+                  HMRC's eligibility rules
+                </a>{" "}
                 (not solely a single-director company, less than 50% public sector work, not part of a connected company group already claiming).
               </span>
             </label>
           </div>
 
           {actionError && (
-            <div style={{ marginBottom:12, fontSize:13, color:"#dc2626", fontWeight:600, display:"flex", alignItems:"center", gap:6 }}>
+            <div className="mb-3 text-sm text-[var(--danger-600)] font-semibold flex items-center gap-1.5">
               <Icons.Alert /> {actionError}
             </div>
           )}
@@ -236,7 +239,6 @@ export default function EmploymentAllowanceSection() {
             variant="primary"
             onClick={handleClaim}
             disabled={claimDisabled}
-            style={{ background: claimDisabled ? "#9ca3af" : "#1e6be0", color:"#fff" }}
           >
             {saving ? "Claiming…" : "Claim Employment Allowance"}
           </Btn>

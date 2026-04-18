@@ -1,5 +1,4 @@
 import { useState, useContext } from "react";
-import { ff } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../../components/icons";
 import { Btn } from "../../components/atoms";
@@ -20,20 +19,37 @@ export default function SettingsPayments() {
   const removePayMethod = (m) => setCustomPayMethods(p => p.filter(x => x !== m));
 
   return (
-    <Section title="Custom Payment Methods">
-      <p style={{ margin:"0 0 12px", fontSize:13, color:"#888" }}>Add extra payment methods beyond the built-in options.</p>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
+    <Section title="Custom payment methods">
+      <p className="m-0 mb-3 text-sm text-[var(--text-secondary)]">
+        Add extra payment methods beyond the built-in options.
+      </p>
+      <div className="flex flex-wrap gap-2 mb-3">
         {customPayMethods.map(m => (
-          <div key={m} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 10px", background:"#f3f4f6", border:"1px solid #e8e8ec", borderRadius:20, fontSize:12, fontWeight:600, color:"#444" }}>
+          <div
+            key={m}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-full text-xs font-semibold text-[var(--text-secondary)]"
+          >
             {m}
-            <button onClick={() => removePayMethod(m)} style={{ background:"none", border:"none", cursor:"pointer", color:"#CCC", padding:0, display:"flex" }}><Icons.X /></button>
+            <button
+              onClick={() => removePayMethod(m)}
+              className="text-[var(--text-tertiary)] hover:text-[var(--danger-600)] bg-transparent border-none cursor-pointer flex p-0 transition-colors duration-150"
+            >
+              <Icons.X />
+            </button>
           </div>
         ))}
-        {customPayMethods.length === 0 && <span style={{ fontSize:13, color:"#CCC" }}>No custom methods added yet.</span>}
+        {customPayMethods.length === 0 && (
+          <span className="text-sm text-[var(--text-tertiary)]">No custom methods added yet.</span>
+        )}
       </div>
-      <div style={{ display:"flex", gap:8, maxWidth:340 }}>
-        <input value={newMethod} onChange={e => setNewMethod(e.target.value)} onKeyDown={e => e.key === "Enter" && addPayMethod()} placeholder="e.g. Wise, Revolut…"
-          style={{ flex:1, padding:"9px 11px", border:"1.5px solid #E0E0E0", borderRadius:7, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+      <div className="flex gap-2 max-w-[360px]">
+        <input
+          value={newMethod}
+          onChange={e => setNewMethod(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && addPayMethod()}
+          placeholder="e.g. Wise, Revolut…"
+          className="flex-1 h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border"
+        />
         <Btn onClick={addPayMethod} variant="outline" icon={<Icons.Plus />}>Add</Btn>
       </div>
     </Section>

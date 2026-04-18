@@ -8,24 +8,24 @@ export default function SettingsLedger() {
   const navigate = useNavigate();
 
   return (
-    <Section title="General Ledger">
-      <div style={{ display:"flex", alignItems:"flex-start", gap:18, flexWrap:"wrap" }}>
-        <div style={{ flex:1, minWidth:220 }}>
-          <p style={{ margin:"0 0 8px", fontSize:13, color:"#374151", lineHeight:1.6 }}>
+    <Section title="General ledger">
+      <div className="flex items-start gap-4 flex-wrap">
+        <div className="flex-1 min-w-[220px]">
+          <p className="m-0 mb-2 text-sm text-[var(--text-secondary)] leading-relaxed">
             The General Ledger provides a complete double-entry accounting view of your business —
             journal entries, chart of accounts, and a profit &amp; loss statement, all derived automatically
             from your invoices, payments, and expenses.
           </p>
-          <ul style={{ margin:"0 0 16px", paddingLeft:18, fontSize:13, color:"#6b7280", lineHeight:1.8 }}>
+          <ul className="m-0 mb-4 pl-5 list-disc text-sm text-[var(--text-secondary)] leading-relaxed">
             <li>Journal — all posted entries with expandable lines</li>
             <li>Chart of Accounts — live balances per account</li>
             <li>P&amp;L — period profit &amp; loss from ledger data</li>
           </ul>
           <Btn variant="primary" icon={<Icons.Bank />} onClick={() => navigate(ROUTES.LEDGER_JOURNAL)}>
-            Open General Ledger
+            Open general ledger
           </Btn>
         </div>
-        <div style={{ width:56, height:56, background:"#1a1a2e", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", flexShrink:0 }}>
+        <div className="w-14 h-14 bg-[var(--text-primary)] rounded-[var(--radius-lg)] flex items-center justify-center text-white flex-shrink-0">
           <Icons.Bank />
         </div>
       </div>

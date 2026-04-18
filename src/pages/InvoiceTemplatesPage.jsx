@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { ff, PDF_TEMPLATES } from "../constants";
+import { PDF_TEMPLATES } from "../constants";
 import { A4InvoiceDoc } from "../components/shared";
 import { Btn, Field, Input, Select } from "../components/atoms";
 import { Icons } from "../components/icons";
@@ -16,8 +16,8 @@ const SAMPLE_INVOICE_DATA = {
   from: { companyName: "Your Company", address: "123 Main St", city: "London", country: "UK", email: "hello@company.com" },
   to: { companyName: "Acme Corp", contactName: "John Smith", address: "456 Oak Ave", city: "Manchester", country: "UK" },
   items: [
-    { description: "Web Design Services", quantity: 1, unitPrice: 1200, tax: 20, total: 1440 },
-    { description: "Monthly Maintenance", quantity: 3, unitPrice: 150, tax: 20, total: 540 },
+    { description: "Web Design Services",   quantity: 1, unitPrice: 1200, tax: 20, total: 1440 },
+    { description: "Monthly Maintenance",   quantity: 3, unitPrice: 150,  tax: 20, total: 540 },
   ],
   bank: { bankName: "Barclays", accountName: "Your Company Ltd", accountNumber: "12345678", sortCode: "20-30-40", iban: "GB29BARC20304912345678", swift: "BARCGB22" },
   notes: "Thank you for your business. Payment due within 30 days.",
@@ -65,25 +65,51 @@ function InvoiceTemplateEditorModal({ template, onClose, onSave }) {
   const [logoPosition, setLogoPosition] = useState(template?.logoPosition || "left");
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,16,0.55)", display: "grid", placeItems: "center", zIndex: 1000, padding: 16 }}>
-      <div style={{ width: "min(560px, 100%)", background: "#fff", borderRadius: 12, border: "1px solid #E8E6E0", padding: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 18, color: "#111110" }}>Edit Template</h3>
-          <button type="button" onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#6B6B6B" }}><Icons.X /></button>
+    <div className="fixed inset-0 bg-black/50 z-[3000] grid place-items-center p-4">
+      <div className="w-full max-w-[560px] bg-white rounded-2xl shadow-[var(--shadow-popover)] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
+          <h3 className="m-0 text-lg font-semibold text-[var(--text-primary)]">Edit template</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] flex transition-colors duration-150"
+          >
+            <Icons.X />
+          </button>
         </div>
 
-        <Field label="Template Name"><Input value={name} onChange={setName} placeholder="Template name" /></Field>
-        <Field label="Template Style"><Select value={pdfTemplate} onChange={setPdfTemplate} options={PDF_TEMPLATES.map((tpl) => tpl.id)} /></Field>
-        <Field label="Accent Color"><Input value={accentColor} onChange={setAccentColor} /></Field>
-        <Field label="Logo Position"><Select value={logoPosition} onChange={setLogoPosition} options={["left", "center", "right"]} /></Field>
+        <div className="px-6 py-5 space-y-3">
+          <Field label="Template Name">
+            <Input value={name} onChange={setName} placeholder="Template name" />
+          </Field>
+          <Field label="Template Style">
+            <Select
+              value={pdfTemplate}
+              onChange={setPdfTemplate}
+              options={PDF_TEMPLATES.map((tpl) => tpl.id)}
+            />
+          </Field>
+          <Field label="Accent Color">
+            <Input value={accentColor} onChange={setAccentColor} />
+          </Field>
+          <Field label="Logo Position">
+            <Select value={logoPosition} onChange={setLogoPosition} options={["left", "center", "right"]} />
+          </Field>
+        </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+        <div className="flex justify-end gap-2.5 px-6 py-4 border-t border-[var(--border-subtle)]">
           <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
           <Btn
             variant="primary"
-            onClick={() => onSave({ ...template, name: name.trim() || "Untitled Template", pdfTemplate, accentColor, logoPosition })}
+            onClick={() => onSave({
+              ...template,
+              name: name.trim() || "Untitled Template",
+              pdfTemplate,
+              accentColor,
+              logoPosition,
+            })}
           >
-            Save Template
+            Save template
           </Btn>
         </div>
       </div>
@@ -169,69 +195,110 @@ export default function InvoiceTemplatesPage() {
   };
 
   return (
-    <div style={{ padding: "20px 24px", minHeight: "100%", background: "#F0EFE9", fontFamily: ff }}>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(320px, 430px) minmax(0, 1fr)", gap: 18 }}>
-        <section style={{ background: "#fff", border: "1px solid #E8E6E0", borderRadius: 12, padding: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h1 style={{ fontSize: 22, margin: 0, color: "#111110" }}>Invoice Templates</h1>
-            <Btn
-              variant="primary"
-              icon={<Icons.Plus />}
-              onClick={() => {
-                setEditingTemplate({ ...DEFAULT_TEMPLATE, name: `Template ${templates.length + 1}`, pdfTemplate: "classic", accentColor: "#E86C4A", logoPosition: "left" });
-                setShowEditor(true);
-              }}
-            >
-              New Template
-            </Btn>
-          </div>
+    <div className="bg-[var(--surface-page)] min-h-screen">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+        <div className="mb-5">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)] m-0">Invoice templates</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1 m-0">
+            Customise how your invoices look and set the default template
+          </p>
+        </div>
 
-          <div style={{ display: "grid", gap: 10 }}>
-            {templates.map((template) => {
-              const isActive = template.id === selectedTemplate?.id;
-              const isDefault = template.id === localStorage.getItem(DEFAULT_TEMPLATE_KEY);
-              return (
-                <article
-                  key={template.id}
-                  style={{ border: `1px solid ${isActive ? "#111110" : "#E8E6E0"}`, borderRadius: 10, padding: 12, background: isActive ? "#FAFAF7" : "#fff" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                    <button type="button" onClick={() => setSelectedId(template.id)} style={{ border: "none", background: "none", textAlign: "left", cursor: "pointer", padding: 0, color: "#111110", fontWeight: 700 }}>
-                      {template.name}
-                    </button>
-                    {(isDefault || isActive) && (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#9B5A00", background: "#FFF7E6", padding: "2px 8px", borderRadius: 999 }}>
-                        Active
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                    <Btn variant="outline" onClick={() => { setEditingTemplate(template); setShowEditor(true); }}>Edit</Btn>
-                    <Btn variant="ghost" onClick={() => { duplicateTemplate(template.id); refreshTemplates(); }}>Duplicate</Btn>
-                    <Btn variant="danger" onClick={() => { deleteTemplate(template.id); refreshTemplates(); }}>Delete</Btn>
-                    <Btn variant="ghost" onClick={() => setDefaultTemplate(template.id)}>{isDefault ? "Default" : "Set as Default"}</Btn>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section style={{ background: "#fff", border: "1px solid #E8E6E0", borderRadius: 12, padding: 16, overflow: "hidden" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8A8A84", marginBottom: 12 }}>LIVE PREVIEW</div>
-          <div style={{ marginBottom: 12, border: "1px solid #E8E6E0", borderRadius: 10, background: "#FAFAF7", padding: "10px 12px", fontSize: 12, color: "#4F4F48" }}>
-            <div>Bank details shown here are from your Company Profile. Template controls which fields are visible on each invoice.</div>
-            <Link to={ROUTES.SETTINGS_GENERAL} style={{ display: "inline-block", marginTop: 6, color: "#1F4FBF", fontWeight: 700, textDecoration: "none" }}>
-              Go to Company Profile →
-            </Link>
-          </div>
-          <div style={{ background: "#F5F4F0", border: "1px solid #E8E6E0", borderRadius: 10, padding: 10, minHeight: 640, overflow: "auto" }}>
-            <div style={{ transform: "scale(0.6)", transformOrigin: "top center", marginBottom: "-360px" }}>
-              <InvoiceTemplatePreview template={selectedTemplate} sampleData={SAMPLE_INVOICE_DATA} />
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,430px)_minmax(0,1fr)] gap-4">
+          {/* Templates list */}
+          <section className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-4 h-fit">
+            <div className="flex justify-between items-center mb-3.5">
+              <h2 className="text-base font-semibold text-[var(--text-primary)] m-0">Templates</h2>
+              <Btn
+                variant="primary"
+                icon={<Icons.Plus />}
+                onClick={() => {
+                  setEditingTemplate({
+                    ...DEFAULT_TEMPLATE,
+                    name: `Template ${templates.length + 1}`,
+                    pdfTemplate: "classic",
+                    accentColor: "#E86C4A",
+                    logoPosition: "left",
+                  });
+                  setShowEditor(true);
+                }}
+              >
+                New template
+              </Btn>
             </div>
-          </div>
-        </section>
+
+            <div className="grid gap-2.5">
+              {templates.map((template) => {
+                const isActive = template.id === selectedTemplate?.id;
+                const isDefault = template.id === localStorage.getItem(DEFAULT_TEMPLATE_KEY);
+                return (
+                  <article
+                    key={template.id}
+                    className={[
+                      "rounded-[var(--radius-md)] p-3 transition-colors duration-150",
+                      isActive
+                        ? "border border-[var(--brand-600)] bg-[var(--brand-50)]"
+                        : "border border-[var(--border-subtle)] bg-white hover:border-[var(--border-default)]",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(template.id)}
+                        className="bg-transparent border-none text-left cursor-pointer p-0 text-[var(--text-primary)] font-semibold text-sm"
+                      >
+                        {template.name}
+                      </button>
+                      {(isDefault || isActive) && (
+                        <span className="text-[10px] font-semibold text-[var(--warning-700)] bg-[var(--warning-50)] px-2 py-0.5 rounded-full">
+                          Active
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 mt-2.5 flex-wrap">
+                      <Btn variant="outline" size="sm" onClick={() => { setEditingTemplate(template); setShowEditor(true); }}>
+                        Edit
+                      </Btn>
+                      <Btn variant="ghost" size="sm" onClick={() => { duplicateTemplate(template.id); refreshTemplates(); }}>
+                        Duplicate
+                      </Btn>
+                      <Btn variant="danger" size="sm" onClick={() => { deleteTemplate(template.id); refreshTemplates(); }}>
+                        Delete
+                      </Btn>
+                      <Btn variant="ghost" size="sm" onClick={() => setDefaultTemplate(template.id)}>
+                        {isDefault ? "Default" : "Set as default"}
+                      </Btn>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Live preview */}
+          <section className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-4 overflow-hidden">
+            <div className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase mb-3">
+              Live preview
+            </div>
+            <div className="mb-3 border border-[var(--border-subtle)] rounded-[var(--radius-md)] bg-[var(--surface-sunken)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+              <div>
+                Bank details shown here are from your Company Profile. Template controls which fields are visible on each invoice.
+              </div>
+              <Link
+                to={ROUTES.SETTINGS_GENERAL}
+                className="inline-block mt-1.5 text-[var(--brand-600)] hover:text-[var(--brand-700)] font-semibold no-underline"
+              >
+                Go to Company Profile →
+              </Link>
+            </div>
+            <div className="bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-2.5 min-h-[640px] overflow-auto">
+              <div className="origin-top mx-auto" style={{ transform: "scale(0.6)", transformOrigin: "top center", marginBottom: "-360px" }}>
+                <InvoiceTemplatePreview template={selectedTemplate} sampleData={SAMPLE_INVOICE_DATA} />
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
 
       {showEditor && (

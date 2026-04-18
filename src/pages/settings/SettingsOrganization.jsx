@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../router/routes";
 import {
-  ff,
   CURRENCIES_LIST,
   TIMEZONES,
   INDUSTRIES,
@@ -14,16 +13,13 @@ import { Field, Input, Select, Btn } from "../../components/atoms";
 import { validateUkCrn, formatPhoneNumber, stripPhoneForStorage } from "../../utils/helpers";
 import Section from "../../components/settings/Section";
 
-/**
- * Organization Details settings tab.
- * Self-contained: owns its own state, syncs from orgSettings prop,
- * calls onSave with partial settings object.
- */
+const textInputCls =
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+
 export default function SettingsOrganization({ orgSettings, onSave }) {
   const navigate = useNavigate();
   const org = orgSettings || {};
 
-  // ─── Local state ─────────────────────────────────────────────────────────
   const [orgName,  setOrgName]  = useState(org.orgName || "");
   const [email,    setEmail]    = useState(org.email || "");
   const [phone,    setPhone]    = useState(formatPhoneNumber(org.phone || ""));
@@ -39,7 +35,6 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
   const [saved,    setSaved]    = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // ─── Sync from orgSettings when it changes externally ────────────────────
   useEffect(() => {
     if (!orgSettings) return;
     setOrgName(org.orgName || "");
@@ -60,7 +55,6 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
     ? "CRN must be 8 digits or 2 letters followed by 6 digits (e.g. 12345678, SC123456)."
     : "";
 
-  // ─── Save handler ────────────────────────────────────────────────────────
   const handleSave = () => {
     if (crn && !validateUkCrn(crn)) {
       setSaveError("Please enter a valid UK CRN (8 digits or 2 letters + 6 digits).");
@@ -69,18 +63,9 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
     setSaveError("");
     try {
       onSave({
-        orgName,
-        email,
-        phone: stripPhoneForStorage(phone),
-        website,
-        street,
-        city,
-        postcode,
-        country,
-        currency: normalizeCurrencyCode(currency),
-        timezone,
-        industry,
-        crn,
+        orgName, email, phone: stripPhoneForStorage(phone), website,
+        street, city, postcode, country,
+        currency: normalizeCurrencyCode(currency), timezone, industry, crn,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -91,8 +76,8 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
 
   return (
     <>
-      <Section title="Organisation Details">
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
+      <Section title="Organisation details">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <Field label="Company / Trading Name" required>
             <Input value={orgName} onChange={setOrgName} placeholder="Your Company Ltd" />
           </Field>
@@ -106,8 +91,7 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
               onChange={e => setPhone(e.target.value)}
               onBlur={() => setPhone(formatPhoneNumber(phone))}
               placeholder="+44 …"
-              style={{ width:"100%", padding:"9px 11px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:15, fontFamily:ff, color:"#1A1A1A", background:"#fff", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-              onFocus={e => e.target.style.borderColor = "#1e6be0"}
+              className={textInputCls}
             />
           </Field>
           <Field label="Website">
@@ -141,36 +125,45 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
           <Field label="Company Reg No (CRN)" hint="Format: 12345678 or SC123456" error={crnError}>
             <Input value={crn} onChange={v => setCrn(v.toUpperCase())} placeholder="Optional" error={!!crnError} />
           </Field>
-          <div style={{ marginTop:20, paddingTop:16, borderTop:"1px solid #f0f0f4" }}>
-            <div style={{ fontSize:13, color:"#64748B", marginBottom:8 }}>Want to go through the setup wizard again?</div>
-            <Btn variant="outline" onClick={() => {
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-[var(--border-subtle)]">
+          <div className="text-sm text-[var(--text-secondary)] mb-2">Want to go through the setup wizard again?</div>
+          <Btn
+            variant="outline"
+            onClick={() => {
               localStorage.removeItem("ai_invoice_onboarding_done");
               navigate(ROUTES.ONBOARDING, { replace: true });
-            }}>
-              Restart onboarding
-            </Btn>
-          </div>
+            }}
+          >
+            Restart onboarding
+          </Btn>
         </div>
       </Section>
 
-      {/* Save actions */}
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, marginTop:16 }}>
-        {saveError && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#dc2626", fontWeight:600 }}>
-            <Icons.Alert /> {saveError}
+      <SaveFooter saved={saved} saveError={saveError} onSave={handleSave} label="Save organisation settings" />
+    </>
+  );
+}
+
+function SaveFooter({ saved, saveError, onSave, label }) {
+  return (
+    <div className="flex flex-col items-end gap-2 mt-4">
+      {saveError && (
+        <div className="flex items-center gap-1.5 text-sm text-[var(--danger-600)] font-semibold">
+          <Icons.Alert /> {saveError}
+        </div>
+      )}
+      <div className="flex items-center gap-2.5">
+        {saved && (
+          <div className="flex items-center gap-1.5 text-sm text-[var(--success-700)] font-semibold">
+            <Icons.Check /> Saved.
           </div>
         )}
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          {saved && (
-            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
-              <Icons.Check /> Organisation details saved.
-            </div>
-          )}
-          <Btn onClick={handleSave} variant="primary" icon={<Icons.Save />} style={{ background: saved ? "#059669" : "#1e6be0", color:"#fff" }}>
-            Save organisation settings
-          </Btn>
-        </div>
+        <Btn onClick={onSave} variant={saved ? "success" : "primary"} icon={<Icons.Save />}>
+          {label}
+        </Btn>
       </div>
-    </>
+    </div>
   );
 }

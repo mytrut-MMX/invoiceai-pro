@@ -1,18 +1,17 @@
 import { useState, useContext, useEffect } from "react";
-import { ff } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../../components/icons";
 import { Field, Input, Btn } from "../../components/atoms";
 import Section from "../../components/settings/Section";
 
-const ACCENT_PRESETS = ["#E86C4A","#2563EB","#16A34A","#D97706","#9333EA","#0891B2","#E11D48","#1A1A1A"];
+const ACCENT_PRESETS = ["#E86C4A", "#2563EB", "#16A34A", "#D97706", "#9333EA", "#0891B2", "#E11D48", "#1A1A1A"];
 const SIDEBAR_PRESETS = [
-  { label:"Dark",    color:"#1A1A1A" },
-  { label:"Slate",   color:"#1E293B" },
-  { label:"Navy",    color:"#1E3A5F" },
-  { label:"Forest",  color:"#1A3A2A" },
-  { label:"Plum",    color:"#2D1B3D" },
-  { label:"White",   color:"#FFFFFF" },
+  { label: "Dark",    color: "#1A1A1A" },
+  { label: "Slate",   color: "#1E293B" },
+  { label: "Navy",    color: "#1E3A5F" },
+  { label: "Forest",  color: "#1A3A2A" },
+  { label: "Plum",    color: "#2D1B3D" },
+  { label: "White",   color: "#FFFFFF" },
 ];
 
 export default function SettingsAppearance() {
@@ -45,79 +44,155 @@ export default function SettingsAppearance() {
 
   return (
     <>
-      <Section title="Sidebar Appearance">
-        <div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:"#AAA", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Style</div>
-          <div style={{ display:"flex", gap:8 }}>
-            {["solid","gradient"].map(t => (
-              <button key={t} onClick={() => setThemeType(t)}
-                style={{ padding:"7px 16px", borderRadius:8, border:`1.5px solid ${themeType === t ? "#1e6be0" : "#e8e8ec"}`, background: themeType === t ? "#eff6ff" : "#fff", color: themeType === t ? "#1e6be0" : "#374151", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:ff, textTransform:"capitalize" }}>
-                {t}
-              </button>
-            ))}
+      <Section title="Sidebar appearance">
+        <div className="mb-4">
+          <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-2.5">
+            Style
+          </div>
+          <div className="flex gap-2">
+            {["solid", "gradient"].map(t => {
+              const active = themeType === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setThemeType(t)}
+                  className={[
+                    "h-8 px-4 rounded-[var(--radius-md)] text-xs font-semibold cursor-pointer transition-colors duration-150 capitalize",
+                    active
+                      ? "bg-[var(--brand-50)] text-[var(--brand-700)] border border-[var(--brand-600)]"
+                      : "bg-white text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
+                  ].join(" ")}
+                >
+                  {t}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <Field label="Sidebar Presets">
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-              {SIDEBAR_PRESETS.map(p => (
-                <button key={p.color} onClick={() => setThemeColor(p.color)} title={p.label}
-                  style={{ width:28, height:28, borderRadius:"50%", background:p.color, border:`2px solid ${themeColor === p.color ? "#1e6be0" : "transparent"}`, cursor:"pointer", outline:"none", boxShadow: p.color === "#FFFFFF" ? "inset 0 0 0 1px #E0E0E0" : "none" }} />
-              ))}
+            <div className="flex gap-1.5 flex-wrap">
+              {SIDEBAR_PRESETS.map(p => {
+                const active = themeColor === p.color;
+                return (
+                  <button
+                    key={p.color}
+                    onClick={() => setThemeColor(p.color)}
+                    title={p.label}
+                    className="w-7 h-7 rounded-full cursor-pointer outline-none"
+                    style={{
+                      background: p.color,
+                      border: `2px solid ${active ? "var(--brand-600)" : "transparent"}`,
+                      boxShadow: p.color === "#FFFFFF" ? "inset 0 0 0 1px var(--border-default)" : "none",
+                    }}
+                  />
+                );
+              })}
             </div>
           </Field>
+
           <Field label="Sidebar Colour">
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)}
-                style={{ width:36, height:36, border:"none", background:"none", cursor:"pointer", borderRadius:8 }} />
-              <Input value={themeColor} onChange={setThemeColor} placeholder="#1A1A1A" style={{ flex:1 }} />
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={themeColor}
+                onChange={e => setThemeColor(e.target.value)}
+                className="w-9 h-9 border-none bg-transparent cursor-pointer rounded-[var(--radius-md)]"
+              />
+              <div className="flex-1">
+                <Input value={themeColor} onChange={setThemeColor} placeholder="#1A1A1A" />
+              </div>
             </div>
           </Field>
+
           {themeType === "gradient" && (
             <Field label="Gradient End Colour">
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <input type="color" value={themeColor2} onChange={e => setThemeColor2(e.target.value)}
-                  style={{ width:36, height:36, border:"none", background:"none", cursor:"pointer", borderRadius:8 }} />
-                <Input value={themeColor2} onChange={setThemeColor2} placeholder="#333" style={{ flex:1 }} />
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={themeColor2}
+                  onChange={e => setThemeColor2(e.target.value)}
+                  className="w-9 h-9 border-none bg-transparent cursor-pointer rounded-[var(--radius-md)]"
+                />
+                <div className="flex-1">
+                  <Input value={themeColor2} onChange={setThemeColor2} placeholder="#333" />
+                </div>
               </div>
             </Field>
           )}
+
           <Field label="Accent Colour">
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                {ACCENT_PRESETS.map(c => (
-                  <button key={c} onClick={() => setAccentColor(c)}
-                    style={{ width:24, height:24, borderRadius:"50%", background:c, border:`2px solid ${accentColor === c ? "#1e6be0" : "transparent"}`, cursor:"pointer", outline:"none" }} />
-                ))}
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-1 flex-wrap">
+                {ACCENT_PRESETS.map(c => {
+                  const active = accentColor === c;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setAccentColor(c)}
+                      className="w-6 h-6 rounded-full cursor-pointer outline-none"
+                      style={{
+                        background: c,
+                        border: `2px solid ${active ? "var(--brand-600)" : "transparent"}`,
+                      }}
+                    />
+                  );
+                })}
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)}
-                  style={{ width:36, height:36, border:"none", background:"none", cursor:"pointer", borderRadius:8 }} />
-                <Input value={accentColor} onChange={setAccentColor} placeholder="#E86C4A" style={{ flex:1 }} />
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={accentColor}
+                  onChange={e => setAccentColor(e.target.value)}
+                  className="w-9 h-9 border-none bg-transparent cursor-pointer rounded-[var(--radius-md)]"
+                />
+                <div className="flex-1">
+                  <Input value={accentColor} onChange={setAccentColor} placeholder="#E86C4A" />
+                </div>
               </div>
             </div>
           </Field>
         </div>
-        <div style={{ marginTop:14, height:42, borderRadius:10, background: themeType === "gradient" ? `linear-gradient(90deg,${themeColor},${themeColor2})` : themeColor, display:"flex", alignItems:"center", padding:"0 16px", gap:12 }}>
-          <div style={{ width:22, height:22, borderRadius:6, background:accentColor, display:"flex", alignItems:"center", justifyContent:"center" }}><Icons.Invoices /></div>
-          <span style={{ color:"#fff", fontSize:12, fontWeight:800, letterSpacing:"0.06em", textShadow:"0 1px 2px rgba(0,0,0,0.3)" }}>InvoSaga</span>
-          <div style={{ marginLeft:"auto", width:20, height:20, borderRadius:"50%", background:accentColor }} />
+
+        {/* Preview bar */}
+        <div
+          className="mt-3.5 h-10 rounded-[var(--radius-lg)] flex items-center px-4 gap-3"
+          style={{
+            background: themeType === "gradient"
+              ? `linear-gradient(90deg,${themeColor},${themeColor2})`
+              : themeColor,
+          }}
+        >
+          <div
+            className="w-5 h-5 rounded-[var(--radius-sm)] flex items-center justify-center"
+            style={{ background: accentColor }}
+          >
+            <Icons.Invoices />
+          </div>
+          <span
+            className="text-white text-xs font-bold tracking-wider"
+            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}
+          >
+            InvoSaga
+          </span>
+          <div className="ml-auto w-5 h-5 rounded-full" style={{ background: accentColor }} />
         </div>
       </Section>
 
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, marginTop:16 }}>
+      <div className="flex flex-col items-end gap-2 mt-4">
         {saveError && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#dc2626", fontWeight:600 }}>
+          <div className="flex items-center gap-1.5 text-sm text-[var(--danger-600)] font-semibold">
             <Icons.Alert /> {saveError}
           </div>
         )}
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div className="flex items-center gap-2.5">
           {saved && (
-            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
-              <Icons.Check /> Appearance settings saved.
+            <div className="flex items-center gap-1.5 text-sm text-[var(--success-700)] font-semibold">
+              <Icons.Check /> Saved.
             </div>
           )}
-          <Btn onClick={handleSave} variant="primary" icon={<Icons.Save />} style={{ background: saved ? "#059669" : "#1e6be0", color:"#fff" }}>
+          <Btn onClick={handleSave} variant={saved ? "success" : "primary"} icon={<Icons.Save />}>
             Save appearance settings
           </Btn>
         </div>

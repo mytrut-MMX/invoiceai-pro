@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
-import { ff, CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../../constants";
+import { CIS_DEDUCTION_RATES, CIS_DEFAULT_SETTINGS } from "../../constants";
 import { Icons } from "../../components/icons";
 import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../../components/atoms";
 import Section from "../../components/settings/Section";
 
-// ─── ChipToggle (local copy — matches SettingsPage.jsx version) ───────────
 function ChipToggle({ value, onChange, options }) {
   return (
-    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+    <div className="flex gap-2 flex-wrap">
       {options.map(option => {
         const selected = value === option;
         return (
@@ -15,20 +14,12 @@ function ChipToggle({ value, onChange, options }) {
             key={option}
             type="button"
             onClick={() => onChange(option)}
-            style={{
-              border: `1px solid ${selected ? "#1e6be0" : "#e8e8ec"}`,
-              background: selected ? "#1e6be0" : "#fff",
-              color: selected ? "#fff" : "#374151",
-              borderRadius: 999,
-              padding: "7px 12px",
-              fontSize: 13,
-              fontWeight: 700,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
+            className={[
+              "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors duration-150",
+              selected
+                ? "bg-[var(--brand-600)] text-white border border-[var(--brand-600)]"
+                : "bg-white text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
+            ].join(" ")}
           >
             {selected && <Icons.Check />}
             <span>{option}</span>
@@ -42,7 +33,6 @@ function ChipToggle({ value, onChange, options }) {
 export default function SettingsTax({ orgSettings, onSave }) {
   const org = orgSettings || {};
 
-  // ─── Local state ─────────────────────────────────────────────────────────
   const [accountingBasis, setAccountingBasis] = useState(org.accountingBasis || "Accrual");
   const [vatReg,      setVatReg]      = useState(org.vatReg || "No");
   const [vatNum,      setVatNum]      = useState(org.vatNum || "");
@@ -60,7 +50,6 @@ export default function SettingsTax({ orgSettings, onSave }) {
   const [saved, setSaved]         = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // ─── Sync from parent when orgSettings changes externally ────────────────
   useEffect(() => {
     if (!orgSettings) return;
     const o = orgSettings;
@@ -77,18 +66,15 @@ export default function SettingsTax({ orgSettings, onSave }) {
     setCisEmployerRef(o.cis?.employerRef || "");
     setCisDefaultRate(o.cis?.defaultRate ?? o.cisRate ?? CIS_DEFAULT_SETTINGS.defaultRate);
     setVatNumberLocked(Boolean(o.vatNum));
-    // Auto-populate contractor name from org name if not already set
     if (!o.cis?.contractorName && o.orgName) setCisContractorName(o.orgName);
   }, [orgSettings]);
 
-  // When CIS is enabled and contractor name is blank, default it to the org name
   useEffect(() => {
     if (cisEnabled && !cisContractorName && org.orgName) {
       setCisContractorName(org.orgName);
     }
   }, [cisEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Save handler ────────────────────────────────────────────────────────
   const handleSave = () => {
     if (cisEnabled) {
       const utr = cisContractorUTR.replace(/\D/g, "");
@@ -99,28 +85,26 @@ export default function SettingsTax({ orgSettings, onSave }) {
     }
     setSaveError("");
 
-    const partial = {
-      accountingBasis,
-      vatReg,
-      vatNum,
-      vatScheme,
-      flatRatePct: vatScheme === "Flat Rate Scheme" ? flatRatePct : "",
-      cisReg: cisEnabled ? "Yes" : "No",
-      cisRole,
-      cisRate: cisDefaultRate,
-      cisUtrNo: cisContractorUTR,
-      cisRegistrationStatus,
-      cis: {
-        enabled: cisEnabled,
-        contractorName: cisContractorName,
-        contractorUTR: cisContractorUTR,
-        employerRef: cisEmployerRef,
-        defaultRate: cisDefaultRate,
-      },
-    };
-
     try {
-      onSave(partial);
+      onSave({
+        accountingBasis,
+        vatReg,
+        vatNum,
+        vatScheme,
+        flatRatePct: vatScheme === "Flat Rate Scheme" ? flatRatePct : "",
+        cisReg: cisEnabled ? "Yes" : "No",
+        cisRole,
+        cisRate: cisDefaultRate,
+        cisUtrNo: cisContractorUTR,
+        cisRegistrationStatus,
+        cis: {
+          enabled: cisEnabled,
+          contractorName: cisContractorName,
+          contractorUTR: cisContractorUTR,
+          employerRef: cisEmployerRef,
+          defaultRate: cisDefaultRate,
+        },
+      });
       setVatNumberLocked(Boolean(vatNum));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -130,28 +114,28 @@ export default function SettingsTax({ orgSettings, onSave }) {
   };
 
   const requestTaxNumberEdit = (unlockField) => {
-    const shouldUnlock = window.confirm("Are you sure this is the correct number?");
-    if (shouldUnlock) unlockField(false);
+    if (window.confirm("Are you sure this is the correct number?")) unlockField(false);
   };
 
-  // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <>
-      <Section title="Tax Registration">
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14 }}>
+      <Section title="Tax registration">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <Field label="Accounting Basis" hint="Cash basis available for sole traders with turnover ≤ £150,000">
             <Select value={accountingBasis} onChange={setAccountingBasis} options={["Accrual", "Cash"]} />
           </Field>
           {accountingBasis === "Cash" && org.bType !== "Sole Trader / Freelancer" && (
-            <div style={{ gridColumn:"1 / -1" }}>
-              <InfoBox color="#D97706">Cash basis is typically only available for sole traders and partnerships. Limited companies must use accrual accounting.</InfoBox>
+            <div className="md:col-span-2">
+              <InfoBox color="var(--warning-600)">
+                Cash basis is typically only available for sole traders and partnerships. Limited companies must use accrual accounting.
+              </InfoBox>
             </div>
           )}
           <Field label="VAT Registered">
             <ChipToggle value={vatReg} onChange={setVatReg} options={["No", "Yes"]} />
           </Field>
           {vatReg === "Yes" && (
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div className="flex flex-col gap-2">
               <Field label="VAT Number">
                 <Input value={vatNum} onChange={setVatNum} placeholder="GB123456789" readOnly={vatNumberLocked} />
               </Field>
@@ -164,7 +148,11 @@ export default function SettingsTax({ orgSettings, onSave }) {
           )}
           {vatReg === "Yes" && (
             <Field label="VAT Scheme" hint="Determines when VAT is due to HMRC">
-              <Select value={vatScheme} onChange={setVatScheme} options={["Standard", "Cash Accounting", "Flat Rate Scheme", "Annual Accounting"]} />
+              <Select
+                value={vatScheme}
+                onChange={setVatScheme}
+                options={["Standard", "Cash Accounting", "Flat Rate Scheme", "Annual Accounting"]}
+              />
             </Field>
           )}
           {vatReg === "Yes" && vatScheme === "Flat Rate Scheme" && (
@@ -174,11 +162,11 @@ export default function SettingsTax({ orgSettings, onSave }) {
           )}
         </div>
 
-        <div style={{ marginTop:14, paddingTop:16, borderTop:"1px solid #f0f0f4" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, marginBottom: cisEnabled ? 20 : 0 }}>
+        <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+          <div className={`flex items-center justify-between gap-4 ${cisEnabled ? "mb-5" : ""}`}>
             <div>
-              <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>Enable CIS</div>
-              <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>
+              <div className="text-sm font-semibold text-[var(--text-primary)]">Enable CIS</div>
+              <div className="text-xs text-[var(--text-tertiary)] mt-0.5">
                 Activates Construction Industry Scheme deductions on invoices.
               </div>
             </div>
@@ -186,27 +174,25 @@ export default function SettingsTax({ orgSettings, onSave }) {
           </div>
 
           {cisEnabled && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, padding:"16px 0 0", borderTop:"1px solid #f3f4f6" }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-4 border-t border-[var(--border-subtle)]">
               <Field label="Contractor Name">
                 <Input value={cisContractorName} onChange={setCisContractorName} placeholder="Your company name" />
               </Field>
-
               <Field label="CIS Role">
-                <Select value={cisRole} onChange={setCisRole} options={["Contractor","Subcontractor","Both"]} />
+                <Select value={cisRole} onChange={setCisRole} options={["Contractor", "Subcontractor", "Both"]} />
               </Field>
-
-              <Field label="UTR Number" error={cisContractorUTR && cisContractorUTR.replace(/\D/g,"").length !== 10 ? "UTR must be 10 digits" : ""}>
-                <Input value={cisContractorUTR} onChange={setCisContractorUTR} placeholder="10-digit UTR number" maxLength={10} />
+              <Field
+                label="UTR Number"
+                error={cisContractorUTR && cisContractorUTR.replace(/\D/g, "").length !== 10 ? "UTR must be 10 digits" : ""}
+              >
+                <Input value={cisContractorUTR} onChange={setCisContractorUTR} placeholder="10-digit UTR number" />
               </Field>
-
               <Field label="CIS Registration Status">
-                <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Gross","Net"]} />
+                <Select value={cisRegistrationStatus} onChange={setCisRegistrationStatus} options={["Gross", "Net"]} />
               </Field>
-
               <Field label="Employer's PAYE Reference">
                 <Input value={cisEmployerRef} onChange={setCisEmployerRef} placeholder="e.g. 123/AB456" />
               </Field>
-
               <Field label="Default Deduction Rate">
                 <Select
                   value={String(cisDefaultRate)}
@@ -219,19 +205,19 @@ export default function SettingsTax({ orgSettings, onSave }) {
         </div>
       </Section>
 
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, marginTop:16 }}>
+      <div className="flex flex-col items-end gap-2 mt-4">
         {saveError && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#dc2626", fontWeight:600 }}>
+          <div className="flex items-center gap-1.5 text-sm text-[var(--danger-600)] font-semibold">
             <Icons.Alert /> {saveError}
           </div>
         )}
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div className="flex items-center gap-2.5">
           {saved && (
-            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#16A34A", fontWeight:600 }}>
-              <Icons.Check /> Tax settings saved.
+            <div className="flex items-center gap-1.5 text-sm text-[var(--success-700)] font-semibold">
+              <Icons.Check /> Saved.
             </div>
           )}
-          <Btn onClick={handleSave} variant="primary" icon={<Icons.Save />} style={{ background: saved ? "#059669" : "#1e6be0", color:"#fff" }}>
+          <Btn onClick={handleSave} variant={saved ? "success" : "primary"} icon={<Icons.Save />}>
             Save tax settings
           </Btn>
         </div>
