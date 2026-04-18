@@ -47,12 +47,6 @@ export const ACCOUNT_CATEGORIES = [
   "Expenses","Travel & Subsistence","Office Supplies","Software & Subscriptions",
   "Professional Fees","Advertising","Utilities","Rent & Rates","Other Income","Other",
 ];
-export const STATUS_COLORS = {
-  Sent:"#1e6be0", Overdue:"#dc2626", Paid:"#059669",
-  Draft:"#6b7280", Void:"#9ca3af", Accepted:"#059669",
-  Declined:"#dc2626", Expired:"#9ca3af", Partial:"#d97706",
-  Reconciled:"#059669", Refunded:"#dc2626", Pending:"#6b7280"
-};
 export const QUOTE_STATUSES = ["Draft","Sent","Accepted","Declined","Expired","Invoiced"];
 export const PDF_TEMPLATES = [
   { id:"classic",  name:"Classic",  description:"Clean header, ruled lines",        defaultAccent:"#1e6be0", defaultBg:"#fff" },
@@ -92,13 +86,6 @@ export const BILL_CATEGORIES = [
   "Insurance", "Professional Services", "IT & Software", "Travel",
   "Office Supplies", "Equipment", "Marketing", "Other",
 ];
-
-// ─── EMPTY STARTING DATA ──────────────────────────────────────────────────────
-export const MOCK_CUSTOMERS = [];
-export const MOCK_ITEMS_INIT = [];
-export const MOCK_INV_LIST = [];
-export const MOCK_QUOTES_LIST = [];
-export const MOCK_PAYMENTS = [];
 
 // ─── Suppliers (Phase 1) ──────────────────────────────────────────────────
 
