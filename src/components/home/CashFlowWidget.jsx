@@ -5,6 +5,7 @@ import { projectCashFlow } from "../../utils/cashFlow";
 import { CUR_SYM } from "../../constants";
 import { ROUTES } from "../../router/routes";
 import { Icons } from "../icons";
+import EmptyState from "../ui/EmptyState";
 
 /**
  * Aggregates weekly projection data into calendar months.
@@ -62,19 +63,12 @@ export default function CashFlowWidget() {
       </div>
 
       {isEmpty ? (
-        <div className="py-10 text-center">
-          <div className="text-sm font-medium text-[var(--text-primary)] mb-1">No cash flow data yet</div>
-          <div className="text-xs text-[var(--text-tertiary)] mb-4 max-w-xs mx-auto leading-relaxed">
-            Projections appear when you have invoices with due dates or bills to pay.
-          </div>
-          <button
-            onClick={() => navigate(ROUTES.INVOICES_NEW)}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white text-xs font-semibold cursor-pointer transition-colors duration-150 border-none"
-          >
-            <Icons.Plus />
-            Create invoice
-          </button>
-        </div>
+        <EmptyState
+          icon={Icons.Invoices}
+          title="No cash flow data yet"
+          description="Projections appear when you have invoices with due dates or bills to pay."
+          action={{ label: "Create invoice", onClick: () => navigate(ROUTES.INVOICES_NEW), icon: <Icons.Plus /> }}
+        />
       ) : (
         <>
           {/* Summary cards */}

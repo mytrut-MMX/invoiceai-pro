@@ -13,6 +13,7 @@ import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/shared/Pagination";
 import { useToast } from "../components/ui/Toast";
+import EmptyState from "../components/ui/EmptyState";
 
 function expNextNum(expenses) {
   return nextNum("EXP", expenses.map(e => ({ invoice_number: e.expense_number })));
@@ -103,18 +104,6 @@ function SummaryCard({ label, value, tone = "neutral" }) {
   );
 }
 
-function EmptyState({ icon, title, message, cta }) {
-  return (
-    <div className="py-16 px-6 text-center">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
-        {icon}
-      </div>
-      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
-      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
-      {cta}
-    </div>
-  );
-}
 
 export default function ExpensesPage({ initialShowForm = false }) {
   const { expenses, setExpenses, orgSettings, user } = useContext(AppCtx);
@@ -321,16 +310,16 @@ export default function ExpensesPage({ initialShowForm = false }) {
                         <td colSpan={8}>
                           {expenses.length === 0 ? (
                             <EmptyState
-                              icon={<Icons.Expenses />}
+                              icon={Icons.Expenses}
                               title="No expenses yet"
-                              message="Record your first expense to start tracking spend"
-                              cta={<Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingExp(null); setShowForm(true); }}>New expense</Btn>}
+                              description="Record your first expense to start tracking spend"
+                              action={{ label: "New expense", onClick: () => { setEditingExp(null); setShowForm(true); }, icon: <Icons.Plus /> }}
                             />
                           ) : (
                             <EmptyState
-                              icon={<Icons.Search />}
+                              icon={Icons.Search}
                               title="No expenses match your filters"
-                              cta={<Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }}>Clear filters</Btn>}
+                              action={{ label: "Clear filters", onClick: () => { setSearch(""); setActiveFilter("all"); setBillableFilter("All"); }, variant: "outline" }}
                             />
                           )}
                         </td>

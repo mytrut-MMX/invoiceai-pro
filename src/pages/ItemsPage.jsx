@@ -8,6 +8,7 @@ import { fmt } from "../utils/helpers";
 import ItemForm from "../modals/ItemModal";
 import { deleteCatalogItem } from "../lib/dataAccess";
 import { useToast } from "../components/ui/Toast";
+import EmptyState from "../components/ui/EmptyState";
 
 const TYPE_COLORS = {
   Service:   "var(--info-600)",
@@ -65,18 +66,6 @@ function SummaryCard({ label, value, tone = "neutral" }) {
   );
 }
 
-function EmptyState({ icon, title, message, cta }) {
-  return (
-    <div className="py-16 px-6 text-center">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
-        {icon}
-      </div>
-      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
-      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
-      {cta}
-    </div>
-  );
-}
 
 export default function ItemsPage({ initialShowForm = false }) {
   const { orgSettings, catalogItems, setCatalogItems, invoices, quotes, user } = useContext(AppCtx);
@@ -247,16 +236,16 @@ export default function ItemsPage({ initialShowForm = false }) {
                     <td colSpan={isVat ? 8 : 7}>
                       {catalogItems.length === 0 ? (
                         <EmptyState
-                          icon={<Icons.Items />}
+                          icon={Icons.Items}
                           title="No items yet"
-                          message="Create one to start pricing invoices and quotes"
-                          cta={<Btn onClick={() => { setEditingItem(null); setShowForm(true); }} variant="primary" icon={<Icons.Plus />}>New item</Btn>}
+                          description="Create one to start pricing invoices and quotes"
+                          action={{ label: "New item", onClick: () => { setEditingItem(null); setShowForm(true); }, icon: <Icons.Plus /> }}
                         />
                       ) : (
                         <EmptyState
-                          icon={<Icons.Search />}
+                          icon={Icons.Search}
                           title="No items match your filters"
-                          cta={<Btn variant="outline" onClick={() => { setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }}>Clear filters</Btn>}
+                          action={{ label: "Clear filters", onClick: () => { setSearch(""); setTypeFilter("All"); setStatusFilter("All"); }, variant: "outline" }}
                         />
                       )}
                     </td>
