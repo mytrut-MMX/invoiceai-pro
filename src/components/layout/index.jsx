@@ -189,10 +189,12 @@ function NavItem({ item, collapsed, pathname, navigate }) {
 
 // ─── TOP BAR (desktop) ───────────────────────────────────────────────────────
 
-export function TopBar({ user, userAvatar, onUserClick, onMenuOpen, collapsed, onCollapsedChange, onSearchClick }) {
+export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, collapsed, onCollapsedChange, onSearchClick }) {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     if (!createOpen) return;
@@ -204,6 +206,24 @@ export function TopBar({ user, userAvatar, onUserClick, onMenuOpen, collapsed, o
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [createOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    function handleKey(e) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [menuOpen]);
 
   return (
     <div className="h-[52px] flex items-center px-3 gap-2 bg-[var(--surface-dark)] border-b border-white/10 flex-shrink-0">
@@ -290,16 +310,65 @@ export function TopBar({ user, userAvatar, onUserClick, onMenuOpen, collapsed, o
           <Ic d='<path fill-rule="evenodd" clip-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 01-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 01-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 01-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584zM12 18a.75.75 0 100-1.5.75.75 0 000 1.5z"/>' size={18} />
         </button>
 
-        {/* User avatar */}
+        {/* Settings gear */}
         <button
-          onClick={onUserClick}
-          title="Edit profile"
-          className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[13px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-white/30 transition-all duration-200 ml-1"
+          onClick={() => navigate(ROUTES.SETTINGS_GENERAL)}
+          aria-label="Settings"
+          title="Settings"
+          className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 border-none bg-transparent cursor-pointer focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
         >
-          {userAvatar
-            ? <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
-            : (user?.name || "?")[0].toUpperCase()}
+          <Ic d='<path fill-rule="evenodd" clip-rule="evenodd" d="M11.0779 2.25C10.1613 2.25 9.37909 2.91265 9.22841 3.81675L9.04974 4.88873C9.02959 5.00964 8.93542 5.1498 8.75311 5.23747C8.40905 5.40292 8.07967 5.5938 7.7674 5.8076C7.60091 5.92159 7.43259 5.9332 7.31769 5.89015L6.29851 5.50833C5.44019 5.18678 4.4752 5.53289 4.01692 6.32666L3.09493 7.92358C2.63665 8.71736 2.8194 9.72611 3.52704 10.3087L4.36756 11.0006C4.46219 11.0785 4.53629 11.2298 4.52119 11.4307C4.50706 11.6188 4.49988 11.8086 4.49988 12C4.49988 12.1915 4.50707 12.3814 4.52121 12.5695C4.53632 12.7704 4.46221 12.9217 4.36758 12.9996L3.52704 13.6916C2.8194 14.2741 2.63665 15.2829 3.09493 16.0767L4.01692 17.6736C4.4752 18.4674 5.44019 18.8135 6.29851 18.4919L7.31791 18.11C7.43281 18.067 7.60113 18.0786 7.76761 18.1925C8.07982 18.4063 8.40913 18.5971 8.75311 18.7625C8.93542 18.8502 9.02959 18.9904 9.04974 19.1113L9.22841 20.1832C9.37909 21.0874 10.1613 21.75 11.0779 21.75H12.9219C13.8384 21.75 14.6207 21.0874 14.7713 20.1832L14.95 19.1113C14.9702 18.9904 15.0643 18.8502 15.2466 18.7625C15.5907 18.5971 15.9201 18.4062 16.2324 18.1924C16.3988 18.0784 16.5672 18.0668 16.6821 18.1098L17.7012 18.4917C18.5596 18.8132 19.5246 18.4671 19.9828 17.6733L20.9048 16.0764C21.3631 15.2826 21.1804 14.2739 20.4727 13.6913L19.6322 12.9994C19.5376 12.9215 19.4635 12.7702 19.4786 12.5693C19.4927 12.3812 19.4999 12.1914 19.4999 12C19.4999 11.8085 19.4927 11.6186 19.4785 11.4305C19.4634 11.2296 19.5375 11.0783 19.6322 11.0004L20.4727 10.3084C21.1804 9.72587 21.3631 8.71711 20.9048 7.92334L19.9828 6.32642C19.5246 5.53264 18.5596 5.18654 17.7012 5.50809L16.6818 5.89C16.5669 5.93304 16.3986 5.92144 16.2321 5.80746C15.9199 5.59371 15.5906 5.40289 15.2466 5.23747C15.0643 5.1498 14.9702 5.00964 14.95 4.88873L14.7713 3.81675C14.6207 2.91265 13.8384 2.25 12.9219 2.25H11.0779ZM12 15.75C14.0711 15.75 15.75 14.0711 15.75 12C15.75 9.92893 14.0711 8.25 12 8.25C9.92893 8.25 8.25 9.92893 8.25 12C8.25 14.0711 9.92893 15.75 12 15.75Z"/>' size={20} />
         </button>
+
+        {/* User avatar dropdown */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="User menu"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[13px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-white/30 transition-all duration-200 ml-1 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+          >
+            {userAvatar
+              ? <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
+              : (user?.name || "?")[0].toUpperCase()}
+          </button>
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-[calc(100%+6px)] w-64 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] z-[2000] py-1"
+            >
+              <div className="flex items-center gap-3 px-3 py-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[14px] font-bold overflow-hidden flex-shrink-0">
+                  {userAvatar
+                    ? <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
+                    : (user?.name || "?")[0].toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-semibold text-[var(--text-primary)] truncate">{user?.name}</div>
+                  {user?.email && (
+                    <div className="text-xs text-[var(--text-secondary)] truncate">{user.email}</div>
+                  )}
+                </div>
+              </div>
+              <div className="border-t border-[var(--border-subtle)]" />
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); navigate(ROUTES.SETTINGS_GENERAL); }}
+                className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+              >
+                Settings
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); onLogout?.(); }}
+                className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+              >
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -307,7 +376,7 @@ export function TopBar({ user, userAvatar, onUserClick, onMenuOpen, collapsed, o
 
 // ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 
-export function Sidebar({ user, onUserClick, onLogout, collapsed = false, onCollapsedChange, userAvatar }) {
+export function Sidebar({ collapsed = false, onCollapsedChange }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const visibleGroups = useVisibleGroups();
@@ -339,56 +408,26 @@ export function Sidebar({ user, onUserClick, onLogout, collapsed = false, onColl
         ))}
       </nav>
 
-      {/* Settings + user footer */}
-      <div className="flex-shrink-0 border-t border-[var(--border-subtle)]">
-        <div className="px-2 pt-2">
-          <NavItem
-            item={SETTINGS_ITEM}
-            collapsed={collapsed}
-            pathname={pathname}
-            navigate={navigate}
-          />
-        </div>
-
-        <div className={`px-2 pt-2 pb-2 flex items-center gap-2 ${collapsed ? "justify-center" : ""}`}>
-          <button
-            onClick={onUserClick}
-            title="Edit profile"
-            className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[13px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-[var(--brand-200)] transition-all duration-200"
+      {/* Collapse toggle */}
+      <div className="flex-shrink-0 border-t border-[var(--border-subtle)] flex justify-center p-2">
+        <button
+          onClick={() => onCollapsedChange?.(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="flex items-center justify-center w-10 h-10 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 512 512"
+            fill="currentColor"
+            className={`transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
           >
-            {userAvatar
-              ? <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
-              : (user?.name || "?")[0].toUpperCase()}
-          </button>
-          {!collapsed && (
-            <>
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-semibold text-[var(--text-primary)] truncate">{user?.name}</div>
-                <div className="text-[11px] text-[var(--text-tertiary)]">{user?.role}</div>
-              </div>
-              <button
-                onClick={onLogout}
-                className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1 rounded-[var(--radius-sm)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-all duration-200 flex-shrink-0"
-              >
-                Log out
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Collapse toggle */}
-        <div className={`px-2 pb-3 flex ${collapsed ? "justify-center" : "justify-end"}`}>
-          <button
-            onClick={() => onCollapsedChange?.(!collapsed)}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="flex items-center justify-center w-7 h-7 rounded-[var(--radius-md)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-all duration-200"
-          >
-            {collapsed
-              ? <Ic d='<path fill-rule="evenodd" clip-rule="evenodd" d="M16.2803 11.4697C16.5732 11.7626 16.5732 12.2374 16.2803 12.5303L8.78033 20.0303C8.48744 20.3232 8.01256 20.3232 7.71967 20.0303C7.42678 19.7374 7.42678 19.2626 7.71967 18.9697L14.6893 12L7.71967 5.03033C7.42678 4.73744 7.42678 4.26256 7.71967 3.96967C8.01256 3.67678 8.48744 3.67678 8.78033 3.96967L16.2803 11.4697Z"/>' size={14} />
-              : <Ic d='<path fill-rule="evenodd" clip-rule="evenodd" d="M7.71967 11.4697C7.42678 11.7626 7.42678 12.2374 7.71967 12.5303L15.2197 20.0303C15.5126 20.3232 15.9874 20.3232 16.2803 20.0303C16.5732 19.7374 16.5732 19.2626 16.2803 18.9697L9.31066 12L16.2803 5.03033C16.5732 4.73744 16.5732 4.26256 16.2803 3.96967C15.9874 3.67678 15.5126 3.67678 15.2197 3.96967L7.71967 11.4697Z"/>' size={14} />
-            }
-          </button>
-        </div>
+            <path fillRule="evenodd" clipRule="evenodd" d="M294.6 166.6a24 24 0 0 1 33.9 0l73.4 73.4a24 24 0 0 1 0 33.9l-73.4 73.4a24 24 0 0 1-33.9-33.9L327.2 280H176a24 24 0 0 1 0-48h151.2l-32.6-32.6a24 24 0 0 1 0-33.9z" />
+            <path fillRule="evenodd" clipRule="evenodd" d="M112 152a16 16 0 0 1 16-16h8a16 16 0 0 1 0 32h-8a16 16 0 0 1-16-16zm0 104a16 16 0 0 1 16-16h8a16 16 0 0 1 0 32h-8a16 16 0 0 1-16-16zm0 104a16 16 0 0 1 16-16h8a16 16 0 0 1 0 32h-8a16 16 0 0 1-16-16z" />
+          </svg>
+        </button>
       </div>
     </div>
   );

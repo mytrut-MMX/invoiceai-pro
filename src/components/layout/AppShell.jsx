@@ -23,7 +23,7 @@ export default function AppShell() {
   const { user, setUser, appTheme, setAppTheme } = useContext(AppCtx);
   const navigate = useNavigate();
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => lsGet("invoicesaga_sidebar_collapsed", false));
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showUserModal,    setShowUserModal]    = useState(false);
   const [storageError,     setStorageError]     = useState(null);
@@ -39,6 +39,10 @@ export default function AppShell() {
   useEffect(() => {
     try { localStorage.setItem("ai_invoice_sidebar_pinned", JSON.stringify(sidebarPinned)); } catch {}
   }, [sidebarPinned]);
+
+  useEffect(() => {
+    try { localStorage.setItem("invoicesaga_sidebar_collapsed", JSON.stringify(sidebarCollapsed)); } catch {}
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const handler = (e) =>
@@ -112,6 +116,7 @@ export default function AppShell() {
           user={user}
           userAvatar={userAvatar}
           onUserClick={() => setShowUserModal(true)}
+          onLogout={doLogout}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           onMenuOpen={() => setMobileDrawerOpen(true)}
@@ -121,10 +126,6 @@ export default function AppShell() {
           <Sidebar
             collapsed={sidebarCollapsed}
             onCollapsedChange={setSidebarCollapsed}
-            user={user}
-            userAvatar={userAvatar}
-            onUserClick={() => setShowUserModal(true)}
-            onLogout={doLogout}
           />
           <main className="flex-1 overflow-y-auto">
             <Suspense fallback={<ListSkeleton />}>
