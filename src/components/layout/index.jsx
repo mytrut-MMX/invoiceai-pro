@@ -20,6 +20,7 @@ const NAV_GROUPS = [
     label: "Sales",
     items: [
       { id: "invoices",  label: "Invoices",  icon: Icons.Invoices,  route: ROUTES.INVOICES,  match: "/invoices",  addRoute: ROUTES.INVOICES_NEW },
+      { id: "payments",  label: "Payments",  icon: Icons.Payments,  route: ROUTES.PAYMENTS,  match: "/payments",  addRoute: ROUTES.PAYMENTS_NEW },
       { id: "quotes",    label: "Quotes",    icon: Icons.Quotes,    route: ROUTES.QUOTES,    match: "/quotes",    addRoute: ROUTES.QUOTES_NEW },
       { id: "customers", label: "Customers", icon: Icons.Customers, route: ROUTES.CUSTOMERS, match: "/customers", addRoute: ROUTES.CUSTOMERS_NEW },
       { id: "items",     label: "Products",  icon: Icons.Items,     route: ROUTES.ITEMS,     match: "/items",     addRoute: ROUTES.ITEMS_NEW },
