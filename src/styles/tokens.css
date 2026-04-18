@@ -22,16 +22,16 @@
   --text-tertiary: #A8A29E;
   --text-disabled: #D6D3D1;
   --text-inverse: #FFFFFF;
-  --text-link: #4F46E5;
+  --text-link: #408BFB;
 
-  /* ─── Brand / Accent (deep indigo) ───────────────────── */
-  --brand-50: #EEF2FF;
-  --brand-100: #E0E7FF;
-  --brand-200: #C7D2FE;
-  --brand-500: #6366F1;
-  --brand-600: #4F46E5;
-  --brand-700: #4338CA;
-  --brand-900: #312E81;
+  /* ─── Brand / Accent (vibrant blue) ──────────────────── */
+  --brand-50: #EBF3FF;
+  --brand-100: #D6E7FF;
+  --brand-200: #ADCFFF;
+  --brand-500: #5A9DFC;
+  --brand-600: #408BFB;
+  --brand-700: #2D6FD9;
+  --brand-900: #1A3F7A;
 
   /* ─── Borders ────────────────────────────────────────── */
   --border-subtle: #E7E5E4;
@@ -80,5 +80,5 @@
   --shadow-popover: 0 12px 32px rgba(28, 25, 23, 0.12);
 
   /* ─── Focus ──────────────────────────────────────────── */
-  --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.35);
+  --focus-ring: 0 0 0 3px rgba(64, 141, 251, 0.35);
 }
