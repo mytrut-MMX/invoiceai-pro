@@ -9,6 +9,8 @@ import { formatPhoneNumber, fmt } from "../utils/helpers";
 import { saveSupplier, deleteSupplier } from "../lib/dataAccess";
 import SupplierFormPanel from "../components/suppliers/SupplierFormPanel";
 import { useToast } from "../components/ui/Toast";
+import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -63,21 +65,9 @@ function SummaryCard({ label, value, tone = "neutral" }) {
   );
 }
 
-function EmptyState({ icon, title, message, cta }) {
-  return (
-    <div className="py-16 px-6 text-center">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
-        {icon}
-      </div>
-      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
-      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
-      {cta}
-    </div>
-  );
-}
 
 export default function SuppliersPage({ initialShowForm = false }) {
-  const { suppliers, setSuppliers, orgSettings, user, bills } = useContext(AppCtx);
+  const { suppliers, setSuppliers, orgSettings, user, bills, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const { toast } = useToast();
@@ -166,6 +156,8 @@ export default function SuppliersPage({ initialShowForm = false }) {
     });
     return map;
   }, [bills]);
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (showForm) {
     return (
@@ -260,16 +252,16 @@ export default function SuppliersPage({ initialShowForm = false }) {
                     <td colSpan={8}>
                       {totalSuppliers === 0 ? (
                         <EmptyState
-                          icon={<Icons.Customers />}
+                          icon={Icons.Customers}
                           title="No suppliers yet"
-                          message="Add your first supplier or CIS subcontractor to start tracking payables"
-                          cta={<Btn variant="primary" icon={<Icons.Plus />} onClick={openNew}>New supplier</Btn>}
+                          description="Add your first supplier or CIS subcontractor to start tracking payables"
+                          action={{ label: "New supplier", onClick: openNew, icon: <Icons.Plus /> }}
                         />
                       ) : (
                         <EmptyState
-                          icon={<Icons.Search />}
+                          icon={Icons.Search}
                           title="No suppliers match your filters"
-                          cta={<Btn variant="outline" onClick={() => { setSearch(""); setFilter("all"); }}>Clear filters</Btn>}
+                          action={{ label: "Clear filters", onClick: () => { setSearch(""); setFilter("all"); }, variant: "outline" }}
                         />
                       )}
                     </td>

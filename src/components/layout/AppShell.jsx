@@ -7,7 +7,7 @@ import UserEditModal from "../../modals/UserEditModal";
 import CommandPalette from "../CommandPalette";
 import { ToastProvider } from "../ui/Toast";
 import { signOut } from "../../lib/supabase";
-import PageLoader from "../ui/PageLoader";
+import { ListSkeleton } from "../ui/Skeleton";
 import { useInactivityTimer } from "../../hooks/useInactivityTimer";
 
 function lsGet(key, fallback) {
@@ -127,7 +127,7 @@ export default function AppShell() {
             onLogout={doLogout}
           />
           <main className="flex-1 overflow-y-auto">
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<ListSkeleton />}>
               <Outlet />
             </Suspense>
           </main>
@@ -143,7 +143,7 @@ export default function AppShell() {
           onUserClick={() => setShowUserModal(true)}
         />
         <main className="flex-1 overflow-y-auto">
-          <Suspense fallback={<PageLoader />}>
+          <Suspense fallback={<ListSkeleton />}>
             <Outlet />
           </Suspense>
         </main>

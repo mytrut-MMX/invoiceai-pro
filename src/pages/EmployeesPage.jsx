@@ -4,6 +4,8 @@ import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
+import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 import { StatusBadge } from "../components/shared/moduleListUI";
 import { upsert, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
@@ -196,11 +198,7 @@ export default function EmployeesPage() {
 
   // ─── loading state ─────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:T.pageBg, minHeight:"100vh", fontFamily:ff }}>
-        <div style={{ textAlign:"center", padding:"80px 24px", color:T.muted, fontSize:14 }}>Loading employees…</div>
-      </div>
-    );
+    return <ListSkeleton />;
   }
 
   // ─── render ───────────────────────────────────────────────────────────────
@@ -280,21 +278,21 @@ export default function EmployeesPage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding:"60px 24px", textAlign:"center" }}>
+                  <td colSpan={7}>
                     {employees.length === 0 ? (
-                      <>
-                        <div style={{ fontSize:36, marginBottom:12 }}>👷</div>
-                        <div style={{ fontSize:15, fontWeight:700, color:T.heading, marginBottom:6 }}>No employees yet</div>
-                        <div style={{ fontSize:13, color:T.muted, marginBottom:20 }}>Add your first employee to start running payroll.</div>
-                        <Btn variant="primary" icon={<Icons.Plus />} onClick={openNew}>New Employee</Btn>
-                      </>
+                      <EmptyState
+                        icon={Icons.User}
+                        title="No employees yet"
+                        description="Add your first employee to start running payroll."
+                        action={{ label: "New Employee", onClick: openNew, icon: <Icons.Plus /> }}
+                      />
                     ) : (
-                      <>
-                        <div style={{ fontSize:28, marginBottom:10 }}>🔍</div>
-                        <div style={{ fontSize:14, fontWeight:600, color:T.heading, marginBottom:5 }}>No employees match your search</div>
-                        <div style={{ fontSize:13, color:T.muted, marginBottom:16 }}>Try a different name, email or NI number</div>
-                        <Btn variant="outline" onClick={() => setSearch("")}>Clear search</Btn>
-                      </>
+                      <EmptyState
+                        icon={Icons.Search}
+                        title="No employees match your search"
+                        description="Try a different name, email or NI number"
+                        action={{ label: "Clear search", onClick: () => setSearch(""), variant: "outline" }}
+                      />
                     )}
                   </td>
                 </tr>

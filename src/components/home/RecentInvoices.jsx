@@ -5,6 +5,7 @@ import { CUR_SYM } from "../../constants";
 import { fmt } from "../../utils/helpers";
 import { StatusBadge } from "../atoms";
 import { Icons } from "../icons";
+import EmptyState from "../ui/EmptyState";
 
 export default function RecentInvoices({ invoices = [], orgSettings }) {
   const navigate = useNavigate();
@@ -27,17 +28,12 @@ export default function RecentInvoices({ invoices = [], orgSettings }) {
       </div>
 
       {recent.length === 0 ? (
-        <div className="px-5 py-10 text-center">
-          <div className="text-sm font-medium text-[var(--text-primary)] mb-1">No invoices yet</div>
-          <div className="text-xs text-[var(--text-tertiary)] mb-4">Create your first invoice to get started.</div>
-          <button
-            onClick={() => navigate(ROUTES.INVOICES_NEW)}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white text-xs font-semibold cursor-pointer transition-colors duration-150 border-none"
-          >
-            <Icons.Plus />
-            New invoice
-          </button>
-        </div>
+        <EmptyState
+          icon={Icons.Invoices}
+          title="No invoices yet"
+          description="Create your first invoice to get started."
+          action={{ label: "New invoice", onClick: () => navigate(ROUTES.INVOICES_NEW), icon: <Icons.Plus /> }}
+        />
       ) : (
         <>
           <div className="hidden sm:grid grid-cols-[1fr_1.5fr_auto_auto] gap-3 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)]">

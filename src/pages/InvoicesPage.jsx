@@ -12,9 +12,10 @@ import { supabase } from "../lib/supabase";
 import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { useToast } from "../components/ui/Toast";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 export default function InvoicesPage({ initialShowForm = false }) {
-  const { invoices, setInvoices, quotes, setQuotes, user } = useContext(AppCtx);
+  const { invoices, setInvoices, quotes, setQuotes, user, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [panel, setPanel] = useState(initialShowForm ? { mode: "new" } : null);
@@ -94,6 +95,8 @@ export default function InvoicesPage({ initialShowForm = false }) {
       converted_from_quote: quote.quote_number,
     }});
   };
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (panel?.mode === "view") {
     return (

@@ -11,6 +11,7 @@ import CashFlowWidget from "../components/home/CashFlowWidget";
 import NeedsAttention from "../components/home/NeedsAttention";
 import RecentInvoices from "../components/home/RecentInvoices";
 import MonthEndChecklist from "../components/home/MonthEndChecklist";
+import { DashboardSkeleton } from "../components/ui/Skeleton";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -132,7 +133,7 @@ function KPICard({ icon: Icon, label, value, delta, onClick }) {
 // ─── HomePage ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const { user, invoices, expenses, payments, bills, orgSettings } = useContext(AppCtx);
+  const { user, invoices, expenses, payments, bills, orgSettings, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const [period, setPeriod] = useState("this_month");
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -233,6 +234,14 @@ export default function HomePage() {
       },
     };
   }, [invoices, bills, expenses, payments, period, currSym]);
+
+  if (!businessDataHydrated) {
+    return (
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   const firstName = user?.name?.split(" ")[0] || "there";
   const dateLine = new Date().toLocaleDateString("en-GB", {

@@ -12,6 +12,7 @@ import { supabase } from "../lib/supabase";
 import { createPayrollRun } from "../utils/payroll/payrollService";
 import { getEAStatus } from "../lib/employmentAllowance";
 import PayrollRunDetailPage from "./PayrollRunDetailPage";
+import { SkeletonCard } from "../components/ui/Skeleton";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
@@ -226,10 +227,10 @@ export default function PayrollPage() {
   // ─── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={moduleUi.pageCanvas}>
-        <div style={{ ...moduleUi.page, maxWidth:1320, fontFamily:ff }}>
-          <div style={{ textAlign:"center", padding:"80px 24px", color:"#94a3b8", fontSize:14 }}>Loading payroll…</div>
-        </div>
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6 space-y-4">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
       </div>
     );
   }

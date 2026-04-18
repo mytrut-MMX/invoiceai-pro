@@ -9,6 +9,8 @@ import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
 import { deleteCustomer as deleteCustomerFromDb } from "../lib/dataAccess";
 import { useToast } from "../components/ui/Toast";
+import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -41,7 +43,7 @@ function ActionBtn({ onClick, title, icon, tone = "neutral" }) {
 }
 
 export default function CustomersPage({ initialShowForm = false }) {
-  const { customers, setCustomers, orgSettings, invoices, quotes, payments, user } = useContext(AppCtx);
+  const { customers, setCustomers, orgSettings, invoices, quotes, payments, user, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -115,6 +117,8 @@ export default function CustomersPage({ initialShowForm = false }) {
       outstanding: Math.max(0, totalInvoiced - totalCollected),
     };
   }, [customers, invoices, payments]);
+
+  if (!businessDataHydrated) return <ListSkeleton />;
 
   if (showForm) {
     return (
@@ -199,17 +203,17 @@ export default function CustomersPage({ initialShowForm = false }) {
                     <td colSpan={7}>
                       {customers.length === 0 ? (
                         <EmptyState
-                          icon={<Icons.Customers />}
+                          icon={Icons.Customers}
                           title="No customers yet"
-                          message="Add your first customer to start creating invoices"
-                          cta={<Btn variant="primary" icon={<Icons.Plus />} onClick={openNew}>New customer</Btn>}
+                          description="Add your first customer to start creating invoices"
+                          action={{ label: "New customer", onClick: openNew, icon: <Icons.Plus /> }}
                         />
                       ) : (
                         <EmptyState
-                          icon={<Icons.Search />}
+                          icon={Icons.Search}
                           title="No customers match your search"
-                          message="Try a different name or email address"
-                          cta={<Btn variant="outline" onClick={() => setSearch("")}>Clear search</Btn>}
+                          description="Try a different name or email address"
+                          action={{ label: "Clear search", onClick: () => setSearch(""), variant: "outline" }}
                         />
                       )}
                     </td>
@@ -328,15 +332,3 @@ function SummaryCard({ label, value, tone = "neutral", sub }) {
   );
 }
 
-function EmptyState({ icon, title, message, cta }) {
-  return (
-    <div className="py-16 px-6 text-center">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
-        {icon}
-      </div>
-      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
-      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
-      {cta}
-    </div>
-  );
-}

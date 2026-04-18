@@ -16,6 +16,8 @@ import { usePagination } from "../hooks/usePagination";
 import { useCISSettings } from "../hooks/useCISSettings";
 import Pagination from "../components/shared/Pagination";
 import { useToast } from "../components/ui/Toast";
+import EmptyState from "../components/ui/EmptyState";
+import { ListSkeleton } from "../components/ui/Skeleton";
 
 const FILTER_OPTS = [{ key: "all", label: "All Bills" }, ...BILL_STATUSES.map(s => ({ key: s, label: s }))];
 
@@ -74,21 +76,9 @@ function SummaryCard({ label, value, tone = "neutral" }) {
   );
 }
 
-function EmptyState({ icon, title, message, cta }) {
-  return (
-    <div className="py-16 px-6 text-center">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] text-[var(--text-tertiary)] mb-3">
-        {icon}
-      </div>
-      <div className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</div>
-      {message && <div className="text-sm text-[var(--text-secondary)] mb-5">{message}</div>}
-      {cta}
-    </div>
-  );
-}
 
 export default function BillsPage({ initialShowForm = false }) {
-  const { bills, setBills, orgSettings, user } = useContext(AppCtx);
+  const { bills, setBills, orgSettings, user, businessDataHydrated } = useContext(AppCtx);
   const { cisEnabled } = useCISSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -234,6 +224,8 @@ export default function BillsPage({ initialShowForm = false }) {
     }
   };
 
+  if (!businessDataHydrated) return <ListSkeleton />;
+
   if (showForm) return (
     <BillFormPanel
       existing={editingBill}
@@ -348,16 +340,16 @@ export default function BillsPage({ initialShowForm = false }) {
                     <td colSpan={cisEnabled ? 9 : 8}>
                       {bills.length === 0 ? (
                         <EmptyState
-                          icon={<Icons.Receipt />}
+                          icon={Icons.Receipt}
                           title="No bills yet"
-                          message="Record your first supplier invoice to start tracking payables"
-                          cta={<Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingBill(null); setShowForm(true); }}>New bill</Btn>}
+                          description="Record your first supplier invoice to start tracking payables"
+                          action={{ label: "New bill", onClick: () => { setEditingBill(null); setShowForm(true); }, icon: <Icons.Plus /> }}
                         />
                       ) : (
                         <EmptyState
-                          icon={<Icons.Search />}
+                          icon={Icons.Search}
                           title="No bills match your filters"
-                          cta={<Btn variant="outline" onClick={() => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }}>Clear filters</Btn>}
+                          action={{ label: "Clear filters", onClick: () => { setSearch(""); setActiveFilter("all"); setCisFilter("all"); }, variant: "outline" }}
                         />
                       )}
                     </td>
