@@ -186,11 +186,15 @@ export default function BillsPage({ initialShowForm = false }) {
   const handleApprove = (bill) => {
     const updated = { ...bill, status: 'Approved' };
     setBills(prev => prev.map(b => b.id === bill.id ? updated : b));
-    toast({ title: "Bill approved", variant: "success" });
     if (user?.id) {
       ;(async () => {
         const { error } = await saveBill(user.id, updated);
-        if (error) { console.error('[BillsPage] approve save failed:', error); return; }
+        if (error) {
+          toast({ title: "Failed to approve bill", description: error.message, variant: "danger" });
+          setBills(prev => prev.map(b => b.id === bill.id ? bill : b));
+          return;
+        }
+        toast({ title: "Bill approved", variant: "success" });
         try {
           const { accounts, userId } = await fetchUserAccounts();
           if (!userId) return;
@@ -214,12 +218,16 @@ export default function BillsPage({ initialShowForm = false }) {
                       : bill.status;
     const updated = { ...bill, paid_amount: newPaidAmt, paid_date: paidDate, status: newStatus };
     setBills(prev => prev.map(b => (b.id === bill.id ? updated : b)));
-    toast({ title: "Payment recorded", variant: "success" });
     setPaymentModalBill(null);
     if (user?.id) {
       ;(async () => {
         const { error } = await saveBill(user.id, updated);
-        if (error) console.error("[BillsPage] saveBill after payment failed:", error);
+        if (error) {
+          toast({ title: "Failed to record payment", description: error.message, variant: "danger" });
+          setBills(prev => prev.map(b => b.id === bill.id ? bill : b));
+          return;
+        }
+        toast({ title: "Payment recorded", variant: "success" });
       })();
     }
   };
