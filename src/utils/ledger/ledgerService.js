@@ -366,6 +366,12 @@ export async function postExpenseEntry(expense, accounts, userId) {
     if (!expenseAccount) return { success: false, error: `Account ${expenseCode} not found for category "${expense.category}"` };
     if (!apAccount)      return { success: false, error: 'Account 2000 (Accounts Payable) not found' };
 
+    // When expense is paid directly from a bank or CC account, credit that
+    // account instead of AP. Falls back to AP when not specified.
+    const creditAccount = expense.paid_from_account_id
+      ? (accounts.find(a => a.id === expense.paid_from_account_id) ?? apAccount)
+      : apAccount;
+
     const isCisLabourExpense = expense.is_cis_expense === true && expense.category === 'Subcontractor Labour';
     const cisPayableAccount = isCisLabourExpense ? findAccount(accounts, '2200') : null;
 
@@ -394,10 +400,10 @@ export async function postExpenseEntry(expense, accounts, userId) {
     const apAmount = isDRC ? Number(expense.amount) : Number(expense.total);
 
     if (isCisLabourExpense && cisAmount > 0 && cisPayableAccount) {
-      lines.push({ accountId: apAccount.id, debit: 0, credit: apAmount - cisAmount });
+      lines.push({ accountId: creditAccount.id, debit: 0, credit: apAmount - cisAmount });
       lines.push({ accountId: cisPayableAccount.id, debit: 0, credit: cisAmount });
     } else {
-      lines.push({ accountId: apAccount.id, debit: 0, credit: apAmount });
+      lines.push({ accountId: creditAccount.id, debit: 0, credit: apAmount });
     }
 
     return await insertEntry({
