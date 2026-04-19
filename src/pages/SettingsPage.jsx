@@ -13,6 +13,7 @@ import SettingsLedger from "./settings/SettingsLedger";
 import SettingsPayroll from "./settings/SettingsPayroll";
 import SettingsHMRC from "./settings/SettingsHMRC";
 import SettingsSecurity from "./settings/SettingsSecurity";
+import SettingsPaymentTerms from "./settings/SettingsPaymentTerms";
 
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, onClose }) {
@@ -73,8 +74,9 @@ const NAV_GROUPS = [
   {
     label: "Invoicing",
     items: [
-      { id: "payments",   label: "Payment methods" },
-      { id: "templates",  label: "Templates" },
+      { id: "payments",       label: "Payment methods" },
+      { id: "payment-terms",  label: "Payment Terms" },
+      { id: "templates",      label: "Templates" },
     ],
   },
   {
@@ -115,8 +117,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("tab") === "hmrc") {
-      setActiveTab("hmrc");
+    const tab = params.get("tab");
+    if (tab === "hmrc" || tab === "payment-terms") {
+      setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -173,7 +176,8 @@ export default function SettingsPage() {
             {activeTab === "security"   && <SettingsSecurity />}
             {activeTab === "templates"  && <SettingsTemplates    onPreview={setPreviewTpl} />}
             {activeTab === "appearance" && <SettingsAppearance />}
-            {activeTab === "payments"   && <SettingsPayments />}
+            {activeTab === "payments"       && <SettingsPayments />}
+            {activeTab === "payment-terms"  && <SettingsPaymentTerms />}
             {activeTab === "ledger"     && <SettingsLedger />}
             {activeTab === "payroll"    && <SettingsPayroll      orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "hmrc"       && <SettingsHMRC         orgSettings={orgSettings} onSave={handleSavePartial} />}
