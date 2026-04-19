@@ -97,7 +97,10 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
       });
     } else if (!isEdit) {
       getDefaultPaymentTerm().then(({ data }) => {
-        if (data) setPaymentTerm(data);
+        if (!data) return;
+        setPaymentTerm(data);
+        setPayTerms(data.name);
+        if (data.type === "custom") setCustomDays(String(data.days ?? ""));
       });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
