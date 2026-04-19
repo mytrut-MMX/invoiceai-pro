@@ -4,6 +4,13 @@ import { Icons } from "../../components/icons";
 import { Field, Input, Btn } from "../../components/atoms";
 import Section from "../../components/settings/Section";
 import { useToast } from "../../components/ui/Toast";
+import { useTheme } from "../../hooks/useTheme";
+
+const THEME_MODES = [
+  { value: "light",  label: "Light"  },
+  { value: "dark",   label: "Dark"   },
+  { value: "system", label: "System" },
+];
 
 const ACCENT_PRESETS = ["#E86C4A", "#2563EB", "#16A34A", "#D97706", "#9333EA", "#0891B2", "#E11D48", "#1A1A1A"];
 const SIDEBAR_PRESETS = [
@@ -18,6 +25,7 @@ const SIDEBAR_PRESETS = [
 export default function SettingsAppearance() {
   const { appTheme, setAppTheme } = useContext(AppCtx);
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   const [themeType,   setThemeType]   = useState(appTheme?.type || "solid");
   const [themeColor,  setThemeColor]  = useState(appTheme?.color || "#1A1A1A");
@@ -48,6 +56,34 @@ export default function SettingsAppearance() {
 
   return (
     <>
+      <Section title="Theme">
+        <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-2.5">
+          Mode
+        </div>
+        <div className="flex gap-2">
+          {THEME_MODES.map(({ value, label }) => {
+            const active = theme === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setTheme(value)}
+                className={[
+                  "h-8 px-4 rounded-[var(--radius-md)] text-xs font-semibold cursor-pointer transition-colors duration-150",
+                  active
+                    ? "bg-[var(--brand-50)] text-[var(--brand-700)] border border-[var(--brand-600)]"
+                    : "bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-[11px] text-[var(--text-tertiary)] mt-2">
+          System follows your OS preference.
+        </div>
+      </Section>
+
       <Section title="Sidebar appearance">
         <div className="mb-4">
           <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-2.5">
@@ -64,7 +100,7 @@ export default function SettingsAppearance() {
                     "h-8 px-4 rounded-[var(--radius-md)] text-xs font-semibold cursor-pointer transition-colors duration-150 capitalize",
                     active
                       ? "bg-[var(--brand-50)] text-[var(--brand-700)] border border-[var(--brand-600)]"
-                      : "bg-white text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
+                      : "bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
                   ].join(" ")}
                 >
                   {t}
