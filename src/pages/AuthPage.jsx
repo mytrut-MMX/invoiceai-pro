@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Icons } from "../components/icons";
 import { Field, Btn } from "../components/atoms";
-import InvoiceSagaLogo from "../components/InvoiceSagaLogo";
+import { BrandLogo } from "../components/atoms/BrandLogo";
 import {
   supabase,
   supabaseReady,
@@ -289,7 +289,7 @@ export default function AuthPage({ onAuth }) {
       <div className="min-h-screen bg-[var(--surface-sunken)] flex items-center justify-center p-4">
         <div className="w-full max-w-[440px]">
           <div className="flex justify-center mb-6">
-            <InvoiceSagaLogo height={32} />
+            <BrandLogo size={48} />
           </div>
 
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-[var(--shadow-lg)] p-8">
@@ -382,7 +382,7 @@ export default function AuthPage({ onAuth }) {
         {/* Logo + tagline */}
         <div className="text-center mb-6">
           <div className="flex justify-center mb-5">
-            <InvoiceSagaLogo height={32} />
+            <BrandLogo size={48} />
           </div>
           <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight m-0">
             {mode === "login" ? "Welcome back" : "Create your account"}

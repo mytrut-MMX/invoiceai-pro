@@ -2,6 +2,7 @@ import { useState, useContext, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Ic, Icons } from "../icons";
 import InvoiceSagaLogo from "../InvoiceSagaLogo";
+import { BrandLogo } from "../atoms/BrandLogo";
 import { ROUTES } from "../../router/routes";
 import { AppCtx } from "../../context/AppContext";
 import { useBusinessType } from "../../hooks/useBusinessType";
@@ -247,7 +248,7 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
 
       {/* Logo */}
       <div className="flex-shrink-0 mr-1">
-        <InvoiceSagaLogo height={22} dark />
+        <BrandLogo size={20} />
       </div>
 
       {/* Search trigger (desktop only) */}
