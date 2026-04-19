@@ -26,6 +26,24 @@ const SEVERITY_DOT = {
   info:     "bg-[var(--brand-600)]",
 };
 
+const DISMISSED_ALERTS_KEY = "invoicesaga_dismissed_alerts";
+const alertKey = (a) => `${a.category || a.type || "alert"}_${a.title}`;
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const loadDismissedAlerts = () => {
+  try {
+    const raw = localStorage.getItem(DISMISSED_ALERTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.dismissedDate !== todayISO()) return [];
+    return Array.isArray(parsed.keys) ? parsed.keys : [];
+  } catch {
+    return [];
+  }
+};
+
 // ─── NAVIGATION DEFINITION ───────────────────────────────────────────────────
 
 const NAV_GROUPS = [
@@ -219,7 +237,7 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
   const menuRef = useRef(null);
   const alertsRef = useRef(null);
 
-  const alerts = useMemo(
+  const rawAlerts = useMemo(
     () => generateAlerts(
       ctx?.invoices || [],
       ctx?.payments || [],
@@ -229,8 +247,25 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
     ),
     [ctx?.invoices, ctx?.payments, ctx?.expenses, ctx?.orgSettings, ctx?.bills],
   );
+  const [dismissedAlerts, setDismissedAlerts] = useState(loadDismissedAlerts);
+  const alerts = useMemo(
+    () => rawAlerts.filter(a => !dismissedAlerts.includes(alertKey(a))),
+    [rawAlerts, dismissedAlerts],
+  );
   const alertCount = alerts.length;
   const topAlerts = alerts.slice(0, 5);
+
+  const dismissAlert = (a) => {
+    const key = alertKey(a);
+    setDismissedAlerts(prev => {
+      if (prev.includes(key)) return prev;
+      const next = [...prev, key];
+      try {
+        localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify({ dismissedDate: todayISO(), keys: next }));
+      } catch { /* storage full or disabled — keep in-memory state */ }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!createOpen) return;
@@ -386,12 +421,12 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
                   {topAlerts.map(a => {
                     const dest = ALERT_PAGE_ROUTES[a.actionPage] || ROUTES.DASHBOARD;
                     return (
-                      <li key={a.id}>
+                      <li key={a.id} className="relative group">
                         <button
                           role="menuitem"
                           type="button"
                           onClick={() => { setAlertsOpen(false); navigate(dest); }}
-                          className="w-full text-left px-3 py-2 flex items-start gap-2 hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150"
+                          className="w-full text-left pl-3 pr-8 py-2 flex items-start gap-2 hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150"
                         >
                           <span className={`w-1.5 h-1.5 rounded-full mt-[6px] flex-shrink-0 ${SEVERITY_DOT[a.severity] || SEVERITY_DOT.info}`} />
                           <span className="min-w-0 flex-1">
@@ -400,6 +435,17 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
                               <span className="block text-[11px] text-[var(--text-secondary)] truncate">{a.description}</span>
                             )}
                           </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); dismissAlert(a); }}
+                          aria-label={`Dismiss ${a.title}`}
+                          title="Dismiss"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded hover:bg-[var(--danger-50)] border-none bg-transparent cursor-pointer"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="12" height="12" aria-hidden="true">
+                            <path fill="#fe4242" d="M318.9 243.3L457 105.2c13.7-13.7 13.7-36 0-49.7l-.5-.5c-13.7-13.7-36-13.7-49.7 0L268.7 193.1c-6.9 6.9-18.2 6.9-25.1 0L105.2 55c-13.7-13.7-36-13.7-49.7 0l-.5.5c-13.7 13.7-13.7 36 0 49.7l138.1 138.1c6.9 6.9 6.9 18.2 0 25.1L55 406.8c-13.7 13.7-13.7 36 0 49.7l.5.5c13.7 13.7 36 13.7 49.7 0l138.1-138.1c6.9-6.9 18.2-6.9 25.1 0L406.5 457c13.7 13.7 36 13.7 49.7 0l.5-.5c13.7-13.7 13.7-36 0-49.7L318.6 268.7c-6.6-7.4-6.6-18.3.3-25.4z" />
+                          </svg>
                         </button>
                       </li>
                     );
