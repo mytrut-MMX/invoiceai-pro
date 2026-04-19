@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ff } from "../../constants";
 import { Icons } from "../../components/icons";
 import { Btn, Field, Input, Select } from "../../components/atoms";
 import { supabase } from "../../lib/supabase";
@@ -40,7 +39,7 @@ export default function AddAccountForm({ userId, onClose, onSaved }) {
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-      <div style={{ background:"#fff", borderRadius:12, width:"100%", maxWidth:440, boxShadow:"0 8px 40px rgba(0,0,0,0.18)", fontFamily:ff }}>
+      <div style={{ background:"#fff", borderRadius:12, width:"100%", maxWidth:440, boxShadow:"0 8px 40px rgba(0,0,0,0.18)" }}>
         <div style={{ padding:"16px 24px", borderBottom:"1px solid #e8e8ec", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <span style={{ fontSize:15, fontWeight:700, color:"#1a1a2e" }}>New Account</span>
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", display:"flex", padding:4 }}><Icons.X /></button>

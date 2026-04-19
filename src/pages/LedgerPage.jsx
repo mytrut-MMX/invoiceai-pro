@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext, lazy, Suspense } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { supabase } from "../lib/supabase";
@@ -88,7 +87,7 @@ export default function LedgerPage() {
 
   return (
     <div className="bg-[var(--surface-page)] min-h-screen">
-    <div style={{ maxWidth:960, margin:"0 auto", padding:"28px 20px", fontFamily:ff }}>
+    <div style={{ maxWidth:960, margin:"0 auto", padding:"28px 20px" }}>
 
       {/* Page header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
@@ -130,7 +129,7 @@ export default function LedgerPage() {
             style={{
               padding:"9px 18px", fontSize:13, fontWeight: tab === t.id ? 700 : 400,
               color: tab === t.id ? "#1a1a2e" : "#6b7280",
-              background:"none", border:"none", cursor:"pointer", fontFamily:ff,
+              background:"none", border:"none", cursor:"pointer",
               borderBottom: tab === t.id ? "2px solid #1a1a2e" : "2px solid transparent",
               marginBottom:-2, transition:"all 0.15s",
             }}

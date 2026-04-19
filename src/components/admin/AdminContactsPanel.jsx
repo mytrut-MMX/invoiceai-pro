@@ -1,4 +1,4 @@
-import { ff, s, fmt } from './adminShared';
+import { s, fmt } from './adminShared';
 
 function SubjectBadge({ subject }) {
   const colors = {
@@ -43,13 +43,13 @@ export default function AdminContactsPanel({ loading, contacts, expandedMsg, set
                 {expandedMsg === (c.id || i) ? (
                   <div>
                     <div style={{ ...s.msgBox, maxHeight:'none' }}>{c.message}</div>
-                    <button onClick={() => setExpandedMsg(null)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0', fontFamily:ff }}>Show less</button>
+                    <button onClick={() => setExpandedMsg(null)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0' }}>Show less</button>
                   </div>
                 ) : (
                   <div>
                     <div style={{ fontSize:13, color:'#374151', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:220 }}>{c.message}</div>
                     {c.message && c.message.length > 60 && (
-                      <button onClick={() => setExpandedMsg(c.id || i)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0', fontFamily:ff }}>Read more</button>
+                      <button onClick={() => setExpandedMsg(c.id || i)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0' }}>Read more</button>
                     )}
                   </div>
                 )}

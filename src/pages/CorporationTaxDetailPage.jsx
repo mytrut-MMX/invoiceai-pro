@@ -19,7 +19,6 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ff } from "../constants";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
 import { StatusBadge, moduleUi } from "../components/shared/moduleListUI";
@@ -128,7 +127,6 @@ function ConfirmModal({ title, message, warning, confirmLabel, confirmVariant = 
           width: 440,
           maxWidth: "92vw",
           boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
-          fontFamily: ff,
         }}
       >
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1a1a2e", margin: "0 0 10px" }}>{title}</h3>
@@ -187,7 +185,6 @@ function UnlockModal({ onConfirm, onCancel, busy, error }) {
           width: 480,
           maxWidth: "92vw",
           boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
-          fontFamily: ff,
         }}
       >
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1a1a2e", margin: "0 0 10px" }}>
@@ -225,7 +222,6 @@ function UnlockModal({ onConfirm, onCancel, busy, error }) {
               border: "1px solid #dbe4ee",
               borderRadius: 8,
               fontSize: 13,
-              fontFamily: ff,
               resize: "vertical",
               color: "#1a1a2e",
             }}
@@ -277,7 +273,6 @@ function MoneyInput({ value, onChange, disabled }) {
         border: "1px solid #e8e8ec",
         borderRadius: 5,
         fontSize: 13,
-        fontFamily: ff,
         background: disabled ? "#f3f4f6" : "#fff",
         color: disabled ? "#6b7280" : "#1a1a2e",
         cursor: disabled ? "not-allowed" : "text",
@@ -303,7 +298,6 @@ function IntInput({ value, onChange, disabled, min = 0 }) {
         border: "1px solid #e8e8ec",
         borderRadius: 5,
         fontSize: 13,
-        fontFamily: ff,
         background: disabled ? "#f3f4f6" : "#fff",
         color: disabled ? "#6b7280" : "#1a1a2e",
         cursor: disabled ? "not-allowed" : "text",
@@ -450,7 +444,6 @@ function ExportMenuItem({ label, onClick }) {
         border: "none",
         borderRadius: 6,
         fontSize: 13,
-        fontFamily: ff,
         color: "#1a1a2e",
         cursor: "pointer",
       }}
@@ -697,7 +690,7 @@ export default function CorporationTaxDetailPage() {
   // ─── Access gates ────────────────────────────────────────────────────────
   if (btLoading) {
     return (
-      <div style={{ ...moduleUi.page, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page }}>
         <div style={{ textAlign: "center", padding: "80px 24px", color: "#94a3b8", fontSize: 14 }}>
           Loading…
         </div>
@@ -707,7 +700,7 @@ export default function CorporationTaxDetailPage() {
 
   if (!isLtd) {
     return (
-      <div style={{ ...moduleUi.page, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page }}>
         <div
           style={{
             maxWidth: 560,
@@ -730,7 +723,7 @@ export default function CorporationTaxDetailPage() {
 
   if (loadError) {
     return (
-      <div style={{ ...moduleUi.page, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page }}>
         <div style={{ maxWidth: 560, margin: "60px auto", textAlign: "center" }}>
           <div style={{ color: "#b91c1c", fontSize: 14, marginBottom: 16 }}>
             {loadError}
@@ -745,7 +738,7 @@ export default function CorporationTaxDetailPage() {
 
   if (!period) {
     return (
-      <div style={{ ...moduleUi.page, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page }}>
         <div style={{ textAlign: "center", padding: "80px 24px", color: "#94a3b8", fontSize: 14 }}>
           Loading period…
         </div>
@@ -759,7 +752,7 @@ export default function CorporationTaxDetailPage() {
 
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
-    <div style={{ ...moduleUi.page, fontFamily: ff }}>
+    <div style={{ ...moduleUi.page }}>
 
       {/* Sticky header */}
       <div
@@ -781,7 +774,7 @@ export default function CorporationTaxDetailPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => navigate(ROUTES.CORPORATION_TAX)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, fontFamily: ff, padding: 0 }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, padding: 0 }}
           >
             ← Corporation Tax
           </button>
@@ -1065,7 +1058,6 @@ export default function CorporationTaxDetailPage() {
                 border: "1px solid #dbe4ee",
                 borderRadius: 8,
                 fontSize: 13,
-                fontFamily: ff,
                 resize: "vertical",
                 background: isLocked ? "#f3f4f6" : "#fff",
                 color: isLocked ? "#6b7280" : "#1a1a2e",

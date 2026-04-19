@@ -1,7 +1,7 @@
 import { useState, useContext, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { ff, CUR_SYM, PAYMENT_METHODS } from "../constants";
+import { CUR_SYM, PAYMENT_METHODS } from "../constants";
 import { postPaymentEntry } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
 import { AppCtx } from "../context/AppContext";
@@ -37,11 +37,11 @@ function PaymentDetailView({ payment, onClose, onEdit, onDelete }) {
   ];
 
   return (
-    <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+    <div style={{ background:"#f4f5f7", minHeight:"100vh" }}>
       {/* Sticky header */}
       <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, padding:0 }}>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, padding:0 }}>
             ← Payments
           </button>
           <span style={{ color:"#d1d5db" }}>/</span>
@@ -169,11 +169,11 @@ function PaymentModal({ existing, onClose, onSave }) {
   };
 
   return (
-    <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+    <div style={{ background:"#f4f5f7", minHeight:"100vh" }}>
       <div style={{ maxWidth:640, margin:"0 auto", padding:"0 0 40px" }}>
         <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff }}>
+            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13 }}>
               ← Payments
             </button>
           </div>
@@ -193,14 +193,14 @@ function PaymentModal({ existing, onClose, onSave }) {
           </Field>
           <Field label="Customer">
             <input value={customer} onChange={e=>setCustomer(e.target.value)} list="cust-list" placeholder="Customer name…"
-              style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+              style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box" }} />
             <datalist id="cust-list">{custSuggestions.map(c=><option key={c.id} value={c.name} />)}</datalist>
           </Field>
 
           <Field label="Invoice / Reference">
             <div style={{ position:"relative" }}>
               <input value={invoiceId} onChange={e=>setInvoiceId(e.target.value)} list="inv-list" placeholder="Select invoice or enter ref…"
-                style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${linkedInvoice?"#1A1A1A":"#E0E0E0"}`, borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${linkedInvoice?"#1A1A1A":"#E0E0E0"}`, borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box" }} />
               <datalist id="inv-list">{invoices.map(i=><option key={i.id} value={i.invoice_number}>{i.invoice_number} — {i.customer?.name} — {fmt("£",i.total)}</option>)}</datalist>
             </div>
             {linkedInvoice && (
@@ -217,7 +217,7 @@ function PaymentModal({ existing, onClose, onSave }) {
             </Field>
             <Field label="Date" required>
               <input value={date} onChange={e=>setDate(e.target.value)} type="date"
-                style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                style={{ width:"100%", padding:"9px 10px", border:"1.5px solid #E0E0E0", borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box" }} />
             </Field>
           </div>
 

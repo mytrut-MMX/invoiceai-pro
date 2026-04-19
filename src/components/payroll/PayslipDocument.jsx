@@ -7,7 +7,6 @@
 
 import { fmt, fmtDate } from "../../utils/helpers";
 
-const ff = "'Inter', 'Lato', 'DM Sans', 'Helvetica Neue', sans-serif";
 const mono = "'Courier New', monospace";
 
 const C = {
@@ -64,7 +63,7 @@ export default function PayslipDocument({
   const tdBold  = { ...tdRight, fontWeight: 700, color: C.heading };
 
   return (
-    <div id={docId} style={{ width: "210mm", minHeight: "297mm", padding: "18mm 16mm", fontFamily: ff, color: C.body, background: "#fff", boxSizing: "border-box" }}>
+    <div id={docId} style={{ width: "210mm", minHeight: "297mm", padding: "18mm 16mm", color: C.body, background: "#fff", boxSizing: "border-box" }}>
 
       {/* ═══ SECTION 1 — HEADER ═══ */}
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 22 }}>

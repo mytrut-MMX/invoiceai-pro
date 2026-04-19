@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useContext } from "react";
-import { ff, CUR_SYM } from "../constants";
+import { CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn, Input, Field } from "../components/atoms";
@@ -74,7 +74,7 @@ function NewRunModal({ onClose, onCreate, creating, error }) {
   return (
     <div style={{ position:"fixed", inset:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.35)" }}
       onClick={onClose}>
-      <div style={{ background:"#fff", borderRadius:14, padding:"24px 28px", width:420, maxWidth:"92vw", boxShadow:"0 12px 40px rgba(0,0,0,0.18)", fontFamily:ff }}
+      <div style={{ background:"#fff", borderRadius:14, padding:"24px 28px", width:420, maxWidth:"92vw", boxShadow:"0 12px 40px rgba(0,0,0,0.18)" }}
         onClick={e => e.stopPropagation()}>
         <h3 style={{ fontSize:17, fontWeight:700, color:"#1a1a2e", margin:"0 0 16px" }}>New Payroll Run</h3>
 
@@ -240,7 +240,7 @@ export default function PayrollPage() {
 
   return (
     <div style={moduleUi.pageCanvas}>
-      <div style={{ ...moduleUi.page, maxWidth:1320, fontFamily:ff }}>
+      <div style={{ ...moduleUi.page, maxWidth:1320 }}>
         <ModuleHeader
           title="Payroll"
           helper={`${runs.length} payroll run${runs.length !== 1 ? "s" : ""} · manage employee pay and HMRC submissions`}
@@ -291,11 +291,11 @@ export default function PayrollPage() {
         <div style={{ ...moduleUi.toolbar, marginTop:10, marginBottom:10 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", flex:1 }}>
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-              style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+              style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff" }}>
               {STATUS_FILTERS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
             <select value={yearFilter} onChange={e => setYearFilter(e.target.value)}
-              style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff", fontFamily:ff }}>
+              style={{ padding:"8px 10px", border:"1px solid #dbe4ee", borderRadius:10, fontSize:12, background:"#fff" }}>
               <option value={currentTaxYear()}>{currentTaxYear()}</option>
               <option value={prevTaxYear()}>{prevTaxYear()}</option>
             </select>

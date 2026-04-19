@@ -11,7 +11,6 @@
 
 import { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
@@ -80,7 +79,7 @@ export default function CorporationTaxPage() {
   // ─── Access gate ──────────────────────────────────────────────────────────
   if (bizLoading) {
     return (
-      <div style={{ ...moduleUi.page, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page }}>
         <div style={{ textAlign: "center", padding: "80px 24px", color: "#94a3b8", fontSize: 14 }}>
           Loading…
         </div>
@@ -90,7 +89,7 @@ export default function CorporationTaxPage() {
 
   if (!isLtd) {
     return (
-      <div style={{ ...moduleUi.page, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page }}>
         <div
           style={{
             maxWidth: 560,
@@ -119,7 +118,7 @@ export default function CorporationTaxPage() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ ...moduleUi.page, fontFamily: ff }}>
+    <div style={{ ...moduleUi.page }}>
       <ModuleHeader
         title="Corporation Tax"
         helper="Manage CT600 accounting periods, review tax-adjusted profit, and track payment and filing deadlines."
@@ -325,7 +324,6 @@ function CreatePeriodModal({ defaultCrn, onCancel, onCreated }) {
           border: "1px solid #E8E6E0",
           boxShadow: "0 18px 40px rgba(17,17,16,0.2)",
           overflow: "hidden",
-          fontFamily: ff,
           maxHeight: "calc(100vh - 32px)",
           display: "flex",
           flexDirection: "column",
@@ -380,7 +378,6 @@ function CreatePeriodModal({ defaultCrn, onCancel, onCreated }) {
                   border: "1px solid #e8e8ec",
                   borderRadius: 5,
                   fontSize: 13,
-                  fontFamily: ff,
                   background: "#fff",
                   outline: "none",
                   textTransform: "uppercase",
@@ -440,7 +437,6 @@ function CreatePeriodModal({ defaultCrn, onCancel, onCreated }) {
                 border: "1px solid #dbe4ee",
                 borderRadius: 8,
                 fontSize: 13,
-                fontFamily: ff,
                 resize: "vertical",
               }}
             />
@@ -506,7 +502,6 @@ function DateInput({ value, onChange }) {
         border: "1px solid #e8e8ec",
         borderRadius: 5,
         fontSize: 13,
-        fontFamily: ff,
         background: "#fff",
         outline: "none",
       }}
@@ -528,7 +523,6 @@ function MoneyInput({ value, onChange }) {
         border: "1px solid #e8e8ec",
         borderRadius: 5,
         fontSize: 13,
-        fontFamily: ff,
         background: "#fff",
         outline: "none",
       }}

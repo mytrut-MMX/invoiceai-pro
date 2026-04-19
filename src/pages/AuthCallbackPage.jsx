@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { ff } from "../constants";
 import { supabase, getSession } from "../lib/supabase";
 
 export default function AuthCallbackPage({ onAuth }) {
@@ -88,7 +87,7 @@ export default function AuthCallbackPage({ onAuth }) {
 
   if (status === "error") {
     return (
-      <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: ff }}>
+      <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", }}>
         <div style={{ textAlign: "center", maxWidth: 380 }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
           <div style={{ fontSize: 18, fontWeight: 600, color: "#111110", marginBottom: 8 }}>Sign-in failed</div>
@@ -102,7 +101,7 @@ export default function AuthCallbackPage({ onAuth }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: ff }}>
+    <div style={{ minHeight: "100vh", background: "#FAFAF7", display: "flex", alignItems: "center", justifyContent: "center", }}>
       <div style={{ textAlign: "center" }}>
         <div style={{ width: 40, height: 40, border: "3px solid #E8E6E0", borderTopColor: "#111110", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 20px" }} />
         <div style={{ fontSize: 15, color: "#6b7280" }}>Signing you in…</div>

@@ -6,7 +6,6 @@
  * html2pdf (see generateCISStatementPdf.js).
  */
 
-const ff = "'Inter', 'Lato', 'DM Sans', 'Helvetica Neue', sans-serif";
 const mono = "'Courier New', monospace";
 
 const C = {
@@ -58,7 +57,7 @@ export default function CISStatementDocument({
   const tdVal   = { ...tdLabel, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: C.heading };
 
   return (
-    <div id={docId} style={{ width: "210mm", minHeight: "297mm", padding: "18mm 16mm", fontFamily: ff, color: C.body, background: "#fff", boxSizing: "border-box" }}>
+    <div id={docId} style={{ width: "210mm", minHeight: "297mm", padding: "18mm 16mm", color: C.body, background: "#fff", boxSizing: "border-box" }}>
 
       {/* ─── HEADER ─── */}
       <div style={{ borderBottom: `2px solid ${C.heading}`, paddingBottom: 14, marginBottom: 20 }}>

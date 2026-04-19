@@ -1,5 +1,4 @@
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-export const ff = "'Lato','DM Sans','Helvetica Neue',sans-serif";
 export const TAX_RATES = [0, 5, 12.5, 20];
 export const UK_VAT_RATES = [
   { value: "20",       label: "Standard (20%)",     rate: 20,   type: "standard" },

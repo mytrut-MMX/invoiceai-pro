@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { ff } from "../../constants";
 import { Select } from "../../components/atoms";
 import { fmt, fmtDate } from "../../utils/helpers";
 import { useCurrSym, PERIODS, getDateRange, computeBalances } from "./shared";
@@ -61,9 +60,9 @@ export default function PLTab({ accounts, allEntries, hasLedgerAccess }) {
         {period === "custom" && (
           <>
             <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
-              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }} />
+              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, outline:"none" }} />
             <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
-              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }} />
+              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, outline:"none" }} />
           </>
         )}
         <span style={{ marginLeft:"auto", fontSize:11, color:"#9ca3af", background:"#f5f5f7", padding:"4px 10px", borderRadius:20, border:"1px solid #e8e8ec" }}>

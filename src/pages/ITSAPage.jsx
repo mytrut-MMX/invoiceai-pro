@@ -1,5 +1,5 @@
 import { useState, useContext, useMemo, useCallback } from "react";
-import { ff, CUR_SYM } from "../constants";
+import { CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
@@ -28,7 +28,7 @@ function ConfirmModal({ title, message, onConfirm, onCancel }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }} />
-      <div style={{ position: "relative", background: "#fff", borderRadius: 16, padding: "28px 24px", maxWidth: 420, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.18)", fontFamily: ff }}>
+      <div style={{ position: "relative", background: "#fff", borderRadius: 16, padding: "28px 24px", maxWidth: 420, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
         <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 800, color: "#0f172a" }}>{title}</h3>
         <p style={{ margin: "0 0 20px", fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -159,7 +159,7 @@ export default function ITSAPage() {
 
   return (
     <div style={moduleUi.pageCanvas}>
-      <div style={{ ...moduleUi.page, maxWidth: 1320, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page, maxWidth: 1320 }}>
         <ModuleHeader
           title="Self Assessment (ITSA)"
           helper="Calculate and submit your MTD Income Tax quarterly updates to HMRC."
@@ -188,7 +188,6 @@ export default function ITSAPage() {
                     padding: "7px 14px", fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer",
                     background: view === v.key ? "#1e6be0" : "#fff",
                     color: view === v.key ? "#fff" : "#64748b",
-                    fontFamily: ff,
                   }}
                 >
                   {v.label}
@@ -203,7 +202,7 @@ export default function ITSAPage() {
             <select
               value={selectedTaxYear}
               onChange={e => { setSelectedTaxYear(e.target.value); setSelectedQuarterIdx(0); setReviewed(false); }}
-              style={{ padding: "9px 12px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 13, background: "#fff", fontFamily: ff, minWidth: 120, color: "#0f172a" }}
+              style={{ padding: "9px 12px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 13, background: "#fff", minWidth: 120, color: "#0f172a" }}
             >
               {taxYears.map(ty => <option key={ty} value={ty}>{ty}</option>)}
             </select>
@@ -217,7 +216,7 @@ export default function ITSAPage() {
                 <select
                   value={selectedQuarterIdx}
                   onChange={e => { setSelectedQuarterIdx(Number(e.target.value)); setReviewed(false); }}
-                  style={{ padding: "9px 12px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 13, background: "#fff", fontFamily: ff, minWidth: 280, color: "#0f172a" }}
+                  style={{ padding: "9px 12px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 13, background: "#fff", minWidth: 280, color: "#0f172a" }}
                 >
                   {periods.map((p, i) => <option key={p.quarter} value={i}>{p.label}</option>)}
                 </select>
