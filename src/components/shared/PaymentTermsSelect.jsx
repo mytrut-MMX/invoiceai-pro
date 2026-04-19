@@ -1,22 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { Icons } from "../icons";
 import { Input } from "../atoms";
 import { listPaymentTerms } from "../../lib/paymentTerms";
-import { ROUTES } from "../../router/routes";
+import { PaymentTermsConfigModal } from "./PaymentTermsConfigModal";
 
 export function PaymentTermsSelect({ value, onChange }) {
   const [terms, setTerms] = useState([]);
   const [open, setOpen] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
   const [customDays, setCustomDays] = useState(
     value?.type === "custom" ? String(value.days ?? "") : ""
   );
   const ref = useRef(null);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    listPaymentTerms().then(({ data }) => setTerms(data || []));
-  }, []);
+  const refetchTerms = () => listPaymentTerms().then(({ data }) => setTerms(data || []));
+
+  useEffect(() => { refetchTerms(); }, []);
 
   useEffect(() => {
     const h = (e) => {
@@ -115,7 +114,7 @@ export function PaymentTermsSelect({ value, onChange }) {
               type="button"
               onClick={() => {
                 setOpen(false);
-                navigate(`${ROUTES.SETTINGS}?tab=payment-terms`);
+                setConfigOpen(true);
               }}
               className="w-full text-left px-3 py-2 text-sm text-[var(--brand-600)] hover:bg-[var(--brand-50)] bg-transparent border-none cursor-pointer transition-colors duration-150 font-medium"
             >
@@ -124,6 +123,11 @@ export function PaymentTermsSelect({ value, onChange }) {
           </div>
         </div>
       )}
+      <PaymentTermsConfigModal
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        onSaved={refetchTerms}
+      />
     </div>
   );
 }
