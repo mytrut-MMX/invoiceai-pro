@@ -254,7 +254,7 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
       {/* Search trigger (desktop only) */}
       <button
         onClick={onSearchClick}
-        className="hidden lg:flex flex-1 max-w-sm items-center gap-2 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--surface-dark-2)] border border-white/10 text-[var(--text-tertiary)] text-[13px] cursor-pointer hover:border-white/20 transition-all duration-200"
+        className="hidden lg:flex flex-1 max-w-sm items-center gap-2 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--surface-dark-2)] border border-white/10 text-[var(--text-tertiary)] text-[12px] cursor-pointer hover:border-white/20 transition-all duration-200"
       >
         <Icons.Search />
         <span className="flex-1 text-left">Search invoices, customers...</span>
@@ -267,7 +267,7 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
         <div className="relative hidden lg:block" ref={dropdownRef}>
           <button
             onClick={() => setCreateOpen(v => !v)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white text-[13px] font-semibold cursor-pointer transition-all duration-200 border-none"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white text-[12px] font-semibold cursor-pointer transition-all duration-200 border-none"
           >
             <Icons.Plus />
             Create
@@ -284,7 +284,7 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
                     <button
                       key={item.label}
                       onClick={() => { navigate(item.route); setCreateOpen(false); }}
-                      className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors duration-150 cursor-pointer border-none bg-transparent"
+                      className="w-full text-left px-3 py-2 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors duration-150 cursor-pointer border-none bg-transparent"
                     >
                       {item.label}
                     </button>
@@ -328,7 +328,7 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
             aria-label="User menu"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[13px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-white/30 transition-all duration-200 ml-1 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+            className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[12px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-white/30 transition-all duration-200 ml-1 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
           >
             {userAvatar
               ? <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
@@ -346,7 +346,7 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
                     : (user?.name || "?")[0].toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-[var(--text-primary)] truncate">{user?.name}</div>
+                  <div className="text-[12px] font-semibold text-[var(--text-primary)] truncate">{user?.name}</div>
                   {user?.email && (
                     <div className="text-xs text-[var(--text-secondary)] truncate">{user.email}</div>
                   )}
@@ -356,21 +356,21 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
               <button
                 role="menuitem"
                 onClick={() => { setMenuOpen(false); onUserClick?.(); }}
-                className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                className="w-full text-left px-3 py-2 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
               >
                 Edit profile
               </button>
               <button
                 role="menuitem"
                 onClick={() => { setMenuOpen(false); navigate(ROUTES.SETTINGS_GENERAL); }}
-                className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                className="w-full text-left px-3 py-2 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
               >
                 Settings
               </button>
               <button
                 role="menuitem"
                 onClick={() => { setMenuOpen(false); onLogout?.(); }}
-                className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                className="w-full text-left px-3 py-2 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
               >
                 Log out
               </button>
@@ -461,7 +461,7 @@ export function MobileTopBar({ onMenuOpen, user, userAvatar, onUserClick }) {
       <button
         onClick={onUserClick}
         title="Edit profile"
-        className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[13px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0"
+        className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[12px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0"
       >
         {userAvatar
           ? <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
@@ -557,7 +557,7 @@ export function MobileDrawer({ onClose, user, userAvatar, onUserClick, onLogout 
                     key={item.id}
                     onClick={() => { navigate(item.route); onClose(); }}
                     className={[
-                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-md)] border-none cursor-pointer text-[13px] text-left mb-0.5 transition-all duration-150",
+                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-md)] border-none cursor-pointer text-[12px] text-left mb-0.5 transition-all duration-150",
                       on
                         ? "bg-[var(--brand-50)] text-[var(--brand-700)] font-medium"
                         : "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]",
@@ -578,7 +578,7 @@ export function MobileDrawer({ onClose, user, userAvatar, onUserClick, onLogout 
             <button
               onClick={() => { navigate(SETTINGS_ITEM.route); onClose(); }}
               className={[
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-md)] border-none cursor-pointer text-[13px] text-left transition-all duration-150",
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-md)] border-none cursor-pointer text-[12px] text-left transition-all duration-150",
                 isActive(pathname, SETTINGS_ITEM.match)
                   ? "bg-[var(--brand-50)] text-[var(--brand-700)] font-medium"
                   : "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]",
@@ -596,7 +596,7 @@ export function MobileDrawer({ onClose, user, userAvatar, onUserClick, onLogout 
         <div className="flex-shrink-0 border-t border-[var(--border-subtle)] p-3 flex items-center gap-2">
           <button
             onClick={() => { onUserClick(); onClose(); }}
-            className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[13px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0"
+            className="w-8 h-8 rounded-full bg-[var(--brand-600)] flex items-center justify-center text-white text-[12px] font-bold border-none cursor-pointer overflow-hidden flex-shrink-0"
           >
             {userAvatar
               ? <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
