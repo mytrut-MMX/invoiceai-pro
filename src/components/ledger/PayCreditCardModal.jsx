@@ -6,7 +6,8 @@ import { transferBetweenAccounts } from "../../utils/ledger/transferBetweenAccou
 
 export default function PayCreditCardModal({ ccAccount, assetAccounts, userId, onClose, onSuccess }) {
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const _d = new Date();
+  const today = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
 
   const [fromId,  setFromId]  = useState(assetAccounts[0]?.id || "");
   const [amount,  setAmount]  = useState("");
