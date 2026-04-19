@@ -1,4 +1,4 @@
-import { useState, useContext, useRef, useCallback } from "react";
+import { useState, useContext, useRef, useCallback, useEffect } from "react";
 import { CUR_SYM, TAX_RATES, EXPENSE_CATEGORIES, EXPENSE_STATUSES, PAYMENT_METHODS } from "../../constants";
 import { SA_CATEGORY_LABELS, SA_CATEGORY_MAP } from "../../utils/itsa/hmrcCategoryMap";
 import { postExpenseEntry } from "../../utils/ledger/ledgerService";
@@ -85,6 +85,8 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
   const [billable, setBillable]         = useState(e.billable || false);
   const [customer, setCustomer]         = useState(e.customer || null);
   const [paidThrough, setPaidThrough]   = useState(e.paid_through || "Card");
+  const [paidFromId,  setPaidFromId]    = useState(e.paid_from_account_id || "");
+  const [payAccounts, setPayAccounts]   = useState([]);
   const [receipt, setReceipt]           = useState(e.receipt || "");
   const [notes, setNotes]               = useState(e.notes || "");
   const [mileageFrom, setMileageFrom]   = useState(e.mileage_from || "");
@@ -102,6 +104,15 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
   const drcVatAmount = is_drc ? net * Number(taxRate) / 100 : 0;
   const taxAmt = is_drc ? 0 : (isVat && expType !== "mileage" ? net * Number(taxRate) / 100 : 0);
   const total  = net + taxAmt;
+  useEffect(() => {
+    fetchUserAccounts().then(({ accounts }) => {
+      setPayAccounts(accounts.filter(a =>
+        (a.type === "asset" && String(a.code).startsWith("1")) ||
+        a.sub_type === "credit_card"
+      ));
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const allPay = [...PAYMENT_METHODS, ...(customPayMethods || [])];
 
   const handleSave = () => {
@@ -127,6 +138,7 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
       is_cis_expense: isSubLabour && cisEnabled,
       is_drc,
       drc_vat_amount: drcVatAmount,
+      paid_from_account_id: paidFromId || null,
       created_at: e.created_at || new Date().toISOString(),
     };
     onSave(expenseObj);
@@ -223,6 +235,23 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
                 <Select value={paidThrough} onChange={setPaidThrough} options={allPay.map(m => ({ value: m, label: m }))} />
               </Field>
             </>)}
+            {payAccounts.length > 0 && (
+              <Field label="Paid from account">
+                <Select
+                  value={paidFromId}
+                  onChange={setPaidFromId}
+                  options={[
+                    { value: "", label: "— Accounts Payable (default)" },
+                    ...payAccounts.map(a => ({
+                      value: a.id,
+                      label: a.sub_type === "credit_card"
+                        ? `${a.code} – ${a.name} (Credit Card)`
+                        : `${a.code} – ${a.name}`,
+                    })),
+                  ]}
+                />
+              </Field>
+            )}
             {isVat && row3(<>
               <Field label="VAT Rate"><Select value={String(taxRate)} onChange={v => setTaxRate(Number(v))} options={TAX_RATES.map(r => ({ value: String(r), label: `${r}%` }))} /></Field>
               <Field label="VAT"><Input value={fmt(currSym, taxAmt)} readOnly align="right" /></Field>
