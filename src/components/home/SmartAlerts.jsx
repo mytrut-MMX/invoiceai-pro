@@ -19,8 +19,25 @@ const ALERT_PAGE_ROUTES = {
 };
 
 const LS_DISMISSED_KEY = "invoicesaga_dismissed_alerts";
-const getDismissed = () => { try { return JSON.parse(localStorage.getItem(LS_DISMISSED_KEY) || "[]"); } catch { return []; } };
-const saveDismissed = (ids) => { try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify(ids)); } catch {} };
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const getDismissed = () => {
+  try {
+    const raw = localStorage.getItem(LS_DISMISSED_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.keys)) {
+      return parsed.dismissedDate === todayISO() ? parsed.keys : [];
+    }
+    return [];
+  } catch { return []; }
+};
+const saveDismissed = (ids) => {
+  try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify({ dismissedDate: todayISO(), keys: ids })); } catch {}
+};
 
 const SEV = {
   critical: {
