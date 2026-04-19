@@ -11,6 +11,8 @@ import CashFlowWidget from "../components/home/CashFlowWidget";
 import NeedsAttention from "../components/home/NeedsAttention";
 import RecentInvoices from "../components/home/RecentInvoices";
 import MonthEndChecklist from "../components/home/MonthEndChecklist";
+import DashboardCustomizer from "../components/home/DashboardCustomizer";
+import { useDashboardLayout } from "../hooks/useDashboardLayout";
 import { DashboardSkeleton } from "../components/ui/Skeleton";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -136,6 +138,8 @@ export default function HomePage() {
   const { user, invoices, expenses, payments, bills, orgSettings, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const [period, setPeriod] = useState("this_month");
+  const [customizerOpen, setCustomizerOpen] = useState(false);
+  const { layout } = useDashboardLayout();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const moduleData = useDashboardModuleData(user?.id, orgSettings);
 
@@ -272,6 +276,15 @@ export default function HomePage() {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => setCustomizerOpen(true)}
+            aria-label="Customize dashboard"
+            title="Customize dashboard"
+            className="h-9 w-9 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+          >
+            <Icons.Settings />
+          </button>
         </div>
       </div>
 
@@ -284,35 +297,60 @@ export default function HomePage() {
                  onClick={() => navigate(`${ROUTES.INVOICES}?status=Overdue`)} />
       </div>
 
-      {/* 2/3 + 1/3 grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[13px] mb-[13px]">
-        <div className="lg:col-span-2 space-y-[13px]">
-          <CashFlowWidget />
-          <RecentInvoices invoices={invoices} orgSettings={orgSettings} />
-        </div>
-        <div className="space-y-[13px]">
-          <NeedsAttention
-            invoices={invoices}
-            bills={bills || []}
-            orgSettings={orgSettings}
-            moduleData={moduleData}
-          />
-          <MonthEndChecklist />
-        </div>
-      </div>
+      {/* Dynamic widget grid — SmartAlerts is pulled out and rendered full-width below */}
+      {(() => {
+        const renderers = {
+          cash_flow:       () => <CashFlowWidget />,
+          recent_invoices: () => <RecentInvoices invoices={invoices} orgSettings={orgSettings} />,
+          needs_attention: () => (
+            <NeedsAttention
+              invoices={invoices}
+              bills={bills || []}
+              orgSettings={orgSettings}
+              moduleData={moduleData}
+            />
+          ),
+          month_end:       () => <MonthEndChecklist />,
+        };
+        const visible = layout.filter(w => w.visible);
+        const grid = visible.filter(w => w.id !== "smart_alerts");
+        const main = grid.slice(0, 2);
+        const side = grid.slice(2);
+        const smartAlerts = visible.find(w => w.id === "smart_alerts");
+        return (
+          <>
+            {(main.length > 0 || side.length > 0) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-[13px] mb-[13px]">
+                {main.length > 0 && (
+                  <div className="lg:col-span-2 space-y-[13px]">
+                    {main.map(w => <div key={w.id}>{renderers[w.id]?.()}</div>)}
+                  </div>
+                )}
+                {side.length > 0 && (
+                  <div className="space-y-[13px]">
+                    {side.map(w => <div key={w.id}>{renderers[w.id]?.()}</div>)}
+                  </div>
+                )}
+              </div>
+            )}
+            {smartAlerts && (
+              <SmartAlerts
+                invoices={invoices}
+                payments={payments}
+                expenses={expenses}
+                orgSettings={orgSettings}
+                bills={bills}
+                vatPeriods={moduleData.vatPeriods}
+                itsaPeriods={moduleData.itsaPeriods}
+                payrollRuns={moduleData.payrollRuns}
+                employees={moduleData.employees}
+              />
+            )}
+          </>
+        );
+      })()}
 
-      {/* Full-width smart alerts (only renders when there are alerts) */}
-      <SmartAlerts
-        invoices={invoices}
-        payments={payments}
-        expenses={expenses}
-        orgSettings={orgSettings}
-        bills={bills}
-        vatPeriods={moduleData.vatPeriods}
-        itsaPeriods={moduleData.itsaPeriods}
-        payrollRuns={moduleData.payrollRuns}
-        employees={moduleData.employees}
-      />
+      {customizerOpen && <DashboardCustomizer onClose={() => setCustomizerOpen(false)} />}
     </div>
   );
 }

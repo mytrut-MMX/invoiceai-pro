@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { DASHBOARD_WIDGETS, getDefaultLayout } from "../utils/dashboard/widgetRegistry";
 
 const STORAGE_KEY = "invoicesaga_dashboard_layout";
@@ -19,42 +19,56 @@ function readStored() {
   }
 }
 
-export function useDashboardLayout() {
-  const [layout, setLayout] = useState(() => readStored() || getDefaultLayout());
+function writeStored(layout) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+  } catch {
+    // storage unavailable — ignore
+  }
+}
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-    } catch {
-      // storage unavailable — ignore
-    }
-  }, [layout]);
+let state = readStored() || getDefaultLayout();
+const listeners = new Set();
+
+function setState(next) {
+  state = next;
+  writeStored(state);
+  listeners.forEach(l => l());
+}
+
+const subscribe = (listener) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+const getSnapshot = () => state;
+
+export function useDashboardLayout() {
+  const layout = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const toggleWidget = useCallback((id) => {
-    setLayout(prev => {
-      if (prev.some(w => w.id === id)) {
-        return prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w);
-      }
-      return [...prev, { id, visible: true }];
-    });
+    const prev = state;
+    const next = prev.some(w => w.id === id)
+      ? prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w)
+      : [...prev, { id, visible: true }];
+    setState(next);
   }, []);
 
   const moveWidget = useCallback((id, direction) => {
     const delta = direction === "up" ? -1 : direction === "down" ? 1 : 0;
     if (!delta) return;
-    setLayout(prev => {
-      const idx = prev.findIndex(w => w.id === id);
-      if (idx === -1) return prev;
-      const target = idx + delta;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = prev.slice();
-      [next[idx], next[target]] = [next[target], next[idx]];
-      return next;
-    });
+    const prev = state;
+    const idx = prev.findIndex(w => w.id === id);
+    if (idx === -1) return;
+    const target = idx + delta;
+    if (target < 0 || target >= prev.length) return;
+    const next = prev.slice();
+    [next[idx], next[target]] = [next[target], next[idx]];
+    setState(next);
   }, []);
 
   const resetLayout = useCallback(() => {
-    setLayout(getDefaultLayout());
+    setState(getDefaultLayout());
   }, []);
 
   return { layout, toggleWidget, moveWidget, resetLayout };
