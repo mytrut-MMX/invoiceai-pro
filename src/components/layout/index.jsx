@@ -1,4 +1,4 @@
-import { useState, useContext, useRef, useEffect } from "react";
+import { useState, useContext, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Ic, Icons } from "../icons";
 import InvoiceSagaLogo from "../InvoiceSagaLogo";
@@ -6,6 +6,25 @@ import { BrandLogo } from "../atoms/BrandLogo";
 import { ROUTES } from "../../router/routes";
 import { AppCtx } from "../../context/AppContext";
 import { useBusinessType } from "../../hooks/useBusinessType";
+import { generateAlerts } from "../../utils/ledger/generateAlerts";
+
+const ALERT_PAGE_ROUTES = {
+  "invoices":     ROUTES.INVOICES,
+  "invoices:new": ROUTES.INVOICES_NEW,
+  "payments":     ROUTES.PAYMENTS,
+  "expenses":     ROUTES.EXPENSES,
+  "bills":        ROUTES.BILLS,
+  "payroll":      ROUTES.PAYROLL,
+  "payroll:new":  ROUTES.PAYROLL,
+  "vat":          ROUTES.VAT_RETURN,
+  "itsa":         ROUTES.ITSA,
+};
+
+const SEVERITY_DOT = {
+  critical: "bg-[var(--danger-600)]",
+  warning:  "bg-[var(--warning-600)]",
+  info:     "bg-[var(--brand-600)]",
+};
 
 // ─── NAVIGATION DEFINITION ───────────────────────────────────────────────────
 
@@ -192,10 +211,26 @@ function NavItem({ item, collapsed, pathname, navigate }) {
 
 export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, collapsed, onCollapsedChange, onSearchClick }) {
   const navigate = useNavigate();
+  const ctx = useContext(AppCtx);
   const [createOpen, setCreateOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const alertsRef = useRef(null);
+
+  const alerts = useMemo(
+    () => generateAlerts(
+      ctx?.invoices || [],
+      ctx?.payments || [],
+      ctx?.expenses || [],
+      ctx?.orgSettings || {},
+      ctx?.bills || [],
+    ),
+    [ctx?.invoices, ctx?.payments, ctx?.expenses, ctx?.orgSettings, ctx?.bills],
+  );
+  const alertCount = alerts.length;
+  const topAlerts = alerts.slice(0, 5);
 
   useEffect(() => {
     if (!createOpen) return;
@@ -225,6 +260,24 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
       document.removeEventListener("keydown", handleKey);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!alertsOpen) return;
+    function handleClick(e) {
+      if (alertsRef.current && !alertsRef.current.contains(e.target)) {
+        setAlertsOpen(false);
+      }
+    }
+    function handleKey(e) {
+      if (e.key === "Escape") setAlertsOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [alertsOpen]);
 
   return (
     <div className="h-[52px] flex items-center px-3 gap-2 bg-[var(--surface-dark)] border-b border-white/10 flex-shrink-0">
@@ -296,17 +349,83 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
         </div>
 
         {/* Notification bell */}
-        <button
-          title="Notifications"
-          className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 border-none bg-transparent cursor-pointer"
-        >
-          <Ic d='<path fill-rule="evenodd" clip-rule="evenodd" d="M5.25 9a6.75 6.75 0 1113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 104.496 0 25.057 25.057 0 01-4.496 0z"/>' size={18} />
-        </button>
+        <div className="relative" ref={alertsRef}>
+          <button
+            type="button"
+            onClick={() => setAlertsOpen(v => !v)}
+            aria-label={alertCount > 0 ? `Notifications, ${alertCount} new` : "Notifications"}
+            aria-haspopup="menu"
+            aria-expanded={alertsOpen}
+            title="Notifications"
+            className="relative flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 border-none bg-transparent cursor-pointer"
+          >
+            <Ic d='<path fill-rule="evenodd" clip-rule="evenodd" d="M5.25 9a6.75 6.75 0 1113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 104.496 0 25.057 25.057 0 01-4.496 0z"/>' size={18} />
+            {alertCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[var(--danger-600)] text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                {alertCount > 9 ? "9+" : alertCount}
+              </span>
+            )}
+          </button>
+          {alertsOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-[calc(100%+6px)] w-[320px] bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] z-[2000] overflow-hidden"
+            >
+              <div className="px-3 py-2 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                <span className="text-[12px] font-semibold text-[var(--text-primary)]">Notifications</span>
+                <span className="text-[11px] text-[var(--text-tertiary)]">
+                  {alertCount === 0 ? "All clear" : `${alertCount} active`}
+                </span>
+              </div>
+              {topAlerts.length === 0 ? (
+                <div className="px-3 py-6 text-center text-[12px] text-[var(--text-tertiary)]">
+                  You're all caught up.
+                </div>
+              ) : (
+                <ul className="max-h-[320px] overflow-y-auto py-1">
+                  {topAlerts.map(a => {
+                    const dest = ALERT_PAGE_ROUTES[a.actionPage] || ROUTES.DASHBOARD;
+                    return (
+                      <li key={a.id}>
+                        <button
+                          role="menuitem"
+                          type="button"
+                          onClick={() => { setAlertsOpen(false); navigate(dest); }}
+                          className="w-full text-left px-3 py-2 flex items-start gap-2 hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150"
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full mt-[6px] flex-shrink-0 ${SEVERITY_DOT[a.severity] || SEVERITY_DOT.info}`} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[12px] font-medium text-[var(--text-primary)] truncate">{a.title}</span>
+                            {a.description && (
+                              <span className="block text-[11px] text-[var(--text-secondary)] truncate">{a.description}</span>
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <div className="border-t border-[var(--border-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => { setAlertsOpen(false); navigate(ROUTES.DASHBOARD); }}
+                  className="w-full text-center px-3 py-2 text-[12px] font-medium text-[var(--brand-700)] hover:bg-[var(--surface-sunken)] border-none bg-transparent cursor-pointer transition-colors duration-150"
+                >
+                  View all
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Help */}
         <button
-          title="Help"
-          className="hidden lg:flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 border-none bg-transparent cursor-pointer"
+          type="button"
+          onClick={() => navigate(ROUTES.CONTACT)}
+          aria-label="Help and support"
+          title="Help and support"
+          className="hidden lg:flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 border-none bg-transparent cursor-pointer focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
         >
           <Ic d='<path fill-rule="evenodd" clip-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 01-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 01-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 01-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584zM12 18a.75.75 0 100-1.5.75.75 0 000 1.5z"/>' size={18} />
         </button>
