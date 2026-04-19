@@ -116,19 +116,46 @@ export const Toggle = ({ value, onChange, options }) => (
   </div>
 );
 
-// ─── SWITCH ──────────────────────────────────────────────────────────────────
-export const Switch = ({ checked, onChange }) => (
+// ─── TOGGLE SWITCH ───────────────────────────────────────────────────────────
+// Standard: track w-11 h-6, thumb w-5 h-5, translate-x-0.5 / translate-x-5
+export const ToggleSwitch = ({ checked, onChange, disabled }) => (
   <button
-    onClick={() => onChange(!checked)}
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={() => !disabled && onChange(!checked)}
     className={[
-      "relative w-10 h-[22px] rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+      "relative w-11 h-6 rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+      "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]",
+      "disabled:opacity-50 disabled:cursor-not-allowed",
       checked ? "bg-[var(--brand-600)]" : "bg-[var(--border-default)]",
     ].join(" ")}
   >
     <div
       className={[
-        "absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200",
-        checked ? "left-[21px]" : "left-[3px]",
+        "absolute top-[2px] left-0 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200",
+        checked ? "translate-x-5" : "translate-x-0.5",
+      ].join(" ")}
+    />
+  </button>
+);
+
+// ─── SWITCH ──────────────────────────────────────────────────────────────────
+export const Switch = ({ checked, onChange }) => (
+  <button
+    type="button"
+    onClick={() => onChange(!checked)}
+    className={[
+      "relative w-11 h-6 rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+      "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]",
+      checked ? "bg-[var(--brand-600)]" : "bg-[var(--border-default)]",
+    ].join(" ")}
+  >
+    <div
+      className={[
+        "absolute top-[2px] left-0 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200",
+        checked ? "translate-x-5" : "translate-x-0.5",
       ].join(" ")}
     />
   </button>
@@ -146,16 +173,18 @@ export const SlideToggle = ({ value, onChange }) => (
       No
     </span>
     <button
+      type="button"
       onClick={() => onChange(!value)}
       className={[
-        "relative w-12 h-[26px] rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+        "relative w-11 h-6 rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+        "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]",
         value ? "bg-[var(--success-600)]" : "bg-[var(--border-default)]",
       ].join(" ")}
     >
       <div
         className={[
-          "absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200",
-          value ? "left-[25px]" : "left-[3px]",
+          "absolute top-[2px] left-0 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200",
+          value ? "translate-x-5" : "translate-x-0.5",
         ].join(" ")}
       />
     </button>
