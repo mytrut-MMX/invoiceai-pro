@@ -9,7 +9,7 @@
  */
 import { createHmac, timingSafeEqual } from "crypto";
 import OpenAI from "openai";
-import { PRODUCT_WORKFLOW_LEAD_PROMPT } from "../lib/prompts/productWorkflowLead.js";
+import { PRODUCT_WORKFLOW_LEAD_PROMPT, PRODUCT_WORKFLOW_LEAD_SCHEMA } from "../lib/prompts/productWorkflowLead.js";
 import { FRONTEND_ARCHITECTURE_LEAD_PROMPT, FRONTEND_ARCHITECTURE_LEAD_SCHEMA } from "../lib/prompts/frontendArchitectureLead.js";
 import { DATA_LEDGER_LEAD_PROMPT, DATA_LEDGER_LEAD_SCHEMA } from "../lib/prompts/dataLedgerLead.js";
 import { BACKEND_INTEGRATIONS_LEAD_PROMPT, BACKEND_INTEGRATIONS_LEAD_SCHEMA } from "../lib/prompts/backendIntegrationsLead.js";
@@ -172,29 +172,6 @@ ${JSON.stringify(safeContext)}
 }
 
 // ─── Product Workflow Lead ──────────────────────────────────────────────────
-
-const PRODUCT_WORKFLOW_LEAD_SCHEMA = {
-  name: "product_workflow_lead_output",
-  schema: {
-    type: "object", additionalProperties: false,
-    required: ["agent","task_id","objective_id","summary","scope","workflow","business_rules","edge_cases","acceptance_criteria","dependencies","handoff","status"],
-    properties: {
-      agent: { type: "string", const: "product_workflow_lead" },
-      task_id: { type: "string", minLength: 1 },
-      objective_id: { type: "string", minLength: 1 },
-      summary: { type: "object", additionalProperties: false, required: ["task_goal","task_type","complexity"], properties: { task_goal: { type: "string", minLength: 1 }, task_type: { type: "string", minLength: 1 }, complexity: { type: "string", enum: ["low","medium","high"] } } },
-      scope: { type: "object", additionalProperties: false, required: ["goal","in_scope","out_of_scope","assumptions"], properties: { goal: { type: "string", minLength: 1 }, in_scope: { type: "array", items: { type: "string" } }, out_of_scope: { type: "array", items: { type: "string" } }, assumptions: { type: "array", items: { type: "string" } } } },
-      workflow: { type: "object", additionalProperties: false, required: ["user_flow","system_flow"], properties: { user_flow: { type: "array", minItems: 1, items: { type: "object", additionalProperties: false, required: ["step","actor","action","expected_result"], properties: { step: { type: "integer", minimum: 1 }, actor: { type: "string", minLength: 1 }, action: { type: "string", minLength: 1 }, expected_result: { type: "string", minLength: 1 } } } }, system_flow: { type: "array", minItems: 1, items: { type: "object", additionalProperties: false, required: ["step","component","action","expected_result"], properties: { step: { type: "integer", minimum: 1 }, component: { type: "string", minLength: 1 }, action: { type: "string", minLength: 1 }, expected_result: { type: "string", minLength: 1 } } } } } },
-      business_rules: { type: "array", minItems: 1, items: { type: "object", additionalProperties: false, required: ["id","rule","reason"], properties: { id: { type: "string", minLength: 1 }, rule: { type: "string", minLength: 1 }, reason: { type: "string", minLength: 1 } } } },
-      edge_cases: { type: "array", minItems: 1, items: { type: "object", additionalProperties: false, required: ["id","scenario","expected_behavior"], properties: { id: { type: "string", minLength: 1 }, scenario: { type: "string", minLength: 1 }, expected_behavior: { type: "string", minLength: 1 } } } },
-      acceptance_criteria: { type: "array", minItems: 1, items: { type: "object", additionalProperties: false, required: ["id","criterion","validation_method"], properties: { id: { type: "string", minLength: 1 }, criterion: { type: "string", minLength: 1 }, validation_method: { type: "string", minLength: 1 } } } },
-      dependencies: { type: "array", items: { type: "object", additionalProperties: false, required: ["type","name","status"], properties: { type: { type: "string", enum: ["data","api","auth","ui","backend","frontend","external","task"] }, name: { type: "string", minLength: 1 }, status: { type: "string", enum: ["required","optional","blocked"] } } } },
-      handoff: { type: "object", additionalProperties: false, required: ["recommended_next_agent","implementation_notes","qa_focus"], properties: { recommended_next_agent: { type: "string", enum: ["frontend_lead","backend_lead","qa_agent","security_agent","fullstack_lead","human_review"] }, implementation_notes: { type: "array", items: { type: "string" } }, qa_focus: { type: "array", items: { type: "string" } } } },
-      status: { type: "string", enum: ["ready_for_execution","needs_clarification","blocked_by_dependency"] },
-    },
-  },
-  strict: true,
-};
 
 function validatePwlInput(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return "Invalid request body.";
@@ -657,45 +634,20 @@ async function handler(req, res) {
 
   const agentType = detectAgent(req);
 
-  // product-workflow-lead has no admin auth in the original
-  if (agentType === 'product-workflow-lead') {
-    return handleProductWorkflowLead(req, res);
-  }
-
-  if (agentType === 'frontend-architecture-lead') {
-    return handleFrontendArchitectureLead(req, res);
-  }
-
-  if (agentType === 'data-ledger-lead') {
-    return handleDataLedgerLead(req, res);
-  }
-
-  if (agentType === 'backend-integrations-lead') {
-    return handleBackendIntegrationsLead(req, res);
-  }
-
-  if (agentType === 'security-trust-lead') {
-    return handleSecurityTrustLead(req, res);
-  }
-
-  if (agentType === 'qa-regression-agent') {
-    return handleQaRegressionAgent(req, res);
-  }
-
-  if (agentType === 'release-gate-agent') {
-    return handleReleaseGateAgent(req, res);
-  }
-
-  // orchestrator requires admin auth
   const adminPassword = process.env.ADMIN_PASSWORD?.trim();
   if (!adminPassword) return res.status(503).json({ error: "Admin auth not configured" });
   const authHeader = req.headers["authorization"] || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!verifyAdminToken(token, adminPassword)) return res.status(401).json({ error: "Unauthorized" });
 
-  if (agentType === 'data-integrity-auditor') {
-    return handleDataIntegrityAuditor(req, res);
-  }
+  if (agentType === 'product-workflow-lead')      return handleProductWorkflowLead(req, res);
+  if (agentType === 'frontend-architecture-lead') return handleFrontendArchitectureLead(req, res);
+  if (agentType === 'data-ledger-lead')           return handleDataLedgerLead(req, res);
+  if (agentType === 'backend-integrations-lead')  return handleBackendIntegrationsLead(req, res);
+  if (agentType === 'security-trust-lead')        return handleSecurityTrustLead(req, res);
+  if (agentType === 'qa-regression-agent')        return handleQaRegressionAgent(req, res);
+  if (agentType === 'release-gate-agent')         return handleReleaseGateAgent(req, res);
+  if (agentType === 'data-integrity-auditor')     return handleDataIntegrityAuditor(req, res);
 
   return handleOrchestrator(req, res);
 }
