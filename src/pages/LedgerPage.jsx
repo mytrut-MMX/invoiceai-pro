@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, lazy, Suspense } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { supabase } from "../lib/supabase";
@@ -28,6 +28,7 @@ export default function LedgerPage() {
   const { user } = useContext(AppCtx);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Derive active tab from the URL path segment: /ledger/journal → "journal"
   const tab = pathname.split("/")[2] || "journal";
@@ -146,6 +147,8 @@ export default function LedgerPage() {
             loading={loading}
             onNewEntry={openManualModal}
             canCreateManual={Boolean(userId)}
+            accountFilter={searchParams.get("account") || ""}
+            onClearAccountFilter={() => navigate("/ledger/journal", { replace: true })}
           />
         )}
         {tab === "accounts" && (
