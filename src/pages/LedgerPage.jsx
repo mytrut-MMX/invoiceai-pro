@@ -87,6 +87,7 @@ export default function LedgerPage() {
   };
 
   return (
+    <div className="bg-[var(--surface-page)] min-h-screen">
     <div style={{ maxWidth:960, margin:"0 auto", padding:"28px 20px", fontFamily:ff }}>
 
       {/* Page header */}
@@ -183,6 +184,7 @@ export default function LedgerPage() {
           />
         </Suspense>
       )}
+    </div>
     </div>
   );
 }
