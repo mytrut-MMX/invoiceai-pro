@@ -4,12 +4,14 @@ import { supabase } from "../../lib/supabase";
 import { fmt } from "../../utils/helpers";
 import { seedAccountsForUser } from "../../utils/ledger/defaultAccounts";
 import { useCurrSym, ACCT_TYPES, ACCT_LABELS, TYPE_COLORS, computeBalances } from "./shared";
+import PayCreditCardModal from "../../components/ledger/PayCreditCardModal";
 
-export default function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSeeded, userId }) {
+export default function AccountsTab({ accounts, allEntries, loading, onNewAccount, onSeeded, onRefresh, userId }) {
   const currSym = useCurrSym();
-  const [search,  setSearch]  = useState("");
-  const [seeding, setSeeding] = useState(false);
-  const [seedErr, setSeedErr] = useState("");
+  const [search,   setSearch]   = useState("");
+  const [seeding,  setSeeding]  = useState(false);
+  const [seedErr,  setSeedErr]  = useState("");
+  const [payModal, setPayModal] = useState(null); // account object to pay
 
   const handleSeed = async () => {
     if (!userId) return;
@@ -36,6 +38,16 @@ export default function AccountsTab({ accounts, allEntries, loading, onNewAccoun
       a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q)
     );
   }, [withBalances, search]);
+
+  const assetAccounts = useMemo(
+    () => accounts.filter(a => a.type === "asset"),
+    [accounts]
+  );
+
+  const handlePaySuccess = () => {
+    onRefresh?.();
+    onSeeded?.();
+  };
 
   return (
     <div>
@@ -90,41 +102,84 @@ export default function AccountsTab({ accounts, allEntries, loading, onNewAccoun
                 <table style={{ width:"100%", borderCollapse:"collapse" }}>
                   <thead>
                     <tr style={{ background:"#fafaf9", borderBottom:"1px solid #e8e8ec" }}>
-                      {["Code", "Name", "Debit", "Credit", "Balance"].map(h => (
-                        <th key={h} style={{
+                      {["Code", "Name", "Debit", "Credit", "Balance", ""].map((h, i) => (
+                        <th key={i} style={{
                           padding:"8px 12px", fontSize:10, fontWeight:700, color:"#9ca3af",
                           textTransform:"uppercase", letterSpacing:"0.06em",
                           textAlign: ["Debit","Credit","Balance"].includes(h) ? "right" : "left",
+                          width: h === "" ? 1 : undefined,
                         }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {group.map((a, idx) => (
-                      <tr key={a.id} style={{ borderTop: idx > 0 ? "1px solid #f0f0f4" : "none" }}>
-                        <td style={{ padding:"9px 12px", fontSize:12, color:"#6b7280", fontWeight:600, whiteSpace:"nowrap" }}>{a.code}</td>
-                        <td style={{ padding:"9px 12px", fontSize:13, color:"#1a1a2e" }}>
-                          {a.name}
-                          {a.is_system && <span style={{ marginLeft:6, fontSize:10, color:"#9ca3af", border:"1px solid #e8e8ec", borderRadius:4, padding:"1px 4px" }}>system</span>}
-                        </td>
-                        <td style={{ padding:"9px 12px", fontSize:12, textAlign:"right", color:"#374151", fontVariantNumeric:"tabular-nums" }}>
-                          {a.totalDebit > 0 ? fmt(currSym, a.totalDebit) : "—"}
-                        </td>
-                        <td style={{ padding:"9px 12px", fontSize:12, textAlign:"right", color:"#374151", fontVariantNumeric:"tabular-nums" }}>
-                          {a.totalCredit > 0 ? fmt(currSym, a.totalCredit) : "—"}
-                        </td>
-                        <td style={{ padding:"9px 12px", fontSize:13, textAlign:"right", fontWeight:600, fontVariantNumeric:"tabular-nums",
-                          color: a.balance >= 0 ? "#1a1a2e" : "#dc2626" }}>
-                          {fmt(currSym, Math.abs(a.balance))}
-                        </td>
-                      </tr>
-                    ))}
+                    {group.map((a, idx) => {
+                      const isCc = a.sub_type === "credit_card";
+                      const utilPct = isCc && a.credit_limit > 0
+                        ? Math.min(100, Math.round((a.balance / a.credit_limit) * 100))
+                        : null;
+
+                      return (
+                        <tr key={a.id} style={{ borderTop: idx > 0 ? "1px solid #f0f0f4" : "none" }}>
+                          <td style={{ padding:"9px 12px", fontSize:12, color:"#6b7280", fontWeight:600, whiteSpace:"nowrap" }}>{a.code}</td>
+                          <td style={{ padding:"9px 12px", fontSize:13, color:"#1a1a2e" }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                              <span>{a.name}</span>
+                              {a.is_system && (
+                                <span style={{ fontSize:10, color:"#9ca3af", border:"1px solid #e8e8ec", borderRadius:4, padding:"1px 4px" }}>system</span>
+                              )}
+                              {isCc && (
+                                <span style={{ fontSize:10, fontWeight:700, color:"#7c3aed", background:"#ede9fe", borderRadius:4, padding:"1px 6px" }}>Credit Card</span>
+                              )}
+                            </div>
+                            {isCc && a.credit_limit > 0 && (
+                              <div style={{ marginTop:3, display:"flex", alignItems:"center", gap:6 }}>
+                                <div style={{ flex:1, maxWidth:100, height:4, background:"#f0f0f4", borderRadius:2, overflow:"hidden" }}>
+                                  <div style={{ width:`${utilPct}%`, height:"100%", background: utilPct >= 90 ? "#dc2626" : utilPct >= 70 ? "#d97706" : "#7c3aed", borderRadius:2 }} />
+                                </div>
+                                <span style={{ fontSize:10, color:"#6b7280" }}>
+                                  {utilPct}% of {fmt(currSym, a.credit_limit)}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding:"9px 12px", fontSize:12, textAlign:"right", color:"#374151", fontVariantNumeric:"tabular-nums" }}>
+                            {a.totalDebit > 0 ? fmt(currSym, a.totalDebit) : "—"}
+                          </td>
+                          <td style={{ padding:"9px 12px", fontSize:12, textAlign:"right", color:"#374151", fontVariantNumeric:"tabular-nums" }}>
+                            {a.totalCredit > 0 ? fmt(currSym, a.totalCredit) : "—"}
+                          </td>
+                          <td style={{ padding:"9px 12px", fontSize:13, textAlign:"right", fontWeight:600, fontVariantNumeric:"tabular-nums",
+                            color: a.balance >= 0 ? "#1a1a2e" : "#dc2626" }}>
+                            {fmt(currSym, Math.abs(a.balance))}
+                          </td>
+                          <td style={{ padding:"9px 12px", whiteSpace:"nowrap" }}>
+                            {isCc && (
+                              <Btn variant="outline" onClick={() => setPayModal(a)}
+                                style={{ fontSize:11, padding:"3px 10px", height:"auto" }}>
+                                Pay
+                              </Btn>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           );
         })
+      )}
+
+      {payModal && (
+        <PayCreditCardModal
+          ccAccount={payModal}
+          assetAccounts={assetAccounts}
+          userId={userId}
+          onClose={() => setPayModal(null)}
+          onSuccess={handlePaySuccess}
+        />
       )}
     </div>
   );
