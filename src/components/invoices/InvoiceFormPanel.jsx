@@ -1,9 +1,9 @@
-import { useState, useContext, useMemo, useEffect } from "react";
+import { useState, useContext, useMemo, useEffect, useRef } from "react";
 import { CUR_SYM, DEFAULT_INV_TERMS } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
-import { Field, Input, Select, Textarea, Btn, SlideToggle, InfoBox, PaymentTermsField } from "../atoms";
-import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, CustomerPicker } from "../shared";
+import { Field, Input, Select, Textarea, Btn, SlideToggle, InfoBox } from "../atoms";
+import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, CustomerPicker, PaymentTermsSelect } from "../shared";
 import { todayStr, addDays, nextNum, newLine } from "../../utils/helpers";
 import { calcTotals } from "../../utils/calcTotals";
 import ItemModal from "../../modals/ItemModal";
@@ -13,6 +13,7 @@ import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
 import { calculateTaxPoint, taxPointExplanation } from "../../utils/taxPoint";
 import { useToast } from "../ui/Toast";
+import { getDefaultPaymentTerm, listPaymentTerms, computeDueDate } from "../../lib/paymentTerms";
 
 const STATUSES = ["Draft", "Sent", "Overdue", "Paid", "Void", "Partial"];
 
@@ -55,6 +56,9 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   const [payTerms, setPayTerms] = useState(inv.payment_terms || customer?.paymentTerms || "Net 30");
   const [customDays, setCustomDays] = useState(inv.custom_payment_days || "");
   const [dueDate, setDueDate] = useState(inv.due_date || addDays(todayStr(), 30));
+  const [paymentTerm, setPaymentTerm] = useState(null);
+  // true for edits (preserve existing due date); false for new invoices
+  const _dueDateOverridden = useRef(isEdit);
   const [items, setItems] = useState((inv.line_items && inv.line_items.length > 0) ? inv.line_items : [newLine(0)]);
   const [discType, setDiscType] = useState(inv.discount_type || "percent");
   const [discVal, setDiscVal] = useState(inv.discount_value || "");
@@ -84,6 +88,31 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     setSelectedQuoteId("");
   }, [selectedQuoteId, onConvertFromQuote]);
 
+  // Load payment term object for new invoices (default) or existing invoices (by id)
+  useEffect(() => {
+    if (isEdit && inv.payment_term_id) {
+      listPaymentTerms().then(({ data }) => {
+        const term = (data || []).find((t) => t.id === inv.payment_term_id);
+        if (term) setPaymentTerm(term);
+      });
+    } else if (!isEdit) {
+      getDefaultPaymentTerm().then(({ data }) => {
+        if (data) setPaymentTerm(data);
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-recalc due date when term / customDays / issueDate changes (unless manually overridden)
+  useEffect(() => {
+    if (_dueDateOverridden.current || !paymentTerm || !issueDate) return;
+    const effectiveTerm =
+      paymentTerm.type === "custom"
+        ? { ...paymentTerm, days: Number(customDays) || 0 }
+        : paymentTerm;
+    const due = computeDueDate(issueDate, effectiveTerm);
+    setDueDate(due.toISOString().slice(0, 10));
+  }, [paymentTerm, customDays, issueDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const totals = useMemo(
     () => calcTotals(items, discType, discVal, showShipping ? shipping : 0, isVat, customer, cisEnabled, cisDefaultRate),
     [items, discType, discVal, shipping, isVat, customer, showShipping, cisEnabled, cisDefaultRate]
@@ -95,11 +124,11 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     [issueDate, supplyDate]
   );
 
-  const handleTermsChange = (t, days) => {
-    setPayTerms(t);
-    const map = { "Net 30": 30, "Net 15": 15, "Net 7": 7, "Net 60": 60, "Net 90": 90, "Due on Receipt": 0 };
-    if (t === "Custom") { setCustomDays(days); setDueDate(addDays(issueDate, Number(days) || 30)); }
-    else if (map[t] !== undefined) setDueDate(addDays(issueDate, map[t]));
+  const handlePaymentTermChange = (term, days) => {
+    setPaymentTerm(term);
+    setPayTerms(term.name);
+    setCustomDays(days != null ? String(days) : "");
+    _dueDateOverridden.current = false;
   };
 
   const docData = {
@@ -113,6 +142,10 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     invoice_number: invNumber,
     customer, issue_date: issueDate, supply_date: supplyDate, tax_point: taxPointResult.taxPoint, due_date: dueDate,
     payment_terms: payTerms, custom_payment_days: customDays,
+    payment_term_id: paymentTerm?.id || null,
+    payment_terms_label: paymentTerm?.name || payTerms || null,
+    payment_terms_days: paymentTerm?.type === "custom" ? (Number(customDays) || null) : (paymentTerm?.days ?? null),
+    payment_terms_type: paymentTerm?.type || null,
     line_items: items, discount_type: discType, discount_value: discVal,
     shipping: showShipping ? shipping : "", ...totals, notes, terms, po_number: poNumber,
     status: newStatus || status, template, templateId,
@@ -362,7 +395,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
               <Field label="Issue Date">
                 <input
                   value={issueDate}
-                  onChange={e => setIssueDate(e.target.value)}
+                  onChange={e => { _dueDateOverridden.current = false; setIssueDate(e.target.value); }}
                   type="date"
                   className={dateInputCls}
                 />
@@ -385,17 +418,15 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                 </Field>
               )}
               <Field label="Payment Terms">
-                <PaymentTermsField
-                  value={payTerms}
-                  onChange={handleTermsChange}
-                  customDays={customDays}
-                  onCustomDaysChange={d => { setCustomDays(d); setDueDate(addDays(issueDate, Number(d) || 30)); }}
+                <PaymentTermsSelect
+                  value={paymentTerm}
+                  onChange={handlePaymentTermChange}
                 />
               </Field>
               <Field label="Due Date">
                 <input
                   value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
+                  onChange={e => { _dueDateOverridden.current = true; setDueDate(e.target.value); }}
                   type="date"
                   className={dateInputCls}
                 />

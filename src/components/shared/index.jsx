@@ -8,6 +8,7 @@ import { fmt, todayStr } from "../../utils/helpers";
 export { CustomerPicker } from "./CustomerPicker";
 export { LineItemsTable } from "./LineItemsTable";
 export { A4InvoiceDoc } from "./A4InvoiceDoc";
+export { PaymentTermsSelect } from "./PaymentTermsSelect";
 export { A4PrintModal } from "./A4PrintModal";
 
 // ─── TOTALS BLOCK ─────────────────────────────────────────────────────────────
