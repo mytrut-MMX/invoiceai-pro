@@ -66,18 +66,23 @@ export async function setDefaultPaymentTerm(id) {
   if (!supabase) return { error: { message: 'Supabase not configured' } };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: { message: 'Not authenticated' } };
-  const { error: clearError } = await supabase
-    .from('payment_terms')
-    .update({ is_default: false, updated_at: new Date().toISOString() })
-    .eq('user_id', user.id)
-    .eq('is_default', true);
-  if (clearError) return { error: clearError };
-  const { error } = await supabase
+  // Set new default first and verify it affected a row before clearing the old one.
+  const { data: updated, error: setError } = await supabase
     .from('payment_terms')
     .update({ is_default: true, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('user_id', user.id)
+    .select();
+  if (setError) return { error: setError };
+  if (!updated || updated.length === 0) {
+    return { error: { message: 'Could not set default: term is not writable' } };
+  }
+  const { error: clearError } = await supabase
+    .from('payment_terms')
+    .update({ is_default: false, updated_at: new Date().toISOString() })
+    .neq('id', id)
     .eq('user_id', user.id);
-  return { error };
+  return { error: clearError || null };
 }
 
 /**
