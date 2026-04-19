@@ -22,7 +22,9 @@ import { supabase, supabaseReady } from '../../lib/supabase.js';
 export async function transferBetweenAccounts({ fromAccountId, toAccountId, amount, date, memo, userId }) {
   if (!supabaseReady) return { journalEntry: null, error: 'Supabase not configured' };
   if (!fromAccountId || !toAccountId) return { journalEntry: null, error: 'Both accounts are required' };
-  if (!amount || amount <= 0)         return { journalEntry: null, error: 'Amount must be greater than zero' };
+  if (!Number.isFinite(amount) || amount <= 0) return { journalEntry: null, error: 'Amount must be greater than zero' };
+  const rounded = Math.round(amount * 100) / 100;
+  if (rounded <= 0) return { journalEntry: null, error: 'Amount must be at least 0.01 after rounding' };
   if (fromAccountId === toAccountId)  return { journalEntry: null, error: 'From and To accounts must differ' };
 
   try {
@@ -56,8 +58,8 @@ export async function transferBetweenAccounts({ fromAccountId, toAccountId, amou
     if (entryErr) throw entryErr;
 
     const lines = [
-      { journal_entry_id: entry.id, account_id: toAccountId,   debit: Number(amount.toFixed(2)), credit: 0 },
-      { journal_entry_id: entry.id, account_id: fromAccountId, debit: 0, credit: Number(amount.toFixed(2)) },
+      { journal_entry_id: entry.id, account_id: toAccountId,   debit: Number(rounded.toFixed(2)), credit: 0 },
+      { journal_entry_id: entry.id, account_id: fromAccountId, debit: 0, credit: Number(rounded.toFixed(2)) },
     ];
 
     const { error: linesErr } = await supabase.from('journal_lines').insert(lines);
