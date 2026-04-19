@@ -5,6 +5,7 @@ const items = [
   { id: 'users', label: 'Users' },
   { id: 'contacts', label: 'Contact' },
   { id: 'orchestrator', label: 'Orchestrator' },
+  { id: 'product-workflow-lead', label: 'Product Workflow' },
   { id: 'frontend-lead', label: 'Frontend Lead' },
   { id: 'data-ledger-lead', label: 'Data & Ledger Lead' },
   { id: 'backend-integrations-lead', label: 'Backend & Integrations Lead' },

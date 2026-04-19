@@ -9,6 +9,7 @@ const AdminUsersPanel = React.lazy(() => import('../components/admin/AdminUsersP
 const AdminContactsPanel = React.lazy(() => import('../components/admin/AdminContactsPanel'));
 const AdminOrchestratorRunner = React.lazy(() => import('../components/admin/AdminOrchestratorRunner'));
 const AdminOrchestratorHistory = React.lazy(() => import('../components/admin/AdminOrchestratorHistory'));
+const ProductWorkflowLeadPanel = React.lazy(() => import('../components/admin/ProductWorkflowLeadPanel'));
 const FrontendLeadPanel = React.lazy(() => import('../components/admin/FrontendLeadPanel'));
 const DataLedgerLeadPanel = React.lazy(() => import('../components/admin/DataLedgerLeadPanel'));
 const BackendIntegrationsLeadPanel = React.lazy(() => import('../components/admin/BackendIntegrationsLeadPanel'));
@@ -163,6 +164,12 @@ function AdminDashboard({ onLogout, token }) {
                   setSelectedObjectiveId={setSelectedObjectiveId}
                 />
               </div>
+            </Suspense>
+          )}
+
+          {section === 'product-workflow-lead' && (
+            <Suspense fallback={panelFallback}>
+              <ProductWorkflowLeadPanel token={token} />
             </Suspense>
           )}
 
