@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { s, markTaskCompleted } from './adminShared';
+import { s, markTaskCompleted, specToPrompt } from './adminShared';
 
 const SECTION_ID = 'data-integrity-auditor';
 
@@ -97,6 +97,7 @@ export default function DataIntegrityAuditorPanel({ token, prefillTask, setPrefi
   const [running,         setRunning]         = useState(false);
   const [result,          setResult]          = useState(null);
   const [error,           setError]           = useState('');
+  const [copied,          setCopied]          = useState(false);
 
   useEffect(() => {
     if (!prefillTask || prefillTask.targetSection !== SECTION_ID) return;
@@ -159,6 +160,12 @@ export default function DataIntegrityAuditorPanel({ token, prefillTask, setPrefi
   const spec = result?.data;
   const verdictColors = VERDICT_COLORS[spec?.audit_verdict?.verdict] || VERDICT_COLORS.critical_failure;
 
+  const copyAsCCPrompt = async () => {
+    try { await navigator.clipboard.writeText(specToPrompt('Data Integrity Auditor', spec)); } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:12, padding:'20px 24px', marginBottom:24 }}>
       <div style={s.sectionTitle}>Run Data Integrity Auditor</div>
@@ -203,7 +210,13 @@ export default function DataIntegrityAuditorPanel({ token, prefillTask, setPrefi
 
       {spec && (
         <div style={{ marginTop:16 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', marginBottom:12 }}>Data Integrity Auditor Spec</div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:12, flexWrap:'wrap' }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>Data Integrity Auditor Spec</div>
+            <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+              {copied && <span style={{ fontSize:12, color:'#16A34A', fontWeight:600 }}>Prompt copied — paste into Claude Code</span>}
+              <button style={s.btnSm} onClick={copyAsCCPrompt}>Copy as CC Prompt</button>
+            </div>
+          </div>
 
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:'#475569', marginBottom:8 }}>Summary</div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { s, markTaskCompleted } from './adminShared';
+import { s, markTaskCompleted, specToPrompt } from './adminShared';
 
 const SECTION_ID = 'qa-regression-agent';
 
@@ -32,6 +32,7 @@ export default function QaRegressionAgentPanel({ token, prefillTask, setPrefillT
   const [running,         setRunning]         = useState(false);
   const [result,          setResult]          = useState(null);
   const [error,           setError]           = useState('');
+  const [copied,          setCopied]          = useState(false);
 
   useEffect(() => {
     if (!prefillTask || prefillTask.targetSection !== SECTION_ID) return;
@@ -94,6 +95,12 @@ export default function QaRegressionAgentPanel({ token, prefillTask, setPrefillT
   const spec = result?.data;
   const verdictColors = VERDICT_COLORS[spec?.verdict?.verdict] || VERDICT_COLORS.blocked;
 
+  const copyAsCCPrompt = async () => {
+    try { await navigator.clipboard.writeText(specToPrompt('QA Regression Agent', spec)); } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:12, padding:'20px 24px', marginBottom:24 }}>
       <div style={s.sectionTitle}>Run QA Regression Agent</div>
@@ -138,7 +145,13 @@ export default function QaRegressionAgentPanel({ token, prefillTask, setPrefillT
 
       {spec && (
         <div style={{ marginTop:16 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', marginBottom:12 }}>QA Regression Agent Spec</div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, marginBottom:12, flexWrap:'wrap' }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>QA Regression Agent Spec</div>
+            <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+              {copied && <span style={{ fontSize:12, color:'#16A34A', fontWeight:600 }}>Prompt copied — paste into Claude Code</span>}
+              <button style={s.btnSm} onClick={copyAsCCPrompt}>Copy as CC Prompt</button>
+            </div>
+          </div>
 
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:'#475569', marginBottom:8 }}>Summary</div>

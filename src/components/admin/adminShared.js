@@ -87,4 +87,97 @@ async function markTaskCompleted(taskId, token) {
   }
 }
 
-export { s, fmt, fmtDate, todayCount, AGENT_NAME_TO_SECTION, markTaskCompleted };
+function specToPrompt(agentName, spec) {
+  if (!spec) return '';
+  const lines = [];
+  const goal = spec.summary?.task_goal;
+  lines.push(`# ${agentName}${goal ? ` — ${goal}` : ''}`, '');
+
+  const inScope = spec.scope?.in_scope || [];
+  if (inScope.length) {
+    lines.push('## Tasks');
+    inScope.forEach(x => lines.push(`- ${x}`));
+    lines.push('');
+  }
+
+  if (agentName === 'Frontend Architecture Lead') {
+    const components = spec.components || [];
+    if (components.length) {
+      lines.push('## Implementation targets');
+      components.forEach(c => {
+        const props = c.props?.length ? ` (props: ${c.props.join(', ')})` : '';
+        lines.push(`- ${c.name}${props}${c.role ? ` — ${c.role}` : ''}`);
+      });
+      lines.push('');
+    }
+  }
+
+  if (agentName === 'Security & Trust Lead') {
+    const risks = spec.risks || [];
+    const notes = spec.handoff?.implementation_notes || [];
+    if (risks.length || notes.length) {
+      lines.push('## Action items');
+      risks.forEach(r => lines.push(`- Risk: ${r}`));
+      notes.forEach(n => lines.push(`- ${n}`));
+      lines.push('');
+    }
+  }
+
+  if (agentName === 'QA Regression Agent') {
+    const matrix = spec.test_matrix || [];
+    if (matrix.length) {
+      lines.push('## Test matrix');
+      matrix.forEach(m => {
+        lines.push(`- ${m.area}${m.test_type ? ` (${m.test_type})` : ''}`);
+        (m.test_cases || []).forEach(tc => lines.push(`  - ${tc}`));
+      });
+      lines.push('');
+      const files = matrix.flatMap(m => m.test_files_to_add || []);
+      if (files.length) {
+        lines.push('## Test files to add');
+        files.forEach(f => lines.push(`- ${f.path}${f.purpose ? ` — ${f.purpose}` : ''}`));
+        lines.push('');
+      }
+    }
+  }
+
+  if (agentName === 'Product Workflow Lead') {
+    const flow = spec.workflow?.user_flow || [];
+    if (flow.length) {
+      lines.push('## User flow');
+      flow.forEach(step => lines.push(`${step.step}. ${step.actor}: ${step.action} → ${step.expected_result}`));
+      lines.push('');
+    }
+    const accept = spec.acceptance_criteria || [];
+    if (accept.length) {
+      lines.push('## Acceptance criteria');
+      accept.forEach(c => lines.push(`- [${c.id}] ${c.criterion}`));
+      lines.push('');
+    }
+  }
+
+  const rules = spec.business_rules || [];
+  if (rules.length) {
+    lines.push('## Constraints');
+    rules.forEach(r => lines.push(`- [${r.id}] ${r.rule}`));
+    lines.push('');
+  }
+
+  const edges = spec.edge_cases || [];
+  if (edges.length) {
+    lines.push('## Handle these cases');
+    edges.forEach(e => lines.push(`- [${e.id}] ${e.scenario} → ${e.expected_behavior}`));
+    lines.push('');
+  }
+
+  const qa = spec.handoff?.qa_focus || [];
+  if (qa.length) {
+    lines.push('## Verify after implementation');
+    qa.forEach(q => lines.push(`- ${q}`));
+    lines.push('');
+  }
+
+  return lines.join('\n').trimEnd();
+}
+
+export { s, fmt, fmtDate, todayCount, AGENT_NAME_TO_SECTION, markTaskCompleted, specToPrompt };
