@@ -15,8 +15,9 @@
 import { lazy, Suspense } from "react";
 import {
   createBrowserRouter, RouterProvider,
-  Navigate,
+  Navigate, Outlet,
 } from "react-router-dom";
+import ChunkErrorBoundary from "../components/ui/ChunkErrorBoundary";
 
 import { ROUTES }                                        from "./routes";
 import { ProtectedRoute, OnboardedRoute, GuestOnlyRoute } from "./ProtectedRoute";
@@ -80,6 +81,10 @@ function S({ children }) {
 // ─── Router definition ────────────────────────────────────────────────────────
 
 const router = createBrowserRouter([
+  {
+    element: <Outlet />,
+    errorElement: <ChunkErrorBoundary />,
+    children: [
 
   // ── Root index: smart redirect based on auth + onboarding state ─────────────
   { index: true, element: <IndexRedirect /> },
@@ -208,6 +213,9 @@ const router = createBrowserRouter([
   // ── 404 ─────────────────────────────────────────────────────────────────────
   { path: ROUTES.NOT_FOUND, element: <S><NotFoundPage /></S> },
   { path: "*",              element: <S><NotFoundPage /></S> },
+
+    ],
+  },
 ]);
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
@@ -220,5 +228,9 @@ export { router };
  * App.jsx:  return <AppCtx.Provider value={ctx}><AppRouter /></AppCtx.Provider>
  */
 export default function AppRouter() {
-  return <RouterProvider router={router} />;
+  return (
+    <ChunkErrorBoundary>
+      <RouterProvider router={router} />
+    </ChunkErrorBoundary>
+  );
 }
