@@ -41,7 +41,7 @@ function ActionBtn({ onClick, title, icon, tone = "neutral" }) {
     <button
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
+      className={`flex items-center justify-center bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
     >
       {icon}
     </button>
@@ -222,7 +222,7 @@ export default function SuppliersPage({ initialShowForm = false }) {
             <select
               value={filter}
               onChange={e => setFilter(e.target.value)}
-              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]"
+              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]"
             >
               <option value="all">All Active</option>
               <option value="cis">CIS Subcontractors</option>

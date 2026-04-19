@@ -48,7 +48,7 @@ export default function SettingsPayments() {
           onChange={e => setNewMethod(e.target.value)}
           onKeyDown={e => e.key === "Enter" && addPayMethod()}
           placeholder="e.g. Wise, Revolut…"
-          className="flex-1 h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border"
+          className="flex-1 h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border"
         />
         <Btn onClick={addPayMethod} variant="outline" icon={<Icons.Plus />}>Add</Btn>
       </div>

@@ -63,7 +63,7 @@ export default function SettingsBank({ orgSettings, onSave }) {
               placeholder="00-00-00"
               maxLength={8}
               className={[
-                "w-full h-9 px-3 rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none transition-colors duration-150 box-border",
+                "w-full h-9 px-3 rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none transition-colors duration-150 box-border",
                 sortCodeError
                   ? "border border-[var(--danger-600)] focus:shadow-[var(--focus-ring)]"
                   : "border border-[var(--border-default)] focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",

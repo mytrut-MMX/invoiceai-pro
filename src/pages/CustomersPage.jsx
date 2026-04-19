@@ -35,7 +35,7 @@ function ActionBtn({ onClick, title, icon, tone = "neutral" }) {
     <button
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
+      className={`flex items-center justify-center bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
     >
       {icon}
     </button>

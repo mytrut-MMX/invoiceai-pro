@@ -19,7 +19,7 @@ function ChipToggle({ value, onChange, options }) {
               "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors duration-150",
               selected
                 ? "bg-[var(--brand-600)] text-white border border-[var(--brand-600)]"
-                : "bg-white text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
+                : "bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]",
             ].join(" ")}
           >
             {selected && <Icons.Check />}

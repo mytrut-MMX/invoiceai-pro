@@ -38,7 +38,7 @@ function ActionBtn({ onClick, title, icon, tone = "neutral", disabled }) {
       onClick={onClick}
       title={title}
       disabled={disabled}
-      className={`flex items-center justify-center bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed ${toneCls}`}
+      className={`flex items-center justify-center bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] p-1.5 cursor-pointer text-[var(--text-tertiary)] transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed ${toneCls}`}
     >
       {icon}
     </button>
@@ -254,7 +254,7 @@ export default function QuotesPage({ initialShowForm = false }) {
                       "inline-flex items-center h-7 px-2.5 rounded-[var(--radius-md)] text-xs transition-colors duration-150 cursor-pointer",
                       active
                         ? "bg-[var(--text-primary)] text-white border border-[var(--text-primary)] font-semibold"
-                        : "bg-white text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:bg-[var(--surface-sunken)]",
+                        : "bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:bg-[var(--surface-sunken)]",
                     ].join(" ")}
                   >
                     {s}

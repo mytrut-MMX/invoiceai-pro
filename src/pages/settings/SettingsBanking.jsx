@@ -200,7 +200,7 @@ function AccountCard({ account, stats, onPay, onViewTx, onEdit, onDelete, assetA
           {menuOpen && (
             <div
               ref={menuRef}
-              className="absolute right-0 bottom-full mb-1 z-50 bg-white border border-[var(--border-subtle)] rounded-lg shadow-lg py-1 min-w-[160px]"
+              className="absolute right-0 bottom-full mb-1 z-50 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-lg shadow-lg py-1 min-w-[160px]"
               onClick={(e) => e.stopPropagation()}
             >
               <MenuItem onClick={() => { setMenuOpen(false); onViewTx(account); }}>
@@ -426,7 +426,7 @@ export default function SettingsBanking({ orgSettings, onSave }) {
               placeholder="00-00-00"
               maxLength={8}
               className={[
-                "w-full h-9 px-3 rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none transition-colors duration-150 box-border",
+                "w-full h-9 px-3 rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none transition-colors duration-150 box-border",
                 sortCodeError
                   ? "border border-[var(--danger-600)] focus:shadow-[var(--focus-ring)]"
                   : "border border-[var(--border-default)] focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",

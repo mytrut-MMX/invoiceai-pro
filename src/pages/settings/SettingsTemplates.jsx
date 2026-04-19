@@ -82,7 +82,7 @@ export default function SettingsTemplates({ onPreview }) {
                   "rounded-[var(--radius-lg)] overflow-hidden cursor-pointer transition-all duration-150",
                   sel
                     ? "border-2 border-[var(--brand-600)] bg-[var(--brand-50)]"
-                    : "border-2 border-[var(--border-subtle)] bg-white hover:border-[var(--border-default)] hover:shadow-[var(--shadow-sm)]",
+                    : "border-2 border-[var(--border-subtle)] bg-[var(--surface-card)] hover:border-[var(--border-default)] hover:shadow-[var(--shadow-sm)]",
                 ].join(" ")}
               >
                 <div
@@ -174,7 +174,7 @@ export default function SettingsTemplates({ onPreview }) {
               onChange={e => setFooter(e.target.value)}
               rows={2}
               placeholder="e.g. Thank you for your business! Registered in England & Wales No. 12345678"
-              className="w-full px-3 py-2 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] resize-y box-border"
+              className="w-full px-3 py-2 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] resize-y box-border"
             />
           </Field>
         </div>

@@ -15,7 +15,7 @@ import Section from "../../components/settings/Section";
 import { useToast } from "../../components/ui/Toast";
 
 const textInputCls =
-  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+  "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
 
 export default function SettingsOrganization({ orgSettings, onSave }) {
   const navigate = useNavigate();

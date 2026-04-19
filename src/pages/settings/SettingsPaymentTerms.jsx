@@ -69,7 +69,7 @@ function TermModal({ existing, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4">
-      <div className="bg-white rounded-[var(--radius-xl)] w-full max-w-[420px] shadow-[var(--shadow-popover)] overflow-hidden">
+      <div className="bg-[var(--surface-card)] rounded-[var(--radius-xl)] w-full max-w-[420px] shadow-[var(--shadow-popover)] overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
           <h3 className="m-0 text-base font-semibold text-[var(--text-primary)]">
             {existing ? "Edit payment term" : "Add payment term"}
