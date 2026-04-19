@@ -17,7 +17,7 @@ import {
   createBrowserRouter, RouterProvider,
   Navigate, Outlet,
 } from "react-router-dom";
-import ChunkErrorBoundary from "../components/ui/ChunkErrorBoundary";
+import ChunkErrorBoundary, { RouteErrorFallback } from "../components/ui/ChunkErrorBoundary";
 
 import { ROUTES }                                        from "./routes";
 import { ProtectedRoute, OnboardedRoute, GuestOnlyRoute } from "./ProtectedRoute";
@@ -83,7 +83,7 @@ function S({ children }) {
 const router = createBrowserRouter([
   {
     element: <Outlet />,
-    errorElement: <ChunkErrorBoundary />,
+    errorElement: <RouteErrorFallback />,
     children: [
 
   // ── Root index: smart redirect based on auth + onboarding state ─────────────
