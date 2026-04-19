@@ -4,7 +4,7 @@ import { AppCtx } from "../context/AppContext";
 import { A4PrintModal } from "../components/shared";
 import { loadBusinessData } from "../lib/businessData";
 import SettingsOrganization from "./settings/SettingsOrganization";
-import SettingsBank from "./settings/SettingsBank";
+import SettingsBanking from "./settings/SettingsBanking";
 import SettingsTax from "./settings/SettingsTax";
 import SettingsTemplates from "./settings/SettingsTemplates";
 import SettingsAppearance from "./settings/SettingsAppearance";
@@ -66,7 +66,7 @@ const NAV_GROUPS = [
     label: "Account",
     items: [
       { id: "org",        label: "Organisation" },
-      { id: "bank",       label: "Bank details" },
+      { id: "bank",       label: "Banking" },
       { id: "security",   label: "Security" },
       { id: "appearance", label: "Appearance" },
     ],
@@ -172,7 +172,7 @@ export default function SettingsPage() {
           <div className="min-w-0">
             {activeTab === "org"        && <SettingsOrganization orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "tax"        && <SettingsTax          orgSettings={orgSettings} onSave={handleSavePartial} />}
-            {activeTab === "bank"       && <SettingsBank         orgSettings={orgSettings} onSave={handleSavePartial} />}
+            {activeTab === "bank"       && <SettingsBanking      orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "security"   && <SettingsSecurity />}
             {activeTab === "templates"  && <SettingsTemplates    onPreview={setPreviewTpl} />}
             {activeTab === "appearance" && <SettingsAppearance />}
