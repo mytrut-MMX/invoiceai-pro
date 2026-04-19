@@ -204,7 +204,7 @@ Always respond in valid JSON only, no text outside JSON.`
           <div style={{ maxWidth: 380, textAlign: 'center' }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginBottom: 12 }}>AI Data Processing</div>
             <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, margin: '0 0 8px' }}>
-              InvoiceSaga's AI assistant processes some of your business data (client first names, invoice numbers, product names) through Anthropic's Claude API to provide helpful suggestions.
+              InvoiceSaga's AI assistant processes some of your business data (client names, company names, and basic classification, invoice numbers, product names) through Anthropic's Claude API to provide helpful suggestions.
             </p>
             <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, margin: '0 0 8px' }}>
               <strong>No email addresses are shared.</strong> Financial summaries and invoice totals are processed to provide personalized advice. Anthropic does not use your data for model training.
