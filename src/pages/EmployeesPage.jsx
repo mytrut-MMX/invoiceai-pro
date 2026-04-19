@@ -10,6 +10,17 @@ import { upsert, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import * as dataAccess from "../lib/dataAccess";
 import EmployeeForm from "../modals/EmployeeModal";
+import LeaveTab from "../components/payroll/LeaveTab";
+import { supabase, supabaseReady } from "../lib/supabase";
+
+function deriveCurrentTaxYear() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const startYear = (month > 4 || (month === 4 && day >= 6)) ? year : year - 1;
+  return `${startYear}-${String(startYear + 1).slice(2)}`;
+}
 
 // ─── DESIGN TOKENS (matches CustomersPage) ───────────────────────────────────
 const T = {
@@ -118,6 +129,9 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [viewingLeaveFor, setViewingLeaveFor] = useState(null);
+  const [annualRemainingByEmp, setAnnualRemainingByEmp] = useState({});
+  const currentTaxYear = useMemo(() => deriveCurrentTaxYear(), []);
 
   // Load employees on mount via dataAccess
   useEffect(() => {
@@ -132,6 +146,29 @@ export default function EmployeesPage() {
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
+
+  const loadAnnualRemaining = async () => {
+    if (!supabaseReady || !user?.id) return;
+    const { data } = await supabase
+      .from("leave_balances")
+      .select("employee_id, entitlement_days, used_days, carried_over")
+      .eq("tax_year", currentTaxYear)
+      .eq("leave_type", "annual");
+    if (!data) return;
+    const map = {};
+    for (const row of data) {
+      const remaining = Math.max(
+        0,
+        Number(row.entitlement_days) + Number(row.carried_over || 0) - Number(row.used_days || 0)
+      );
+      map[row.employee_id] = remaining;
+    }
+    setAnnualRemainingByEmp(map);
+  };
+
+  useEffect(() => {
+    if (employees.length > 0) loadAnnualRemaining();
+  }, [employees.length, user?.id, currentTaxYear, viewingLeaveFor]);
 
   // Filters driven by URL search params
   const search = searchParams.get("q") || "";
@@ -191,6 +228,31 @@ export default function EmployeesPage() {
         onClose={closeForm}
         onSave={onSave}
       />
+    );
+  }
+
+  if (viewingLeaveFor) {
+    const emp = viewingLeaveFor;
+    const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || "Unnamed";
+    return (
+      <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:T.pageBg, minHeight:"100vh" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <button
+            onClick={() => setViewingLeaveFor(null)}
+            style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, color:T.muted, padding:0 }}
+          >
+            ← Employees
+          </button>
+          <div style={{ fontSize:14, fontWeight:700, color:T.heading }}>{fullName} · Leave</div>
+        </div>
+        <div style={{ background:T.cardBg, borderRadius:T.cardRadius, border:T.cardBorder, boxShadow:T.cardShadow, padding:16 }}>
+          <LeaveTab
+            employeeId={emp.id}
+            employeeStartDate={emp.start_date}
+            taxYear={currentTaxYear}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -318,6 +380,16 @@ export default function EmployeesPage() {
                               {emp.email}
                             </div>
                           )}
+                          {annualRemainingByEmp[emp.id] != null && (
+                            <div style={{ marginTop:3 }}>
+                              <span style={{
+                                fontSize:10, fontWeight:600, color:"#1d4ed8", background:"#eff6ff",
+                                borderRadius:4, padding:"1px 6px", letterSpacing:"0.02em",
+                              }}>
+                                {annualRemainingByEmp[emp.id]} days left
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -360,6 +432,13 @@ export default function EmployeesPage() {
                     {/* Actions */}
                     <td style={{ padding:T.cellPad, textAlign:"right", whiteSpace:"nowrap" }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4 }}>
+                        <button
+                          onClick={() => setViewingLeaveFor(emp)}
+                          title="View leave"
+                          style={{ background:"none", border:`1px solid ${T.actionBorder}`, borderRadius:6, padding:"5px 9px", cursor:"pointer", color:T.muted, fontSize:11, fontWeight:600, transition:"all 0.12s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor="#1e6be0"; e.currentTarget.style.color="#1e6be0"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor=T.actionBorder; e.currentTarget.style.color=T.muted; }}
+                        >Leave</button>
                         <button
                           onClick={() => openEdit(emp)}
                           title="Edit employee"
