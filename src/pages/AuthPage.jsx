@@ -113,7 +113,7 @@ export default function AuthPage({ onAuth }) {
     if (!supabaseReady || !supabase) return null;
     if (!userId) return null;
     try {
-      const { data } = await supabase.from("profiles").select("name").eq("user_id", userId).single();
+      const { data } = await supabase.from("profiles").select("name").eq("user_id", userId).maybeSingle();
       return data?.name || null;
     } catch { return null; }
   };
