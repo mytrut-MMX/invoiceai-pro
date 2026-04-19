@@ -107,8 +107,9 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
   useEffect(() => {
     fetchUserAccounts().then(({ accounts }) => {
       setPayAccounts(accounts.filter(a =>
-        (a.type === "asset" && String(a.code).startsWith("1")) ||
-        a.sub_type === "credit_card"
+        a.sub_type === "bank" ||
+        a.sub_type === "credit_card" ||
+        (a.type === "asset" && Number(a.code) >= 1000 && Number(a.code) < 1100)
       ));
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
