@@ -686,16 +686,16 @@ async function handler(req, res) {
     return handleReleaseGateAgent(req, res);
   }
 
-  if (agentType === 'data-integrity-auditor') {
-    return handleDataIntegrityAuditor(req, res);
-  }
-
   // orchestrator requires admin auth
   const adminPassword = process.env.ADMIN_PASSWORD?.trim();
   if (!adminPassword) return res.status(503).json({ error: "Admin auth not configured" });
   const authHeader = req.headers["authorization"] || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!verifyAdminToken(token, adminPassword)) return res.status(401).json({ error: "Unauthorized" });
+
+  if (agentType === 'data-integrity-auditor') {
+    return handleDataIntegrityAuditor(req, res);
+  }
 
   return handleOrchestrator(req, res);
 }
