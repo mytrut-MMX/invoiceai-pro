@@ -14,7 +14,7 @@ import { useToast } from "../ui/Toast";
 
 function MetaCard({ label, value }) {
   return (
-    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-3">
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-[13px]">
       <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">
         {label}
       </div>
@@ -119,10 +119,10 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
       )}
 
       <div className="bg-[var(--surface-page)] min-h-screen">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+        <div className="max-w-[1280px] mx-auto px-[13px] sm:px-[21px] py-[21px]">
           {/* Action bar */}
-          <div className="flex items-center justify-between gap-2 mb-5 flex-wrap">
-            <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center justify-between gap-2 mb-[21px] flex-wrap">
+            <div className="flex items-center gap-[13px] flex-wrap">
               <button
                 onClick={onClose}
                 className="flex items-center gap-1.5 h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] text-sm font-medium cursor-pointer transition-colors duration-150"
@@ -164,7 +164,7 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
           </div>
 
           {/* Meta strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[13px] mb-[21px]">
             <MetaCard label="Customer"   value={invoice.customer?.name || "—"} />
             <MetaCard label="Issue Date" value={fmtDate(invoice.issue_date)} />
             <MetaCard label="Due Date"   value={fmtDate(invoice.due_date)} />
@@ -173,18 +173,18 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
 
           {/* Activity log */}
           {(invoice.activity || []).length > 0 && (
-            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] mb-5 overflow-hidden">
-              <div className="px-5 py-3 border-b border-[var(--border-subtle)]">
+            <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] mb-[21px] overflow-hidden">
+              <div className="px-[21px] py-[13px] border-b border-[var(--border-subtle)]">
                 <span className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
                   Activity
                 </span>
               </div>
-              <div className="px-5">
+              <div className="px-[21px]">
                 {invoice.activity.map((entry, i) => (
                   <div
                     key={i}
                     className={[
-                      "flex gap-3 py-3 border-l-2 border-[var(--border-subtle)] pl-3",
+                      "flex gap-[13px] py-[13px] border-l-2 border-[var(--border-subtle)] pl-[13px]",
                       i < invoice.activity.length - 1 ? "border-b border-b-[var(--border-subtle)]" : "",
                     ].join(" ")}
                   >
@@ -202,7 +202,7 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
 
           {/* Late payment panel */}
           {latePayment.eligible && (
-            <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-lg)] p-4 mb-5">
+            <div className="bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-lg)] p-[13px] mb-[21px]">
               <div className="text-sm font-semibold text-[var(--danger-700)] mb-2">
                 Late Payment — Statutory Rights
               </div>
@@ -222,7 +222,7 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
           )}
 
           {/* A4 document preview */}
-          <div className="bg-[var(--surface-sunken)] p-6 rounded-[var(--radius-lg)] flex justify-center">
+          <div className="bg-[var(--surface-sunken)] p-[21px] rounded-[var(--radius-lg)] flex justify-center">
             <div className="w-full max-w-[794px] relative">
               <Ribbon status={invoice.status || "Draft"} />
               <div className="bg-white shadow-[var(--shadow-lg)]">

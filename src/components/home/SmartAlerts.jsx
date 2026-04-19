@@ -292,7 +292,7 @@ export default function SmartAlerts({
     <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
       <button
         onClick={() => setAlertsOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-3 bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+        className="w-full flex items-center justify-between px-[21px] py-[13px] bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
       >
         <div className="flex items-center gap-2.5">
           <span className="text-[var(--text-secondary)] flex">
@@ -321,7 +321,7 @@ export default function SmartAlerts({
               <div
                 key={alert.id}
                 className={[
-                  "flex items-start justify-between gap-3 px-5 py-3",
+                  "flex items-start justify-between gap-[13px] px-[21px] py-[13px]",
                   s.row,
                   idx < visibleAlerts.length - 1 ? `border-b ${s.divider}` : "",
                 ].join(" ")}

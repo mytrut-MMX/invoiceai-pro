@@ -47,14 +47,14 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 4000, overscrollBehaviorY: "contain", touchAction: "pan-y" }}>
-      <div style={{ width: "100%", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 16px 40px" }}>
-        <div style={{ width: "100%", maxWidth: 820, background: "#1A1A1A", borderRadius: "12px 12px 0 0", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ width: "100%", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", alignItems: "center", padding: "13px 13px 34px" }}>
+        <div style={{ width: "100%", maxWidth: 820, background: "#1A1A1A", borderRadius: "12px 12px 0 0", padding: "8px 13px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 13, flexWrap: "wrap", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Print Preview — A4</span>
             <div style={{ display: "flex", gap: 5 }}>
               {PDF_TEMPLATES.map(t => (
                 <button key={t.id} onClick={() => switchTemplate(t.id)}
-                  style={{ padding: "4px 10px", borderRadius: 6, border: `1.5px solid ${activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.2)"}`, background: "transparent", color: activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
+                  style={{ padding: "5px 8px", borderRadius: 6, border: `1.5px solid ${activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.2)"}`, background: "transparent", color: activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
                   {t.name}
                 </button>
               ))}
@@ -73,11 +73,11 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={onClose}
-              style={{ padding: "7px 14px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
+              style={{ padding: "8px 13px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
               Close
             </button>
             <button onClick={handlePrint}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#E86C4A", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: ff, display: "flex", alignItems: "center", gap: 7 }}>
+              style={{ padding: "8px 13px", borderRadius: 8, border: "none", background: "#E86C4A", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: ff, display: "flex", alignItems: "center", gap: 8 }}>
               <Icons.Receipt /> Print / Save PDF
             </button>
           </div>

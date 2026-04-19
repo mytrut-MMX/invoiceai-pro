@@ -23,7 +23,7 @@ export default function RecentInvoices({ invoices = [], orgSettings }) {
 
   return (
     <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
-      <div className="px-5 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+      <div className="px-[21px] py-[13px] border-b border-[var(--border-subtle)] flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[var(--text-primary)]">Recent invoices</h2>
       </div>
 
@@ -36,7 +36,7 @@ export default function RecentInvoices({ invoices = [], orgSettings }) {
         />
       ) : (
         <>
-          <div className="hidden sm:grid grid-cols-[1fr_1.5fr_auto_auto] gap-3 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)]">
+          <div className="hidden sm:grid grid-cols-[1fr_1.5fr_auto_auto] gap-[13px] px-[21px] py-[8px] text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] bg-[var(--surface-sunken)] border-b border-[var(--border-subtle)]">
             <span>Invoice #</span>
             <span>Customer</span>
             <span>Status</span>
@@ -47,7 +47,7 @@ export default function RecentInvoices({ invoices = [], orgSettings }) {
               <li key={inv.id}>
                 <button
                   onClick={() => navigate(ROUTES.INVOICE(inv.id))}
-                  className="w-full grid grid-cols-[1fr_1.5fr_auto_auto] gap-3 px-5 py-3 items-center bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+                  className="w-full grid grid-cols-[1fr_1.5fr_auto_auto] gap-[13px] px-[21px] py-[13px] items-center bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
                 >
                   <span className="text-xs font-medium text-[var(--text-primary)] truncate">
                     {inv.invoice_number || "—"}
@@ -65,7 +65,7 @@ export default function RecentInvoices({ invoices = [], orgSettings }) {
               </li>
             ))}
           </ul>
-          <div className="px-5 py-3 border-t border-[var(--border-subtle)]">
+          <div className="px-[21px] py-[13px] border-t border-[var(--border-subtle)]">
             <button
               onClick={() => navigate(ROUTES.INVOICES)}
               className="text-xs font-semibold text-[var(--brand-600)] hover:text-[var(--brand-700)] bg-transparent border-none cursor-pointer transition-colors duration-150"
