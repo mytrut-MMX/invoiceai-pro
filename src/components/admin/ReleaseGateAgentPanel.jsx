@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { s } from './adminShared';
+import { useState, useEffect } from 'react';
+import { s, markTaskCompleted } from './adminShared';
+
+const SECTION_ID = 'release-gate-agent';
 
 const VERDICT_COLORS = {
   go:             { bg: '#F0FDF4', border: '#86EFAC', text: '#166534' },
@@ -35,7 +37,7 @@ const RISK_LEVEL_COLORS = {
   high:   '#DC2626',
 };
 
-export default function ReleaseGateAgentPanel({ token }) {
+export default function ReleaseGateAgentPanel({ token, prefillTask, setPrefillTask, onTaskCompleted }) {
   const [objectiveId,     setObjectiveId]     = useState('');
   const [taskId,          setTaskId]          = useState('');
   const [taskTitle,       setTaskTitle]       = useState('');
@@ -44,6 +46,18 @@ export default function ReleaseGateAgentPanel({ token }) {
   const [running,         setRunning]         = useState(false);
   const [result,          setResult]          = useState(null);
   const [error,           setError]           = useState('');
+
+  useEffect(() => {
+    if (!prefillTask || prefillTask.targetSection !== SECTION_ID) return;
+    setObjectiveId(prefillTask.objectiveId || '');
+    setTaskId(prefillTask.taskId || '');
+    setTaskTitle(prefillTask.taskTitle || '');
+    setTaskDescription(prefillTask.taskDescription || '');
+    setContextText(JSON.stringify(prefillTask.context || {}, null, 2));
+    setError('');
+    setResult(null);
+    if (setPrefillTask) setPrefillTask(null);
+  }, [prefillTask, setPrefillTask]);
 
   const runReleaseGateAgent = async () => {
     setError('');
@@ -82,6 +96,8 @@ export default function ReleaseGateAgentPanel({ token }) {
       const json = await res.json();
       if (!res.ok || json.success === false) throw new Error(json.error || 'Failed to run Release Gate Agent');
       setResult(json);
+      await markTaskCompleted(taskId.trim(), token);
+      if (onTaskCompleted) onTaskCompleted();
     } catch (e) {
       setError(e.message);
     } finally {

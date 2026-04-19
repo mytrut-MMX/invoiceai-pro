@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { s } from './adminShared';
+import { useState, useEffect } from 'react';
+import { s, markTaskCompleted } from './adminShared';
 
-export default function BackendIntegrationsLeadPanel({ token }) {
+const SECTION_ID = 'backend-integrations-lead';
+
+export default function BackendIntegrationsLeadPanel({ token, prefillTask, setPrefillTask, onTaskCompleted }) {
   const [objectiveId,     setObjectiveId]     = useState('');
   const [taskId,          setTaskId]          = useState('');
   const [taskTitle,       setTaskTitle]       = useState('');
@@ -10,6 +12,18 @@ export default function BackendIntegrationsLeadPanel({ token }) {
   const [running,         setRunning]         = useState(false);
   const [result,          setResult]          = useState(null);
   const [error,           setError]           = useState('');
+
+  useEffect(() => {
+    if (!prefillTask || prefillTask.targetSection !== SECTION_ID) return;
+    setObjectiveId(prefillTask.objectiveId || '');
+    setTaskId(prefillTask.taskId || '');
+    setTaskTitle(prefillTask.taskTitle || '');
+    setTaskDescription(prefillTask.taskDescription || '');
+    setContextText(JSON.stringify(prefillTask.context || {}, null, 2));
+    setError('');
+    setResult(null);
+    if (setPrefillTask) setPrefillTask(null);
+  }, [prefillTask, setPrefillTask]);
 
   const runBackendIntegrationsLead = async () => {
     setError('');
@@ -48,6 +62,8 @@ export default function BackendIntegrationsLeadPanel({ token }) {
       const json = await res.json();
       if (!res.ok || json.success === false) throw new Error(json.error || 'Failed to run Backend & Integrations Lead');
       setResult(json);
+      await markTaskCompleted(taskId.trim(), token);
+      if (onTaskCompleted) onTaskCompleted();
     } catch (e) {
       setError(e.message);
     } finally {

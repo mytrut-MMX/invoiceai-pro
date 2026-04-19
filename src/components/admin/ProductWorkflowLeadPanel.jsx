@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { s } from './adminShared';
+import { useState, useEffect } from 'react';
+import { s, markTaskCompleted } from './adminShared';
+
+const SECTION_ID = 'product-workflow-lead';
 
 const COMPLEXITY_COLORS = {
   low:    '#0EA5E9',
@@ -31,7 +33,7 @@ const monoBadge = {
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
 };
 
-export default function ProductWorkflowLeadPanel({ token }) {
+export default function ProductWorkflowLeadPanel({ token, prefillTask, setPrefillTask, onTaskCompleted }) {
   const [objectiveId,     setObjectiveId]     = useState('');
   const [taskId,          setTaskId]          = useState('');
   const [taskTitle,       setTaskTitle]       = useState('');
@@ -40,6 +42,18 @@ export default function ProductWorkflowLeadPanel({ token }) {
   const [running,         setRunning]         = useState(false);
   const [result,          setResult]          = useState(null);
   const [error,           setError]           = useState('');
+
+  useEffect(() => {
+    if (!prefillTask || prefillTask.targetSection !== SECTION_ID) return;
+    setObjectiveId(prefillTask.objectiveId || '');
+    setTaskId(prefillTask.taskId || '');
+    setTaskTitle(prefillTask.taskTitle || '');
+    setTaskDescription(prefillTask.taskDescription || '');
+    setContextText(JSON.stringify(prefillTask.context || {}, null, 2));
+    setError('');
+    setResult(null);
+    if (setPrefillTask) setPrefillTask(null);
+  }, [prefillTask, setPrefillTask]);
 
   const runProductWorkflowLead = async () => {
     setError('');
@@ -78,6 +92,8 @@ export default function ProductWorkflowLeadPanel({ token }) {
       const json = await res.json();
       if (!res.ok || json.success === false) throw new Error(json.error || 'Failed to run Product Workflow Lead');
       setResult(json);
+      await markTaskCompleted(taskId.trim(), token);
+      if (onTaskCompleted) onTaskCompleted();
     } catch (e) {
       setError(e.message);
     } finally {

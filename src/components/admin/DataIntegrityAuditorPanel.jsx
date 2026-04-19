@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { s } from './adminShared';
+import { useState, useEffect } from 'react';
+import { s, markTaskCompleted } from './adminShared';
+
+const SECTION_ID = 'data-integrity-auditor';
 
 const VERDICT_COLORS = {
   clean:            { bg: '#F0FDF4', border: '#86EFAC', text: '#166534' },
@@ -86,7 +88,7 @@ function colorBadge(label, color) {
   );
 }
 
-export default function DataIntegrityAuditorPanel({ token }) {
+export default function DataIntegrityAuditorPanel({ token, prefillTask, setPrefillTask, onTaskCompleted }) {
   const [objectiveId,     setObjectiveId]     = useState('');
   const [taskId,          setTaskId]          = useState('');
   const [taskTitle,       setTaskTitle]       = useState('');
@@ -95,6 +97,18 @@ export default function DataIntegrityAuditorPanel({ token }) {
   const [running,         setRunning]         = useState(false);
   const [result,          setResult]          = useState(null);
   const [error,           setError]           = useState('');
+
+  useEffect(() => {
+    if (!prefillTask || prefillTask.targetSection !== SECTION_ID) return;
+    setObjectiveId(prefillTask.objectiveId || '');
+    setTaskId(prefillTask.taskId || '');
+    setTaskTitle(prefillTask.taskTitle || '');
+    setTaskDescription(prefillTask.taskDescription || '');
+    setContextText(JSON.stringify(prefillTask.context || {}, null, 2));
+    setError('');
+    setResult(null);
+    if (setPrefillTask) setPrefillTask(null);
+  }, [prefillTask, setPrefillTask]);
 
   const runDataIntegrityAuditor = async () => {
     setError('');
@@ -133,6 +147,8 @@ export default function DataIntegrityAuditorPanel({ token }) {
       const json = await res.json();
       if (!res.ok || json.success === false) throw new Error(json.error || 'Failed to run Data Integrity Auditor');
       setResult(json);
+      await markTaskCompleted(taskId.trim(), token);
+      if (onTaskCompleted) onTaskCompleted();
     } catch (e) {
       setError(e.message);
     } finally {
