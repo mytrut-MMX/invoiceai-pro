@@ -248,18 +248,20 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
     [ctx?.invoices, ctx?.payments, ctx?.expenses, ctx?.orgSettings, ctx?.bills],
   );
   const [dismissedAlerts, setDismissedAlerts] = useState(loadDismissedAlerts);
-  const alerts = useMemo(
-    () => rawAlerts.filter(a => !dismissedAlerts.includes(alertKey(a))),
-    [rawAlerts, dismissedAlerts],
-  );
+  const alerts = useMemo(() => {
+    const source = Array.isArray(rawAlerts) ? rawAlerts : [];
+    const dismissed = Array.isArray(dismissedAlerts) ? dismissedAlerts : [];
+    return source.filter(a => !dismissed.includes(alertKey(a)));
+  }, [rawAlerts, dismissedAlerts]);
   const alertCount = alerts.length;
   const topAlerts = alerts.slice(0, 5);
 
   const dismissAlert = (a) => {
     const key = alertKey(a);
     setDismissedAlerts(prev => {
-      if (prev.includes(key)) return prev;
-      const next = [...prev, key];
+      const base = Array.isArray(prev) ? prev : [];
+      if (base.includes(key)) return base;
+      const next = [...base, key];
       try {
         localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify({ dismissedDate: todayISO(), keys: next }));
       } catch { /* storage full or disabled — keep in-memory state */ }

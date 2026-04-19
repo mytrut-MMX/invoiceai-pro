@@ -285,13 +285,15 @@ export default function SmartAlerts({
     return merged;
   }, [baseAlerts, employees, payrollRuns, bills, vatPeriods, itsaPeriods, orgSettings, invoices]);
 
-  const visibleAlerts = useMemo(
-    () => allAlerts.filter(a => !dismissedIds.includes(a.id)),
-    [allAlerts, dismissedIds]
-  );
+  const visibleAlerts = useMemo(() => {
+    const source = Array.isArray(allAlerts) ? allAlerts : [];
+    const dismissed = Array.isArray(dismissedIds) ? dismissedIds : [];
+    return source.filter(a => !dismissed.includes(a.id));
+  }, [allAlerts, dismissedIds]);
 
   const dismissAlert = (id) => {
-    const next = [...dismissedIds, id];
+    const base = Array.isArray(dismissedIds) ? dismissedIds : [];
+    const next = [...base, id];
     setDismissedIds(next);
     saveDismissed(next);
   };

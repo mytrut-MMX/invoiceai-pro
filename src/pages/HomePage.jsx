@@ -82,7 +82,7 @@ function parseDate(str) {
 
 function sumInRange(items, dateField, start, end) {
   let total = 0;
-  for (const it of items) {
+  for (const it of (Array.isArray(items) ? items : [])) {
     const d = parseDate(it[dateField]);
     if (!d) continue;
     if (d >= start && d < end) total += Number(it.total ?? it.amount ?? 0);
@@ -149,7 +149,7 @@ export default function HomePage() {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
 
     // ── Cash position (all time) ──
-    const allPaidIn = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const allPaidIn = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
     const allPaidOut = (bills || [])
       .filter(b => b.status === "Paid")
       .reduce((s, b) => s + Number(b.total || 0), 0)
@@ -157,7 +157,7 @@ export default function HomePage() {
     const cashPosition = allPaidIn - allPaidOut;
 
     // Cash position 30 days ago
-    const paidIn30 = payments
+    const paidIn30 = (payments || [])
       .filter(p => { const d = parseDate(p.date); return d && d < thirtyDaysAgo; })
       .reduce((s, p) => s + Number(p.amount || 0), 0);
     const paidOut30 = (bills || [])
@@ -170,8 +170,8 @@ export default function HomePage() {
     const cashDelta = cashPosition - cashPosition30;
 
     // ── Money in (period) ──
-    const moneyIn = sumInRange(payments, "date", start, end);
-    const moneyInPrev = sumInRange(payments, "date", prevStart, prevEnd);
+    const moneyIn = sumInRange(payments || [], "date", start, end);
+    const moneyInPrev = sumInRange(payments || [], "date", prevStart, prevEnd);
     const moneyInPct = pctDelta(moneyIn, moneyInPrev);
 
     // ── Money out (period) ──
@@ -196,7 +196,7 @@ export default function HomePage() {
     const moneyOutPct = pctDelta(moneyOut, moneyOutPrev);
 
     // ── Overdue (current) ──
-    const overdueInvoices = invoices.filter(i => i.status === "Overdue");
+    const overdueInvoices = (invoices || []).filter(i => i.status === "Overdue");
     const overdueTotal = overdueInvoices.reduce((s, i) => s + Number(i.total || 0), 0);
     const overdueCount = overdueInvoices.length;
 
