@@ -24,13 +24,14 @@ export function PaymentTermsConfigModal({ open, onClose, onSaved }) {
   const [editingCell, setEditingCell] = useState(null);
   const { toast } = useToast();
   const newIdCounter = useRef(0);
+  const initialDefaultIdRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     listPaymentTerms().then(({ data }) => {
-      setRows(
-        (data || []).map((t) => ({ ...t, _new: false, _deleted: false, _dirty: false }))
-      );
+      const mapped = (data || []).map((t) => ({ ...t, _new: false, _deleted: false, _dirty: false }));
+      initialDefaultIdRef.current = mapped.find((r) => r.is_default)?.id ?? null;
+      setRows(mapped);
       setEditingCell(null);
     });
   }, [open]);
@@ -99,7 +100,7 @@ export function PaymentTermsConfigModal({ open, onClose, onSaved }) {
       if (error) errors.push(error.message);
     }
 
-    if (finalDefaultId) {
+    if (finalDefaultId && finalDefaultId !== initialDefaultIdRef.current && defaultRow?.is_system !== true) {
       const { error } = await setDefaultPaymentTerm(finalDefaultId);
       if (error) errors.push(error.message);
     }
