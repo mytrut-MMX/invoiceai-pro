@@ -38,10 +38,10 @@ function recordFailure(email) {
 function clearAttempts(email) { loginAttempts.delete(email); }
 
 const inputCls =
-  "w-full h-11 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+  "w-full h-11 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
 
 const inputWithIconCls =
-  "w-full h-11 pl-10 pr-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
+  "w-full h-11 pl-10 pr-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
 
 export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState(() => window.location.pathname === "/signup" ? "register" : "login");
@@ -420,7 +420,7 @@ export default function AuthPage({ onAuth }) {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full h-11 flex items-center justify-center gap-2.5 bg-white text-[var(--text-primary)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm font-medium cursor-pointer hover:bg-[var(--surface-sunken)] disabled:cursor-not-allowed disabled:opacity-60 transition-colors duration-150 mb-4"
+            className="w-full h-11 flex items-center justify-center gap-2.5 bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm font-medium cursor-pointer hover:bg-[var(--surface-sunken)] disabled:cursor-not-allowed disabled:opacity-60 transition-colors duration-150 mb-4"
           >
             <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path fill="#EA4335" d="M24 9.5c3.14 0 5.95 1.08 8.17 2.85l6.1-6.1C34.46 3.01 29.5 1 24 1 14.82 1 7.03 6.49 3.6 14.24l7.1 5.52C12.4 13.72 17.74 9.5 24 9.5z"/>
@@ -502,7 +502,7 @@ export default function AuthPage({ onAuth }) {
                   onKeyDown={e => e.key === "Enter" && handleSubmit()}
                   placeholder="Repeat password"
                   className={[
-                    "w-full h-11 px-3 border rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none transition-colors duration-150 box-border",
+                    "w-full h-11 px-3 border rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none transition-colors duration-150 box-border",
                     confirmPw && confirmPw !== password
                       ? "border-[var(--danger-600)] focus:shadow-[var(--focus-ring)]"
                       : "border-[var(--border-default)] focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]",

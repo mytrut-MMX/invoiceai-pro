@@ -51,7 +51,7 @@ function ActionBtn({ onClick, title, icon, tone = "neutral", children }) {
     <button
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center gap-1 bg-white border border-[var(--border-subtle)] rounded-[var(--radius-md)] px-2 py-1.5 cursor-pointer text-xs text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
+      className={`flex items-center justify-center gap-1 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] px-2 py-1.5 cursor-pointer text-xs text-[var(--text-tertiary)] transition-colors duration-150 ${toneCls}`}
     >
       {icon}
       {children}
@@ -301,7 +301,7 @@ export default function BillsPage({ initialShowForm = false }) {
             <select
               value={activeFilter}
               onChange={e => setActiveFilter(e.target.value)}
-              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+              className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
             >
               {FILTER_OPTS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
@@ -309,7 +309,7 @@ export default function BillsPage({ initialShowForm = false }) {
               <select
                 value={cisFilter}
                 onChange={e => setCisFilter(e.target.value)}
-                className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-white text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
+                className="h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)]"
               >
                 <option value="all">All (CIS + non-CIS)</option>
                 <option value="cis_only">CIS Only</option>

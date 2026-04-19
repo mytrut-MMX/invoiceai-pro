@@ -270,7 +270,7 @@ export default function HomePage() {
             id="period-select"
             value={period}
             onChange={e => setPeriod(e.target.value)}
-            className="h-9 pl-3 pr-8 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-white text-sm text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]"
+            className="h-9 pl-3 pr-8 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] cursor-pointer outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)]"
           >
             {PERIOD_OPTIONS.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -281,7 +281,7 @@ export default function HomePage() {
             onClick={() => setCustomizerOpen(true)}
             aria-label="Customize dashboard"
             title="Customize dashboard"
-            className="h-9 w-9 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+            className="h-9 w-9 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
           >
             <Icons.Settings />
           </button>
