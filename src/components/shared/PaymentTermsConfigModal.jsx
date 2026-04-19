@@ -92,6 +92,10 @@ export function PaymentTermsConfigModal({ open, onClose, onSaved }) {
     }
 
     for (const row of rows.filter((r) => !r._new && !r._deleted && r._dirty)) {
+      if (!row.name.trim()) {
+        errors.push('Term name cannot be empty');
+        continue;
+      }
       const { error } = await updatePaymentTerm(row.id, {
         name: row.name.trim(),
         type: row.type,
