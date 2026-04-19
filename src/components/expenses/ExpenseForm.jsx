@@ -17,6 +17,53 @@ const STATUS_STYLE = {
   Reimbursed:  { color: "#7c3aed", bg: "#f5f3ff" },
 };
 
+const CATEGORY_HINTS = {
+  "Office & Supplies":        "Stationery, printer ink, desk accessories. Not: furniture over £500 (capital asset)",
+  "Travel":                   "Train tickets, mileage (45p/mile first 10k), parking. Not: daily commute",
+  "Professional Fees":        "Accountant, solicitor, professional memberships, training courses",
+  "Marketing":                "Ads, website hosting, business cards. Not: client entertainment (disallowed by HMRC)",
+  "Rent & Rates":             "Office rent, business rates, co-working space. Home office: use HMRC flat rate",
+  "Utilities":                "Business electricity, gas, internet, phone. Proportional if shared with home",
+  "Insurance":                "Professional indemnity, public liability, business contents",
+  "Software & Subscriptions": "SaaS tools, cloud storage, design software",
+  "Bank Charges":             "Transaction fees, Stripe/PayPal fees, account charges",
+  "Equipment":                "Laptops, monitors, tools under £500. Over £500: capital allowance",
+  "Wages & Salaries":         "Employee pay, employer NIC, pension contributions",
+  "Training & Development":   "Courses, certifications, conferences, books directly related to your trade",
+  "Motor Expenses":           "Fuel for business trips, vehicle insurance, MOT. Not: personal use portion",
+  "Repairs & Maintenance":    "Office repairs, equipment servicing, website fixes",
+  "Cost of Sales":            "Materials, subcontractor costs, direct production costs",
+  "Uncategorised":            "Temporary — assign a proper category before tax filing",
+};
+
+function CategoryHintIcon({ category }) {
+  const [open, setOpen] = useState(false);
+  const hint = (category && CATEGORY_HINTS[category]) || "No examples available";
+  const title = category || "Category examples";
+  return (
+    <span
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+      tabIndex={0}
+      style={{ position: "relative", display: "inline-flex", alignItems: "center", marginLeft: 6, cursor: "help", fontSize: 12, color: "#9ca3af", outline: "none" }}
+      aria-label={`Examples for ${title}`}
+    >
+      ℹ️
+      {open && (
+        <div
+          role="tooltip"
+          style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", width: 260, padding: "10px 12px", background: "#1f2937", color: "#fff", borderRadius: 6, boxShadow: "0 6px 20px rgba(0,0,0,0.18)", fontSize: 12, lineHeight: 1.45, zIndex: 50, textTransform: "none", letterSpacing: 0, fontWeight: 400, pointerEvents: "none" }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>{title}</div>
+          <div style={{ color: "#e5e7eb" }}>{hint}</div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 function ExpenseSection({ title, children }) {
   return (
     <div style={{ background: "#fff", border: "1px solid #e8e8ec", borderRadius: 8, marginBottom: 12 }}>
@@ -193,7 +240,7 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
                 <input type="date" value={date} onChange={e => setDate(e.target.value)}
                   style={{ width: "100%", padding: "8px 10px", border: "1px solid #e8e8ec", borderRadius: 5, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
               </Field>
-              <Field label="Category">
+              <Field label={<span style={{ display: "inline-flex", alignItems: "center" }}>Category<CategoryHintIcon category={category} /></span>}>
                 <Select value={category} onChange={setCategory}
                   options={EXPENSE_CATEGORIES.map(c => ({ value: c.name, label: `${c.code} · ${c.name}` }))} placeholder="Select…" />
               </Field>

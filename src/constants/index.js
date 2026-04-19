@@ -76,6 +76,7 @@ export const EXPENSE_CATEGORIES = [
   { code:"550", name:"Travel",                  hmrc_sa_code:"travel_motor" },
   { code:"560", name:"Utilities",               hmrc_sa_code:"premises_costs" },
   { code:"570", name:"Wages & Salaries",        hmrc_sa_code:"staff_costs" },
+  { code:"580", name:"Training & Development",  hmrc_sa_code:"staff_costs" },
   { code:"999", name:"Other",                   hmrc_sa_code:"other_expenses" },
 ];
 export const EXPENSE_STATUSES = ["Draft","Submitted","Approved","Reimbursed"];
