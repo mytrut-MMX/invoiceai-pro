@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
-import { s, fmt } from './adminShared';
+import { s, fmt, AGENT_NAME_TO_SECTION } from './adminShared';
 
-export default function AdminOrchestratorHistory({ loading, objectives, tasks, selectedObjectiveId, setSelectedObjectiveId, token, onRefresh }) {
+export default function AdminOrchestratorHistory({ loading, objectives, tasks, selectedObjectiveId, setSelectedObjectiveId, token, onRefresh, setPrefillTask, setSection }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
@@ -43,6 +43,25 @@ export default function AdminOrchestratorHistory({ loading, objectives, tasks, s
   const clearAllBtnStyle = {
     padding: '8px 14px', background: '#EF4444', color: '#fff', border: 'none',
     borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+  };
+  const runBtnStyle = {
+    padding: '4px 10px', background: '#0EA5E9', color: '#fff', border: 'none',
+    borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', lineHeight: 1,
+  };
+  const runBtnDisabledStyle = { ...runBtnStyle, background: '#CBD5E1', cursor: 'not-allowed' };
+
+  const handleRunTask = (task, objective) => {
+    const sectionId = AGENT_NAME_TO_SECTION[task.agent];
+    if (!sectionId || !setPrefillTask || !setSection) return;
+    setPrefillTask({
+      targetSection:   sectionId,
+      objectiveId:     task.objective_id,
+      taskId:          task.id,
+      taskTitle:       task.title || '',
+      taskDescription: task.title || '',
+      context:         (objective && objective.context) || {},
+    });
+    setSection(sectionId);
   };
 
   return (
@@ -129,15 +148,42 @@ export default function AdminOrchestratorHistory({ loading, objectives, tasks, s
                     {relatedTasks.length === 0 ? (
                       <div style={{ fontSize:12, color:'#94A3B8' }}>No tasks found.</div>
                     ) : (
-                      relatedTasks.map((task, idx) => (
-                        <div key={task.id || idx} style={{ marginBottom:8, padding:'10px 12px', background:'#fff', border:'1px solid #E2E8F0', borderRadius:6 }}>
-                          <div style={{ fontSize:13, color:'#0F172A', marginBottom:6 }}>{task.title || 'Untitled task'}</div>
-                          <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
-                            <span style={{ fontSize:11, fontWeight:700, color:'#64748B' }}>Agent: {task.agent || '—'}</span>
-                            <span style={{ fontSize:11, fontWeight:700, color:'#0EA5E9' }}>Priority: {task.priority || '—'}</span>
-                          </div>
+                      <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:8, overflow:'hidden' }}>
+                        <div style={{ ...s.tableHead, gridTemplateColumns:'2.2fr 1.4fr 0.8fr 0.9fr 90px', padding:'8px 12px' }}>
+                          <span style={s.tableCellHead}>Title</span>
+                          <span style={s.tableCellHead}>Agent</span>
+                          <span style={s.tableCellHead}>Priority</span>
+                          <span style={s.tableCellHead}>Status</span>
+                          <span style={s.tableCellHead}></span>
                         </div>
-                      ))
+                        {relatedTasks.map((task, idx) => {
+                          const sectionId = AGENT_NAME_TO_SECTION[task.agent];
+                          const canRun = Boolean(sectionId) && task.status !== 'completed';
+                          return (
+                            <div key={task.id || idx} style={{ ...s.tableRow, gridTemplateColumns:'2.2fr 1.4fr 0.8fr 0.9fr 90px', padding:'10px 12px', borderBottom: idx === relatedTasks.length - 1 ? 'none' : '1px solid #F1F5F9' }}>
+                              <span style={s.tableCell}>{task.title || 'Untitled task'}</span>
+                              <span style={{ ...s.tableCell, color:'#0EA5E9', fontWeight:700, fontSize:12 }}>{task.agent || '—'}</span>
+                              <span style={{ ...s.tableCell, color: task.priority === 'high' ? '#DC2626' : task.priority === 'medium' ? '#D97706' : '#475569', fontWeight:700, fontSize:12 }}>{task.priority || '—'}</span>
+                              <span style={s.tableCell}><span style={s.pill}>{task.status || 'pending'}</span></span>
+                              <span style={{ ...s.tableCell, overflow:'visible' }}>
+                                <button
+                                  type="button"
+                                  style={canRun ? runBtnStyle : runBtnDisabledStyle}
+                                  onClick={() => handleRunTask(task, obj)}
+                                  disabled={!canRun}
+                                  title={
+                                    !sectionId ? `No panel mapped for agent "${task.agent}"` :
+                                    task.status === 'completed' ? 'Task already completed' :
+                                    'Dispatch to specialist'
+                                  }
+                                >
+                                  Run →
+                                </button>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}

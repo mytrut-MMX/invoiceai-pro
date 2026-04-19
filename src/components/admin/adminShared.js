@@ -61,4 +61,30 @@ function todayCount(arr) {
   return arr.filter(x => x.created_at && new Date(x.created_at).toDateString() === today).length;
 }
 
-export { s, fmt, fmtDate, todayCount };
+const AGENT_NAME_TO_SECTION = {
+  'Product Workflow Lead':       'product-workflow-lead',
+  'Frontend Architecture Lead':  'frontend-lead',
+  'Backend & Integrations Lead': 'backend-integrations-lead',
+  'Data & Ledger Lead':          'data-ledger-lead',
+  'Security & Trust Lead':       'security-trust-lead',
+  'QA Regression Agent':         'qa-regression-agent',
+  'Release Gate Agent':          'release-gate-agent',
+  'Data Integrity Auditor':      'data-integrity-auditor',
+};
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function markTaskCompleted(taskId, token) {
+  if (!taskId || !UUID_RE.test(taskId)) return;
+  try {
+    await fetch('/api/admin-data', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ taskId, status: 'completed' }),
+    });
+  } catch {
+    // Non-fatal: status update is best-effort.
+  }
+}
+
+export { s, fmt, fmtDate, todayCount, AGENT_NAME_TO_SECTION, markTaskCompleted };

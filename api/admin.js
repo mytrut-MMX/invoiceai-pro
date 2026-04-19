@@ -52,7 +52,7 @@ async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -118,7 +118,7 @@ async function handler(req, res) {
         fetch(`${supabaseUrl}/rest/v1/profiles?select=*&order=created_at.desc`, { headers }),
         fetch(`${supabaseUrl}/rest/v1/contact_submissions?select=*&order=created_at.desc`, { headers }),
         fetch(`${supabaseUrl}/rest/v1/agent_objectives?select=*&order=created_at.desc`, { headers }),
-        fetch(`${supabaseUrl}/rest/v1/agent_tasks?select=objective_id&id`, { headers }),
+        fetch(`${supabaseUrl}/rest/v1/agent_tasks?select=*&order=created_at.desc`, { headers }),
       ]);
 
       const profiles = profilesRes.ok ? await profilesRes.json() : [];
@@ -127,6 +127,52 @@ async function handler(req, res) {
       const agentTasks = tasksRes.ok ? await tasksRes.json() : [];
 
       return res.status(200).json({ profiles, contactSubmissions, agentObjectives, agentTasks });
+    } catch {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // ── PATCH: Update task status ──────────────────────────────────────────
+  if (req.method === 'PATCH') {
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (!verifyAdminToken(token, adminPassword)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://oecvlkllkpyfpgczqwii.supabase.co';
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return res.status(503).json({ error: 'Supabase not configured on server' });
+    }
+
+    const { taskId, status } = req.body || {};
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const ALLOWED_STATUSES = ['pending', 'in_progress', 'completed', 'failed'];
+
+    if (typeof taskId !== 'string' || !UUID_RE.test(taskId)) {
+      return res.status(400).json({ error: 'Invalid taskId' });
+    }
+    if (typeof status !== 'string' || !ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    try {
+      const patchRes = await fetch(`${supabaseUrl}/rest/v1/agent_tasks?id=eq.${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (!patchRes.ok) {
+        return res.status(500).json({ error: 'Failed to update task status' });
+      }
+      return res.status(200).json({ ok: true });
     } catch {
       return res.status(500).json({ error: 'Internal server error' });
     }

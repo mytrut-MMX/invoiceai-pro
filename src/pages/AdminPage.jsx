@@ -33,6 +33,7 @@ function AdminDashboard({ onLogout, token }) {
   const [orchResult,         setOrchResult]         = useState(null);
   const [orchError,          setOrchError]          = useState('');
   const [selectedObjectiveId,setSelectedObjectiveId]= useState(null);
+  const [prefillTask,        setPrefillTask]        = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -164,6 +165,8 @@ function AdminDashboard({ onLogout, token }) {
                   setSelectedObjectiveId={setSelectedObjectiveId}
                   token={token}
                   onRefresh={fetchData}
+                  setPrefillTask={setPrefillTask}
+                  setSection={setSection}
                 />
               </div>
             </Suspense>
@@ -171,49 +174,49 @@ function AdminDashboard({ onLogout, token }) {
 
           {section === 'product-workflow-lead' && (
             <Suspense fallback={panelFallback}>
-              <ProductWorkflowLeadPanel token={token} />
+              <ProductWorkflowLeadPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
 
           {section === 'frontend-lead' && (
             <Suspense fallback={panelFallback}>
-              <FrontendLeadPanel token={token} />
+              <FrontendLeadPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
 
           {section === 'data-ledger-lead' && (
             <Suspense fallback={panelFallback}>
-              <DataLedgerLeadPanel token={token} />
+              <DataLedgerLeadPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
 
           {section === 'backend-integrations-lead' && (
             <Suspense fallback={panelFallback}>
-              <BackendIntegrationsLeadPanel token={token} />
+              <BackendIntegrationsLeadPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
 
           {section === 'security-trust-lead' && (
             <Suspense fallback={panelFallback}>
-              <SecurityTrustLeadPanel token={token} />
+              <SecurityTrustLeadPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
 
           {section === 'qa-regression-agent' && (
             <Suspense fallback={panelFallback}>
-              <QaRegressionAgentPanel token={token} />
+              <QaRegressionAgentPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
 
           {section === 'release-gate-agent' && (
             <Suspense fallback={panelFallback}>
-              <ReleaseGateAgentPanel token={token} />
+              <ReleaseGateAgentPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
 
           {section === 'data-integrity-auditor' && (
             <Suspense fallback={panelFallback}>
-              <DataIntegrityAuditorPanel token={token} />
+              <DataIntegrityAuditorPanel token={token} prefillTask={prefillTask} setPrefillTask={setPrefillTask} onTaskCompleted={fetchData} />
             </Suspense>
           )}
         </AdminLayout>
