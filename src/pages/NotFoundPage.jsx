@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ff } from "../constants";
 import { ROUTES } from "../router/routes";
 
 export default function NotFoundPage() {
@@ -14,7 +13,6 @@ export default function NotFoundPage() {
         justifyContent: "center",
         minHeight: "100vh",
         background: "#f4f5f7",
-        fontFamily: ff,
         textAlign: "center",
         padding: "40px 20px",
       }}
@@ -102,7 +100,6 @@ export default function NotFoundPage() {
             borderRadius: 8,
             fontSize: 13,
             fontWeight: 700,
-            fontFamily: ff,
             cursor: "pointer",
           }}
         >
@@ -122,7 +119,6 @@ export default function NotFoundPage() {
             textDecoration: "none",
             fontSize: 13,
             fontWeight: 700,
-            fontFamily: ff,
           }}
         >
           Dashboard

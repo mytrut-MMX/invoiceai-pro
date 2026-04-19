@@ -10,7 +10,6 @@
  * not a CT600 submission. See the disclaimer footer rendered into the PDF.
  */
 
-const ff = "'Inter', 'Lato', 'DM Sans', 'Helvetica Neue', sans-serif";
 const mono = "'Courier New', monospace";
 
 const C = {
@@ -98,7 +97,7 @@ function renderHtml({ company, period, calc }) {
   const lossUsed = lossIn > 0 && taxAdjProfit > 0 ? Math.min(lossIn, taxAdjProfit) : 0;
 
   return `
-    <div style="width:210mm;min-height:297mm;padding:18mm 16mm;font-family:${ff};color:${C.body};background:#fff;box-sizing:border-box;">
+    <div style="width:210mm;min-height:297mm;padding:18mm 16mm;color:${C.body};background:#fff;box-sizing:border-box;">
 
       <!-- HEADER -->
       <div style="border-bottom:2px solid ${C.heading};padding-bottom:14px;margin-bottom:20px;">

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { ff } from "../../constants";
 
 export function SupplierPicker({ suppliers = [], value, onChange, onClear }) {
   const [open, setOpen] = useState(false);
@@ -76,7 +75,7 @@ export function SupplierPicker({ suppliers = [], value, onChange, onClear }) {
               onFocus={() => setOpen(true)}
               onClick={e => e.stopPropagation()}
               placeholder="Select or add a supplier"
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: ff, padding: "0 8px", background: "transparent", color: "#1a1a2e", lineHeight: "42px" }}
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 13, padding: "0 8px", background: "transparent", color: "#1a1a2e", lineHeight: "42px" }}
             />
             <span style={{ padding: "0 12px", display: "flex", alignItems: "center", color: "#9ca3af", flexShrink: 0 }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 512 512"
@@ -95,7 +94,7 @@ export function SupplierPicker({ suppliers = [], value, onChange, onClear }) {
           ) : filtered.map(c => (
             <button key={c.id}
               onMouseDown={e => { e.preventDefault(); handleSelect(c); }}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: ff, textAlign: "left" }}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
               onMouseEnter={e => e.currentTarget.style.background = "#f4f5f7"}
               onMouseLeave={e => e.currentTarget.style.background = "none"}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", background: "color-mix(in srgb, var(--brand-500) 13%, transparent)", color: "var(--brand-500)", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

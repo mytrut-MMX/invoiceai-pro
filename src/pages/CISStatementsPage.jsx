@@ -7,7 +7,6 @@
  */
 
 import { useState, useMemo, useEffect, useContext } from "react";
-import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
@@ -300,7 +299,7 @@ export default function CISStatementsPage() {
   if (loading) {
     return (
       <div style={moduleUi.pageCanvas}>
-        <div style={{ ...moduleUi.page, maxWidth: 1320, fontFamily: ff }}>
+        <div style={{ ...moduleUi.page, maxWidth: 1320 }}>
           <div style={{ textAlign: "center", padding: "80px 24px", color: "#94a3b8", fontSize: 14 }}>
             Loading CIS statements…
           </div>
@@ -324,7 +323,7 @@ export default function CISStatementsPage() {
 
   return (
     <div style={moduleUi.pageCanvas}>
-      <div style={{ ...moduleUi.page, maxWidth: 1320, fontFamily: ff }}>
+      <div style={{ ...moduleUi.page, maxWidth: 1320 }}>
         <ModuleHeader
           title="CIS Payment and Deduction Statements"
           helper="HMRC CIS340: contractors must issue a PDS to each subcontractor within 14 days of the end of each tax month (6th → 5th)."
@@ -337,7 +336,7 @@ export default function CISStatementsPage() {
             <select
               value={selectedKey}
               onChange={e => setSelectedKey(e.target.value)}
-              style={{ padding: "8px 10px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 13, background: "#fff", fontFamily: ff }}
+              style={{ padding: "8px 10px", border: "1px solid #dbe4ee", borderRadius: 10, fontSize: 13, background: "#fff" }}
             >
               {taxMonthOptions.map(o => (
                 <option key={o.iso_key} value={o.iso_key}>{o.label}</option>
@@ -603,7 +602,7 @@ export default function CISStatementsPage() {
 function ConfirmSendModal({ title, body, personalMessage, onPersonalMessageChange, confirmLabel, onCancel, onConfirm }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,16,0.55)", display: "grid", placeItems: "center", zIndex: 1500, padding: 16 }}>
-      <div style={{ width: "100%", maxWidth: 460, background: "#fff", borderRadius: 12, border: "1px solid #E8E6E0", boxShadow: "0 18px 40px rgba(17,17,16,0.2)", overflow: "hidden", fontFamily: ff }}>
+      <div style={{ width: "100%", maxWidth: 460, background: "#fff", borderRadius: 12, border: "1px solid #E8E6E0", boxShadow: "0 18px 40px rgba(17,17,16,0.2)", overflow: "hidden" }}>
         <div style={{ padding: "14px 18px", borderBottom: "1px solid #E8E6E0", fontSize: 16, fontWeight: 700, color: "#1F2937" }}>
           {title}
         </div>
@@ -616,7 +615,7 @@ function ConfirmSendModal({ title, body, personalMessage, onPersonalMessageChang
             value={personalMessage}
             onChange={e => onPersonalMessageChange(e.target.value)}
             rows={4}
-            style={{ width: "100%", boxSizing: "border-box", padding: 10, border: "1px solid #dbe4ee", borderRadius: 8, fontSize: 13, fontFamily: ff, resize: "vertical" }}
+            style={{ width: "100%", boxSizing: "border-box", padding: 10, border: "1px solid #dbe4ee", borderRadius: 8, fontSize: 13, resize: "vertical" }}
           />
         </div>
         <div style={{ padding: "12px 18px", display: "flex", justifyContent: "flex-end", gap: 8, background: "#F0EFE9" }}>

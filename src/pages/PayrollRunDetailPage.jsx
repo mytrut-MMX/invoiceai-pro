@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useMemo } from "react";
-import { ff, CUR_SYM } from "../constants";
+import { CUR_SYM } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
@@ -24,7 +24,7 @@ const avatarPalette = (name = "") => AVATAR_PALETTES[name.charCodeAt(0) % AVATAR
 function EmpAvatar({ name }) {
   const { bg, fg } = avatarPalette(name);
   return (
-    <div style={{ width:28, height:28, borderRadius:"50%", background:bg, color:fg, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:11, flexShrink:0, fontFamily:ff }}>
+    <div style={{ width:28, height:28, borderRadius:"50%", background:bg, color:fg, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:11, flexShrink:0 }}>
       {(name || "?")[0].toUpperCase()}
     </div>
   );
@@ -38,7 +38,7 @@ function ConfirmModal({ title, message, warning, confirmLabel, confirmVariant = 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.35)" }}
       onClick={onCancel}>
-      <div style={{ background:"#fff", borderRadius:14, padding:"24px 28px", width:440, maxWidth:"92vw", boxShadow:"0 12px 40px rgba(0,0,0,0.18)", fontFamily:ff }}
+      <div style={{ background:"#fff", borderRadius:14, padding:"24px 28px", width:440, maxWidth:"92vw", boxShadow:"0 12px 40px rgba(0,0,0,0.18)" }}
         onClick={e => e.stopPropagation()}>
         <h3 style={{ fontSize:16, fontWeight:700, color:"#1a1a2e", margin:"0 0 10px" }}>{title}</h3>
         <p style={{ fontSize:13, color:"#374151", margin:"0 0 8px", lineHeight:1.5 }}>{message}</p>
@@ -181,14 +181,14 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
   // ─── Loading / Error ───────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+      <div style={{ background:"#f4f5f7", minHeight:"100vh" }}>
         <div style={{ textAlign:"center", padding:"80px 24px", color:"#94a3b8", fontSize:14 }}>Loading payroll run…</div>
       </div>
     );
   }
   if (error || !run) {
     return (
-      <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+      <div style={{ background:"#f4f5f7", minHeight:"100vh" }}>
         <div style={{ maxWidth:600, margin:"0 auto", padding:"60px 24px", textAlign:"center" }}>
           <div style={{ fontSize:14, color:"#b91c1c", marginBottom:16 }}>{error || "Payroll run not found"}</div>
           <Btn variant="outline" onClick={onBack}>← Back to Payroll</Btn>
@@ -202,12 +202,12 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ background:"#f4f5f7", minHeight:"100vh", fontFamily:ff }}>
+    <div style={{ background:"#f4f5f7", minHeight:"100vh" }}>
 
       {/* Sticky header */}
       <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e8e8ec", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, fontFamily:ff, padding:0 }}>← Payroll</button>
+          <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", color:"#6b7280", fontSize:13, padding:0 }}>← Payroll</button>
           <span style={{ color:"#d1d5db" }}>/</span>
           <span style={{ fontSize:13, fontWeight:600, color:"#1a1a2e" }}>
             {fmtDate(run.pay_date)} run
@@ -431,7 +431,7 @@ export default function PayrollRunDetailPage({ runId, onBack }) {
         {/* Employer costs (collapsible) */}
         <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e2e8f0", overflow:"hidden" }}>
           <button onClick={() => setShowEmployerCosts(!showEmployerCosts)}
-            style={{ width:"100%", padding:"12px 20px", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:8, fontFamily:ff, fontSize:14, fontWeight:700, color:"#1a1a2e" }}>
+            style={{ width:"100%", padding:"12px 20px", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:8, fontSize:14, fontWeight:700, color:"#1a1a2e" }}>
             <span style={{ color:"#94a3b8" }}>{showEmployerCosts ? <Icons.ChevDown /> : <Icons.ChevRight />}</span>
             Employer Costs
             <span style={{ fontSize:12, fontWeight:500, color:"#94a3b8", marginLeft:"auto" }}>{fmt(currSym, metrics.employerCost || 0)} total</span>

@@ -1,6 +1,5 @@
 import { useState, useMemo, useContext, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ff } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { Icons } from "../components/icons";
 import { Btn } from "../components/atoms";
@@ -77,7 +76,6 @@ function EmployeeAvatar({ name }) {
       background:bg, color:fg,
       display:"flex", alignItems:"center", justifyContent:"center",
       fontWeight:700, fontSize:12, flexShrink:0,
-      fontFamily:ff,
     }}>
       {(name || "?")[0].toUpperCase()}
     </div>
@@ -203,7 +201,7 @@ export default function EmployeesPage() {
 
   // ─── render ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:T.pageBg, minHeight:"100vh", fontFamily:ff }}>
+    <div style={{ padding:"clamp(14px,4vw,28px) clamp(12px,4vw,32px)", maxWidth:1100, background:T.pageBg, minHeight:"100vh" }}>
 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:20, flexWrap:"wrap" }}>
@@ -237,7 +235,7 @@ export default function EmployeesPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by name, email or NI number…"
-              style={{ flex:1, border:"none", outline:"none", fontSize:13, color:T.heading, background:"transparent", fontFamily:ff }}
+              style={{ flex:1, border:"none", outline:"none", fontSize:13, color:T.heading, background:"transparent" }}
             />
             {hasSearch && (
               <button onClick={() => setSearch("")}

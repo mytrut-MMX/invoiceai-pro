@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { ff } from "../../constants";
 import { Btn, Field, Select } from "../atoms";
 import { todayStr, fmtDate, fmt } from "../../utils/helpers";
 
@@ -44,7 +43,7 @@ export default function RecordPaymentModal({ run, accounts, onClose, onConfirm }
       onClick={onClose}
     >
       <div
-        style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", width: 480, maxWidth: "92vw", boxShadow: "0 12px 40px rgba(0,0,0,0.18)", fontFamily: ff }}
+        style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", width: 480, maxWidth: "92vw", boxShadow: "0 12px 40px rgba(0,0,0,0.18)" }}
         onClick={e => e.stopPropagation()}
       >
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1a1a2e", margin: "0 0 4px" }}>Record Payment</h3>
@@ -63,7 +62,7 @@ export default function RecordPaymentModal({ run, accounts, onClose, onConfirm }
             type="date"
             value={paidDate}
             onChange={e => setPaidDate(e.target.value)}
-            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }}
           />
         </Field>
 
@@ -71,7 +70,7 @@ export default function RecordPaymentModal({ run, accounts, onClose, onConfirm }
           <select
             value={bankAccountId}
             onChange={e => setBankAccountId(e.target.value)}
-            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, boxSizing: "border-box", background: "#fff" }}
+            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#fff" }}
           >
             <option value="">-- Select bank account --</option>
             {bankAccounts.map(a => (
@@ -94,7 +93,7 @@ export default function RecordPaymentModal({ run, accounts, onClose, onConfirm }
             value={reference}
             onChange={e => setReference(e.target.value)}
             placeholder="Optional bank reference"
-            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, fontFamily: ff, boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "9px 10px", border: "1.5px solid #E0E0E0", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }}
           />
         </Field>
 

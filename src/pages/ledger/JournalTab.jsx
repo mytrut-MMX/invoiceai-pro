@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import EmptyState from "../../components/ui/EmptyState";
 import { Icons } from "../../components/icons";
-import { ff } from "../../constants";
 import { Btn, Select } from "../../components/atoms";
 import { fmt, fmtDate } from "../../utils/helpers";
 import { useCurrSym, PERIODS, SOURCE_OPTIONS, getDateRange } from "./shared";
@@ -114,9 +113,9 @@ export default function JournalTab({ entries, accounts, loading, onNewEntry, can
         {period === "custom" && (
           <>
             <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
-              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }} />
+              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, outline:"none" }} />
             <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
-              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }} />
+              style={{ padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, outline:"none" }} />
           </>
         )}
         <Select value={sourceFilter} onChange={setSourceFilter} options={SOURCE_OPTIONS} style={{ minWidth:140 }} />
@@ -124,7 +123,7 @@ export default function JournalTab({ entries, accounts, loading, onNewEntry, can
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search entries…"
-          style={{ flex:1, minWidth:160, padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }}
+          style={{ flex:1, minWidth:160, padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, outline:"none" }}
         />
         <Btn variant="primary" onClick={onNewEntry} style={{ whiteSpace:"nowrap" }} disabled={!canCreateManual}>
           + Manual Entry
@@ -142,7 +141,7 @@ export default function JournalTab({ entries, accounts, loading, onNewEntry, can
         />
       ) : (
         <div style={{ overflowX:"auto", borderRadius:8, border:"1px solid #e8e8ec" }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:ff }}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
             <thead>
               <tr style={{ background:"#fafaf9", borderBottom:"1px solid #e8e8ec" }}>
                 {["Date", "Description", "Source", "Amount", ""].map(h => (

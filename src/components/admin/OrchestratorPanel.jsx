@@ -1,10 +1,8 @@
 import { useState } from 'react';
 
-const ff = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-
 const s = {
   label:    { display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:6 },
-  input:    { width:'100%', padding:'11px 14px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:ff },
+  input:    { width:'100%', padding:'11px 14px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, outline:'none', boxSizing:'border-box' },
   btnSm:    { padding:'6px 14px', background:'#0EA5E9', color:'#fff', border:'none', borderRadius:6, fontSize:13, fontWeight:600, cursor:'pointer' },
   err:      { background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, padding:'10px 14px', fontSize:13, color:'#DC2626', marginBottom:12 },
   sectionTitle: { fontSize:18, fontWeight:700, color:'#0F172A', marginBottom:16 },

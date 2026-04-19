@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import OrchestratorPanel from './OrchestratorPanel';
 
-const ff = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-
 const s = {
-  page:    { minHeight:'100vh', background:'#F1F5F9', fontFamily:ff },
+  page:    { minHeight:'100vh', background:'#F1F5F9' },
   btnDanger: { padding:'6px 14px', background:'#EF4444', color:'#fff', border:'none', borderRadius:6, fontSize:13, fontWeight:600, cursor:'pointer' },
   err:     { background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, padding:'10px 14px', fontSize:13, color:'#DC2626', marginBottom:12 },
   header:  { background:'#0F172A', padding:'0 32px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between' },
@@ -17,8 +15,8 @@ const s = {
   statNum:   { fontSize:32, fontWeight:800, color:'#0F172A', lineHeight:1.1 },
   statLabel: { fontSize:13, color:'#64748B', marginTop:4 },
   tabs:      { display:'flex', gap:4, marginBottom:24, background:'#E2E8F0', borderRadius:10, padding:4, width:'fit-content' },
-  tab:       { padding:'8px 20px', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', border:'none', background:'transparent', color:'#64748B', fontFamily:ff },
-  tabActive: { padding:'8px 20px', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', border:'none', background:'#fff', color:'#0F172A', fontFamily:ff, boxShadow:'0 1px 4px rgba(0,0,0,0.1)' },
+  tab:       { padding:'8px 20px', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', border:'none', background:'transparent', color:'#64748B' },
+  tabActive: { padding:'8px 20px', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', border:'none', background:'#fff', color:'#0F172A', boxShadow:'0 1px 4px rgba(0,0,0,0.1)' },
   tableWrap:      { background:'#fff', border:'1px solid #E2E8F0', borderRadius:12, overflow:'hidden' },
   tableHead:      { background:'#F8FAFC', borderBottom:'1px solid #E2E8F0', padding:'12px 20px', display:'grid', gap:12 },
   tableRow:       { padding:'14px 20px', display:'grid', gap:12, borderBottom:'1px solid #F1F5F9', alignItems:'center' },
@@ -29,7 +27,7 @@ const s = {
   msgBox:     { background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:8, padding:'10px 14px', fontSize:13, color:'#374151', whiteSpace:'pre-wrap', wordBreak:'break-word', lineHeight:1.6, maxHeight:100, overflow:'auto' },
   sectionTitle: { fontSize:18, fontWeight:700, color:'#0F172A', marginBottom:16 },
   pill:         { display:'inline-block', padding:'2px 10px', borderRadius:99, fontSize:11, fontWeight:600, background:'#DBEAFE', color:'#1E40AF' },
-  refreshBtn:   { padding:'8px 18px', background:'#F1F5F9', color:'#374151', border:'1px solid #E2E8F0', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:ff },
+  refreshBtn:   { padding:'8px 18px', background:'#F1F5F9', color:'#374151', border:'1px solid #E2E8F0', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' },
 };
 
 function fmt(dateStr) {
@@ -181,13 +179,13 @@ export default function AdminDashboard({ onLogout, token }) {
                       {expandedMsg === (c.id || i) ? (
                         <div>
                           <div style={{ ...s.msgBox, maxHeight:'none' }}>{c.message}</div>
-                          <button onClick={() => setExpandedMsg(null)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0', fontFamily:ff }}>Show less</button>
+                          <button onClick={() => setExpandedMsg(null)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0' }}>Show less</button>
                         </div>
                       ) : (
                         <div>
                           <div style={{ fontSize:13, color:'#374151', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:220 }}>{c.message}</div>
                           {c.message && c.message.length > 60 && (
-                            <button onClick={() => setExpandedMsg(c.id || i)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0', fontFamily:ff }}>Read more</button>
+                            <button onClick={() => setExpandedMsg(c.id || i)} style={{ fontSize:11, color:'#0EA5E9', background:'none', border:'none', cursor:'pointer', padding:'4px 0' }}>Read more</button>
                           )}
                         </div>
                       )}

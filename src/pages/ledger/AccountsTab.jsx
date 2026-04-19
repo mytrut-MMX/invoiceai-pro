@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { ff } from "../../constants";
 import { Btn } from "../../components/atoms";
 import { supabase } from "../../lib/supabase";
 import { fmt } from "../../utils/helpers";
@@ -46,7 +45,7 @@ export default function AccountsTab({ accounts, allEntries, loading, onNewAccoun
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search accounts…"
-          style={{ flex:1, padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, fontFamily:ff, outline:"none" }}
+          style={{ flex:1, padding:"7px 10px", border:"1px solid #e8e8ec", borderRadius:6, fontSize:13, outline:"none" }}
         />
         <Btn variant="primary" onClick={onNewAccount} disabled={!userId}>+ Add Account</Btn>
       </div>
@@ -88,7 +87,7 @@ export default function AccountsTab({ accounts, allEntries, loading, onNewAccoun
 
               {/* Accounts table */}
               <div style={{ border:"1px solid #e8e8ec", borderRadius:8, overflow:"hidden" }}>
-                <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:ff }}>
+                <table style={{ width:"100%", borderCollapse:"collapse" }}>
                   <thead>
                     <tr style={{ background:"#fafaf9", borderBottom:"1px solid #e8e8ec" }}>
                       {["Code", "Name", "Debit", "Credit", "Balance"].map(h => (

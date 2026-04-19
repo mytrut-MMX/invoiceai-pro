@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ff, CUR_SYM } from "../../constants";
+import { CUR_SYM } from "../../constants";
 import { Btn } from "../atoms";
 import { fmtDate, fmt } from "../../utils/helpers";
 import { generatePayslipPdf } from "../../utils/payroll/generatePayslipPdf";
@@ -48,7 +48,7 @@ export default function PayslipDetailModal({ payslip, employee, run, employer, c
   return (
     <div style={{ position:"fixed", inset:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.35)" }}
       onClick={onClose}>
-      <div style={{ background:"#fff", borderRadius:14, width:640, maxWidth:"94vw", maxHeight:"90vh", overflow:"auto", boxShadow:"0 12px 40px rgba(0,0,0,0.18)", fontFamily:ff }}
+      <div style={{ background:"#fff", borderRadius:14, width:640, maxWidth:"94vw", maxHeight:"90vh", overflow:"auto", boxShadow:"0 12px 40px rgba(0,0,0,0.18)" }}
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}

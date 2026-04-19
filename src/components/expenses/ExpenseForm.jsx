@@ -1,5 +1,5 @@
 import { useState, useContext, useRef, useCallback } from "react";
-import { ff, CUR_SYM, TAX_RATES, EXPENSE_CATEGORIES, EXPENSE_STATUSES, PAYMENT_METHODS } from "../../constants";
+import { CUR_SYM, TAX_RATES, EXPENSE_CATEGORIES, EXPENSE_STATUSES, PAYMENT_METHODS } from "../../constants";
 import { SA_CATEGORY_LABELS, SA_CATEGORY_MAP } from "../../utils/itsa/hmrcCategoryMap";
 import { postExpenseEntry } from "../../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
@@ -50,18 +50,18 @@ function ReceiptUpload({ value, onChange }) {
         <div style={{ position: "relative" }}>
           <img src={value} alt="receipt" style={{ maxHeight: 72, maxWidth: 130, objectFit: "contain", borderRadius: 6, border: "1px solid #e8e8ec" }} />
           <button onClick={() => onChange("")}
-            style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 12, cursor: "pointer", fontFamily: ff, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+            style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 12, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
         </div>
       ) : (
         <div style={{ textAlign: "center", flex: 1 }}>
           <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Drag receipt or</div>
           <button onClick={() => ref.current?.click()}
-            style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "none", cursor: "pointer", fontFamily: ff, fontWeight: 600 }}>browse image</button>
+            style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>browse image</button>
           <div style={{ fontSize: 11, color: "#c4c4c4", marginTop: 2 }}>JPG, PNG · max 3 MB</div>
         </div>
       )}
       {value && <button onClick={() => ref.current?.click()}
-        style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "1px solid #1e6be0", borderRadius: 6, cursor: "pointer", fontFamily: ff, fontWeight: 600, padding: "4px 10px" }}>Change</button>}
+        style={{ fontSize: 12, color: "#1e6be0", background: "none", border: "1px solid #1e6be0", borderRadius: 6, cursor: "pointer", fontWeight: 600, padding: "4px 10px" }}>Change</button>}
       <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={e => load(e.target.files[0])} />
     </div>
   );
@@ -148,11 +148,11 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
   const row3 = children => <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>{children}</div>;
 
   return (
-    <div style={{ background: "#f4f5f7", minHeight: "100vh", fontFamily: ff }}>
+    <div style={{ background: "#f4f5f7", minHeight: "100vh" }}>
       {/* sticky header */}
       <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #e8e8ec", padding: "11px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, fontFamily: ff }}>← Expenses</button>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13 }}>← Expenses</button>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn onClick={onClose} variant="outline">Cancel</Btn>
@@ -166,7 +166,7 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
           <div style={{ display: "flex", gap: 8 }}>
             {[["regular", "Regular Expense"], ["mileage", "Mileage"]].map(([v, l]) => (
               <button key={v} onClick={() => setExpType(v)}
-                style={{ flex: 1, padding: "9px 0", borderRadius: 7, border: `1.5px solid ${expType === v ? "#1e6be0" : "#e8e8ec"}`, background: expType === v ? "#f0f5ff" : "#fafafa", color: expType === v ? "#1e6be0" : "#6b7280", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: ff }}>
+                style={{ flex: 1, padding: "9px 0", borderRadius: 7, border: `1.5px solid ${expType === v ? "#1e6be0" : "#e8e8ec"}`, background: expType === v ? "#f0f5ff" : "#fafafa", color: expType === v ? "#1e6be0" : "#6b7280", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 {l}
               </button>
             ))}
@@ -178,7 +178,7 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
             {row2(<>
               <Field label="Date" required>
                 <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", border: "1px solid #e8e8ec", borderRadius: 5, fontSize: 13, fontFamily: ff, outline: "none", boxSizing: "border-box" }} />
+                  style={{ width: "100%", padding: "8px 10px", border: "1px solid #e8e8ec", borderRadius: 5, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
               </Field>
               <Field label="Category">
                 <Select value={category} onChange={setCategory}
@@ -234,7 +234,7 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
             {row2(<>
               <Field label="Date" required>
                 <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", border: "1px solid #e8e8ec", borderRadius: 5, fontSize: 13, fontFamily: ff, outline: "none", boxSizing: "border-box" }} />
+                  style={{ width: "100%", padding: "8px 10px", border: "1px solid #e8e8ec", borderRadius: 5, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
               </Field>
               <Field label="Vehicle">
                 <Select value={vehicle} onChange={setVehicle} options={["Car", "Van", "Motorcycle", "Bicycle", "Other"].map(v => ({ value: v, label: v }))} />
@@ -277,7 +277,7 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
                 const st = STATUS_STYLE[s] || { color: "#6b7280", bg: "#f3f4f6" };
                 return (
                   <button key={s} onClick={() => setStatus(s)}
-                    style={{ padding: "5px 14px", borderRadius: 20, border: `1.5px solid ${status === s ? st.color : "#e8e8ec"}`, background: status === s ? st.bg : "#fafafa", color: status === s ? st.color : "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: ff }}>
+                    style={{ padding: "5px 14px", borderRadius: 20, border: `1.5px solid ${status === s ? st.color : "#e8e8ec"}`, background: status === s ? st.bg : "#fafafa", color: status === s ? st.color : "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     {s}
                   </button>
                 );

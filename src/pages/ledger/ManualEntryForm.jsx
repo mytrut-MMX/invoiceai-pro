@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ff } from "../../constants";
 import { Icons } from "../../components/icons";
 import { Btn, Field, Input } from "../../components/atoms";
 import { supabase } from "../../lib/supabase";
@@ -71,7 +70,7 @@ export default function ManualEntryForm({ accounts, userId, onClose, onSaved }) 
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-      <div style={{ background:"#fff", borderRadius:12, width:"100%", maxWidth:660, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(0,0,0,0.18)", fontFamily:ff }}>
+      <div style={{ background:"#fff", borderRadius:12, width:"100%", maxWidth:660, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(0,0,0,0.18)" }}>
 
         {/* Header */}
         <div style={{ padding:"16px 24px", borderBottom:"1px solid #e8e8ec", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, background:"#fff", zIndex:2 }}>
@@ -84,7 +83,7 @@ export default function ManualEntryForm({ accounts, userId, onClose, onSaved }) 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <Field label="Date" required>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                style={{ width:"100%", padding:"8px 10px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:13, fontFamily:ff, outline:"none", boxSizing:"border-box" }} />
+                style={{ width:"100%", padding:"8px 10px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:13, outline:"none", boxSizing:"border-box" }} />
             </Field>
             <Field label="Reference">
               <Input value={reference} onChange={setReference} placeholder="e.g. REF-001" />
@@ -107,7 +106,7 @@ export default function ManualEntryForm({ accounts, userId, onClose, onSaved }) 
           {lines.map(line => (
             <div key={line.id} style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 24px", gap:6, marginBottom:6, alignItems:"center" }}>
               <select value={line.accountId} onChange={e => updateLine(line.id, "accountId", e.target.value)}
-                style={{ padding:"7px 8px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:12, fontFamily:ff, outline:"none", color:line.accountId?"#1a1a2e":"#9ca3af", width:"100%", boxSizing:"border-box" }}>
+                style={{ padding:"7px 8px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:12, outline:"none", color:line.accountId?"#1a1a2e":"#9ca3af", width:"100%", boxSizing:"border-box" }}>
                 <option value="">Select account…</option>
                 {ACCT_TYPES.map(type => {
                   const grp = accounts.filter(a => a.type === type);
@@ -120,10 +119,10 @@ export default function ManualEntryForm({ accounts, userId, onClose, onSaved }) 
               </select>
               <input type="number" min="0" value={line.debit} onChange={e => updateLine(line.id, "debit", e.target.value)}
                 placeholder="0.00"
-                style={{ padding:"7px 8px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:12, fontFamily:ff, outline:"none", textAlign:"right", width:"100%", boxSizing:"border-box" }} />
+                style={{ padding:"7px 8px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:12, outline:"none", textAlign:"right", width:"100%", boxSizing:"border-box" }} />
               <input type="number" min="0" value={line.credit} onChange={e => updateLine(line.id, "credit", e.target.value)}
                 placeholder="0.00"
-                style={{ padding:"7px 8px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:12, fontFamily:ff, outline:"none", textAlign:"right", width:"100%", boxSizing:"border-box" }} />
+                style={{ padding:"7px 8px", border:"1px solid #e8e8ec", borderRadius:5, fontSize:12, outline:"none", textAlign:"right", width:"100%", boxSizing:"border-box" }} />
               <button onClick={() => lines.length > 2 && setLines(p => p.filter(l => l.id !== line.id))}
                 style={{ background:"none", border:"none", cursor:lines.length>2?"pointer":"default", color:lines.length>2?"#dc2626":"#e5e7eb", display:"flex", padding:2 }}>
                 <Icons.X />
@@ -133,7 +132,7 @@ export default function ManualEntryForm({ accounts, userId, onClose, onSaved }) 
 
           {/* Add line */}
           <button onClick={() => setLines(p => [...p, blankLine()])}
-            style={{ width:"100%", marginTop:4, padding:"7px 0", border:"1px dashed #d1d5db", borderRadius:6, fontSize:12, color:"#6b7280", background:"none", cursor:"pointer", fontFamily:ff }}>
+            style={{ width:"100%", marginTop:4, padding:"7px 0", border:"1px dashed #d1d5db", borderRadius:6, fontSize:12, color:"#6b7280", background:"none", cursor:"pointer" }}>
             + Add Line
           </button>
 

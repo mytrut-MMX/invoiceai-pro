@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import DOMPurify from "dompurify";
-import { ff, PDF_TEMPLATES } from "../../constants";
+import { PDF_TEMPLATES } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { A4InvoiceDoc } from "./A4InvoiceDoc";
@@ -54,7 +54,7 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
             <div style={{ display: "flex", gap: 5 }}>
               {PDF_TEMPLATES.map(t => (
                 <button key={t.id} onClick={() => switchTemplate(t.id)}
-                  style={{ padding: "5px 8px", borderRadius: 6, border: `1.5px solid ${activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.2)"}`, background: "transparent", color: activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
+                  style={{ padding: "5px 8px", borderRadius: 6, border: `1.5px solid ${activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.2)"}`, background: "transparent", color: activeTemplate === t.id ? "#E86C4A" : "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                   {t.name}
                 </button>
               ))}
@@ -73,11 +73,11 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={onClose}
-              style={{ padding: "8px 13px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: ff }}>
+              style={{ padding: "8px 13px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Close
             </button>
             <button onClick={handlePrint}
-              style={{ padding: "8px 13px", borderRadius: 8, border: "none", background: "#E86C4A", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: ff, display: "flex", alignItems: "center", gap: 8 }}>
+              style={{ padding: "8px 13px", borderRadius: 8, border: "none", background: "#E86C4A", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
               <Icons.Receipt /> Print / Save PDF
             </button>
           </div>
