@@ -162,6 +162,8 @@ function AdminDashboard({ onLogout, token }) {
                   tasks={tasks}
                   selectedObjectiveId={selectedObjectiveId}
                   setSelectedObjectiveId={setSelectedObjectiveId}
+                  token={token}
+                  onRefresh={fetchData}
                 />
               </div>
             </Suspense>

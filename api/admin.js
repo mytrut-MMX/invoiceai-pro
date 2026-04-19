@@ -52,7 +52,7 @@ async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://invoicesaga.com';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -127,6 +127,62 @@ async function handler(req, res) {
       const agentTasks = tasksRes.ok ? await tasksRes.json() : [];
 
       return res.status(200).json({ profiles, contactSubmissions, agentObjectives, agentTasks });
+    } catch {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // ── DELETE: Remove objective(s) ─────────────────────────────────────────
+  if (req.method === 'DELETE') {
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (!verifyAdminToken(token, adminPassword)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://oecvlkllkpyfpgczqwii.supabase.co';
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return res.status(503).json({ error: 'Supabase not configured on server' });
+    }
+
+    const { objectiveId, all } = req.body || {};
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    let logsUrl, specsUrl, objectivesUrl;
+    if (all === true) {
+      logsUrl       = `${supabaseUrl}/rest/v1/agent_logs?id=not.is.null`;
+      specsUrl      = `${supabaseUrl}/rest/v1/agent_task_specs?id=not.is.null`;
+      objectivesUrl = `${supabaseUrl}/rest/v1/agent_objectives?id=not.is.null`;
+    } else if (typeof objectiveId === 'string' && UUID_RE.test(objectiveId)) {
+      logsUrl       = `${supabaseUrl}/rest/v1/agent_logs?objective_id=eq.${objectiveId}`;
+      specsUrl      = `${supabaseUrl}/rest/v1/agent_task_specs?objective_id=eq.${objectiveId}`;
+      objectivesUrl = `${supabaseUrl}/rest/v1/agent_objectives?id=eq.${objectiveId}`;
+    } else {
+      return res.status(400).json({ error: 'Provide objectiveId (uuid) or all:true' });
+    }
+
+    const headers = {
+      'apikey': serviceRoleKey,
+      'Authorization': `Bearer ${serviceRoleKey}`,
+      'Prefer': 'return=minimal',
+    };
+
+    try {
+      const logsRes = await fetch(logsUrl, { method: 'DELETE', headers });
+      if (!logsRes.ok && logsRes.status !== 404) {
+        return res.status(500).json({ error: 'Failed to delete logs' });
+      }
+      const specsRes = await fetch(specsUrl, { method: 'DELETE', headers });
+      if (!specsRes.ok && specsRes.status !== 404) {
+        return res.status(500).json({ error: 'Failed to delete specs' });
+      }
+      const objRes = await fetch(objectivesUrl, { method: 'DELETE', headers });
+      if (!objRes.ok) {
+        return res.status(500).json({ error: 'Failed to delete objective' });
+      }
+      return res.status(200).json({ ok: true });
     } catch {
       return res.status(500).json({ error: 'Internal server error' });
     }
