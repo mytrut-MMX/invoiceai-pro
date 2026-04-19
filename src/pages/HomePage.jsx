@@ -102,7 +102,7 @@ function KPICard({ icon: Icon, label, value, delta, onClick }) {
       onClick={clickable ? onClick : undefined}
       disabled={!clickable}
       className={[
-        "bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-sm)] text-left w-full",
+        "bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-[13px] shadow-[var(--shadow-sm)] text-left w-full",
         "transition-colors duration-150",
         clickable
           ? "cursor-pointer hover:border-[var(--border-default)] hover:bg-[var(--surface-sunken)]"
@@ -237,7 +237,7 @@ export default function HomePage() {
 
   if (!businessDataHydrated) {
     return (
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-[1280px] mx-auto px-[13px] sm:px-[21px] py-[21px]">
         <DashboardSkeleton />
       </div>
     );
@@ -249,9 +249,9 @@ export default function HomePage() {
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1280px] mx-auto">
+    <div className="p-[13px] sm:p-[21px] lg:p-[34px] max-w-[1280px] mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+      <div className="flex items-start justify-between gap-[13px] mb-[21px] flex-wrap">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
             {greeting()}, {firstName}
@@ -276,7 +276,7 @@ export default function HomePage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[13px] mb-[21px]">
         <KPICard icon={Icons.Bank}     label="Cash position" value={kpis.cashPosition.value} delta={kpis.cashPosition.delta} />
         <KPICard icon={Icons.Download} label="Money in"      value={kpis.moneyIn.value}      delta={kpis.moneyIn.delta} />
         <KPICard icon={Icons.Send}     label="Money out"     value={kpis.moneyOut.value}     delta={kpis.moneyOut.delta} />
@@ -285,12 +285,12 @@ export default function HomePage() {
       </div>
 
       {/* 2/3 + 1/3 grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div className="lg:col-span-2 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[13px] mb-[13px]">
+        <div className="lg:col-span-2 space-y-[13px]">
           <CashFlowWidget />
           <RecentInvoices invoices={invoices} orgSettings={orgSettings} />
         </div>
-        <div className="space-y-4">
+        <div className="space-y-[13px]">
           <NeedsAttention
             invoices={invoices}
             bills={bills || []}

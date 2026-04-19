@@ -81,4 +81,14 @@
 
   /* ─── Focus ──────────────────────────────────────────── */
   --focus-ring: 0 0 0 3px rgba(64, 141, 251, 0.35);
+
+  /* ─── Fibonacci Spacing Scale ────────────────────────── */
+  --space-3xs: 3px;
+  --space-2xs: 5px;
+  --space-xs:  8px;
+  --space-sm:  13px;
+  --space-md:  21px;
+  --space-lg:  34px;
+  --space-xl:  55px;
+  --space-2xl: 89px;
 }

@@ -41,7 +41,7 @@ export default function MonthEndChecklist() {
     <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-3 bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+        className="w-full flex items-center justify-between px-[21px] py-[13px] bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-[var(--text-secondary)] flex flex-shrink-0">
@@ -52,7 +52,7 @@ export default function MonthEndChecklist() {
             {completedCount}/{checks.length}
           </span>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-[13px] flex-shrink-0">
           <div className="w-14 h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden">
             <div
               className={[
@@ -74,7 +74,7 @@ export default function MonthEndChecklist() {
       </button>
 
       {open && (
-        <div className="border-t border-[var(--border-subtle)] px-5 py-2">
+        <div className="border-t border-[var(--border-subtle)] px-[21px] py-[8px]">
           {checks.map((check, idx) => (
             <div
               key={check.id}

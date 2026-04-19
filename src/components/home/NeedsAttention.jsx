@@ -167,7 +167,7 @@ export default function NeedsAttention({ invoices = [], bills = [], orgSettings,
 
   return (
     <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] overflow-hidden">
-      <div className="px-5 py-3 border-b border-[var(--border-subtle)]">
+      <div className="px-[21px] py-[13px] border-b border-[var(--border-subtle)]">
         <h2 className="text-sm font-semibold text-[var(--text-primary)]">Needs attention</h2>
         <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
           {items.length === 0 ? "Nothing urgent right now" : `${items.length} item${items.length !== 1 ? "s" : ""} to review`}
@@ -175,7 +175,7 @@ export default function NeedsAttention({ invoices = [], bills = [], orgSettings,
       </div>
 
       {items.length === 0 ? (
-        <div className="px-5 py-8 text-center">
+        <div className="px-[21px] py-[34px] text-center">
           <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--success-50)] text-[var(--success-600)] mb-2">
             <Icons.Check />
           </div>
@@ -191,7 +191,7 @@ export default function NeedsAttention({ invoices = [], bills = [], orgSettings,
               <li key={item.id}>
                 <button
                   onClick={() => navigate(item.route)}
-                  className="w-full flex items-center gap-3 px-5 py-3 bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
+                  className="w-full flex items-center gap-[13px] px-[21px] py-[13px] bg-transparent border-none cursor-pointer text-left hover:bg-[var(--surface-sunken)] transition-colors duration-150"
                 >
                   <span className={`w-8 h-8 rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0 ${s.iconWrap}`}>
                     <Icon />

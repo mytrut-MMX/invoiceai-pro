@@ -54,8 +54,8 @@ export default function CashFlowWidget() {
   const isEmpty = months.length === 0 || (summary.totalInflow === 0 && summary.totalOutflow === 0);
 
   return (
-    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5">
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-[21px]">
+      <div className="flex items-start justify-between mb-[13px]">
         <div>
           <h2 className="text-base font-semibold text-[var(--text-primary)]">Cash flow</h2>
           <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Next 12 months projection</p>
@@ -72,14 +72,14 @@ export default function CashFlowWidget() {
       ) : (
         <>
           {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-2.5 mb-5">
-            <div className="p-3 rounded-[var(--radius-md)] bg-[var(--success-50)]">
+          <div className="grid grid-cols-3 gap-[8px] mb-[21px]">
+            <div className="p-[13px] rounded-[var(--radius-md)] bg-[var(--success-50)]">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--success-700)]">Expected in</div>
               <div className="text-lg font-semibold text-[var(--success-700)] tabular-nums mt-1">
                 {fmtShort(currSym, summary.totalInflow)}
               </div>
             </div>
-            <div className="p-3 rounded-[var(--radius-md)] bg-[var(--danger-50)]">
+            <div className="p-[13px] rounded-[var(--radius-md)] bg-[var(--danger-50)]">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--danger-700)]">Expected out</div>
               <div className="text-lg font-semibold text-[var(--danger-700)] tabular-nums mt-1">
                 {fmtShort(currSym, summary.totalOutflow)}
@@ -87,7 +87,7 @@ export default function CashFlowWidget() {
             </div>
             <div
               className={[
-                "p-3 rounded-[var(--radius-md)]",
+                "p-[13px] rounded-[var(--radius-md)]",
                 summary.netCashFlow >= 0 ? "bg-[var(--brand-50)]" : "bg-[var(--warning-50)]",
               ].join(" ")}
             >
@@ -138,7 +138,7 @@ export default function CashFlowWidget() {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-[var(--border-subtle)]">
+          <div className="flex items-center justify-center gap-[13px] mt-[13px] pt-[13px] border-t border-[var(--border-subtle)]">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-sm bg-[var(--success-600)]" />
               <span className="text-xs text-[var(--text-secondary)]">Money in</span>
