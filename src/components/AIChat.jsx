@@ -38,7 +38,7 @@ export default function AIChat({ company, clients, products, invoices, expenses 
     expensesByCategory[cat] = (expensesByCategory[cat] || 0) + Number(e.total || e.amount || 0)
   })
   const totalExpenses = Object.values(expensesByCategory).reduce((s, v) => s + v, 0)
-  const unpaidExpenses = (expenses || []).filter(e => e.status === "Draft" || e.status === "Pending").length
+  const unpaidExpenses = (expenses || []).filter(e => ["Draft", "Submitted", "Approved"].includes(e.status)).length
 
   const unpaidBills = (bills || []).filter(b => !["Paid", "Void"].includes(b.status))
   const overdueBills = unpaidBills.filter(b => b.due_date && b.due_date < new Date().toISOString().slice(0, 10))
