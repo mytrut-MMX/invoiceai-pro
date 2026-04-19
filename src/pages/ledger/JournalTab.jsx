@@ -82,11 +82,11 @@ function EntryRow({ entry, accounts, currSym }) {
   );
 }
 
-export default function JournalTab({ entries, accounts, loading, onNewEntry, canCreateManual }) {
+export default function JournalTab({ entries, accounts, loading, onNewEntry, canCreateManual, accountFilter = "", onClearAccountFilter }) {
   const currSym = useCurrSym();
   const [search,       setSearch]       = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
-  const [period,       setPeriod]       = useState("this_month");
+  const [period,       setPeriod]       = useState(accountFilter ? "this_year" : "this_month");
   const [customStart,  setCustomStart]  = useState("");
   const [customEnd,    setCustomEnd]    = useState("");
 
@@ -95,15 +95,18 @@ export default function JournalTab({ entries, accounts, loading, onNewEntry, can
     [period, customStart, customEnd]
   );
 
+  const filteredAccount = accounts.find(a => a.id === accountFilter);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return entries.filter(e => {
       if (e.date < start || e.date > end) return false;
       if (sourceFilter !== "all" && e.source_type !== sourceFilter) return false;
       if (q && !e.description?.toLowerCase().includes(q) && !e.reference?.toLowerCase().includes(q)) return false;
+      if (accountFilter && !e.journal_lines?.some(l => l.account_id === accountFilter)) return false;
       return true;
     });
-  }, [entries, start, end, sourceFilter, search]);
+  }, [entries, start, end, sourceFilter, search, accountFilter]);
 
   return (
     <div>
@@ -129,6 +132,21 @@ export default function JournalTab({ entries, accounts, loading, onNewEntry, can
           + Manual Entry
         </Btn>
       </div>
+
+      {/* Account filter chip */}
+      {accountFilter && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+          <span style={{ fontSize:11, fontWeight:600, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.06em" }}>Filtered by:</span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"3px 10px", background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:20, fontSize:12, color:"#1d4ed8", fontWeight:600 }}>
+            {filteredAccount ? `${filteredAccount.code} – ${filteredAccount.name}` : accountFilter}
+            <button
+              onClick={onClearAccountFilter}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#60a5fa", fontWeight:700, fontSize:14, lineHeight:1, padding:0, display:"flex", alignItems:"center" }}
+              title="Clear account filter"
+            >×</button>
+          </span>
+        </div>
+      )}
 
       {/* Table */}
       {loading ? (
