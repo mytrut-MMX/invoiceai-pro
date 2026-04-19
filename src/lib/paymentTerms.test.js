@@ -1,5 +1,25 @@
-import { describe, it, expect } from 'vitest';
-import { computeDueDate } from './paymentTerms.js';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+
+vi.mock('./supabase.js', () => ({
+  supabase: {
+    auth: { getUser: vi.fn() },
+    from: vi.fn(),
+  },
+}));
+
+import { computeDueDate, createPaymentTerm } from './paymentTerms.js';
+import { supabase } from './supabase.js';
+
+describe('createPaymentTerm', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns Not authenticated error when user is null', async () => {
+    supabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+    const result = await createPaymentTerm({ name: 'Net 10', type: 'net', days: 10 });
+    expect(result.data).toBeNull();
+    expect(result.error.message).toBe('Not authenticated');
+  });
+});
 
 describe('computeDueDate', () => {
   it('net 30 from 2025-01-15 → 2025-02-14', () => {

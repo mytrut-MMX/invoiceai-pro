@@ -19,14 +19,22 @@ export async function getDefaultPaymentTerm() {
   return { data: systemDefault || null, error: null };
 }
 
-export async function createPaymentTerm({ name, type, days }) {
+export async function createPaymentTerm({ name, type, days, is_default = false }) {
   if (!supabase) return { data: null, error: { message: 'Supabase not configured' } };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: { message: 'Not authenticated' } };
+  const { error: insertError } = await supabase
+    .from('payment_terms')
+    .insert({ user_id: user.id, name, type, days: days ?? null, is_system: false, is_default });
+  if (insertError) {
+    return { data: null, error: { message: insertError.message || 'Insert failed — check RLS policy' } };
+  }
   const { data, error } = await supabase
     .from('payment_terms')
-    .insert({ user_id: user.id, name, type, days: days ?? null, is_system: false })
-    .select()
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .single();
   return { data, error };
 }
@@ -67,7 +75,8 @@ export async function setDefaultPaymentTerm(id) {
   const { error } = await supabase
     .from('payment_terms')
     .update({ is_default: true, updated_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
   return { error };
 }
 
