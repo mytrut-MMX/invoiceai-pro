@@ -4,7 +4,8 @@
  *
  * Layout replicates the Alliance Facade Services HMRC reference PDF:
  * Helvetica (Nimbus Sans analogue), line color #ccced2, margins 21mm sides.
- * Font sizes: 19.2 / 15.6 / 12.6 / 7.8 pt.
+ * Font sizes: 19.2 / 15.6 / 12.6 / 7.8 pt. Footer is pinned to absolute Y
+ * coordinates (pageHeight - 27 / -25 / -18) so body content cannot push it.
  */
 
 import jsPDF from "jspdf";
@@ -12,6 +13,7 @@ import jsPDF from "jspdf";
 /* ─── layout constants ───────────────────────────────────────────────────── */
 
 const PAGE_W = 210;
+const PAGE_H = 297;
 const ML = 21;
 const MR = 21;
 const MT = 16;
@@ -26,8 +28,10 @@ const F_NAME = 15.6;
 const F_HEADING = 12.6;
 const F_BODY = 7.8;
 
-/* Helvetica ascent factor — baseline sits ~0.75 × fontSize below glyph top */
+/* Helvetica ascent ≈ 0.72 × fontSize (baseline-to-top) */
 const ascent = (pt) => pt * 0.72 * PT;
+/* Full line height in mm */
+const lineH = (pt) => pt * PT;
 
 /* ─── formatting helpers ─────────────────────────────────────────────────── */
 
@@ -95,8 +99,9 @@ function setLinePen(doc) {
 }
 
 /**
- * Section heading: bold 12.6pt label, then a full-width rule 4pt below baseline.
- * Returns the Y after the rule + 12pt margin-bottom.
+ * Section heading: bold 12.6pt label with full-width rule 4pt below baseline.
+ * Returns the rule Y — caller is expected to add the explicit mm gap
+ * (usually 13mm) before drawing content below.
  */
 function drawSectionHeading(doc, text, y) {
   doc.setFont("helvetica", "bold");
@@ -108,17 +113,16 @@ function drawSectionHeading(doc, text, y) {
   const ruleY = baseline + 4 * PT;
   setLinePen(doc);
   doc.line(ML, ruleY, CR, ruleY);
-  return ruleY + 12 * PT;
+  return ruleY;
 }
 
 /**
- * KV row: label (left), value (right), bottom rule. Matches the 7pt/8pt padding
- * used by the KVRow React component.
+ * KV row (fixed 10mm height, matching Alliance row-to-row rhythm).
+ * Label left, value right, bottom rule at y + 10.
  */
 function drawKVRow(doc, label, value, xL, xR, y, { bold = false, mono = false } = {}) {
-  const topPad = 7 * PT;
-  const bottomPad = 8 * PT;
-  const baseline = y + topPad + ascent(F_BODY);
+  const rowH = 10;
+  const baseline = y + 6.5;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(F_BODY);
@@ -129,7 +133,7 @@ function drawKVRow(doc, label, value, xL, xR, y, { bold = false, mono = false } 
   doc.setTextColor(17, 17, 17);
   doc.text(String(value), xR, baseline, { align: "right" });
 
-  const ruleY = baseline + bottomPad;
+  const ruleY = y + rowH;
   setLinePen(doc);
   doc.line(xL, ruleY, xR, ruleY);
   return ruleY;
@@ -137,6 +141,8 @@ function drawKVRow(doc, label, value, xL, xR, y, { bold = false, mono = false } 
 
 /**
  * 9-column source invoices table.
+ * Header row (7mm), then a 2mm extra gap, then data rows (7mm each) —
+ * giving ~9mm from header baseline to first data row baseline.
  */
 function drawInvoicesTable(doc, rows, y) {
   const widthW = CR - ML;
@@ -160,8 +166,10 @@ function drawInvoicesTable(doc, rows, y) {
   }
   const rightEdges = colX.map((x, i) => x + cols[i].w * widthW);
 
-  const pad = 3 * PT;
-  const vpad = 5 * PT;
+  const hPad = 1;
+  const headerH = 7;
+  const rowH = 7;
+  const headerToRowGap = 2;
 
   setLinePen(doc);
   doc.line(ML, y, CR, y);
@@ -169,16 +177,19 @@ function drawInvoicesTable(doc, rows, y) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(F_BODY);
   doc.setTextColor(17, 17, 17);
-  const headBase = y + vpad + ascent(F_BODY);
+  const headerBase = y + 4.8;
   cols.forEach((c, i) => {
-    const tx = c.align === "right" ? rightEdges[i] - pad : colX[i] + pad;
-    doc.text(c.label, tx, headBase, c.align === "right" ? { align: "right" } : undefined);
+    const tx = c.align === "right" ? rightEdges[i] - hPad : colX[i] + hPad;
+    doc.text(c.label, tx, headerBase, c.align === "right" ? { align: "right" } : undefined);
   });
-  y = headBase + vpad;
+  y += headerH;
   doc.line(ML, y, CR, y);
+
+  y += headerToRowGap;
 
   doc.setFont("helvetica", "normal");
   for (const r of rows) {
+    const rowBase = y + 4.8;
     const values = [
       r.reference || "\u2014",
       r.invoice_date ? fmtMonthYear(r.invoice_date) : "\u2014",
@@ -190,15 +201,47 @@ function drawInvoicesTable(doc, rows, y) {
       fmt(r.cis),
       fmt(r.paid),
     ];
-    const rowBase = y + vpad + ascent(F_BODY);
     cols.forEach((c, i) => {
-      const tx = c.align === "right" ? rightEdges[i] - pad : colX[i] + pad;
+      const tx = c.align === "right" ? rightEdges[i] - hPad : colX[i] + hPad;
       doc.text(String(values[i]), tx, rowBase, c.align === "right" ? { align: "right" } : undefined);
     });
-    y = rowBase + vpad;
+    y += rowH;
     doc.line(ML, y, CR, y);
   }
   return y;
+}
+
+/**
+ * Footer pinned to absolute Y (not affected by body content length):
+ *   - rule at pageH - 27  (y = 270)
+ *   - disclaimer baseline at pageH - 25  (y = 272)
+ *   - page strip baseline at pageH - 18  (y = 279)
+ */
+function drawPinnedFooter(doc, contractorName) {
+  setLinePen(doc);
+  doc.line(ML, PAGE_H - 27, CR, PAGE_H - 27);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(F_BODY);
+  doc.setTextColor(119, 119, 119);
+  const footerText =
+    "This statement is issued under the HMRC Construction Industry Scheme " +
+    "(CIS340), Appendix E. Contractors must provide it to subcontractors " +
+    "within 14 days of the end of each tax month. Keep this record for your " +
+    `tax return. Generated by InvoiceSaga on ${fmtShort(new Date())}.`;
+  const wrapped = doc.splitTextToSize(footerText, CR - ML);
+  const discBase = PAGE_H - 25;
+  wrapped.forEach((line, i) => {
+    doc.text(line, ML, discBase + i * F_BODY * 1.4 * PT);
+  });
+
+  doc.setTextColor(153, 153, 153);
+  const stripY = PAGE_H - 18;
+  doc.text(
+    `CIS Payment Deduction Statement | ${contractorName || "\u2014"}`,
+    ML, stripY,
+  );
+  doc.text("1 of 1", CR, stripY, { align: "right" });
 }
 
 /* ─── main builder ───────────────────────────────────────────────────────── */
@@ -229,81 +272,78 @@ function buildDoc({ contractor = {}, subcontractor = {}, period = {}, amounts = 
 
   let y = MT;
 
-  /* ── TITLE BLOCK ── */
+  /* ── TITLE ── */
   doc.setFont("helvetica", "bold");
   doc.setFontSize(F_TITLE);
   doc.setTextColor(17, 17, 17);
+  doc.text("Construction Industry Scheme", ML, y + ascent(F_TITLE));
+  y += lineH(F_TITLE) + 2;                            // title → subtitle: 2mm
 
-  y += ascent(F_TITLE);
-  doc.text("Construction Industry Scheme", ML, y);
+  /* ── SUBTITLE ── */
+  doc.text("Payment and Deduction Statement", ML, y + ascent(F_TITLE));
+  y += lineH(F_TITLE) + 11;                           // subtitle → name: 11mm
 
-  y += F_TITLE * 1.1 * PT - ascent(F_TITLE);
-  y += 2 * PT + ascent(F_TITLE);
-  doc.text("Payment and Deduction Statement", ML, y);
-  y += F_TITLE * 1.1 * PT - ascent(F_TITLE);
-
-  /* ── CONTRACTOR NAME + PERIOD ── */
-  y += 12 * PT;
+  /* ── CONTRACTOR NAME ── */
   doc.setFontSize(F_NAME);
-  y += ascent(F_NAME);
-  doc.text(contractor.name || "\u2014", ML, y);
-  y += F_NAME * 1.1 * PT - ascent(F_NAME);
+  doc.text(contractor.name || "\u2014", ML, y + ascent(F_NAME));
+  y += lineH(F_NAME) + 2;                             // name → period: 2mm
 
-  y += 1 * PT + ascent(F_NAME);
+  /* ── PERIOD ── */
   doc.text(
     `For the period ${periodRange(period.period_start, period.period_end)}`,
-    ML, y,
+    ML, y + ascent(F_NAME),
   );
-  y += F_NAME * 1.1 * PT - ascent(F_NAME);
+  y += lineH(F_NAME) + 27;                            // period → Contractor details: 27mm
 
   /* ── CONTRACTOR DETAILS ── */
-  y += 27;
-  y = drawSectionHeading(doc, "Contractor details", y);
+  y = drawSectionHeading(doc, "Contractor details", y) + 13;   // heading → content: 13mm
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(F_BODY);
   doc.setTextColor(17, 17, 17);
-  y += ascent(F_BODY);
-  doc.text(contractor.name || "\u2014", ML, y);
-  y += F_BODY * 1.3 * PT - ascent(F_BODY);
+  doc.text(contractor.name || "\u2014", ML, y + ascent(F_BODY));
+  y += lineH(F_BODY);
 
   if (contractor.address) {
-    y += 3 * PT + ascent(F_BODY);
-    doc.text(contractor.address, ML, y);
-    y += F_BODY * 1.3 * PT - ascent(F_BODY);
+    y += 1;
+    doc.text(contractor.address, ML, y + ascent(F_BODY));
+    y += lineH(F_BODY);
   }
 
-  y += 10 * PT;
+  y += 4;                                             // small gap before KV rows
+
   y = drawKVRow(doc, "Payment and deduction made in tax month ended",
                 fmtShort(period.period_end), ML, CR, y);
   y = drawKVRow(doc, "Employer\u2019s PAYE reference",
-                contractor.employer_paye_ref || "\u2014", ML, CR, y, { mono: true });
+                contractor.employer_paye_ref || "\u2014",
+                ML, CR, y, { mono: true });
   if (contractor.accounts_office_ref) {
     y = drawKVRow(doc, "Accounts Office reference",
-                  contractor.accounts_office_ref, ML, CR, y, { mono: true });
+                  contractor.accounts_office_ref,
+                  ML, CR, y, { mono: true });
   }
 
-  /* ── SUBCONTRACTOR DETAILS + AMOUNTS ── */
-  y += 20 * PT;
-  y = drawSectionHeading(doc, "Subcontractor details", y);
+  /* ── SUBCONTRACTOR DETAILS ── */
+  y += 21;                                            // last row → Subcontractor heading: 21mm
+  y = drawSectionHeading(doc, "Subcontractor details", y) + 13;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(F_BODY);
   doc.setTextColor(17, 17, 17);
-  y += ascent(F_BODY);
-  doc.text(subcontractor.name || "\u2014", ML, y);
-  y += F_BODY * 1.3 * PT - ascent(F_BODY);
-  y += 8 * PT;
+  doc.text(subcontractor.name || "\u2014", ML, y + ascent(F_BODY));
+  y += lineH(F_BODY);
 
   if (subcontractor.address) {
+    y += 1;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(34, 34, 34);
-    y += ascent(F_BODY);
-    doc.text(subcontractor.address, ML, y);
-    y += F_BODY * 1.3 * PT - ascent(F_BODY);
-    y += 8 * PT;
+    doc.text(subcontractor.address, ML, y + ascent(F_BODY));
+    y += lineH(F_BODY);
   }
 
+  y += 12 - lineH(F_BODY);                            // name → first data row: 12mm
+
+  /* ── TWO-COLUMN IDENTIFIERS / AMOUNTS ── */
   const contentW = CR - ML;
   const colW = 0.487 * contentW;
   const leftXR = ML + colW;
@@ -331,36 +371,12 @@ function buildDoc({ contractor = {}, subcontractor = {}, period = {}, amounts = 
   y = Math.max(yL, yR);
 
   /* ── SOURCE INVOICES ── */
-  y += 20 * PT;
-  y = drawSectionHeading(doc, "Source invoices", y);
-  y = drawInvoicesTable(doc, invRows, y);
+  y += 16;                                            // last amount row → heading: 16mm
+  y = drawSectionHeading(doc, "Source invoices", y) + 14; // heading → table header: 14mm
+  drawInvoicesTable(doc, invRows, y);
 
-  /* ── FOOTER ── */
-  y += 28 * PT;
-  setLinePen(doc);
-  doc.line(ML, y, CR, y);
-  y += 6 * PT;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(F_BODY);
-  doc.setTextColor(119, 119, 119);
-  const footerText =
-    "This statement is issued under the HMRC Construction Industry Scheme " +
-    "(CIS340), Appendix E. Contractors must provide it to subcontractors " +
-    "within 14 days of the end of each tax month. Keep this record for your " +
-    `tax return. Generated by InvoiceSaga on ${fmtShort(new Date())}.`;
-  const wrapped = doc.splitTextToSize(footerText, CR - ML);
-  y += ascent(F_BODY);
-  wrapped.forEach((line, i) => {
-    if (i > 0) y += F_BODY * 1.4 * PT;
-    doc.text(line, ML, y);
-  });
-
-  /* ── PAGE STRIP ── */
-  y += 20 * PT;
-  doc.setTextColor(153, 153, 153);
-  doc.text(`CIS Payment Deduction Statement | ${contractor.name || "\u2014"}`, ML, y);
-  doc.text("1 of 1", CR, y, { align: "right" });
+  /* ── PINNED FOOTER (absolute Y) ── */
+  drawPinnedFooter(doc, contractor.name);
 
   return doc;
 }
