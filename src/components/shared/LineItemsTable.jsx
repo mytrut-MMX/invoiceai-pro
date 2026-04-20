@@ -191,7 +191,7 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
           className="grid gap-2 mb-2 items-center"
           style={{ gridTemplateColumns: cols }}
         >
-          <div className="border border-[var(--border-default)] rounded-[var(--radius-md)] focus-within:border-[var(--brand-600)] focus-within:shadow-[var(--focus-ring)] transition-colors duration-150 overflow-hidden">
+          <div className="border border-[var(--border-default)] rounded-[var(--radius-md)] focus-within:border-[var(--brand-600)] focus-within:shadow-[var(--focus-ring)] transition-colors duration-150">
             <ItemAutocomplete
               value={it.name || ""}
               catalogItems={activeItems}
