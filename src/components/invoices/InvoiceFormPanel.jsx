@@ -25,7 +25,7 @@ const selectInputCls =
 
 function SectionTitle({ children }) {
   return (
-    <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+    <div className="text-[13px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
       {children}
     </div>
   );
@@ -441,7 +441,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
 
             <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-[var(--border-subtle)] flex-wrap">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[var(--text-secondary)]">Status</span>
+                <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">Status</span>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value)}
@@ -451,7 +451,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                 </select>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-[var(--text-secondary)]">Recurring</span>
+                <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">Recurring</span>
                 <SlideToggle value={recurringEnabled} onChange={setRecurringEnabled} />
                 {recurringEnabled && (
                   <>
@@ -517,7 +517,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                           key={t}
                           onClick={() => setDiscType(t)}
                           className={[
-                            "px-2 py-0.5 text-[11px] font-semibold cursor-pointer border-none transition-colors duration-150",
+                            "px-2.5 py-1 min-w-[28px] text-xs font-semibold cursor-pointer border-none transition-colors duration-150",
                             active
                               ? "bg-[var(--text-primary)] text-white"
                               : "bg-transparent text-[var(--text-tertiary)] hover:bg-white",
@@ -533,7 +533,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                     onChange={e => setDiscVal(e.target.value)}
                     type="number"
                     min="0"
-                    className="w-16 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+                    className="w-20 h-8 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
                   />
                 </div>
               </div>
@@ -548,7 +548,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                     min="0"
                     placeholder="0.00"
                     inputMode="decimal"
-                    className="w-24 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+                    className="w-24 h-8 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
                   />
                 </div>
               )}

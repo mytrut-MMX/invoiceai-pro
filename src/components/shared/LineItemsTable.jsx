@@ -176,7 +176,7 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
         {headers.map(([h, a]) => (
           <div
             key={h || `spacer-${a}`}
-            className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]"
+            className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]"
             style={{ textAlign: a || "left" }}
           >
             {h}

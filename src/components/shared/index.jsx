@@ -44,7 +44,7 @@ export function TotalsBlock({
                   key={t}
                   onClick={() => setDiscountType(t)}
                   className={[
-                    "px-2 py-0.5 text-[11px] font-semibold cursor-pointer border-none transition-colors duration-150",
+                    "px-2.5 py-1 min-w-[28px] text-xs font-semibold cursor-pointer border-none transition-colors duration-150",
                     active
                       ? "bg-[var(--text-primary)] text-white"
                       : "bg-transparent text-[var(--text-tertiary)] hover:bg-white",
@@ -60,7 +60,7 @@ export function TotalsBlock({
             onChange={e => setDiscountValue(e.target.value)}
             type="number"
             min="0"
-            className="w-16 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+            className="w-20 h-8 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
           />
         </div>
       </div>
@@ -79,7 +79,7 @@ export function TotalsBlock({
             min="0"
             placeholder="0.00"
             inputMode="decimal"
-            className="w-24 h-7 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
+            className="w-24 h-8 px-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-right tabular-nums bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
           />
         </div>
       )}
