@@ -76,11 +76,12 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   };
 
   const toData = {
-    companyName: customer?.companyName || customer?.name || "",
+    companyName: customer?.company || customer?.companyName || customer?.name || "",
     contactName: customer?.name || "",
     // Support both street1 (CustomerModal format) and street (legacy/demo format)
     address: customer?.billingAddress?.street1 || customer?.billingAddress?.street || "",
     city: customer?.billingAddress?.city || "",
+    state: customer?.billingAddress?.state || "",
     // Support both zip (CustomerModal) and postcode (legacy/demo)
     postcode: customer?.billingAddress?.zip || customer?.billingAddress?.postcode || "",
     country: customer?.billingAddress?.country || "",
@@ -130,15 +131,31 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   const BillToBlock = ({ dark = false }) => {
     const skipContact = toData.contactName && toData.companyName &&
       toData.contactName.trim().toLowerCase() === toData.companyName.trim().toLowerCase();
+    const ADDRESS_KEYS = new Set(["address", "city", "state", "postcode", "country"]);
+    const cityLine = [toData.city, toData.state, toData.postcode].filter(Boolean).join(", ");
+    const addressLines = [toData.address, cityLine, toData.country].filter(Boolean);
+    let addressRendered = false;
     return (
     <div>
       <div style={{ fontSize: "7pt", fontWeight: 700, color: dark ? "rgba(255,255,255,0.5)" : "#AAA", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3mm" }}>Bill To</div>
-      {customer ? toEntries.filter(([fieldKey]) => !(fieldKey === "contactName" && skipContact)).map(([fieldKey]) => (
-        <div key={fieldKey} style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 4 }}>
-          <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong>{" "}
-          {fieldKey === "phone" ? formatPhoneNumber(toData[fieldKey] || "") : (toData[fieldKey] || "—")}
-        </div>
-      )) : <div style={{ fontSize: "9pt", color: "#CCC", fontStyle: "italic" }}>No customer selected</div>}
+      {customer ? toEntries.filter(([fieldKey]) => !(fieldKey === "contactName" && skipContact)).map(([fieldKey]) => {
+        if (ADDRESS_KEYS.has(fieldKey)) {
+          if (addressRendered) return null;
+          addressRendered = true;
+          if (addressLines.length === 0) return null;
+          return (
+            <div key="__address__" style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 6, lineHeight: 1.5 }}>
+              {addressLines.map((line, i) => <div key={i}>{line}</div>)}
+            </div>
+          );
+        }
+        return (
+          <div key={fieldKey} style={{ fontSize: "8.5pt", color: dark ? "rgba(255,255,255,0.7)" : "#555", marginTop: 4 }}>
+            <strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong>{" "}
+            {fieldKey === "phone" ? formatPhoneNumber(toData[fieldKey] || "") : (toData[fieldKey] || "—")}
+          </div>
+        );
+      }) : <div style={{ fontSize: "9pt", color: "#CCC", fontStyle: "italic" }}>No customer selected</div>}
     </div>
     );
   };

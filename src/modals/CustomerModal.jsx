@@ -38,12 +38,12 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [billState, setBillState] = useState(existing?.billingAddress?.state || "");
   const [billZip, setBillZip] = useState(existing?.billingAddress?.zip || "");
   const [billCountry, setBillCountry] = useState(existing?.billingAddress?.country || "");
-  const [shipStreet1, setShipStreet1] = useState("");
-  const [shipStreet2, setShipStreet2] = useState("");
-  const [shipCity, setShipCity] = useState("");
-  const [shipState, setShipState] = useState("");
-  const [shipZip, setShipZip] = useState("");
-  const [shipCountry, setShipCountry] = useState("");
+  const [shipStreet1, setShipStreet1] = useState(existing?.shippingAddress?.street1 || "");
+  const [shipStreet2, setShipStreet2] = useState(existing?.shippingAddress?.street2 || "");
+  const [shipCity, setShipCity] = useState(existing?.shippingAddress?.city || "");
+  const [shipState, setShipState] = useState(existing?.shippingAddress?.state || "");
+  const [shipZip, setShipZip] = useState(existing?.shippingAddress?.zip || "");
+  const [shipCountry, setShipCountry] = useState(existing?.shippingAddress?.country || "");
   const [contactPersons, setContactPersons] = useState(
     existing?.contactPersons || [{ salutation: "", firstName: "", lastName: "", email: "", phone: "", mobile: "" }],
   );
