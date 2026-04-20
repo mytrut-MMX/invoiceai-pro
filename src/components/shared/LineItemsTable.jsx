@@ -68,7 +68,7 @@ function ItemAutocomplete({ value, catalogItems, placeholder, currSymbol, onSele
         onFocus={() => { setQuery(value || ""); setOpen(true); }}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
-        className="w-full h-9 px-3 border rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] box-border transition-colors duration-150 outline-none focus:shadow-[var(--focus-ring)] border-[var(--border-default)] focus:border-[var(--brand-600)] bg-white text-left"
+        className="border-none outline-none bg-transparent w-full px-3 pt-2 pb-0.5 text-sm font-medium text-[var(--text-primary)]"
       />
       {open && (
         <div className="absolute top-[calc(100%+4px)] left-0 bg-white border border-[var(--border-default)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] z-[400] min-w-[320px] w-full">
@@ -191,11 +191,11 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
           className="grid gap-2 mb-2 items-center"
           style={{ gridTemplateColumns: cols }}
         >
-          <div className="grid gap-1.5">
+          <div className="border border-[var(--border-default)] rounded-[var(--radius-md)] focus-within:border-[var(--brand-600)] focus-within:shadow-[var(--focus-ring)] transition-colors duration-150 overflow-hidden">
             <ItemAutocomplete
               value={it.name || ""}
               catalogItems={activeItems}
-              placeholder={`Item ${idx + 1} name…`}
+              placeholder="Item name…"
               currSymbol={currSymbol}
               onManualChange={v => upd(it.id, "name", v)}
               onAddNewItem={onAddNewItem}
@@ -208,7 +208,13 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
                 cisApplicable: isCISInvoice ? (ci.cisApplicable !== false) : !!ci.cisApplicable,
               })}
             />
-            <Input value={it.description || ""} onChange={v => upd(it.id, "description", v)} placeholder="Description (optional)" />
+            <input
+              type="text"
+              value={it.description || ""}
+              onChange={e => upd(it.id, "description", e.target.value)}
+              placeholder="Description (optional)"
+              className="border-none outline-none bg-transparent w-full px-3 pt-0 pb-2 text-xs text-[var(--text-secondary)]"
+            />
           </div>
           <Input value={it.quantity} onChange={v => upd(it.id, "quantity", v)} type="number" align="center" style={{ MozAppearance: "textfield" }} />
           <Input value={it.rate} onChange={v => upd(it.id, "rate", v)} type="number" align="right" style={{ MozAppearance: "textfield" }} />
