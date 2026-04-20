@@ -1,14 +1,134 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { UK_VAT_RATES } from "../../constants";
 import { Icons } from "../icons";
-import { Btn, Input } from "../atoms";
+import { Input } from "../atoms";
 import { fmt, newLine } from "../../utils/helpers";
 
-export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat, onAddNewItem, isCISInvoice }) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState("");
-  const [pickerQty, setPickerQty] = useState({});
+function ItemAutocomplete({ value, catalogItems, placeholder, currSymbol, onSelect, onManualChange, onAddNewItem }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [highlight, setHighlight] = useState(0);
+  const wrapRef = useRef(null);
 
+  const q = (query || "").toLowerCase();
+  const filtered = useMemo(() => {
+    if (!q) return catalogItems;
+    return catalogItems.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      (i.description || "").toLowerCase().includes(q)
+    );
+  }, [catalogItems, q]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = e => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (highlight >= filtered.length) setHighlight(0);
+  }, [filtered.length, highlight]);
+
+  const handleSelect = ci => {
+    onSelect(ci);
+    setOpen(false);
+    setQuery("");
+  };
+
+  const onKeyDown = e => {
+    if (!open) {
+      if (e.key === "ArrowDown") { setOpen(true); e.preventDefault(); }
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlight(h => Math.min(h + 1, Math.max(filtered.length - 1, 0)));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight(h => Math.max(h - 1, 0));
+    } else if (e.key === "Enter") {
+      if (filtered[highlight]) {
+        e.preventDefault();
+        handleSelect(filtered[highlight]);
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <input
+        type="text"
+        value={value ?? ""}
+        onChange={e => { onManualChange(e.target.value); setQuery(e.target.value); if (!open) setOpen(true); }}
+        onFocus={() => { setQuery(value || ""); setOpen(true); }}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+        className="w-full h-9 px-3 border rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] box-border transition-colors duration-150 outline-none focus:shadow-[var(--focus-ring)] border-[var(--border-default)] focus:border-[var(--brand-600)] bg-white text-left"
+      />
+      {open && (
+        <div className="absolute top-[calc(100%+4px)] left-0 bg-white border border-[var(--border-default)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] z-[400] min-w-[320px] w-full">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border-subtle)]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+              {filtered.length} {filtered.length === 1 ? "item" : "items"}
+            </span>
+            {onAddNewItem && (
+              <button
+                type="button"
+                onMouseDown={e => { e.preventDefault(); setOpen(false); onAddNewItem(); }}
+                className="bg-transparent border-none cursor-pointer text-xs font-semibold text-[var(--brand-600)] hover:text-[var(--brand-700)] p-0"
+              >
+                + New item
+              </button>
+            )}
+          </div>
+          <div className="max-h-[280px] overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-3">
+                <div className="text-sm text-[var(--text-tertiary)] mb-2">No matching items</div>
+                <button
+                  type="button"
+                  onMouseDown={e => { e.preventDefault(); setOpen(false); }}
+                  className="inline-flex items-center h-7 px-2.5 bg-transparent border border-[var(--border-default)] rounded-[var(--radius-md)] cursor-pointer text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]"
+                >
+                  Use "{value || query}" as custom item
+                </button>
+              </div>
+            ) : (
+              filtered.map((ci, idx) => (
+                <div
+                  key={ci.id}
+                  onMouseDown={e => { e.preventDefault(); handleSelect(ci); }}
+                  onMouseEnter={() => setHighlight(idx)}
+                  className={[
+                    "flex items-center justify-between gap-3 px-3 py-2 cursor-pointer transition-colors duration-150",
+                    idx === highlight ? "bg-[var(--brand-50)]" : "hover:bg-[var(--surface-sunken)]",
+                  ].join(" ")}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-[var(--text-primary)] truncate">{ci.name}</div>
+                    {ci.description && (
+                      <div className="text-xs text-[var(--text-tertiary)] truncate">{ci.description}</div>
+                    )}
+                  </div>
+                  <div className="text-sm font-semibold text-[var(--text-primary)] tabular-nums flex-shrink-0">
+                    {fmt(currSymbol, ci.rate)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVat, onAddNewItem, isCISInvoice }) {
   const upd = (id, f, v) => onChange(items.map(it => {
     if (it.id !== id) return it;
     const patch = typeof f === "object" ? f : { [f]: v };
@@ -21,11 +141,6 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
   const del = id => items.length > 1 && onChange(items.filter(i => i.id !== id));
 
   const activeItems = (catalogItems || []).filter(i => i.active);
-  const filteredCat = activeItems.filter(i =>
-    !pickerSearch
-    || i.name.toLowerCase().includes(pickerSearch.toLowerCase())
-    || (i.description || "").toLowerCase().includes(pickerSearch.toLowerCase())
-  );
 
   // Column template: Description | Qty | Rate | (VAT if applicable) | Amount | (CIS toggle) | Delete
   const cols = isVat
@@ -53,96 +168,6 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
 
   return (
     <div>
-      {/* Catalogue picker */}
-      {activeItems.length > 0 && (
-        <div className="relative mb-3">
-          <div className="px-3 py-2.5 bg-[var(--surface-sunken)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] flex items-center justify-between gap-3">
-            <span className="text-xs text-[var(--text-tertiary)]">Quick-add from items catalogue</span>
-            <Btn onClick={() => { setPickerOpen(o => !o); setPickerSearch(""); }} variant="outline" size="sm" icon={<Icons.Items />}>
-              Browse items
-            </Btn>
-          </div>
-          {pickerOpen && (
-            <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-[var(--border-default)] rounded-[var(--radius-lg)] p-3 shadow-[var(--shadow-popover)] z-[400]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-[var(--text-primary)]">Select item to add</span>
-                <button
-                  onClick={() => setPickerOpen(false)}
-                  className="bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] flex p-0.5"
-                >
-                  <Icons.X />
-                </button>
-              </div>
-              <input
-                value={pickerSearch}
-                onChange={e => setPickerSearch(e.target.value)}
-                placeholder="Search items…"
-                autoFocus
-                className="w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] mb-2 box-border"
-              />
-              <div className="max-h-[240px] overflow-y-auto">
-                {filteredCat.length === 0 && (
-                  <div className="py-3.5 text-center text-[var(--text-tertiary)] text-sm">No matching items</div>
-                )}
-                {filteredCat.map(ci => {
-                  const qty = Number(pickerQty[ci.id] || 1);
-                  return (
-                    <div
-                      key={ci.id}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-[var(--radius-md)] hover:bg-[var(--surface-sunken)] transition-colors duration-150"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-[var(--text-primary)] truncate">{ci.name}</div>
-                        {ci.description && (
-                          <div className="text-xs text-[var(--text-tertiary)] truncate">{ci.description}</div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                        <input
-                          type="number"
-                          min="1"
-                          value={pickerQty[ci.id] || 1}
-                          onChange={e => setPickerQty(prev => ({ ...prev, [ci.id]: e.target.value }))}
-                          className="w-16 h-8 px-2 border border-[var(--border-default)] rounded-[var(--radius-md)] text-xs bg-white outline-none focus:border-[var(--brand-600)] [-moz-appearance:textfield]"
-                        />
-                        <button
-                          onClick={() => {
-                            const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
-                            const newItem = {
-                              id: crypto.randomUUID(),
-                              name: ci.name,
-                              description: ci.description || "",
-                              quantity: safeQty,
-                              rate: ci.rate,
-                              tax_rate: isVat ? (ci.taxRate || 20) : 0,
-                              amount: ci.rate * safeQty,
-                              cisApplicable: isCISInvoice ? (ci.cisApplicable !== false) : !!ci.cisApplicable,
-                              sort_order: items.length,
-                            };
-                            onChange([...items, newItem]);
-                            setPickerOpen(false);
-                            setPickerSearch("");
-                          }}
-                          className="h-8 px-3 bg-[var(--text-primary)] hover:bg-[var(--surface-dark-2)] text-white rounded-[var(--radius-md)] border-none cursor-pointer text-xs font-semibold transition-colors duration-150"
-                        >
-                          Add
-                        </button>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-sm font-semibold text-[var(--text-primary)] tabular-nums">{fmt(currSymbol, ci.rate)}</div>
-                          <div className="text-[11px] text-[var(--text-tertiary)]">
-                            {ci.unit}{isVat ? ` · ${ci.taxRate}% VAT` : ""}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Table headers */}
       <div
         className="grid gap-2 pb-2 border-b border-[var(--border-subtle)] mb-2"
@@ -167,7 +192,22 @@ export function LineItemsTable({ items, onChange, currSymbol, catalogItems, isVa
           style={{ gridTemplateColumns: cols }}
         >
           <div className="grid gap-1.5">
-            <Input value={it.name || ""} onChange={v => upd(it.id, "name", v)} placeholder={`Item ${idx + 1} name…`} />
+            <ItemAutocomplete
+              value={it.name || ""}
+              catalogItems={activeItems}
+              placeholder={`Item ${idx + 1} name…`}
+              currSymbol={currSymbol}
+              onManualChange={v => upd(it.id, "name", v)}
+              onAddNewItem={onAddNewItem}
+              onSelect={ci => upd(it.id, {
+                name: ci.name,
+                description: ci.description || "",
+                rate: ci.rate,
+                tax_rate: isVat ? (ci.taxRate || 20) : 0,
+                amount: ci.rate * Number(it.quantity || 1),
+                cisApplicable: isCISInvoice ? (ci.cisApplicable !== false) : !!ci.cisApplicable,
+              })}
+            />
             <Input value={it.description || ""} onChange={v => upd(it.id, "description", v)} placeholder="Description (optional)" />
           </div>
           <Input value={it.quantity} onChange={v => upd(it.id, "quantity", v)} type="number" align="center" style={{ MozAppearance: "textfield" }} />
