@@ -9,31 +9,40 @@
 const mono = "'Courier New', monospace";
 
 const C = {
-  heading: "#1a1a2e",
-  body:    "#374151",
-  muted:   "#6b7280",
-  faint:   "#9ca3af",
-  border:  "#e2e8f0",
-  lightBg: "#f8fafc",
-  accent:  "#1e6be0",
-  negative:"#dc2626",
+  ink:    "#1a1a2e",
+  body:   "#222",
+  muted:  "#555",
+  faint:  "#888",
+  rule:   "#111",
+  line:   "#bbb",
 };
 
-const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
-const fmtGBP = (v) => GBP.format(Number(v || 0));
+const NUM = new Intl.NumberFormat("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtNum = (v) => NUM.format(Number(v || 0));
 
-function fmtDate(d) {
+function fmtShortDate(d) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function displayRate(rate) {
-  switch (rate) {
-    case "standard_20":   return "20%";
-    case "unverified_30": return "30%";
-    case "gross_0":       return "0%";
-    default:              return rate || "—";
-  }
+function fmtLongDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function formatPeriodRange(start, end) {
+  if (!start || !end) return "—";
+  const s = new Date(start);
+  const e = new Date(end);
+  const sameYear = s.getFullYear() === e.getFullYear();
+  const sDay = s.getDate();
+  const eDay = e.getDate();
+  const sMonth = s.toLocaleDateString("en-GB", { month: "long" });
+  const eMonth = e.toLocaleDateString("en-GB", { month: "long" });
+  const sYear = s.getFullYear();
+  const eYear = e.getFullYear();
+  if (sameYear) return `${sDay} ${sMonth} to ${eDay} ${eMonth} ${eYear}`;
+  return `${sDay} ${sMonth} ${sYear} to ${eDay} ${eMonth} ${eYear}`;
 }
 
 export default function CISStatementDocument({
@@ -41,6 +50,7 @@ export default function CISStatementDocument({
   subcontractor = {},
   period = {},
   amounts = {},
+  invoices,
   docId = "cis-pds-pdf-doc",
 }) {
   const {
@@ -50,121 +60,214 @@ export default function CISStatementDocument({
     cis_rate_used,
   } = amounts;
 
-  const liable = Math.max(0, Number(gross_amount || 0) - Number(materials_amount || 0));
+  const grossN = Number(gross_amount || 0);
+  const materialsN = Number(materials_amount || 0);
+  const cisN = Number(cis_deducted || 0);
+  const liable = Math.max(0, grossN - materialsN);
+  const netPaid = grossN - cisN;
 
-  const thStyle = { padding: "10px 12px", fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: `1.5px solid ${C.border}`, textAlign: "left" };
-  const tdLabel = { padding: "10px 12px", fontSize: 12, color: C.body, borderBottom: `1px solid #f1f5f9` };
-  const tdVal   = { ...tdLabel, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: C.heading };
+  const periodText = formatPeriodRange(period?.period_start, period?.period_end);
+
+  const rows = Array.isArray(invoices) && invoices.length > 0
+    ? invoices
+    : [{
+        reference: period?.label ? `Summary — ${period.label}` : "Summary",
+        payment_date: period?.period_end,
+        gross: grossN,
+        materials: materialsN,
+        non_cis: 0,
+        labour: liable,
+        cis: cisN,
+        paid: netPaid,
+      }];
+
+  const sectionHeading = {
+    fontSize: 13,
+    fontWeight: 700,
+    color: C.ink,
+    margin: "0 0 8px 0",
+    paddingBottom: 4,
+    borderBottom: `1px solid ${C.line}`,
+  };
+
+  const rowLine = { borderBottom: `1px solid ${C.line}` };
+  const labelCell = { padding: "6px 0", fontSize: 11, color: C.body };
+  const valueCell = { padding: "6px 0", fontSize: 11, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums" };
+  const monoVal = { fontFamily: mono, fontSize: 11, color: C.ink };
+
+  const invTh = { padding: "8px 6px", fontSize: 10, fontWeight: 700, color: C.body, borderBottom: `1px solid ${C.rule}`, textAlign: "left" };
+  const invThRight = { ...invTh, textAlign: "right" };
+  const invTd = { padding: "8px 6px", fontSize: 11, color: C.ink, borderBottom: `1px solid ${C.line}` };
+  const invTdRight = { ...invTd, textAlign: "right", fontVariantNumeric: "tabular-nums" };
 
   return (
-    <div id={docId} style={{ width: "210mm", minHeight: "297mm", padding: "18mm 16mm", color: C.body, background: "#fff", boxSizing: "border-box" }}>
-
-      {/* ─── HEADER ─── */}
-      <div style={{ borderBottom: `2px solid ${C.heading}`, paddingBottom: 14, marginBottom: 20 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: C.heading, letterSpacing: "0.02em" }}>
-          Payment and Deduction Statement
-        </div>
-        <div style={{ fontSize: 11, color: C.muted, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
-          Construction Industry Scheme
-        </div>
+    <div
+      id={docId}
+      style={{
+        width: "210mm",
+        minHeight: "297mm",
+        padding: "18mm 16mm",
+        color: C.body,
+        background: "#fff",
+        boxSizing: "border-box",
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', Arial, sans-serif",
+        fontSize: 11,
+        lineHeight: 1.4,
+      }}
+    >
+      {/* ─── HEADER STRIP ─── */}
+      <div style={{ textAlign: "right", fontSize: 9, color: C.muted, marginBottom: 18 }}>
+        CIS Payment Deduction Statement | {contractor?.name || "—"}&nbsp;&nbsp;&nbsp;&nbsp;1 of 1
       </div>
 
-      {/* ─── CONTRACTOR + STATEMENT META ─── */}
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 20, marginBottom: 20 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Contractor</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.heading }}>{contractor?.name || "—"}</div>
-          <div style={{ fontSize: 11, color: C.body, marginTop: 4 }}>
-            UTR: <span style={{ fontFamily: mono, fontWeight: 600, color: C.heading }}>{contractor?.utr || "—"}</span>
-          </div>
-          {contractor?.employer_paye_ref && (
-            <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>
-              Employer PAYE ref: <span style={{ fontFamily: mono, fontWeight: 600, color: C.heading }}>{contractor.employer_paye_ref}</span>
-            </div>
-          )}
+      <div style={{ fontSize: 22, fontWeight: 800, color: C.ink, lineHeight: 1.15 }}>
+        Construction Industry Scheme
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginTop: 2 }}>
+        Payment and Deduction Statement
+      </div>
+
+      <div style={{ marginTop: 14, fontSize: 13, fontWeight: 700, color: C.ink }}>
+        {contractor?.name || "—"}
+      </div>
+      <div style={{ fontSize: 12, color: C.body, marginTop: 2 }}>
+        For the period {periodText}
+      </div>
+
+      <div style={{ height: 24 }} />
+
+      {/* ─── CONTRACTOR DETAILS ─── */}
+      <div style={sectionHeading}>Contractor details</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{contractor?.name || "—"}</div>
+      {contractor?.address && (
+        <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>{contractor.address}</div>
+      )}
+
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
+        <tbody>
+          <tr style={rowLine}>
+            <td style={labelCell}>Payment and deduction made in tax month ended</td>
+            <td style={valueCell}>{fmtShortDate(period?.period_end)}</td>
+          </tr>
+          <tr style={rowLine}>
+            <td style={labelCell}>Employer's PAYE reference</td>
+            <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+              {contractor?.employer_paye_ref || "—"}
+            </td>
+          </tr>
           {contractor?.accounts_office_ref && (
-            <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>
-              Accounts Office ref: <span style={{ fontFamily: mono, fontWeight: 600, color: C.heading }}>{contractor.accounts_office_ref}</span>
-            </div>
+            <tr style={rowLine}>
+              <td style={labelCell}>Accounts Office reference</td>
+              <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+                {contractor.accounts_office_ref}
+              </td>
+            </tr>
           )}
+        </tbody>
+      </table>
+
+      <div style={{ height: 24 }} />
+
+      {/* ─── SUBCONTRACTOR + AMOUNTS (TWO COLUMNS) ─── */}
+      <div style={sectionHeading}>Subcontractor details</div>
+      <div style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
+        {/* LEFT: subcontractor */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{subcontractor?.name || "—"}</div>
+          {subcontractor?.address && (
+            <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>{subcontractor.address}</div>
+          )}
+
+          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
+            <tbody>
+              <tr style={rowLine}>
+                <td style={labelCell}>Unique taxpayers reference</td>
+                <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+                  {subcontractor?.utr || "—"}
+                </td>
+              </tr>
+              <tr style={rowLine}>
+                <td style={labelCell}>Verification number</td>
+                <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+                  {subcontractor?.verification_number || (cis_rate_used === "gross_0" ? "N/A" : "—")}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div style={{ textAlign: "right", minWidth: 220 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Statement</div>
-          <div style={{ fontSize: 11, color: C.body }}>
-            Tax month ending: <strong style={{ color: C.heading }}>{fmtDate(period?.period_end)}</strong>
-          </div>
-          {period?.label && (
-            <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>
-              Period: <strong style={{ color: C.heading }}>{period.label}</strong>
-            </div>
-          )}
-          <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>
-            Date issued: <strong style={{ color: C.heading }}>{fmtDate(new Date())}</strong>
-          </div>
+
+        {/* RIGHT: amounts breakdown */}
+        <div style={{ flex: 1 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <tbody>
+              <tr style={rowLine}>
+                <td style={labelCell}>Gross paid (excl VAT) (A)</td>
+                <td style={valueCell}>{fmtNum(grossN)}</td>
+              </tr>
+              <tr style={rowLine}>
+                <td style={labelCell}>Less cost of materials</td>
+                <td style={valueCell}>{fmtNum(materialsN)}</td>
+              </tr>
+              <tr style={rowLine}>
+                <td style={labelCell}>Less non-CIS</td>
+                <td style={valueCell}>{fmtNum(0)}</td>
+              </tr>
+              <tr style={rowLine}>
+                <td style={labelCell}>Liable to deduction</td>
+                <td style={valueCell}>{fmtNum(liable)}</td>
+              </tr>
+              <tr style={rowLine}>
+                <td style={labelCell}>Deducted (B)</td>
+                <td style={valueCell}>{fmtNum(cisN)}</td>
+              </tr>
+              <tr style={rowLine}>
+                <td style={{ ...labelCell, fontWeight: 700, color: C.ink }}>Paid (A - B)</td>
+                <td style={{ ...valueCell, fontWeight: 700 }}>{fmtNum(netPaid)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* ─── SUBCONTRACTOR ─── */}
-      <div style={{ background: C.lightBg, borderRadius: 6, border: `1px solid ${C.border}`, padding: "14px 16px", marginBottom: 22 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Subcontractor</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: C.heading }}>{subcontractor?.name || "—"}</div>
-        <div style={{ display: "flex", gap: 30, marginTop: 6, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 11, color: C.body }}>
-            UTR: <span style={{ fontFamily: mono, fontWeight: 600, color: C.heading }}>{subcontractor?.utr || "—"}</span>
-          </div>
-          <div style={{ fontSize: 11, color: C.body }}>
-            Verification number: <span style={{ fontFamily: mono, fontWeight: 600, color: C.heading }}>
-              {subcontractor?.verification_number || (cis_rate_used === "gross_0" ? "N/A (gross payment)" : "—")}
-            </span>
-          </div>
-        </div>
-        {subcontractor?.address && (
-          <div style={{ fontSize: 10, color: C.muted, marginTop: 6 }}>{subcontractor.address}</div>
-        )}
-      </div>
+      <div style={{ height: 28 }} />
 
-      {/* ─── AMOUNTS TABLE ─── */}
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
+      {/* ─── SOURCE INVOICES ─── */}
+      <div style={sectionHeading}>Source invoices</div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
-            <th style={thStyle}>Payment Details</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>Amount</th>
+            <th style={invTh}>Reference</th>
+            <th style={invTh}>Payment date</th>
+            <th style={invThRight}>Gross<br/>(A)</th>
+            <th style={invThRight}>Materials</th>
+            <th style={invThRight}>Non-CIS</th>
+            <th style={invThRight}>Labour</th>
+            <th style={invThRight}>CIS<br/>(B)</th>
+            <th style={invThRight}>Paid<br/>(A - B)</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td style={tdLabel}>Gross amount paid (excluding VAT)</td>
-            <td style={tdVal}>{fmtGBP(gross_amount)}</td>
-          </tr>
-          <tr>
-            <td style={tdLabel}>Cost of materials</td>
-            <td style={tdVal}>{fmtGBP(materials_amount)}</td>
-          </tr>
-          <tr style={{ background: C.lightBg }}>
-            <td style={{ ...tdLabel, fontWeight: 700, color: C.heading }}>Amount liable to deduction</td>
-            <td style={{ ...tdVal, fontWeight: 700 }}>{fmtGBP(liable)}</td>
-          </tr>
-          <tr>
-            <td style={tdLabel}>Rate of deduction</td>
-            <td style={tdVal}>{displayRate(cis_rate_used)}</td>
-          </tr>
-          <tr style={{ background: "#fef2f2" }}>
-            <td style={{ ...tdLabel, fontWeight: 800, color: C.negative, fontSize: 13, borderBottom: `2px solid ${C.border}` }}>
-              Amount of deduction
-            </td>
-            <td style={{ ...tdVal, fontWeight: 800, color: C.negative, fontSize: 14, borderBottom: `2px solid ${C.border}` }}>
-              {fmtGBP(cis_deducted)}
-            </td>
-          </tr>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              <td style={invTd}>{r.reference || "—"}</td>
+              <td style={invTd}>{fmtLongDate(r.payment_date)}</td>
+              <td style={invTdRight}>{fmtNum(r.gross)}</td>
+              <td style={invTdRight}>{fmtNum(r.materials)}</td>
+              <td style={invTdRight}>{fmtNum(r.non_cis)}</td>
+              <td style={invTdRight}>{fmtNum(r.labour)}</td>
+              <td style={invTdRight}>{fmtNum(r.cis)}</td>
+              <td style={invTdRight}>{fmtNum(r.paid)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
       {/* ─── FOOTER ─── */}
-      <div style={{ marginTop: "auto", paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+      <div style={{ marginTop: 40, paddingTop: 12, borderTop: `1px solid ${C.line}` }}>
         <div style={{ fontSize: 9, color: C.faint, lineHeight: 1.5 }}>
           This statement is issued under the HMRC Construction Industry Scheme (CIS340), Appendix E.
           Contractors must provide it to subcontractors within 14 days of the end of each tax month.
-          Keep this record for your tax return. Generated by InvoiceSaga on {fmtDate(new Date())}.
+          Keep this record for your tax return. Generated by InvoiceSaga on {fmtShortDate(new Date())}.
         </div>
       </div>
     </div>
