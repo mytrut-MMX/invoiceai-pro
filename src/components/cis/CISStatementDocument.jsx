@@ -88,22 +88,22 @@ export default function CISStatementDocument({
       }];
 
   const sectionHeading = {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700,
     color: C.ink,
-    margin: "0 0 8px 0",
-    paddingBottom: 4,
-    borderBottom: `1px solid ${C.line}`,
+    paddingBottom: 2,
+    marginBottom: 6,
+    borderBottom: `1px solid ${C.rule}`,
   };
 
   const rowLine = { borderBottom: `1px solid ${C.line}` };
-  const labelCell = { padding: "6px 0", fontSize: 11, color: C.body };
-  const valueCell = { padding: "6px 0", fontSize: 11, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums" };
-  const monoVal = { fontFamily: mono, fontSize: 11, color: C.ink };
+  const labelCell = { padding: "5px 0", fontSize: 11, color: C.body, verticalAlign: "top" };
+  const valueCell = { padding: "5px 0", fontSize: 11, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums", verticalAlign: "top" };
+  const monoVal = { fontFamily: mono };
 
-  const invTh = { padding: "8px 6px", fontSize: 10, fontWeight: 700, color: C.body, borderBottom: `1px solid ${C.rule}`, textAlign: "left" };
+  const invTh = { padding: "6px 6px", fontSize: 10, fontWeight: 700, color: C.body, borderBottom: `1px solid ${C.rule}`, textAlign: "left" };
   const invThRight = { ...invTh, textAlign: "right" };
-  const invTd = { padding: "8px 6px", fontSize: 11, color: C.ink, borderBottom: `1px solid ${C.line}` };
+  const invTd = { padding: "5px 6px", fontSize: 11, color: C.ink, borderBottom: `1px solid ${C.line}` };
   const invTdRight = { ...invTd, textAlign: "right", fontVariantNumeric: "tabular-nums" };
 
   return (
@@ -111,8 +111,7 @@ export default function CISStatementDocument({
       id={docId}
       style={{
         width: "210mm",
-        minHeight: "297mm",
-        padding: "18mm 16mm",
+        padding: "12mm 16mm",
         color: C.body,
         background: "#fff",
         boxSizing: "border-box",
@@ -122,34 +121,38 @@ export default function CISStatementDocument({
       }}
     >
       {/* ─── HEADER STRIP ─── */}
-      <div style={{ textAlign: "right", fontSize: 9, color: C.muted, marginBottom: 18 }}>
+      <div style={{ textAlign: "right", fontSize: 8, color: C.muted }}>
         CIS Payment Deduction Statement | {contractor?.name || "—"}&nbsp;&nbsp;&nbsp;&nbsp;1 of 1
       </div>
 
-      <div style={{ fontSize: 22, fontWeight: 800, color: C.ink, lineHeight: 1.15 }}>
+      <div style={{ height: "3mm" }} />
+
+      <div style={{ fontSize: 20, fontWeight: 800, color: C.ink, lineHeight: 1.15 }}>
         Construction Industry Scheme
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginTop: 2 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, marginTop: "1mm" }}>
         Payment and Deduction Statement
       </div>
 
-      <div style={{ marginTop: 14, fontSize: 13, fontWeight: 700, color: C.ink }}>
+      <div style={{ marginTop: "6mm", fontSize: 12, fontWeight: 700, color: C.ink }}>
         {contractor?.name || "—"}
       </div>
-      <div style={{ fontSize: 12, color: C.body, marginTop: 2 }}>
+      <div style={{ marginTop: "1mm", fontSize: 11, color: C.body }}>
         For the period {periodText}
       </div>
 
-      <div style={{ height: 24 }} />
+      <div style={{ height: "8mm" }} />
 
       {/* ─── CONTRACTOR DETAILS ─── */}
       <div style={sectionHeading}>Contractor details</div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{contractor?.name || "—"}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{contractor?.name || "—"}</div>
       {contractor?.address && (
-        <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>{contractor.address}</div>
+        <div style={{ fontSize: 11, color: C.body, marginTop: "1mm" }}>{contractor.address}</div>
       )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
+      <div style={{ height: "4mm" }} />
+
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <tbody>
           <tr style={rowLine}>
             <td style={labelCell}>Payment and deduction made in tax month ended</td>
@@ -157,14 +160,14 @@ export default function CISStatementDocument({
           </tr>
           <tr style={rowLine}>
             <td style={labelCell}>Employer's PAYE reference</td>
-            <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+            <td style={{ ...valueCell, ...monoVal }}>
               {contractor?.employer_paye_ref || "—"}
             </td>
           </tr>
           {contractor?.accounts_office_ref && (
             <tr style={rowLine}>
               <td style={labelCell}>Accounts Office reference</td>
-              <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+              <td style={{ ...valueCell, ...monoVal }}>
                 {contractor.accounts_office_ref}
               </td>
             </tr>
@@ -172,29 +175,31 @@ export default function CISStatementDocument({
         </tbody>
       </table>
 
-      <div style={{ height: 24 }} />
+      <div style={{ height: "8mm" }} />
 
       {/* ─── SUBCONTRACTOR + AMOUNTS (TWO COLUMNS) ─── */}
       <div style={sectionHeading}>Subcontractor details</div>
-      <div style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
-        {/* LEFT: subcontractor */}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{subcontractor?.name || "—"}</div>
-          {subcontractor?.address && (
-            <div style={{ fontSize: 11, color: C.body, marginTop: 2 }}>{subcontractor.address}</div>
-          )}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{subcontractor?.name || "—"}</div>
+      {subcontractor?.address && (
+        <div style={{ fontSize: 11, color: C.body, marginTop: "1mm" }}>{subcontractor.address}</div>
+      )}
 
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
+      <div style={{ height: "4mm" }} />
+
+      <div style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
+        {/* LEFT: subcontractor identifiers */}
+        <div style={{ flex: 1 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               <tr style={rowLine}>
                 <td style={labelCell}>Unique taxpayers reference</td>
-                <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+                <td style={{ ...valueCell, ...monoVal }}>
                   {subcontractor?.utr || "—"}
                 </td>
               </tr>
               <tr style={rowLine}>
                 <td style={labelCell}>Verification number</td>
-                <td style={{ ...valueCell, ...monoVal, textAlign: "right" }}>
+                <td style={{ ...valueCell, ...monoVal }}>
                   {subcontractor?.verification_number || (cis_rate_used === "gross_0" ? "N/A" : "—")}
                 </td>
               </tr>
@@ -235,7 +240,7 @@ export default function CISStatementDocument({
         </div>
       </div>
 
-      <div style={{ height: 28 }} />
+      <div style={{ height: "8mm" }} />
 
       {/* ─── SOURCE INVOICES ─── */}
       <div style={sectionHeading}>Source invoices</div>
@@ -271,8 +276,8 @@ export default function CISStatementDocument({
       </table>
 
       {/* ─── FOOTER ─── */}
-      <div style={{ marginTop: 40, paddingTop: 12, borderTop: `1px solid ${C.line}` }}>
-        <div style={{ fontSize: 9, color: C.faint, lineHeight: 1.5 }}>
+      <div style={{ marginTop: "30mm", paddingTop: "3mm", borderTop: `1px solid ${C.line}` }}>
+        <div style={{ fontSize: 8, color: C.faint, lineHeight: 1.5 }}>
           This statement is issued under the HMRC Construction Industry Scheme (CIS340), Appendix E.
           Contractors must provide it to subcontractors within 14 days of the end of each tax month.
           Keep this record for your tax return. Generated by InvoiceSaga on {fmtShortDate(new Date())}.
