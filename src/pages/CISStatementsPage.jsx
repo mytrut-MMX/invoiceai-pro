@@ -166,10 +166,11 @@ export default function CISStatementsPage() {
   // ─── Build contractor / subcontractor payloads ──────────────────────────────
   const contractor = useMemo(() => ({
     name: cis.contractorName || "",
+    address: cis.contractorAddress || "",
     utr: cis.contractorUTR || "",
     employer_paye_ref: cis.employerRef || payeRef?.employer_paye_ref || "",
     accounts_office_ref: payeRef?.accounts_office_ref || "",
-  }), [cis.contractorName, cis.contractorUTR, cis.employerRef, payeRef]);
+  }), [cis.contractorName, cis.contractorAddress, cis.contractorUTR, cis.employerRef, payeRef]);
 
   const payeMissing = !payeRef || (!payeRef.employer_paye_ref && !payeRef.accounts_office_ref);
 

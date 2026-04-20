@@ -30,6 +30,11 @@ function fmtLongDate(d) {
   return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function fmtMonthYear(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+
 function formatPeriodRange(start, end) {
   if (!start || !end) return "—";
   const s = new Date(start);
@@ -72,6 +77,7 @@ export default function CISStatementDocument({
     ? invoices
     : [{
         reference: period?.label ? `Summary — ${period.label}` : "Summary",
+        invoice_date: null,
         payment_date: period?.period_end,
         gross: grossN,
         materials: materialsN,
@@ -237,6 +243,7 @@ export default function CISStatementDocument({
         <thead>
           <tr>
             <th style={invTh}>Reference</th>
+            <th style={invTh}>Invoice date</th>
             <th style={invTh}>Payment date</th>
             <th style={invThRight}>Gross<br/>(A)</th>
             <th style={invThRight}>Materials</th>
@@ -250,6 +257,7 @@ export default function CISStatementDocument({
           {rows.map((r, i) => (
             <tr key={i}>
               <td style={invTd}>{r.reference || "—"}</td>
+              <td style={invTd}>{r.invoice_date ? fmtMonthYear(r.invoice_date) : "—"}</td>
               <td style={invTd}>{fmtLongDate(r.payment_date)}</td>
               <td style={invTdRight}>{fmtNum(r.gross)}</td>
               <td style={invTdRight}>{fmtNum(r.materials)}</td>
