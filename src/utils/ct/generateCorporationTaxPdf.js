@@ -1,61 +1,57 @@
 /**
- * generateCorporationTaxPdf — render a CT600 Corporation Tax estimate to an
- * A4 PDF Blob.
+ * generateCorporationTaxPdf — builds a Corporation Tax estimate PDF with native
+ * jsPDF vector text. Selectable, ~15KB output.
  *
- * Mirrors generateCISStatementPdf.js: builds an off-screen DOM element, then
- * html2pdf converts it to a Blob via `.outputPdf("blob")`. The caller owns
- * the download/upload lifecycle (see exportCorporationTaxPdf.js).
- *
- * Note: this is an ESTIMATE produced from user-supplied adjustments. It is
- * not a CT600 submission. See the disclaimer footer rendered into the PDF.
+ * Estimate only — not a CT600 submission. Disclaimer rendered in the PDF.
  */
 
-const mono = "'Courier New', monospace";
+import jsPDF from "jspdf";
 
-const C = {
-  heading: "#1a1a2e",
-  body: "#374151",
-  muted: "#6b7280",
-  faint: "#9ca3af",
-  border: "#e2e8f0",
-  lightBg: "#f8fafc",
-  accent: "#1e6be0",
-  positive: "#16a34a",
-  warning: "#92400e",
-  warningBg: "#fffbeb",
-  warningBorder: "#fde68a",
-};
+/* ─── layout ─────────────────────────────────────────────────────────────── */
+
+const PAGE_W = 210;
+const ML = 16;
+const MR = 16;
+const MT = 18;
+const CR = PAGE_W - MR;
+
+const PT = 0.3528;
+const ascent = (pt) => pt * 0.72 * PT;
+
+const HEADING = [26, 26, 46];      // #1a1a2e
+const BODY = [55, 65, 81];         // #374151
+const MUTED = [107, 114, 128];     // #6b7280
+const FAINT = [156, 163, 175];     // #9ca3af
+const BORDER = [226, 232, 240];    // #e2e8f0
+const LIGHT_BG = [248, 250, 252];  // #f8fafc
+const POSITIVE = [22, 163, 74];    // #16a34a
+const WARNING_FG = [146, 64, 14];  // #92400e
+const WARNING_BG = [255, 251, 235];// #fffbeb
+const WARNING_BD = [253, 230, 138];// #fde68a
 
 const BRACKET_BADGE = {
-  loss:          { label: "Loss — no CT",                    bg: "#f3f4f6", fg: "#374151", border: "#d1d5db" },
-  small:         { label: "Small profits rate (19%)",         bg: "#f0fdf4", fg: "#166534", border: "#bbf7d0" },
-  marginal_zone: { label: "Marginal zone (using main rate)",  bg: "#fffbeb", fg: "#92400e", border: "#fde68a" },
-  main:          { label: "Main rate (25%)",                  bg: "#eff6ff", fg: "#1d4ed8", border: "#bfdbfe" },
+  loss:          { label: "Loss \u2014 no CT",                bg: [243, 244, 246], fg: [55, 65, 81],   bd: [209, 213, 219] },
+  small:         { label: "Small profits rate (19%)",          bg: [240, 253, 244], fg: [22, 101, 52],  bd: [187, 247, 208] },
+  marginal_zone: { label: "Marginal zone (using main rate)",   bg: [255, 251, 235], fg: [146, 64, 14],  bd: [253, 230, 138] },
+  main:          { label: "Main rate (25%)",                   bg: [239, 246, 255], fg: [29, 78, 216],  bd: [191, 219, 254] },
 };
+
+/* ─── formatting ─────────────────────────────────────────────────────────── */
 
 const GBP0 = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const GBP2 = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtGbp0 = (v) => (v == null || v === "" ? "—" : GBP0.format(Number(v)));
-const fmtGbp2 = (v) => (v == null || v === "" ? "—" : GBP2.format(Number(v)));
+const fmtGbp0 = (v) => (v == null || v === "" ? "\u2014" : GBP0.format(Number(v)));
+const fmtGbp2 = (v) => (v == null || v === "" ? "\u2014" : GBP2.format(Number(v)));
 
 function fmtDate(d) {
-  if (!d) return "—";
+  if (!d) return "\u2014";
   const dt = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(dt.getTime())) return "—";
+  if (Number.isNaN(dt.getTime())) return "\u2014";
   return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function esc(s) {
-  return String(s == null ? "" : s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function sanitizeSeg(seg) {
-  return String(seg || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+function sanitize(s) {
+  return String(s || "").replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 function filenameFor({ company, period }) {
@@ -63,222 +59,300 @@ function filenameFor({ company, period }) {
   const dateIso = period?.period_end
     ? new Date(period.period_end).toISOString().split("T")[0]
     : "";
-  return `CT600_${sanitizeSeg(name)}_${sanitizeSeg(dateIso)}.pdf`;
+  return `CT600_${sanitize(name)}_${sanitize(dateIso)}.pdf`;
 }
 
-function pdfOptions(filename) {
-  return {
-    margin: 0,
-    filename,
-    image: { type: "jpeg", quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-  };
+/* ─── drawing helpers ────────────────────────────────────────────────────── */
+
+function setRgb(doc, rgb, kind = "text") {
+  const [r, g, b] = rgb;
+  if (kind === "text") doc.setTextColor(r, g, b);
+  else if (kind === "draw") doc.setDrawColor(r, g, b);
+  else if (kind === "fill") doc.setFillColor(r, g, b);
 }
 
-function renderHtml({ company, period, calc }) {
-  const bracket = BRACKET_BADGE[calc?.rateBracket] || null;
-  const warnings = Array.isArray(calc?.warnings) ? calc.warnings : [];
-
-  const thStyle = `padding:10px 12px;font-size:10px;font-weight:700;color:${C.muted};text-transform:uppercase;letter-spacing:0.06em;border-bottom:1.5px solid ${C.border};text-align:left;`;
-  const thRight = thStyle + "text-align:right;";
-  const tdLabel = `padding:10px 12px;font-size:12px;color:${C.body};border-bottom:1px solid #f1f5f9;`;
-  const tdVal = tdLabel + `text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:${C.heading};`;
-  const tdTotalLabel = `padding:12px;font-size:13px;font-weight:800;color:${C.heading};border-top:2px solid ${C.border};border-bottom:2px solid ${C.border};background:${C.lightBg};`;
-  const tdTotalVal = tdTotalLabel + `text-align:right;font-variant-numeric:tabular-nums;`;
-  const tdCtLabel = `padding:12px;font-size:13px;font-weight:800;color:${C.positive};border-bottom:2px solid ${C.border};`;
-  const tdCtVal = tdCtLabel + `text-align:right;font-variant-numeric:tabular-nums;font-size:15px;`;
-
-  const associatedCount = Number(calc?.associatedCompaniesCount) || 0;
-  const augmentedAdj = Number(calc?.augmentedProfitsAdjustment) || 0;
-  const marginalRelief = Number(calc?.marginalRelief) || 0;
-  const lossIn = Number(period?.loss_carried_forward_in) || 0;
-  const taxAdjProfit = Number(calc?.taxAdjustedProfit) || 0;
-  const lossUsed = lossIn > 0 && taxAdjProfit > 0 ? Math.min(lossIn, taxAdjProfit) : 0;
-
-  return `
-    <div style="width:210mm;min-height:297mm;padding:18mm 16mm;color:${C.body};background:#fff;box-sizing:border-box;">
-
-      <!-- HEADER -->
-      <div style="border-bottom:2px solid ${C.heading};padding-bottom:14px;margin-bottom:20px;">
-        <div style="font-size:22px;font-weight:800;color:${C.heading};letter-spacing:0.02em;">
-          Corporation Tax Estimate
-        </div>
-        <div style="font-size:11px;color:${C.muted};margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">
-          CT600 — draft for accountant review
-        </div>
-      </div>
-
-      <!-- COMPANY + PERIOD META -->
-      <div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:22px;">
-        <div style="flex:1;">
-          <div style="font-size:10px;font-weight:700;color:${C.muted};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Company</div>
-          <div style="font-size:13px;font-weight:700;color:${C.heading};">${esc(company?.companyName || company?.name || "—")}</div>
-          <div style="font-size:11px;color:${C.body};margin-top:4px;">
-            CRN: <span style="font-family:${mono};font-weight:600;color:${C.heading};">${esc(company?.crn || "—")}</span>
-          </div>
-        </div>
-        <div style="text-align:right;min-width:220px;">
-          <div style="font-size:10px;font-weight:700;color:${C.muted};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Accounting period</div>
-          <div style="font-size:11px;color:${C.body};">
-            Start: <strong style="color:${C.heading};">${fmtDate(period?.period_start)}</strong>
-          </div>
-          <div style="font-size:11px;color:${C.body};margin-top:2px;">
-            End: <strong style="color:${C.heading};">${fmtDate(period?.period_end)}</strong>
-          </div>
-          <div style="font-size:11px;color:${C.body};margin-top:2px;">
-            Payment due: <strong style="color:${C.heading};">${fmtDate(period?.payment_due_date)}</strong>
-          </div>
-          <div style="font-size:11px;color:${C.body};margin-top:2px;">
-            Filing due: <strong style="color:${C.heading};">${fmtDate(period?.filing_due_date)}</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- BRACKET BADGE -->
-      ${bracket ? `
-      <div style="margin-bottom:20px;">
-        <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:${bracket.bg};color:${bracket.fg};border:1px solid ${bracket.border};font-size:11px;font-weight:700;letter-spacing:0.02em;">
-          ${esc(bracket.label)}
-        </span>
-      </div>` : ""}
-
-      <!-- COMPUTATION TABLE -->
-      <table style="width:100%;border-collapse:collapse;margin-bottom:22px;">
-        <thead>
-          <tr>
-            <th style="${thStyle}">Computation</th>
-            <th style="${thRight}">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="${tdLabel}">Accounting profit</td>
-            <td style="${tdVal}">${fmtGbp2(calc?.accountingProfit)}</td>
-          </tr>
-          <tr>
-            <td style="${tdLabel}">+ Disallowable expenses</td>
-            <td style="${tdVal}">${fmtGbp2(calc?.disallowableExpenses)}</td>
-          </tr>
-          <tr>
-            <td style="${tdLabel}">− Capital allowances</td>
-            <td style="${tdVal}">${fmtGbp2(calc?.capitalAllowances)}</td>
-          </tr>
-          <tr>
-            <td style="${tdLabel}">± Other adjustments</td>
-            <td style="${tdVal}">${fmtGbp2(calc?.otherAdjustments)}</td>
-          </tr>
-          ${associatedCount > 0 ? `
-          <tr>
-            <td style="${tdLabel}">Associated companies</td>
-            <td style="${tdVal}">${associatedCount}</td>
-          </tr>` : ""}
-          ${augmentedAdj > 0 ? `
-          <tr>
-            <td style="${tdLabel}">Augmented profits adjustment</td>
-            <td style="${tdVal}">${fmtGbp2(augmentedAdj)}</td>
-          </tr>` : ""}
-          ${lossIn > 0 ? `
-          <tr>
-            <td style="${tdLabel}">Losses brought forward</td>
-            <td style="${tdVal}">${fmtGbp2(lossIn)}</td>
-          </tr>` : ""}
-          <tr>
-            <td style="${tdTotalLabel}">= Tax-adjusted profit</td>
-            <td style="${tdTotalVal}">${fmtGbp2(calc?.taxAdjustedProfit)}</td>
-          </tr>
-          <tr>
-            <td style="${tdLabel}">CT rate applied</td>
-            <td style="${tdVal}">${calc?.ctRateApplied == null ? "—" : `${calc.ctRateApplied}%`}</td>
-          </tr>
-          ${lossUsed > 0 ? `
-          <tr>
-            <td style="${tdLabel}">Loss relief applied</td>
-            <td style="${tdVal}">−${fmtGbp0(lossUsed)}</td>
-          </tr>` : ""}
-          ${marginalRelief > 0 ? `
-          <tr>
-            <td style="${tdLabel}">Marginal relief</td>
-            <td style="${tdVal}">−${fmtGbp0(marginalRelief)}</td>
-          </tr>` : ""}
-          <tr>
-            <td style="${tdCtLabel}">Estimated Corporation Tax</td>
-            <td style="${tdCtVal}">${fmtGbp0(calc?.ctEstimated)}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      ${warnings.length > 0 ? `
-      <div style="background:${C.warningBg};border:1px solid ${C.warningBorder};border-radius:8px;padding:12px 14px;margin-bottom:20px;">
-        <div style="font-size:11px;font-weight:700;color:${C.warning};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Warnings</div>
-        ${warnings.map((w) => `<div style="font-size:12px;color:${C.warning};line-height:1.5;margin-top:4px;">⚠ ${esc(w)}</div>`).join("")}
-      </div>` : ""}
-
-      ${calc?.notes ? `
-      <div style="margin-bottom:20px;">
-        <div style="font-size:10px;font-weight:700;color:${C.muted};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Notes</div>
-        <div style="font-size:12px;color:${C.body};line-height:1.5;white-space:pre-wrap;">${esc(calc.notes)}</div>
-      </div>` : ""}
-
-      <!-- DISCLAIMER -->
-      <div style="margin-top:28px;padding:12px 14px;background:${C.lightBg};border:1px solid ${C.border};border-radius:8px;">
-        <div style="font-size:11px;color:${C.body};line-height:1.55;">
-          <strong style="color:${C.heading};">Disclaimer.</strong>
-          This is an estimate generated by InvoiceSaga based on inputs provided.
-          It is not a CT600 tax return. Consult your accountant before submission to HMRC.
-        </div>
-      </div>
-
-      <!-- FOOTER -->
-      <div style="margin-top:20px;padding-top:12px;border-top:1px solid ${C.border};">
-        <div style="font-size:9px;color:${C.faint};line-height:1.5;">
-          Generated on ${fmtDate(new Date())} for accountant review.
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-async function withRenderedDoc({ company, period, calc }, worker) {
-  const container = document.createElement("div");
-  container.style.cssText =
-    "position:fixed;left:-9999px;top:0;width:210mm;visibility:hidden;pointer-events:none;overflow:hidden;";
-  container.innerHTML = renderHtml({ company, period, calc });
-  document.body.appendChild(container);
-
-  try {
-    // Give layout a tick to settle (matches CIS pattern).
-    await new Promise((r) => setTimeout(r, 50));
-    const el = container.firstElementChild;
-    if (!el) {
-      return { success: false, error: "Failed to render Corporation Tax document" };
-    }
-    return await worker(el);
-  } finally {
-    try { if (container.parentNode) container.parentNode.removeChild(container); } catch { /* ignore */ }
+function drawFilledRect(doc, x, y, w, h, fill, border) {
+  setRgb(doc, fill, "fill");
+  if (border) {
+    setRgb(doc, border, "draw");
+    doc.setLineWidth(0.25);
+    doc.rect(x, y, w, h, "FD");
+  } else {
+    doc.rect(x, y, w, h, "F");
   }
 }
 
 /**
- * Generate the CT estimate PDF as a Blob. Caller handles download + upload.
- *
- * @param {Object} args
- * @param {{ companyName?: string, name?: string, crn?: string }} args.company
- * @param {{ period_start, period_end, payment_due_date, filing_due_date }} args.period
- * @param {{
- *   accountingProfit, disallowableExpenses, capitalAllowances, otherAdjustments,
- *   taxAdjustedProfit, ctRateApplied, ctEstimated, rateBracket, warnings?, notes?
- * }} args.calc
+ * Single label/value row with a thin bottom rule.
+ */
+function drawComputationRow(doc, label, value, y, {
+  bold = false, highlight = false, colorFg, fontSize = 9,
+} = {}) {
+  const pad = 10 * PT;
+  const rowH = pad + ascent(fontSize) + pad;
+
+  if (highlight) {
+    drawFilledRect(doc, ML, y, CR - ML, rowH, LIGHT_BG);
+  }
+
+  const baseline = y + pad + ascent(fontSize);
+
+  doc.setFont("helvetica", bold ? "bold" : "normal");
+  doc.setFontSize(fontSize);
+  setRgb(doc, colorFg || (bold ? HEADING : BODY));
+  doc.text(label, ML + 4, baseline);
+
+  doc.setFont("helvetica", bold ? "bold" : "normal");
+  setRgb(doc, colorFg || HEADING);
+  doc.text(String(value), CR - 4, baseline, { align: "right" });
+
+  setRgb(doc, BORDER, "draw");
+  doc.setLineWidth(0.2);
+  doc.line(ML, y + rowH, CR, y + rowH);
+
+  return y + rowH;
+}
+
+/* ─── main builder ───────────────────────────────────────────────────────── */
+
+function buildDoc({ company = {}, period = {}, calc = {} }) {
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+  const bracket = BRACKET_BADGE[calc.rateBracket] || null;
+  const warnings = Array.isArray(calc.warnings) ? calc.warnings : [];
+
+  const associatedCount = Number(calc.associatedCompaniesCount) || 0;
+  const augmentedAdj = Number(calc.augmentedProfitsAdjustment) || 0;
+  const marginalRelief = Number(calc.marginalRelief) || 0;
+  const lossIn = Number(period.loss_carried_forward_in) || 0;
+  const taxAdjProfit = Number(calc.taxAdjustedProfit) || 0;
+  const lossUsed = lossIn > 0 && taxAdjProfit > 0 ? Math.min(lossIn, taxAdjProfit) : 0;
+
+  let y = MT;
+
+  /* ── HEADER ── */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  setRgb(doc, HEADING);
+  y += ascent(18);
+  doc.text("Corporation Tax Estimate", ML, y);
+
+  y += 8;
+  doc.setFontSize(9);
+  setRgb(doc, MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.text("CT600 \u2014 DRAFT FOR ACCOUNTANT REVIEW", ML, y);
+
+  y += 3;
+  setRgb(doc, HEADING, "draw");
+  doc.setLineWidth(0.6);
+  doc.line(ML, y, CR, y);
+  y += 8;
+
+  /* ── COMPANY + PERIOD META (two-column) ── */
+  const metaTopY = y;
+  const rightColX = CR - 70;
+
+  doc.setFontSize(8);
+  setRgb(doc, MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.text("COMPANY", ML, y + ascent(8));
+
+  doc.setFontSize(10);
+  setRgb(doc, HEADING);
+  doc.text(company.companyName || company.name || "\u2014", ML, y + ascent(8) + 5);
+
+  doc.setFontSize(9);
+  setRgb(doc, BODY);
+  doc.setFont("helvetica", "normal");
+  doc.text("CRN: ", ML, y + ascent(8) + 10);
+  doc.setFont("courier", "bold");
+  setRgb(doc, HEADING);
+  const crnLabelW = doc.getTextWidth("CRN: ");
+  doc.text(company.crn || "\u2014", ML + crnLabelW, y + ascent(8) + 10);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  setRgb(doc, MUTED);
+  doc.text("ACCOUNTING PERIOD", rightColX, y + ascent(8));
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setRgb(doc, BODY);
+  const metaRows = [
+    ["Start:", fmtDate(period.period_start)],
+    ["End:", fmtDate(period.period_end)],
+    ["Payment due:", fmtDate(period.payment_due_date)],
+    ["Filing due:", fmtDate(period.filing_due_date)],
+  ];
+  metaRows.forEach((row, i) => {
+    const rowY = y + ascent(8) + 5 + i * 4;
+    doc.setFont("helvetica", "normal");
+    setRgb(doc, BODY);
+    doc.text(row[0], rightColX, rowY);
+    doc.setFont("helvetica", "bold");
+    setRgb(doc, HEADING);
+    doc.text(row[1], CR, rowY, { align: "right" });
+  });
+
+  y = metaTopY + 25;
+
+  /* ── BRACKET BADGE ── */
+  if (bracket) {
+    const label = bracket.label;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    const textW = doc.getTextWidth(label);
+    const badgeW = textW + 10;
+    const badgeH = 6;
+    drawFilledRect(doc, ML, y, badgeW, badgeH, bracket.bg, bracket.bd);
+    setRgb(doc, bracket.fg);
+    doc.text(label, ML + 5, y + ascent(9) + 1.2);
+    y += badgeH + 6;
+  }
+
+  /* ── COMPUTATION TABLE ── */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  setRgb(doc, MUTED);
+  const headBase = y + ascent(8) + 2;
+  doc.text("COMPUTATION", ML + 4, headBase);
+  doc.text("AMOUNT", CR - 4, headBase, { align: "right" });
+  y = headBase + 2;
+  setRgb(doc, BORDER, "draw");
+  doc.setLineWidth(0.4);
+  doc.line(ML, y, CR, y);
+
+  y = drawComputationRow(doc, "Accounting profit", fmtGbp2(calc.accountingProfit), y);
+  y = drawComputationRow(doc, "+ Disallowable expenses", fmtGbp2(calc.disallowableExpenses), y);
+  y = drawComputationRow(doc, "\u2212 Capital allowances", fmtGbp2(calc.capitalAllowances), y);
+  y = drawComputationRow(doc, "\u00B1 Other adjustments", fmtGbp2(calc.otherAdjustments), y);
+
+  if (associatedCount > 0) {
+    y = drawComputationRow(doc, "Associated companies", String(associatedCount), y);
+  }
+  if (augmentedAdj > 0) {
+    y = drawComputationRow(doc, "Augmented profits adjustment", fmtGbp2(augmentedAdj), y);
+  }
+  if (lossIn > 0) {
+    y = drawComputationRow(doc, "Losses brought forward", fmtGbp2(lossIn), y);
+  }
+
+  y = drawComputationRow(doc, "= Tax-adjusted profit", fmtGbp2(calc.taxAdjustedProfit), y,
+                         { bold: true, highlight: true, fontSize: 10 });
+
+  y = drawComputationRow(doc, "CT rate applied",
+                         calc.ctRateApplied == null ? "\u2014" : `${calc.ctRateApplied}%`, y);
+
+  if (lossUsed > 0) {
+    y = drawComputationRow(doc, "Loss relief applied", `\u2212${fmtGbp0(lossUsed)}`, y);
+  }
+  if (marginalRelief > 0) {
+    y = drawComputationRow(doc, "Marginal relief", `\u2212${fmtGbp0(marginalRelief)}`, y);
+  }
+
+  y = drawComputationRow(doc, "Estimated Corporation Tax", fmtGbp0(calc.ctEstimated), y,
+                         { bold: true, colorFg: POSITIVE, fontSize: 11 });
+
+  /* ── WARNINGS ── */
+  if (warnings.length > 0) {
+    y += 6;
+    const warnStart = y;
+    const lines = warnings.map((w) => doc.splitTextToSize(`\u26A0 ${w}`, CR - ML - 8)).flat();
+    const boxH = 6 + lines.length * 4.5;
+    drawFilledRect(doc, ML, y, CR - ML, boxH, WARNING_BG, WARNING_BD);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setRgb(doc, WARNING_FG);
+    doc.text("WARNINGS", ML + 4, y + ascent(8) + 2);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    let wy = y + ascent(8) + 2 + 5;
+    lines.forEach((ln) => {
+      doc.text(ln, ML + 4, wy);
+      wy += 4.5;
+    });
+    y = warnStart + boxH;
+  }
+
+  /* ── NOTES ── */
+  if (calc.notes) {
+    y += 6;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setRgb(doc, MUTED);
+    doc.text("NOTES", ML, y + ascent(8));
+    y += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setRgb(doc, BODY);
+    const lines = doc.splitTextToSize(String(calc.notes), CR - ML);
+    lines.forEach((ln) => {
+      y += ascent(9);
+      doc.text(ln, ML, y);
+      y += 2;
+    });
+  }
+
+  /* ── DISCLAIMER ── */
+  y += 10;
+  const discLines = doc.splitTextToSize(
+    "Disclaimer. This is an estimate generated by InvoiceSaga based on inputs provided. " +
+    "It is not a CT600 tax return. Consult your accountant before submission to HMRC.",
+    CR - ML - 8,
+  );
+  const discH = 6 + discLines.length * 4.5;
+  drawFilledRect(doc, ML, y, CR - ML, discH, LIGHT_BG, BORDER);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setRgb(doc, BODY);
+  let dy = y + ascent(9) + 3;
+  discLines.forEach((ln, i) => {
+    if (i === 0) {
+      doc.setFont("helvetica", "bold");
+      setRgb(doc, HEADING);
+      const labelW = doc.getTextWidth("Disclaimer. ");
+      doc.text("Disclaimer.", ML + 4, dy);
+      doc.setFont("helvetica", "normal");
+      setRgb(doc, BODY);
+      const rest = ln.replace(/^Disclaimer\.\s*/, "");
+      doc.text(rest, ML + 4 + labelW, dy);
+    } else {
+      doc.text(ln, ML + 4, dy);
+    }
+    dy += 4.5;
+  });
+  y += discH;
+
+  /* ── FOOTER ── */
+  y += 6;
+  setRgb(doc, BORDER, "draw");
+  doc.setLineWidth(0.2);
+  doc.line(ML, y, CR, y);
+  y += 4;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  setRgb(doc, FAINT);
+  doc.text(`Generated on ${fmtDate(new Date())} for accountant review.`, ML, y + ascent(8));
+
+  return doc;
+}
+
+/* ─── public API ─────────────────────────────────────────────────────────── */
+
+/**
+ * Generate the CT estimate PDF as a Blob.
  * @returns {Promise<{ success: true, filename: string, blob: Blob } | { success: false, error: string }>}
  */
 export async function generateCorporationTaxPdfBlob({ company, period, calc }) {
   try {
     const filename = filenameFor({ company, period });
-    const { default: html2pdf } = await import("html2pdf.js");
-    return await withRenderedDoc({ company, period, calc }, async (el) => {
-      const blob = await html2pdf().set(pdfOptions(filename)).from(el).outputPdf("blob");
-      return { success: true, filename, blob };
-    });
+    const doc = buildDoc({ company, period, calc });
+    const blob = doc.output("blob");
+    return { success: true, filename, blob };
   } catch (err) {
     return { success: false, error: err?.message || "PDF generation failed" };
   }

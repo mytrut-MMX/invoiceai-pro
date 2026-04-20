@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 
-// sendCISStatement transitively imports generateCISStatementPdf → html2pdf.js,
-// which requires a browser global (`self`) at module load. These tests only
-// exercise toIsoDate, so stub the PDF module and the supabase client so Node
-// can evaluate the module under test.
+// sendCISStatement transitively imports generateCISStatementPdf → jsPDF,
+// which touches browser globals at module load. These tests only exercise
+// toIsoDate, so stub the PDF module and the supabase client so Node can
+// evaluate the module under test.
 vi.mock("./generateCISStatementPdf", () => ({
   generateCISStatementBlob: vi.fn(),
 }));

@@ -2,8 +2,8 @@
  * CISStatementDocument — A4 Payment and Deduction Statement.
  *
  * HMRC CIS340 Appendix E compliant layout. Pure presentation component: all
- * data comes in via props. Rendered off-screen and converted to PDF via
- * html2pdf (see generateCISStatementPdf.js).
+ * data comes in via props. Used for on-screen preview only — the downloadable
+ * PDF is built directly from data via jsPDF in generateCISStatementPdf.js.
  *
  * Layout replicated from Alliance Facade Services PDS using exact coordinates
  * extracted via pdfplumber (NimbusSans at 7.8/12.6/15.6/19.2 pt, margins 60pt,

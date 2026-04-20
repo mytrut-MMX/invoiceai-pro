@@ -4,7 +4,7 @@ import { useToast } from "../components/ui/Toast";
 import { Btn, Field, Input, Textarea } from "../components/atoms";
 import { Icons } from "../components/icons";
 import { buildInvoiceEmail, buildPaymentConfirmationEmail, buildQuoteEmail } from "../utils/emailTemplates";
-import { A4InvoiceDoc } from "../components/shared/A4InvoiceDoc";
+import { generateInvoicePdfBlob } from "../utils/pdf/generateInvoicePdf";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -128,23 +128,17 @@ export default function SendDocumentModal({
     let attachmentFilename = null;
     if (docData) {
       try {
-        const el = window.document.getElementById("send-modal-pdf-preview");
-        if (el) {
-          const docNum = (document?.invoiceNumber || document?.quoteNumber || "").replace(/[^a-zA-Z0-9_-]/g, "");
-          const docTypeLabel = documentType === "quote" ? "Quote" : "Invoice";
-          attachmentFilename = `${docTypeLabel}-${docNum || "document"}.pdf`;
-          const { default: html2pdf } = await import("html2pdf.js");
-          const pdfBlob = await html2pdf()
-            .set({
-              margin: 0,
-              filename: attachmentFilename,
-              image: { type: "jpeg", quality: 0.95 },
-              html2canvas: { scale: 2, useCORS: true, logging: false },
-              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-            })
-            .from(el)
-            .outputPdf("blob");
-          const arrayBuffer = await pdfBlob.arrayBuffer();
+        const res = await generateInvoicePdfBlob({
+          data: docData,
+          currSymbol: currSymbol || "£",
+          isVat: isVat || false,
+          orgSettings: company || {},
+          accentColor: accentColor || (PDF_TEMPLATES.find(t => t.id === (pdfTemplate || "classic"))?.defaultAccent || "#1e6be0"),
+          footerText: footerText || "",
+        });
+        if (res.success) {
+          attachmentFilename = res.filename;
+          const arrayBuffer = await res.blob.arrayBuffer();
           const bytes = new Uint8Array(arrayBuffer);
           let binary = "";
           for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
@@ -280,22 +274,6 @@ export default function SendDocumentModal({
               </Btn>
             </div>
 
-            {/* Hidden render for PDF capture */}
-            {docData && (
-              <div className="fixed -left-[9999px] top-0 w-[210mm] invisible pointer-events-none overflow-hidden h-0">
-                <A4InvoiceDoc
-                  docId="send-modal-pdf-preview"
-                  data={docData}
-                  currSymbol={currSymbol || "£"}
-                  isVat={isVat || false}
-                  orgSettings={company || {}}
-                  accentColor={accentColor || (PDF_TEMPLATES.find(t => t.id === (pdfTemplate || "classic"))?.defaultAccent || "#1e6be0")}
-                  template={pdfTemplate || "classic"}
-                  footerText={footerText || ""}
-                  invoiceTemplate={invoiceTemplate}
-                />
-              </div>
-            )}
           </>
         )}
       </div>

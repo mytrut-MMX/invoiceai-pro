@@ -1,18 +1,80 @@
 /**
- * generateCISStatementPdf — render a CISStatementDocument to an A4 PDF.
+ * generateCISStatementPdf — builds a CIS Payment & Deduction Statement PDF
+ * with native jsPDF vector text. Selectable text, ~15KB output.
  *
- * Mirrors generatePayslipPdf.js: renders the React document into an off-screen
- * DOM element, then html2pdf converts it to either a downloaded file (.save)
- * or a Blob (.outputPdf("blob")) for ZIP bundling.
+ * Layout replicates the Alliance Facade Services HMRC reference PDF:
+ * Helvetica (Nimbus Sans analogue), line color #ccced2, margins 21mm sides.
+ * Font sizes: 19.2 / 15.6 / 12.6 / 7.8 pt.
  */
 
-import html2pdf from "html2pdf.js";
-import { createElement } from "react";
-import { createRoot } from "react-dom/client";
-import CISStatementDocument from "../../components/cis/CISStatementDocument";
+import jsPDF from "jspdf";
 
-function sanitize(seg) {
-  return String(seg || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+/* ─── layout constants ───────────────────────────────────────────────────── */
+
+const PAGE_W = 210;
+const ML = 21;
+const MR = 21;
+const MT = 16;
+const CR = PAGE_W - MR;
+
+const LINE = [204, 206, 210];        // #ccced2
+
+const PT = 0.3528;                    // 1pt -> mm
+
+const F_TITLE = 19.2;
+const F_NAME = 15.6;
+const F_HEADING = 12.6;
+const F_BODY = 7.8;
+
+/* Helvetica ascent factor — baseline sits ~0.75 × fontSize below glyph top */
+const ascent = (pt) => pt * 0.72 * PT;
+
+/* ─── formatting helpers ─────────────────────────────────────────────────── */
+
+const NUM = new Intl.NumberFormat("en-GB", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const fmt = (v) => NUM.format(Number(v || 0));
+
+function fmtShort(d) {
+  if (!d) return "\u2014";
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", year: "numeric",
+  });
+}
+
+function fmtLong(d) {
+  if (!d) return "\u2014";
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+}
+
+function fmtMonthYear(d) {
+  if (!d) return "\u2014";
+  return new Date(d).toLocaleDateString("en-GB", {
+    month: "long", year: "numeric",
+  });
+}
+
+function periodRange(start, end) {
+  if (!start || !end) return "\u2014";
+  const s = new Date(start);
+  const e = new Date(end);
+  const sDay = s.getDate();
+  const eDay = e.getDate();
+  const sMonth = s.toLocaleDateString("en-GB", { month: "long" });
+  const eMonth = e.toLocaleDateString("en-GB", { month: "long" });
+  const eYear = e.getFullYear();
+  if (s.getFullYear() === eYear) {
+    return `${sDay} ${sMonth} to ${eDay} ${eMonth} ${eYear}`;
+  }
+  return `${sDay} ${sMonth} ${s.getFullYear()} to ${eDay} ${eMonth} ${eYear}`;
+}
+
+function sanitize(s) {
+  return String(s || "").replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 function filenameFor({ subcontractor, period }) {
@@ -25,79 +87,311 @@ function filenameFor({ subcontractor, period }) {
   return `CIS_PDS_${sanitize(last)}_${sanitize(dateIso)}.pdf`;
 }
 
-function pdfOptions(filename) {
-  return {
-    margin: 0,
-    filename,
-    image: { type: "jpeg", quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-  };
+/* ─── drawing primitives ─────────────────────────────────────────────────── */
+
+function setLinePen(doc) {
+  doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
+  doc.setLineWidth(0.75 * PT);
 }
 
 /**
- * Shared: mount CISStatementDocument off-screen and run a worker fn against
- * the resulting element. Caller decides whether to call .save() or .outputPdf().
+ * Section heading: bold 12.6pt label, then a full-width rule 4pt below baseline.
+ * Returns the Y after the rule + 12pt margin-bottom.
  */
-async function withRenderedDoc({ contractor, subcontractor, period, amounts }, worker) {
-  const docId = "cis-pds-pdf-render-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-  const container = document.createElement("div");
-  container.style.cssText = "position:fixed;left:-9999px;top:0;width:210mm;visibility:hidden;pointer-events:none;overflow:hidden;";
-  document.body.appendChild(container);
+function drawSectionHeading(doc, text, y) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(F_HEADING);
+  doc.setTextColor(17, 17, 17);
 
-  const root = createRoot(container);
-  try {
-    root.render(
-      createElement(CISStatementDocument, {
-        contractor,
-        subcontractor,
-        period,
-        amounts,
-        docId,
-      })
-    );
-
-    // Give React a tick to flush.
-    await new Promise((r) => setTimeout(r, 100));
-
-    const el = document.getElementById(docId);
-    if (!el) {
-      return { success: false, error: "Failed to render CIS statement document" };
-    }
-    return await worker(el);
-  } finally {
-    try { root.unmount(); } catch { /* ignore */ }
-    try { if (container.parentNode) container.parentNode.removeChild(container); } catch { /* ignore */ }
-  }
+  const baseline = y + ascent(F_HEADING);
+  doc.text(text, ML, baseline);
+  const ruleY = baseline + 4 * PT;
+  setLinePen(doc);
+  doc.line(ML, ruleY, CR, ruleY);
+  return ruleY + 12 * PT;
 }
 
 /**
- * Download a single PDS as a PDF.
+ * KV row: label (left), value (right), bottom rule. Matches the 7pt/8pt padding
+ * used by the KVRow React component.
+ */
+function drawKVRow(doc, label, value, xL, xR, y, { bold = false, mono = false } = {}) {
+  const topPad = 7 * PT;
+  const bottomPad = 8 * PT;
+  const baseline = y + topPad + ascent(F_BODY);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(F_BODY);
+  doc.setTextColor(34, 34, 34);
+  doc.text(label, xL, baseline);
+
+  doc.setFont(mono ? "courier" : "helvetica", bold ? "bold" : "normal");
+  doc.setTextColor(17, 17, 17);
+  doc.text(String(value), xR, baseline, { align: "right" });
+
+  const ruleY = baseline + bottomPad;
+  setLinePen(doc);
+  doc.line(xL, ruleY, xR, ruleY);
+  return ruleY;
+}
+
+/**
+ * 9-column source invoices table.
+ */
+function drawInvoicesTable(doc, rows, y) {
+  const widthW = CR - ML;
+  const cols = [
+    { label: "Reference",    w: 0.14, align: "left" },
+    { label: "Invoice date", w: 0.12, align: "left" },
+    { label: "Payment date", w: 0.14, align: "left" },
+    { label: "Gross (A)",    w: 0.09, align: "right" },
+    { label: "Materials",    w: 0.10, align: "right" },
+    { label: "Non-CIS",      w: 0.09, align: "right" },
+    { label: "Labour",       w: 0.10, align: "right" },
+    { label: "CIS (B)",      w: 0.08, align: "right" },
+    { label: "Paid (A - B)", w: 0.14, align: "right" },
+  ];
+
+  const colX = [];
+  let cx = ML;
+  for (const c of cols) {
+    colX.push(cx);
+    cx += c.w * widthW;
+  }
+  const rightEdges = colX.map((x, i) => x + cols[i].w * widthW);
+
+  const pad = 3 * PT;
+  const vpad = 5 * PT;
+
+  setLinePen(doc);
+  doc.line(ML, y, CR, y);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(F_BODY);
+  doc.setTextColor(17, 17, 17);
+  const headBase = y + vpad + ascent(F_BODY);
+  cols.forEach((c, i) => {
+    const tx = c.align === "right" ? rightEdges[i] - pad : colX[i] + pad;
+    doc.text(c.label, tx, headBase, c.align === "right" ? { align: "right" } : undefined);
+  });
+  y = headBase + vpad;
+  doc.line(ML, y, CR, y);
+
+  doc.setFont("helvetica", "normal");
+  for (const r of rows) {
+    const values = [
+      r.reference || "\u2014",
+      r.invoice_date ? fmtMonthYear(r.invoice_date) : "\u2014",
+      fmtLong(r.payment_date),
+      fmt(r.gross),
+      fmt(r.materials),
+      fmt(r.non_cis),
+      fmt(r.labour),
+      fmt(r.cis),
+      fmt(r.paid),
+    ];
+    const rowBase = y + vpad + ascent(F_BODY);
+    cols.forEach((c, i) => {
+      const tx = c.align === "right" ? rightEdges[i] - pad : colX[i] + pad;
+      doc.text(String(values[i]), tx, rowBase, c.align === "right" ? { align: "right" } : undefined);
+    });
+    y = rowBase + vpad;
+    doc.line(ML, y, CR, y);
+  }
+  return y;
+}
+
+/* ─── main builder ───────────────────────────────────────────────────────── */
+
+function buildDoc({ contractor = {}, subcontractor = {}, period = {}, amounts = {}, invoices }) {
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+  const grossN = Number(amounts.gross_amount || 0);
+  const materialsN = Number(amounts.materials_amount || 0);
+  const cisN = Number(amounts.cis_deducted || 0);
+  const liable = Math.max(0, grossN - materialsN);
+  const netPaid = grossN - cisN;
+  const rate = amounts.cis_rate_used;
+
+  const invRows = Array.isArray(invoices) && invoices.length > 0
+    ? invoices
+    : [{
+        reference: period?.label ? `Summary \u2014 ${period.label}` : "Summary",
+        invoice_date: null,
+        payment_date: period?.period_end,
+        gross: grossN,
+        materials: materialsN,
+        non_cis: 0,
+        labour: liable,
+        cis: cisN,
+        paid: netPaid,
+      }];
+
+  let y = MT;
+
+  /* ── TITLE BLOCK ── */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(F_TITLE);
+  doc.setTextColor(17, 17, 17);
+
+  y += ascent(F_TITLE);
+  doc.text("Construction Industry Scheme", ML, y);
+
+  y += F_TITLE * 1.1 * PT - ascent(F_TITLE);
+  y += 2 * PT + ascent(F_TITLE);
+  doc.text("Payment and Deduction Statement", ML, y);
+  y += F_TITLE * 1.1 * PT - ascent(F_TITLE);
+
+  /* ── CONTRACTOR NAME + PERIOD ── */
+  y += 12 * PT;
+  doc.setFontSize(F_NAME);
+  y += ascent(F_NAME);
+  doc.text(contractor.name || "\u2014", ML, y);
+  y += F_NAME * 1.1 * PT - ascent(F_NAME);
+
+  y += 1 * PT + ascent(F_NAME);
+  doc.text(
+    `For the period ${periodRange(period.period_start, period.period_end)}`,
+    ML, y,
+  );
+  y += F_NAME * 1.1 * PT - ascent(F_NAME);
+
+  /* ── CONTRACTOR DETAILS ── */
+  y += 27;
+  y = drawSectionHeading(doc, "Contractor details", y);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(F_BODY);
+  doc.setTextColor(17, 17, 17);
+  y += ascent(F_BODY);
+  doc.text(contractor.name || "\u2014", ML, y);
+  y += F_BODY * 1.3 * PT - ascent(F_BODY);
+
+  if (contractor.address) {
+    y += 3 * PT + ascent(F_BODY);
+    doc.text(contractor.address, ML, y);
+    y += F_BODY * 1.3 * PT - ascent(F_BODY);
+  }
+
+  y += 10 * PT;
+  y = drawKVRow(doc, "Payment and deduction made in tax month ended",
+                fmtShort(period.period_end), ML, CR, y);
+  y = drawKVRow(doc, "Employer\u2019s PAYE reference",
+                contractor.employer_paye_ref || "\u2014", ML, CR, y, { mono: true });
+  if (contractor.accounts_office_ref) {
+    y = drawKVRow(doc, "Accounts Office reference",
+                  contractor.accounts_office_ref, ML, CR, y, { mono: true });
+  }
+
+  /* ── SUBCONTRACTOR DETAILS + AMOUNTS ── */
+  y += 20 * PT;
+  y = drawSectionHeading(doc, "Subcontractor details", y);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(F_BODY);
+  doc.setTextColor(17, 17, 17);
+  y += ascent(F_BODY);
+  doc.text(subcontractor.name || "\u2014", ML, y);
+  y += F_BODY * 1.3 * PT - ascent(F_BODY);
+  y += 8 * PT;
+
+  if (subcontractor.address) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(34, 34, 34);
+    y += ascent(F_BODY);
+    doc.text(subcontractor.address, ML, y);
+    y += F_BODY * 1.3 * PT - ascent(F_BODY);
+    y += 8 * PT;
+  }
+
+  const contentW = CR - ML;
+  const colW = 0.487 * contentW;
+  const leftXR = ML + colW;
+  const rightXL = CR - colW;
+
+  const yStart = y;
+  let yL = yStart;
+  let yR = yStart;
+
+  yL = drawKVRow(doc, "Unique taxpayers reference",
+                 subcontractor.utr || "\u2014",
+                 ML, leftXR, yL, { mono: true });
+  yL = drawKVRow(doc, "Verification number",
+                 subcontractor.verification_number
+                   || (rate === "gross_0" ? "N/A" : "\u2014"),
+                 ML, leftXR, yL, { mono: true });
+
+  yR = drawKVRow(doc, "Gross paid (excl VAT) (A)", fmt(grossN), rightXL, CR, yR);
+  yR = drawKVRow(doc, "Less cost of materials", fmt(materialsN), rightXL, CR, yR);
+  yR = drawKVRow(doc, "Less non-CIS", fmt(0), rightXL, CR, yR);
+  yR = drawKVRow(doc, "Liable to deduction", fmt(liable), rightXL, CR, yR);
+  yR = drawKVRow(doc, "Deducted (B)", fmt(cisN), rightXL, CR, yR);
+  yR = drawKVRow(doc, "Paid (A - B)", fmt(netPaid), rightXL, CR, yR, { bold: true });
+
+  y = Math.max(yL, yR);
+
+  /* ── SOURCE INVOICES ── */
+  y += 20 * PT;
+  y = drawSectionHeading(doc, "Source invoices", y);
+  y = drawInvoicesTable(doc, invRows, y);
+
+  /* ── FOOTER ── */
+  y += 28 * PT;
+  setLinePen(doc);
+  doc.line(ML, y, CR, y);
+  y += 6 * PT;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(F_BODY);
+  doc.setTextColor(119, 119, 119);
+  const footerText =
+    "This statement is issued under the HMRC Construction Industry Scheme " +
+    "(CIS340), Appendix E. Contractors must provide it to subcontractors " +
+    "within 14 days of the end of each tax month. Keep this record for your " +
+    `tax return. Generated by InvoiceSaga on ${fmtShort(new Date())}.`;
+  const wrapped = doc.splitTextToSize(footerText, CR - ML);
+  y += ascent(F_BODY);
+  wrapped.forEach((line, i) => {
+    if (i > 0) y += F_BODY * 1.4 * PT;
+    doc.text(line, ML, y);
+  });
+
+  /* ── PAGE STRIP ── */
+  y += 20 * PT;
+  doc.setTextColor(153, 153, 153);
+  doc.text(`CIS Payment Deduction Statement | ${contractor.name || "\u2014"}`, ML, y);
+  doc.text("1 of 1", CR, y, { align: "right" });
+
+  return doc;
+}
+
+/* ─── public API ─────────────────────────────────────────────────────────── */
+
+/**
+ * Download a CIS PDS as a native-text PDF.
  * @returns {Promise<{ success: boolean, filename?: string, error?: string }>}
  */
-export async function generateCISStatementPdf({ contractor, subcontractor, period, amounts }) {
+export async function generateCISStatementPdf({ contractor, subcontractor, period, amounts, invoices }) {
   try {
     const filename = filenameFor({ subcontractor, period });
-    return await withRenderedDoc({ contractor, subcontractor, period, amounts }, async (el) => {
-      await html2pdf().set(pdfOptions(filename)).from(el).save();
-      return { success: true, filename };
-    });
+    const doc = buildDoc({ contractor, subcontractor, period, amounts, invoices });
+    doc.save(filename);
+    return { success: true, filename };
   } catch (err) {
     return { success: false, error: err?.message || "PDF generation failed" };
   }
 }
 
 /**
- * Produce a PDS PDF as a Blob (no download). Used by bulk ZIP path.
+ * Produce a CIS PDS PDF as a Blob (for ZIP / email attachment).
  * @returns {Promise<{ success: boolean, filename?: string, blob?: Blob, error?: string }>}
  */
-export async function generateCISStatementBlob({ contractor, subcontractor, period, amounts }) {
+export async function generateCISStatementBlob({ contractor, subcontractor, period, amounts, invoices }) {
   try {
     const filename = filenameFor({ subcontractor, period });
-    return await withRenderedDoc({ contractor, subcontractor, period, amounts }, async (el) => {
-      const blob = await html2pdf().set(pdfOptions(filename)).from(el).outputPdf("blob");
-      return { success: true, filename, blob };
-    });
+    const doc = buildDoc({ contractor, subcontractor, period, amounts, invoices });
+    const blob = doc.output("blob");
+    return { success: true, filename, blob };
   } catch (err) {
     return { success: false, error: err?.message || "PDF generation failed" };
   }

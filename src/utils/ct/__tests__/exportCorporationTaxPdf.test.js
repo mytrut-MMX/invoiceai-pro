@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // exportCorporationTaxPdf transitively imports generateCorporationTaxPdf →
-// html2pdf.js, which needs `self` at module load. Stub the PDF module and
-// supabase so Node can evaluate the module under test.
+// jsPDF, which touches browser globals at module load. Stub the PDF module
+// and supabase so Node can evaluate the module under test.
 const generatePdfBlob = vi.fn();
 vi.mock("../generateCorporationTaxPdf", () => ({
   generateCorporationTaxPdfBlob: (...args) => generatePdfBlob(...args),

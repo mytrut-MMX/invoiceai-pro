@@ -2,7 +2,8 @@
  * PayslipDocument — renders a single payslip as an A4 document.
  *
  * Mirrors the structure and styling of A4InvoiceDoc for brand consistency.
- * Used as an off-screen DOM element for html2pdf conversion.
+ * Used for on-screen preview only — the downloadable PDF is built directly
+ * from data via jsPDF in generatePayslipPdf.js.
  */
 
 import { fmt, fmtDate } from "../../utils/helpers";
