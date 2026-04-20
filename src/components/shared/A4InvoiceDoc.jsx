@@ -77,7 +77,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 
   const toData = {
     companyName: customer?.company || customer?.companyName || customer?.name || "",
-    contactName: customer?.name || "",
+    contactName: [customer?.firstName, customer?.lastName].filter(Boolean).join(" ") || customer?.name || "",
     // Support both street1 (CustomerModal format) and street (legacy/demo format)
     address: customer?.billingAddress?.street1 || customer?.billingAddress?.street || "",
     city: customer?.billingAddress?.city || "",
@@ -223,7 +223,9 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         ? <div style={{ fontSize: "7pt", color: "#888", textAlign: "center", lineHeight: 1.6 }}>{activeSchemaTemplate.customText?.footerNote || footerText}</div>
         : <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: "7pt", color: "#CCC" }}>{org.orgName || ""}{org.vatNum ? ` · VAT ${org.vatNum}` : ""}{org.crn ? ` · CRN ${org.crn}` : ""}</span>
-            <span style={{ fontSize: "7pt", color: "#CCC" }}>{org.email || ""}</span>
+            {(org.website || org.phone) && (
+              <span style={{ fontSize: "7pt", color: "#CCC" }}>{org.website || org.phone}</span>
+            )}
           </div>
       }
     </div>
