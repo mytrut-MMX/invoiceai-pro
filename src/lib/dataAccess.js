@@ -192,6 +192,8 @@ function rowToCustomer(row) {
       utr: row.cis_utr || "",
     },
     notes: row.notes,
+    self_billed_by_customer: row.self_billed_by_customer ?? false,
+    self_billing_agreement_id: row.self_billing_agreement_id ?? null,
     created_at: row.created_at,
   };
 }
@@ -435,6 +437,9 @@ function customerToRow(userId, cust) {
     cis_registered: cust.cis?.registered || false,
     cis_utr: cust.cis?.utr || null,
     notes: cust.notes || null,
+    self_billed_by_customer: cust.self_billed_by_customer ?? false,
+    // SBA id is managed by the Phase 3 self-billing flow; never overwritten from here.
+    self_billing_agreement_id: cust.self_billing_agreement_id ?? null,
   };
 }
 
