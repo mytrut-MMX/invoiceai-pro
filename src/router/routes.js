@@ -133,6 +133,9 @@ export const ROUTES = {
   SECURE_INVOICE: (number) => `/secure/invoice/${number}`,
   SECURE_QUOTE:   (number) => `/secure/quote/${number}`,
 
+  // SBA counterparty signing link — token is the auth mechanism (migration 044).
+  SBA_SIGN:       (token)  => `/sba/sign/${token}`,
+
   // ─── Utility ─────────────────────────────────────────────────────────────────
   NOT_FOUND: '/404',
 };

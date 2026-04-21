@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import {
   CUR_SYM,
   PAYMENT_TERMS_OPTS,
@@ -8,8 +8,10 @@ import {
 } from "../../constants";
 import { Field, Input, Select, Textarea, Btn } from "../atoms";
 import { formatPhoneNumber, stripPhoneForStorage } from "../../utils/helpers";
+import { AppCtx } from "../../context/AppContext";
+import SupplierSelfBillingTab from "./SupplierSelfBillingTab";
 
-const TABS = ["Details", "Tax & Registration", "CIS", "Address", "Remarks"];
+const TABS = ["Details", "Tax & Registration", "Self-Billing", "CIS", "Address", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
 const PAYMENT_TERMS = PAYMENT_TERMS_OPTS.filter((t) => t !== "Custom");
 
@@ -19,6 +21,9 @@ const dateInputCls =
 const textInputCls = dateInputCls;
 
 export default function SupplierFormPanel({ existing, onClose, onSave, suppliers = [] }) {
+  const ctx = useContext(AppCtx);
+  const userId = ctx?.user?.id || null;
+  const orgSettings = ctx?.orgSettings || {};
   const [activeTab, setActiveTab] = useState("Details");
   const [saved, setSaved] = useState(false);
 
@@ -252,6 +257,14 @@ export default function SupplierFormPanel({ existing, onClose, onSave, suppliers
                   </div>
                 </div>
               </div>
+            )}
+
+            {activeTab === "Self-Billing" && (
+              <SupplierSelfBillingTab
+                supplier={existing}
+                userId={userId}
+                orgSettings={orgSettings}
+              />
             )}
 
             {activeTab === "CIS" && (

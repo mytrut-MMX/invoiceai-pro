@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { CUR_SYM, PAYMENT_TERMS_OPTS } from "../constants";
 import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
 import { formatPhoneNumber, stripPhoneForStorage } from "../utils/helpers";
 import { useCISSettings } from "../hooks/useCISSettings";
+import { AppCtx } from "../context/AppContext";
 
 const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
@@ -53,6 +54,10 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [cisRate, setCisRate] = useState(existing?.cis?.rate || CIS_RATES[0].label);
   const [cisVerification, setCisVerification] = useState(existing?.cis?.verification || "Net");
   const [cisBusinessType, setCisBusinessType] = useState(existing?.cis?.businessType || "Subcontractor");
+  const [selfBilledByCustomer, setSelfBilledByCustomer] = useState(existing?.self_billed_by_customer ?? false);
+  const [sbSectionOpen, setSbSectionOpen] = useState(false);
+  const { orgSettings } = useContext(AppCtx) || {};
+  const sbGatePassed = Boolean(existing?.vat_number) && orgSettings?.vatReg === "Yes";
 
   const copyBillingToShipping = () => {
     setShipStreet1(billStreet1);
@@ -93,6 +98,9 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
         street1: shipStreet1, street2: shipStreet2,
         city: shipCity, state: shipState, zip: shipZip, country: shipCountry,
       },
+      self_billed_by_customer: selfBilledByCustomer,
+      // Agreement id is created in the Phase 3 SBA flow, never from this modal.
+      self_billing_agreement_id: existing?.self_billing_agreement_id ?? null,
     };
     setSaved(true);
     setTimeout(() => onSave(customer), 600);
@@ -180,6 +188,56 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
             </Field>
             <Field label="Website"><Input value={website} onChange={setWebsite} placeholder="https://" /></Field>
           </div>
+        </div>
+
+        {/* Self-Billing Arrangement (advanced) — collapsed by default */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] mb-4" style={{ marginTop: "21px" }}>
+          <button
+            type="button"
+            onClick={() => setSbSectionOpen((v) => !v)}
+            aria-expanded={sbSectionOpen}
+            aria-controls="customer-sb-panel"
+            className="w-full flex items-center justify-between px-5 py-3 bg-transparent border-none cursor-pointer text-sm font-semibold text-[var(--text-primary)]"
+          >
+            <span>Self-Billing Arrangement (advanced)</span>
+            <span aria-hidden="true" className="text-[var(--text-tertiary)]">{sbSectionOpen ? "▾" : "▸"}</span>
+          </button>
+          {sbSectionOpen && (
+            <div id="customer-sb-panel" className="px-5 pb-5 pt-1" style={{ gap: "21px" }}>
+              {!sbGatePassed ? (
+                <div role="status" className="border border-dashed border-[var(--border-subtle)] rounded-[var(--radius-md)] p-4 text-sm text-[var(--text-secondary)]">
+                  Self-billing arrangements require both parties to be VAT-registered. Enter a VAT
+                  number above, and ensure your business VAT registration is set in Settings → Tax.
+                </div>
+              ) : (
+                <>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-[var(--text-primary)]">
+                    <input
+                      type="checkbox"
+                      checked={selfBilledByCustomer}
+                      onChange={(e) => setSelfBilledByCustomer(e.target.checked)}
+                      className="accent-[var(--brand-600)]"
+                    />
+                    This customer issues self-billed invoices to me
+                  </label>
+                  {selfBilledByCustomer && (
+                    <div role="status" className="mt-3 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 text-amber-900 text-sm p-3 leading-relaxed">
+                      With this flag enabled, you cannot issue your own invoices to this customer
+                      while an active agreement exists. Received self-bills will appear in your
+                      Invoices list.
+                      <br />
+                      Next step: create the agreement document from Customers →{" "}
+                      <span className="font-medium">{displayName || existing?.name || "this customer"}</span>
+                      {" "}→ Set up self-billing. (Coming in Phase 3.)
+                    </div>
+                  )}
+                  <div className="mt-2 text-xs text-[var(--text-tertiary)]">
+                    Agreement ID: {existing?.self_billing_agreement_id ?? "not yet created"}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tabs card */}
