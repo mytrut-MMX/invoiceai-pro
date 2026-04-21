@@ -77,7 +77,6 @@ export const SB_ERRORS = Object.freeze({
     message: 'A bill from {supplierName} already exists for period {periodLabel}. Issuing a second self-bill would double-count the expense.',
     userAction: 'Review the existing bill before proceeding',
   },
-  // ctx: none
   MISSING_MARKER_STATEMENT: {
     code: 'MISSING_MARKER_STATEMENT',
     title: 'Mandatory HMRC markers missing',
@@ -111,6 +110,30 @@ export const SB_ERRORS = Object.freeze({
     title: 'Tax point falls outside the agreement period',
     message: 'The tax point {taxPoint} falls outside the agreement window ({periodStart} → {periodEnd}). Self-bills can only cover supplies made during the agreement.',
     userAction: 'Adjust the tax point or use a different agreement',
+  },
+  SBA_INVALID_DATES: { // ctx: maxMonths
+    code: 'SBA_INVALID_DATES',
+    title: 'Invalid agreement dates',
+    message: 'End date must be after start date and within {maxMonths} months of it.',
+    userAction: 'Adjust the dates',
+  },
+  SBA_INVALID_COUNTERPARTY: {
+    code: 'SBA_INVALID_COUNTERPARTY',
+    title: 'Invalid counterparty',
+    message: 'A self-billing agreement must have exactly one counterparty — either a supplier (issued) or a customer (received), not both or neither.',
+    userAction: 'Select a supplier or a customer',
+  },
+  SBA_INVALID_REASON: { // ctx: minChars
+    code: 'SBA_INVALID_REASON',
+    title: 'Termination reason too short',
+    message: 'Please provide a termination reason of at least {minChars} characters for audit purposes.',
+    userAction: 'Provide a longer reason',
+  },
+  SBA_NOT_FOUND: {
+    code: 'SBA_NOT_FOUND',
+    title: 'Agreement not found',
+    message: 'The requested self-billing agreement does not exist or you do not have access to it.',
+    userAction: 'Return to the agreements list',
   },
 });
 

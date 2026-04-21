@@ -23,11 +23,13 @@ function _validateDateRange(startDate, endDate) {
   const s = new Date(startDate);
   const e = new Date(endDate);
   if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime()) || !(s < e)) {
-    _throw('SBA_INVALID_DATES', { reason: 'end_not_after_start' });
+    _throw('SBA_INVALID_DATES', { maxMonths: SBA_MAX_DURATION_MONTHS, reason: 'end_not_after_start' });
   }
   const cap = new Date(s);
   cap.setMonth(cap.getMonth() + SBA_MAX_DURATION_MONTHS);
-  if (e > cap) _throw('SBA_INVALID_DATES', { reason: 'over_max_duration' });
+  if (e > cap) {
+    _throw('SBA_INVALID_DATES', { maxMonths: SBA_MAX_DURATION_MONTHS, reason: 'over_max_duration' });
+  }
 }
 
 function _validateCounterparty({ supplierId, customerId, direction }) {
@@ -137,7 +139,7 @@ export async function signByCounterparty({ token, signedByName, ip }) {
 
 export async function terminateSba({ userId, sbaId, reason }) {
   if (!reason || reason.trim().length < 10) {
-    _throw('SBA_INVALID_REASON', { reason: 'too_short' });
+    _throw('SBA_INVALID_REASON', { minChars: 10, reason: 'too_short' });
   }
   const cur = await _fetchSbaOwned(userId, sbaId);
   const allowed = [SBA_STATUS.ACTIVE, SBA_STATUS.PENDING_COUNTERSIGN];
