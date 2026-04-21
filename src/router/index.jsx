@@ -49,6 +49,7 @@ const BlogPage           = lazy(() => import("../pages/landing/BlogPage"));
 const BlogInvoiceGuide   = lazy(() => import("../pages/landing/blog/HowToWriteFreelanceInvoice"));
 const BlogLatePayment    = lazy(() => import("../pages/landing/blog/ChaseLatePayment"));
 const BlogTemplate       = lazy(() => import("../pages/landing/blog/FreelanceInvoiceTemplate"));
+const SbaSignPage        = lazy(() => import("../pages/SbaSignPage"));
 
 // App pages
 const HomePage           = lazy(() => import("../pages/HomePage"));
@@ -104,6 +105,9 @@ const router = createBrowserRouter([
   { path: ROUTES.BLOG_POST_INVOICE_GUIDE, element: <S><BlogInvoiceGuide /></S> },
   { path: ROUTES.BLOG_POST_LATE_PAYMENT,  element: <S><BlogLatePayment /></S>  },
   { path: ROUTES.BLOG_POST_TEMPLATE,      element: <S><BlogTemplate /></S>     },
+
+  // ── SBA counterparty signing (public; token IS auth — migration 044) ────────
+  { path: "/sba/sign/:token", element: <S><SbaSignPage /></S> },
 
   // ── Auth flows ──────────────────────────────────────────────────────────────
   {
