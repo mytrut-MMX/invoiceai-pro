@@ -223,6 +223,16 @@ export async function getActiveSbaForCustomer({ userId, customerId }) {
   return data || null;
 }
 
+export async function listSbasForSupplier({ userId, supplierId }) {
+  if (!supplierId) return [];
+  const { data, error } = await supabase
+    .from(TABLE).select(SELECT_WITH_PARTIES)
+    .eq('user_id', userId).eq('supplier_id', supplierId)
+    .order('version', { ascending: false });
+  if (error) _throw('SBA_NOT_ACTIVE', { reason: error.message });
+  return data || [];
+}
+
 export async function expireStaleSbas({ userId }) {
   const { data, error, count } = await supabase
     .from(TABLE)
