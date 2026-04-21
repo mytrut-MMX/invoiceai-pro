@@ -164,11 +164,10 @@ export async function supersedeAndRenew({
 }) {
   _validateDateRange(newStartDate, newEndDate);
   const { data, error } = await supabase.rpc('supersede_and_renew_sba', {
-    p_user_id: userId,
-    p_old_id: sbaId,
-    p_start_date: newStartDate,
-    p_end_date: newEndDate,
-    p_terms_snapshot: newTermsSnapshot || {},
+    p_old_sba_id: sbaId,
+    p_new_start_date: newStartDate,
+    p_new_end_date: newEndDate,
+    p_new_terms_snapshot: newTermsSnapshot ?? {},
   });
   if (error) _throw('SBA_NOT_ACTIVE', { reason: error.message });
   return data;

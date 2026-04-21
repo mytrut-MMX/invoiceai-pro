@@ -142,7 +142,17 @@ describe('supersedeAndRenew', () => {
       newStartDate: '2027-01-01', newEndDate: '2027-12-31', newTermsSnapshot: {},
     });
     expect(out.version).toBe(2);
-    expect(mockSupabase.rpc).toHaveBeenCalledWith('supersede_and_renew_sba', expect.any(Object));
+    expect(mockSupabase.rpc).toHaveBeenCalledWith(
+      'supersede_and_renew_sba',
+      expect.objectContaining({
+        p_old_sba_id: SBA,
+        p_new_start_date: '2027-01-01',
+        p_new_end_date: '2027-12-31',
+        p_new_terms_snapshot: {},
+      }),
+    );
+    const rpcArgs = mockSupabase.rpc.mock.calls[0][1];
+    expect(rpcArgs).not.toHaveProperty('p_user_id');
     expect(mockBuilder.update).not.toHaveBeenCalled();
     expect(mockBuilder.insert).not.toHaveBeenCalled();
   });
