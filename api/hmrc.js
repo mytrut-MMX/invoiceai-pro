@@ -20,6 +20,7 @@
 import { createCipheriv, createDecipheriv, randomBytes, createHmac } from 'crypto';
 import { withRateLimit } from './_lib/with-rate-limit.js';
 import { buildFraudPreventionHeaders } from './_lib/hmrc-headers.js';
+import { handleVatVerify } from './_lib/vat-verify-handler.js';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -232,6 +233,13 @@ async function handler(req, res) {
 
   const user = await verifyUser(userToken);
   if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
+
+  // Service dispatch — newer branches key off ?service= rather than ?action=
+  // so they don't collide with the OAuth/VAT action names above. Extracted
+  // services live in api/_lib/*-handler.js; auth + rate-limit have already run.
+  if (req.query?.service === 'vat-verify') {
+    return handleVatVerify(req, res, { userId: user.id });
+  }
 
   const action = req.query?.action || req.body?.action;
 
