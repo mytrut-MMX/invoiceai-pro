@@ -236,6 +236,10 @@ function rowToSupplier(row) {
     utr: row.utr,
     vat_number: row.vat_number,
     is_vat_registered: row.is_vat_registered || false,
+    // VAT verification cache (migration 047)
+    vat_verified_at:         row.vat_verified_at ?? null,
+    vat_verification_status: row.vat_verification_status ?? null,
+    vat_verification_name:   row.vat_verification_name ?? null,
     cis: {
       is_subcontractor: row.is_cis_subcontractor || false,
       verification_number: row.cis_verification_number,
