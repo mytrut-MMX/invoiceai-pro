@@ -5,7 +5,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 // Terminators (maybeSingle / single) return a Promise directly.
 const { mockBuilder, mockSupabase } = vi.hoisted(() => {
   const builder = { __result: { data: null, error: null, count: null } };
-  const chainable = ['select','insert','update','delete','eq','gt','lt','in','is','not','filter','order'];
+  const chainable = ['select','insert','update','delete','eq','gt','gte','lt','lte','in','is','not','filter','order'];
   chainable.forEach((m) => { builder[m] = vi.fn(() => builder); });
   builder.maybeSingle = vi.fn(() => Promise.resolve(builder.__result));
   builder.single      = vi.fn(() => Promise.resolve(builder.__result));
@@ -132,6 +132,15 @@ describe('terminateSba', () => {
     await expect(terminateSba({ userId: USER, sbaId: SBA, reason: 'short' }))
       .rejects.toMatchObject({ code: 'SBA_INVALID_REASON' });
   });
+
+  it('terminates a draft agreement (not only active/pending)', async () => {
+    mockBuilder.maybeSingle.mockResolvedValueOnce({ data: { id: SBA, status: 'draft' }, error: null });
+    mockBuilder.single.mockResolvedValueOnce({ data: { id: SBA, status: 'terminated' }, error: null });
+    const out = await terminateSba({
+      userId: USER, sbaId: SBA, reason: 'abandoned draft, never signed',
+    });
+    expect(out.status).toBe('terminated');
+  });
 });
 
 describe('supersedeAndRenew', () => {
@@ -169,12 +178,15 @@ describe('supersedeAndRenew', () => {
 });
 
 describe('listActiveSbas', () => {
-  it('filters by status=active and end_date > today', async () => {
+  it('filters by status=active and end_date >= today (inclusive)', async () => {
     setResult({ data: [{ id: SBA, status: 'active', end_date: '2027-01-01' }], error: null });
     const rows = await listActiveSbas({ userId: USER });
     expect(rows).toHaveLength(1);
     expect(mockBuilder.eq).toHaveBeenCalledWith('status', SBA_STATUS.ACTIVE);
-    expect(mockBuilder.gt).toHaveBeenCalledWith('end_date', expect.any(String));
+    // gte (inclusive) not gt: same-day-expiry must remain active on the expiry
+    // date and only flip to expired the next day (expireStaleSbas).
+    expect(mockBuilder.gte).toHaveBeenCalledWith('end_date', expect.any(String));
+    expect(mockBuilder.gt).not.toHaveBeenCalledWith('end_date', expect.any(String));
     expect(mockBuilder.order).toHaveBeenCalledWith('end_date', { ascending: true });
   });
 
@@ -213,6 +225,29 @@ describe('getActiveSbaForCustomer', () => {
     });
     expect(await getActiveSbaForCustomer({ userId: USER, customerId: CUS }))
       .toMatchObject({ id: SBA });
+  });
+});
+
+describe('end_date boundary (same-day-expiry)', () => {
+  it('getActiveSbaForSupplier queries with gte (today remains active)', async () => {
+    mockBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: SBA, status: 'active', end_date: new Date().toISOString().slice(0, 10) },
+      error: null,
+    });
+    const out = await getActiveSbaForSupplier({ userId: USER, supplierId: SUP });
+    expect(out).toMatchObject({ id: SBA });
+    // Inclusive: .gte('end_date', today). Exclusive .gt would hide same-day rows.
+    expect(mockBuilder.gte).toHaveBeenCalledWith('end_date', expect.any(String));
+    expect(mockBuilder.gt).not.toHaveBeenCalledWith('end_date', expect.any(String));
+  });
+
+  it('expireStaleSbas leaves same-day-expiry rows alone (.lt, not .lte)', async () => {
+    setResult({ data: [], error: null, count: 0 });
+    await expireStaleSbas({ userId: USER });
+    // .lt('end_date', today) — a row where end_date === today is NOT matched,
+    // so it survives until the next day (when today advances).
+    expect(mockBuilder.lt).toHaveBeenCalledWith('end_date', expect.any(String));
+    expect(mockBuilder.lte).not.toHaveBeenCalledWith('end_date', expect.any(String));
   });
 });
 

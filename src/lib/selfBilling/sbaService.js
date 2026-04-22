@@ -142,7 +142,9 @@ export async function terminateSba({ userId, sbaId, reason }) {
     _throw('SBA_INVALID_REASON', { minChars: 10, reason: 'too_short' });
   }
   const cur = await _fetchSbaOwned(userId, sbaId);
-  const allowed = [SBA_STATUS.ACTIVE, SBA_STATUS.PENDING_COUNTERSIGN];
+  // Drafts are terminatable too — a user abandoning an unsent draft should
+  // be able to kill it cleanly without waiting for signBySender + terminate.
+  const allowed = [SBA_STATUS.DRAFT, SBA_STATUS.PENDING_COUNTERSIGN, SBA_STATUS.ACTIVE];
   if (!allowed.includes(cur.status)) {
     _throw('SBA_NOT_ACTIVE', { status: cur.status });
   }
@@ -178,7 +180,9 @@ export async function listActiveSbas({ userId, direction } = {}) {
     .from(TABLE).select(SELECT_WITH_PARTIES)
     .eq('user_id', userId)
     .eq('status', SBA_STATUS.ACTIVE)
-    .gt('end_date', _today());
+    // Same-day-expiry is still active (inclusive). expireStaleSbas flips the
+    // status the next day, so end_date == today must remain visible here.
+    .gte('end_date', _today());
   if (direction) q = q.eq('direction', direction);
   const { data, error } = await q.order('end_date', { ascending: true });
   if (error) _throw('SBA_NOT_ACTIVE', { reason: error.message });
@@ -203,7 +207,7 @@ export async function getActiveSbaForSupplier({ userId, supplierId }) {
     .eq('supplier_id', supplierId)
     .eq('direction', SB_DIRECTION.ISSUED)
     .eq('status', SBA_STATUS.ACTIVE)
-    .gt('end_date', _today())
+    .gte('end_date', _today())
     .maybeSingle();
   if (error) _throw('SBA_NOT_ACTIVE', { reason: error.message });
   return data || null;
@@ -217,7 +221,7 @@ export async function getActiveSbaForCustomer({ userId, customerId }) {
     .eq('customer_id', customerId)
     .eq('direction', SB_DIRECTION.RECEIVED)
     .eq('status', SBA_STATUS.ACTIVE)
-    .gt('end_date', _today())
+    .gte('end_date', _today())
     .maybeSingle();
   if (error) _throw('SBA_NOT_ACTIVE', { reason: error.message });
   return data || null;
