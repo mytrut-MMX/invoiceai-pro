@@ -8,9 +8,11 @@ export const DASHBOARD_WIDGETS = [
   // the user has no self-billing activity, so it's invisible to non-users.
   // `visible(ctx)` is declarative metadata for DashboardCustomizer to use in
   // a follow-up — HomePage currently renders based on user layout state only.
+  // Now reads the AppContext boolean populated by useHasAnyActiveIssuedSba
+  // (migration 048 dropped the suppliers[*].self_billing.enabled fallback).
   {
     id: 'sba_renewals',     label: 'Self-Billing Renewals', component: 'SbaRenewalsWidget', default: true,  order: 5,
-    visible: (ctx) => (ctx?.suppliers || []).some((s) => s?.self_billing?.enabled)
+    visible: (ctx) => !!ctx?.hasAnyActiveIssuedSba
                    || (ctx?.customers || []).some((c) => c?.self_billed_by_customer),
   },
 ];

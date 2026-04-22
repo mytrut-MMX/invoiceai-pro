@@ -248,12 +248,9 @@ function rowToSupplier(row) {
       trader_type: row.cis_trader_type,
       labour_only: row.cis_labour_only || false,
     },
-    self_billing: {
-      enabled: row.self_billing_enabled || false,
-      agreement_start: row.self_billing_agreement_start,
-      agreement_end: row.self_billing_agreement_end,
-      invoice_series: row.self_billing_invoice_series,
-    },
+    // Self-billing metadata now lives in the self_billing_agreements table
+    // (migration 048 dropped the legacy per-supplier flag columns). Callers
+    // that need "has an active SBA" use useHasAnyActiveIssuedSba / sbaGate.
     default_reverse_charge: row.default_reverse_charge || false,
     payment_terms: row.payment_terms,
     currency: row.currency,
@@ -503,10 +500,8 @@ function supplierToRow(userId, sup) {
     cis_rate: sup.cis?.rate || null,
     cis_trader_type: sup.cis?.trader_type || null,
     cis_labour_only: sup.cis?.labour_only || false,
-    self_billing_enabled: sup.self_billing?.enabled || false,
-    self_billing_agreement_start: sup.self_billing?.agreement_start || null,
-    self_billing_agreement_end: sup.self_billing?.agreement_end || null,
-    self_billing_invoice_series: sup.self_billing?.invoice_series || null,
+    // self_billing_* columns dropped in migration 048 — source of truth is
+    // the self_billing_agreements table.
     default_reverse_charge: sup.default_reverse_charge || false,
     payment_terms: sup.payment_terms || null,
     currency: sup.currency || "GBP",
