@@ -82,6 +82,10 @@ function rowToInvoice(row) {
     converted_from_quote: row.converted_from_quote,
     vat_scheme: row.vat_scheme,
     accounting_basis: row.accounting_basis,
+    // Received self-bill flag (migration 043 + 046).
+    received_as_self_bill:    !!row.received_as_self_bill,
+    received_sb_customer_ref: row.received_sb_customer_ref ?? null,
+    received_sb_agreement_id: row.received_sb_agreement_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -310,6 +314,10 @@ function invoiceToRow(userId, inv) {
     po_number: inv.po_number || null,
     converted_from_quote: inv.converted_from_quote || null,
     cis_deduction: num(inv.cisDeduction ?? inv.cis_deduction) ?? 0,
+    // Received self-bill (migration 043 + 046): customer self-bills us.
+    received_as_self_bill:     inv.received_as_self_bill ?? false,
+    received_sb_customer_ref:  inv.received_sb_customer_ref ?? null,
+    received_sb_agreement_id:  inv.received_sb_agreement_id ?? null,
     updated_at: new Date().toISOString(),
   };
 }

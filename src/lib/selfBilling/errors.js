@@ -135,6 +135,24 @@ export const SB_ERRORS = Object.freeze({
     message: 'The requested self-billing agreement does not exist or you do not have access to it.',
     userAction: 'Return to the agreements list',
   },
+  SBA_VAT_MISMATCH: {
+    code: 'SBA_VAT_MISMATCH',
+    title: 'VAT registration mismatch',
+    message: 'Both parties must be VAT-registered for a self-bill to include VAT.',
+    userAction: 'Verify both parties\' VAT registration status',
+  },
+  SB_NO_LINE_ITEMS: {
+    code: 'SB_NO_LINE_ITEMS',
+    title: 'No line items on self-bill',
+    message: 'At least one line item is required.',
+    userAction: 'Add at least one line item before issuing the self-bill',
+  },
+  SB_INVALID_DATE_RANGE: {
+    code: 'SB_INVALID_DATE_RANGE',
+    title: 'Supply and issue dates too far apart',
+    message: 'Supply date cannot be more than 30 days from issue date.',
+    userAction: 'Adjust the supply or issue date',
+  },
 });
 
 export function getSbError(code, ctx = {}) {
