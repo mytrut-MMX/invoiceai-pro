@@ -11,6 +11,7 @@ import CashFlowWidget from "../components/home/CashFlowWidget";
 import NeedsAttention from "../components/home/NeedsAttention";
 import RecentInvoices from "../components/home/RecentInvoices";
 import MonthEndChecklist from "../components/home/MonthEndChecklist";
+import SbaRenewalsWidget from "../components/home/SbaRenewalsWidget";
 import DashboardCustomizer from "../components/home/DashboardCustomizer";
 import { useDashboardLayout } from "../hooks/useDashboardLayout";
 import { DashboardSkeleton } from "../components/ui/Skeleton";
@@ -311,6 +312,7 @@ export default function HomePage() {
             />
           ),
           month_end:       () => <MonthEndChecklist />,
+          sba_renewals:    () => <SbaRenewalsWidget />,
         };
         const visible = layout.filter(w => w.visible);
         const grid = visible.filter(w => w.id !== "smart_alerts");
