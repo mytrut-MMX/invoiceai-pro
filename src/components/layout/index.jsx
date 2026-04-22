@@ -106,6 +106,16 @@ const MOB_NAV = [
   { id: "more",     label: "More",     icon: Icons.Settings, route: ROUTES.SETTINGS_GENERAL, match: "/settings" },
 ];
 
+// Self-bill entry is gated on having ≥1 active issued SBA; the shortcut hint
+// renders regardless so users can discover it, but the item is filtered out
+// when no agreement exists.
+const SELF_BILL_CREATE_ITEM = {
+  label: "Self-Billed Invoice",
+  route: "/bills?mode=selfbill",
+  shortcut: "⇧⌘S",
+  selfBill: true,
+};
+
 const CREATE_ITEMS = [
   {
     group: "Sales",
@@ -119,11 +129,20 @@ const CREATE_ITEMS = [
     group: "Purchases",
     items: [
       { label: "Bill",     route: ROUTES.BILLS_NEW },
+      SELF_BILL_CREATE_ITEM,
       { label: "Supplier", route: ROUTES.SUPPLIERS_NEW },
       { label: "Expense",  route: ROUTES.EXPENSES_NEW },
     ],
   },
 ];
+
+// Cheap, suppliers-array-derived SBA gate (spec's approved fallback over
+// querying self_billing_agreements). Misses edge cases where the supplier
+// flag is out of sync with the agreements table — acceptable for nav gating.
+export function hasActiveIssuedSbaFromCtx(ctx) {
+  const suppliers = ctx?.suppliers || [];
+  return suppliers.some((s) => s?.self_billing?.enabled);
+}
 
 export const SIDEBAR_FULL = 220;
 export const SIDEBAR_ICON = 56;
@@ -230,6 +249,7 @@ function NavItem({ item, collapsed, pathname, navigate }) {
 export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, collapsed, onCollapsedChange, onSearchClick }) {
   const navigate = useNavigate();
   const ctx = useContext(AppCtx);
+  const hasActiveSba = hasActiveIssuedSbaFromCtx(ctx);
   const [createOpen, setCreateOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
@@ -363,24 +383,33 @@ export function TopBar({ user, userAvatar, onUserClick, onLogout, onMenuOpen, co
             Create
           </button>
           {createOpen && (
-            <div className="absolute right-0 top-[calc(100%+6px)] w-44 bg-[var(--surface-overlay)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] border border-[var(--border-subtle)] py-1 z-50">
-              {CREATE_ITEMS.map((section, si) => (
-                <div key={section.group}>
-                  {si > 0 && <div className="my-1 border-t border-[var(--border-subtle)]" />}
-                  <div className="px-3 py-1 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-[0.06em]">
-                    {section.group}
+            <div className="absolute right-0 top-[calc(100%+6px)] w-52 bg-[var(--surface-overlay)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] border border-[var(--border-subtle)] py-1 z-50">
+              {CREATE_ITEMS.map((section, si) => {
+                const items = section.items.filter((it) => !it.selfBill || hasActiveSba);
+                if (items.length === 0) return null;
+                return (
+                  <div key={section.group}>
+                    {si > 0 && <div className="my-1 border-t border-[var(--border-subtle)]" />}
+                    <div className="px-3 py-1 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-[0.06em]">
+                      {section.group}
+                    </div>
+                    {items.map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => { navigate(item.route); setCreateOpen(false); }}
+                        className="w-full text-left px-3 py-2 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors duration-150 cursor-pointer border-none bg-transparent flex items-center gap-2"
+                      >
+                        <span className="flex-1 truncate">{item.label}</span>
+                        {item.shortcut && (
+                          <kbd className="font-sans bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[10px] text-[var(--text-tertiary)]">
+                            {item.shortcut}
+                          </kbd>
+                        )}
+                      </button>
+                    ))}
                   </div>
-                  {section.items.map(item => (
-                    <button
-                      key={item.label}
-                      onClick={() => { navigate(item.route); setCreateOpen(false); }}
-                      className="w-full text-left px-3 py-2 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors duration-150 cursor-pointer border-none bg-transparent"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -555,6 +584,10 @@ export function Sidebar({ collapsed = false, onCollapsedChange }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const visibleGroups = useVisibleGroups();
+  const ctx = useContext(AppCtx);
+  const hasActiveSba = hasActiveIssuedSbaFromCtx(ctx);
+  const selfBillActive = pathname === "/bills" && typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("mode") === "selfbill";
 
   return (
     <div
@@ -571,13 +604,27 @@ export function Sidebar({ collapsed = false, onCollapsedChange }) {
               </div>
             )}
             {group.items.map(item => (
-              <NavItem
-                key={item.id}
-                item={item}
-                collapsed={collapsed}
-                pathname={pathname}
-                navigate={navigate}
-              />
+              <div key={item.id}>
+                <NavItem
+                  item={item}
+                  collapsed={collapsed}
+                  pathname={pathname}
+                  navigate={navigate}
+                />
+                {!collapsed && item.id === "bills" && hasActiveSba && (
+                  <button
+                    onClick={() => navigate("/bills?mode=selfbill&filter=mine")}
+                    className={[
+                      "w-full text-left pl-[40px] pr-[13px] py-[5px] text-[12px] border-none cursor-pointer rounded-[var(--radius-md)] transition-all duration-200 mb-0.5",
+                      selfBillActive
+                        ? "bg-[var(--brand-50)] text-[var(--brand-700)] font-medium"
+                        : "bg-transparent text-[var(--text-tertiary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-secondary)]",
+                    ].join(" ")}
+                  >
+                    Self-Billed
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         ))}

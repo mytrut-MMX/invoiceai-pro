@@ -7,11 +7,14 @@ import { Icons } from "../components/icons";
 import { Btn, StatusBadge } from "../components/atoms";
 import { fmt, fmtDate, todayStr } from "../utils/helpers";
 import BillFormPanel from "../components/bills/BillFormPanel";
+import SelfBillFormPanel from "../components/bills/SelfBillFormPanel";
+import BillModeSelector, { BILL_MODES } from "../components/bills/BillModeSelector";
 import RecordBillPaymentModal from "../components/bills/RecordBillPaymentModal";
 import { deleteBill, saveBill } from "../lib/dataAccess";
 import { supabase } from "../lib/supabase";
 import { reverseEntry, findEntryBySource } from "../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../utils/ledger/fetchUserAccounts";
+import { postBillEntry } from "../utils/ledger/postBillEntry";
 import { usePagination } from "../hooks/usePagination";
 import { useCISSettings } from "../hooks/useCISSettings";
 import Pagination from "../components/shared/Pagination";
@@ -91,6 +94,27 @@ export default function BillsPage({ initialShowForm = false }) {
   const [search,       setSearch]       = useState("");
   const [cisFilter,    setCisFilter]    = useState("all");
   const [paymentModalBill, setPaymentModalBill] = useState(null);
+  const [billMode, setBillMode] = useState(() => {
+    // Honour ?mode=selfbill in the URL so deep links can land on the self-bill flow.
+    if (typeof window === "undefined") return BILL_MODES.STANDARD;
+    const q = new URLSearchParams(window.location.search).get("mode");
+    return q === "selfbill" ? BILL_MODES.SELFBILL : BILL_MODES.STANDARD;
+  });
+  const [hasActiveIssuedSba, setHasActiveIssuedSba] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id) { setHasActiveIssuedSba(false); return; }
+      const today = new Date().toISOString().slice(0, 10);
+      const { count } = await supabase.from("self_billing_agreements")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).eq("direction", "issued")
+        .eq("status", "active").gt("end_date", today);
+      if (!cancelled) setHasActiveIssuedSba((count || 0) > 0);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   useEffect(() => {
     const today = todayStr();
@@ -198,7 +222,6 @@ export default function BillsPage({ initialShowForm = false }) {
         try {
           const { accounts, userId } = await fetchUserAccounts();
           if (!userId) return;
-          const { postBillEntry } = await import('../utils/ledger/postBillEntry');
           await postBillEntry(updated, null, accounts, userId);
         } catch (err) {
           console.error('[Ledger] approve post failed:', err);
@@ -234,16 +257,20 @@ export default function BillsPage({ initialShowForm = false }) {
 
   if (!businessDataHydrated) return <ListSkeleton />;
 
-  if (showForm) return (
-    <BillFormPanel
-      existing={editingBill}
-      onClose={() => {
-        if (initialShowForm) { navigate(ROUTES.BILLS, { replace: true }); return; }
-        setShowForm(false); setEditingBill(null);
-      }}
-      onSave={onSave}
-    />
-  );
+  if (showForm) {
+    const closeForm = () => {
+      if (initialShowForm) { navigate(ROUTES.BILLS, { replace: true }); return; }
+      setShowForm(false); setEditingBill(null);
+    };
+    // Route to the self-bill panel when either (a) the user explicitly picked
+    // Self-Billed mode for a new bill, or (b) they opened an existing bill row
+    // that was originally issued as a self-bill (read-only for now — Phase 4.2
+    // will add an editable self-bill detail view).
+    const useSelfBill = (!editingBill && billMode === BILL_MODES.SELFBILL) || editingBill?.is_self_billed;
+    return useSelfBill
+      ? <SelfBillFormPanel existing={editingBill} onClose={closeForm} onSave={onSave} />
+      : <BillFormPanel existing={editingBill} onClose={closeForm} onSave={onSave} />;
+  }
 
   const summaryItems = [
     { label: "Total Bills",     value: fmt(currSym, totalAll),   tone: "neutral" },
@@ -264,8 +291,12 @@ export default function BillsPage({ initialShowForm = false }) {
               {bills.length} record{bills.length !== 1 ? "s" : ""} · track supplier invoices and accounts payable
             </p>
           </div>
-          <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingBill(null); setShowForm(true); }}>New bill</Btn>
+          <Btn variant="primary" icon={<Icons.Plus />} onClick={() => { setEditingBill(null); setShowForm(true); }}>
+            {billMode === BILL_MODES.SELFBILL ? "New self-bill" : "New bill"}
+          </Btn>
         </div>
+
+        <BillModeSelector mode={billMode} onChange={setBillMode} hasActiveIssuedSba={hasActiveIssuedSba} />
 
         {/* Summary strip */}
         {bills.length > 0 && (

@@ -2,7 +2,7 @@ import { Suspense, useContext, useState, useEffect, useCallback } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AppCtx } from "../../context/AppContext";
 import { ROUTES } from "../../router/routes";
-import { TopBar, Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer } from ".";
+import { TopBar, Sidebar, MobileTopBar, MobileBottomNav, MobileDrawer, hasActiveIssuedSbaFromCtx } from ".";
 import UserEditModal from "../../modals/UserEditModal";
 import CommandPalette from "../CommandPalette";
 import { ToastProvider } from "../ui/Toast";
@@ -20,7 +20,8 @@ function lsGet(key, fallback) {
 }
 
 export default function AppShell() {
-  const { user, setUser, appTheme, setAppTheme } = useContext(AppCtx);
+  const ctx = useContext(AppCtx);
+  const { user, setUser, appTheme, setAppTheme } = ctx;
   const navigate = useNavigate();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => lsGet("invoicesaga_sidebar_collapsed", false));
@@ -51,17 +52,24 @@ export default function AppShell() {
     return () => window.removeEventListener("storage-error", handler);
   }, []);
 
-  // Global ⌘K / Ctrl+K toggles the command palette
+  // Global keyboard shortcuts:
+  //   ⌘K / Ctrl+K        → toggle command palette
+  //   ⌘⇧S / Ctrl+Shift+S → jump to the self-bill flow (gated on active SBA)
+  const hasActiveSba = hasActiveIssuedSbaFromCtx(ctx);
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
         e.preventDefault();
         setPaletteOpen(prev => !prev);
+      } else if ((e.key === "s" || e.key === "S") && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+        if (!hasActiveSba) return;
+        e.preventDefault();
+        navigate("/bills?mode=selfbill");
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [hasActiveSba, navigate]);
 
   const { inactive: showInactivityPrompt, dismiss: dismissInactivityPrompt } = useInactivityTimer();
 

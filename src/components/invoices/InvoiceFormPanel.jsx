@@ -14,6 +14,8 @@ import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplate
 import { calculateTaxPoint, taxPointExplanation } from "../../utils/taxPoint";
 import { useToast } from "../ui/Toast";
 import { getDefaultPaymentTerm, listPaymentTerms, computeDueDate } from "../../lib/paymentTerms";
+import { getActiveSbaForCustomer } from "../../lib/selfBilling/sbaService";
+import ReceivedSelfBillModal from "./ReceivedSelfBillModal";
 
 const STATUSES = ["Draft", "Sent", "Overdue", "Paid", "Void", "Partial"];
 
@@ -81,6 +83,24 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   const [invNumError, setInvNumError] = useState("");
   const acceptedQuotes = useMemo(() => (quotes || []).filter(q => q.status === "Accepted"), [quotes]);
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
+
+  // Double-invoicing guard: if the selected customer has an active received-
+  // direction SBA, block direct invoicing and route the user to the import
+  // flow instead. Applies to new invoices only — edits bypass so that legacy
+  // direct invoices created before the SBA was signed remain editable.
+  const [sbaBlock, setSbaBlock] = useState(null);
+  const [showImportSb, setShowImportSb] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    if (isEdit || !customer?.id || !user?.id) { setSbaBlock(null); return; }
+    (async () => {
+      try {
+        const sba = await getActiveSbaForCustomer({ userId: user.id, customerId: customer.id });
+        if (!cancelled) setSbaBlock(sba || null);
+      } catch { if (!cancelled) setSbaBlock(null); }
+    })();
+    return () => { cancelled = true; };
+  }, [isEdit, customer?.id, user?.id]);
 
   useEffect(() => {
     if (!selectedQuoteId || !onConvertFromQuote) return;
@@ -318,12 +338,22 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
             )}
             <Btn onClick={() => setShowPrintModal(true)} variant="outline" icon={<Icons.Receipt />}>Print / PDF</Btn>
             <Btn onClick={handleShare} variant="outline" icon={<Icons.Send />}>Share link</Btn>
-            <SaveSplitBtn
-              onSave={() => handleSave()}
-              onSaveAndSend={() => handleSave("Sent")}
-              onSaveAndPrint={() => { handleSave(); }}
-              saving={saving}
-            />
+            {sbaBlock ? (
+              <button
+                type="button" disabled
+                title="Save blocked — customer has an active self-billing agreement"
+                className="h-9 px-4 rounded-[var(--radius-md)] bg-[var(--text-primary)] opacity-50 text-white text-sm font-semibold cursor-not-allowed flex items-center gap-1.5 border-none"
+              >
+                <Icons.Save /> Save
+              </button>
+            ) : (
+              <SaveSplitBtn
+                onSave={() => handleSave()}
+                onSaveAndSend={() => handleSave("Sent")}
+                onSaveAndPrint={() => { handleSave(); }}
+                saving={saving}
+              />
+            )}
           </div>
         </div>
 
@@ -353,8 +383,24 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                   setItems(prev => prev.map(it => ({ ...it, cisApplicable: true })));
                 }
               }}
-              onClear={() => { setCustomer(null); setCustSearch(""); setCustOpen(false); }}
+              onClear={() => { setCustomer(null); setCustSearch(""); setCustOpen(false); setSbaBlock(null); }}
             />
+            {sbaBlock && (
+              <div className="mt-2 px-3 py-2 bg-[var(--danger-50)] border border-[var(--danger-100)] rounded-[var(--radius-md)] text-sm text-[var(--danger-700)] flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  This customer issues self-billed invoices to you. You cannot create your own invoice while
+                  Agreement <span className="font-mono">{String(sbaBlock.id).slice(0, 8)}</span> v{sbaBlock.version ?? 1} is active
+                  (expires {sbaBlock.end_date}).
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowImportSb(true)}
+                  className="h-8 px-3 rounded-[var(--radius-md)] bg-[var(--danger-600)] hover:bg-[var(--danger-700)] text-white text-xs font-semibold cursor-pointer border-none whitespace-nowrap"
+                >
+                  Import received self-bill instead
+                </button>
+              </div>
+            )}
             {cisEnabled && customer?.cis?.registered && (
               <div className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-full text-[11px] font-semibold text-[var(--warning-700)]">
                 <Icons.Alert />
@@ -616,6 +662,13 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
           </div>
         </div>
       </div>
+      {showImportSb && (
+        <ReceivedSelfBillModal
+          initialCustomerId={customer?.id || null}
+          onClose={() => setShowImportSb(false)}
+          onSaved={(inv) => { setShowImportSb(false); onSave?.(inv); }}
+        />
+      )}
     </>
   );
 }

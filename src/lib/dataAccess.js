@@ -1,4 +1,6 @@
 import { supabase } from "./supabase";
+import { SelfBillingError } from "./selfBilling/errors";
+import { getActiveSbaForCustomer } from "./selfBilling/sbaService";
 
 // =============================================================================
 // Helpers
@@ -82,6 +84,10 @@ function rowToInvoice(row) {
     converted_from_quote: row.converted_from_quote,
     vat_scheme: row.vat_scheme,
     accounting_basis: row.accounting_basis,
+    // Received self-bill flag (migration 043 + 046).
+    received_as_self_bill:    !!row.received_as_self_bill,
+    received_sb_customer_ref: row.received_sb_customer_ref ?? null,
+    received_sb_agreement_id: row.received_sb_agreement_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -164,6 +170,13 @@ function rowToBill(row) {
     reverse_charge_applied: !!row.reverse_charge_applied,
     reverse_charge_vat_amount: row.reverse_charge_vat_amount ?? 0,
     bill_type: row.bill_type || 'standard',
+    // Self-billing (migration 043)
+    is_self_billed:                   !!row.is_self_billed,
+    self_bill_invoice_number:         row.self_bill_invoice_number ?? null,
+    self_billing_agreement_id:        row.self_billing_agreement_id ?? null,
+    supplier_vat_at_posting:          row.supplier_vat_at_posting ?? null,
+    supplier_vat_verified_at:         row.supplier_vat_verified_at ?? null,
+    supplier_vat_status_at_posting:   row.supplier_vat_status_at_posting ?? null,
   };
 }
 
@@ -303,6 +316,10 @@ function invoiceToRow(userId, inv) {
     po_number: inv.po_number || null,
     converted_from_quote: inv.converted_from_quote || null,
     cis_deduction: num(inv.cisDeduction ?? inv.cis_deduction) ?? 0,
+    // Received self-bill (migration 043 + 046): customer self-bills us.
+    received_as_self_bill:     inv.received_as_self_bill ?? false,
+    received_sb_customer_ref:  inv.received_sb_customer_ref ?? null,
+    received_sb_agreement_id:  inv.received_sb_agreement_id ?? null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -411,6 +428,13 @@ function billToRow(userId, bil) {
     reverse_charge_vat_amount:   bil.reverse_charge_vat_amount ?? 0,
     // Dispatch type (migration 026)
     bill_type:                   bil.bill_type || 'standard',
+    // Self-billing (migration 043)
+    is_self_billed:                 bil.is_self_billed ?? false,
+    self_bill_invoice_number:       bil.self_bill_invoice_number ?? null,
+    self_billing_agreement_id:      bil.self_billing_agreement_id ?? null,
+    supplier_vat_at_posting:        bil.supplier_vat_at_posting ?? null,
+    supplier_vat_verified_at:       bil.supplier_vat_verified_at ?? null,
+    supplier_vat_status_at_posting: bil.supplier_vat_status_at_posting ?? null,
   };
 }
 
@@ -670,6 +694,25 @@ export async function saveInvoice(userId, invoice) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
   const row = invoiceToRow(userId, invoice);
+
+  // Double-invoicing guard (defence-in-depth; UI enforces first). For a NEW
+  // direct invoice to a customer with an active received-direction SBA, throw
+  // DUPLICATE_WITH_SBA so the caller can redirect to importReceivedSelfBill.
+  // Bypasses: (a) invoices flagged received_as_self_bill (imported), and
+  // (b) edits of existing rows (check via pre-existence of the id).
+  if (!invoice.received_as_self_bill && row.customer_id) {
+    const { data: existingRow } = await supabase
+      .from("invoices").select("id").eq("id", row.id).maybeSingle();
+    if (!existingRow) {
+      const activeSba = await getActiveSbaForCustomer({ userId, customerId: row.customer_id });
+      if (activeSba) {
+        throw new SelfBillingError("DUPLICATE_WITH_SBA", {
+          customerName: activeSba.customer?.name || invoice.customer?.name || "customer",
+          sbaId: activeSba.id, billId: row.id,
+        });
+      }
+    }
+  }
 
   // Upsert the invoice header
   const { data: saved, error } = await supabase

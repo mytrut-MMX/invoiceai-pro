@@ -6,6 +6,7 @@ import { Icons } from "./icons";
 import { StatusBadge } from "./atoms";
 import { CUR_SYM } from "../constants";
 import { fmt } from "../utils/helpers";
+import { hasActiveIssuedSbaFromCtx } from "./layout";
 
 const AVATAR_BG = [
   "bg-indigo-500", "bg-emerald-500", "bg-amber-500",
@@ -27,6 +28,17 @@ const ACTIONS = [
   { id: "new-bill",       label: "Create new bill",    icon: Icons.Plus,      route: ROUTES.BILLS_NEW },
   { id: "new-expense",    label: "Create new expense", icon: Icons.Plus,      route: ROUTES.EXPENSES_NEW },
   { id: "new-supplier",   label: "Create new supplier",icon: Icons.Plus,      route: ROUTES.SUPPLIERS_NEW },
+  // Self-bill: extra keywords let "SB", "selfbill", "supplier invoice" all match.
+  // selfBill flag → filtered out when no active issued SBA exists.
+  {
+    id: "new-selfbill",
+    label: "Create Self-Billed Invoice",
+    icon: Icons.Plus,
+    route: "/bills?mode=selfbill",
+    keywords: "selfbill self-bill self billed SB supplier invoice",
+    shortcut: "⇧⌘S",
+    selfBill: true,
+  },
 ];
 
 function GroupHeader({ label }) {
@@ -74,7 +86,9 @@ function ResultItem({ icon, leftElement, label, metadata, rightContent, active, 
 }
 
 export default function CommandPalette({ open, onClose }) {
-  const { invoices = [], customers = [], orgSettings } = useContext(AppCtx);
+  const ctx = useContext(AppCtx);
+  const { invoices = [], customers = [], orgSettings } = ctx;
+  const hasActiveSba = hasActiveIssuedSbaFromCtx(ctx);
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
@@ -83,11 +97,22 @@ export default function CommandPalette({ open, onClose }) {
 
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
 
+  // Gate-aware actions: drop self-bill entry when no active issued SBA exists,
+  // so users without agreements can't reach a flow that would immediately
+  // block on SBA_NOT_ACTIVE.
+  const visibleActions = useMemo(
+    () => ACTIONS.filter((a) => !a.selfBill || hasActiveSba),
+    [hasActiveSba],
+  );
+
   const filteredActions = useMemo(() => {
-    if (!query) return ACTIONS;
+    if (!query) return visibleActions;
     const q = query.toLowerCase();
-    return ACTIONS.filter(a => a.label.toLowerCase().includes(q));
-  }, [query]);
+    return visibleActions.filter((a) => {
+      const haystack = `${a.label} ${a.keywords || ""}`.toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [query, visibleActions]);
 
   const filteredInvoices = useMemo(() => {
     if (!query) return [];
@@ -228,6 +253,11 @@ export default function CommandPalette({ open, onClose }) {
                         itemRef={(el) => (itemRefs.current[globalIndex] = el)}
                         icon={<Icon />}
                         label={a.label}
+                        rightContent={a.shortcut ? (
+                          <kbd className="font-sans bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[10px] text-[var(--text-tertiary)]">
+                            {a.shortcut}
+                          </kbd>
+                        ) : null}
                         active={selected === globalIndex}
                         onClick={() => handleSelect({ type: "action", data: a })}
                         onMouseEnter={() => setSelected(globalIndex)}
