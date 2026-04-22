@@ -21,6 +21,7 @@ import {
   SELF_BILL_VAT_STATEMENT_NON_VAT_SUPPLIER, SB_INVOICES_BUCKET,
 } from "../../constants/selfBilling";
 import { useToast } from "../ui/Toast";
+import { verifySupplierVat, shouldAutoVerify } from "../../lib/selfBilling/sbaVatVerify";
 import {
   FormCard, SupplierSection, BillDatesRow, BillAmountFields,
   ReverseChargeToggle, VatAmountRow, CisPreviewPanel, DescriptionStatusCard,
@@ -66,6 +67,7 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
   const [reference, setReference] = useState(b.reference || "");
   const [notes, setNotes] = useState(b.notes || "");
   const [saving, setSaving] = useState(false);
+  const [vatCheck, setVatCheck] = useState({ status: "unchecked", verifiedAt: null, name: null, running: false });
 
   // Preload suppliers with an active 'issued' SBA so the picker filters cleanly.
   useEffect(() => {
@@ -93,17 +95,43 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
     return () => { cancelled = true; };
   }, [supplier?.id, user?.id]);
 
+  // Seed + refresh supplier VAT verification. Cached fields come from the
+  // supplier row (rowToSupplier populates vat_verified_at etc.); if stale,
+  // fire verifySupplierVat in the background and rehydrate when it lands.
+  useEffect(() => {
+    let cancelled = false;
+    if (!supplier?.id || !user?.id) {
+      setVatCheck({ status: "unchecked", verifiedAt: null, name: null, running: false });
+      return;
+    }
+    const stale = shouldAutoVerify(supplier);
+    setVatCheck({
+      status: supplier.vat_verification_status || "unchecked",
+      verifiedAt: supplier.vat_verified_at || null,
+      name: supplier.vat_verification_name || null,
+      running: stale,
+    });
+    if (!stale) return;
+    (async () => {
+      const r = await verifySupplierVat({ userId: user.id, supplierId: supplier.id, supplier });
+      if (!cancelled) setVatCheck({ status: r.status, verifiedAt: r.verifiedAt, name: r.name, running: false });
+    })();
+    return () => { cancelled = true; };
+  }, [supplier?.id, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isCis = !!supplier?.cis?.is_subcontractor;
 
-  // Phase 4.3 will replace 'unchecked' with a verified HMRC status; for now
-  // compute emits a warning rather than blocking save.
+  // Feed the verified HMRC status into compute so the engine applies the
+  // right VAT rules (valid → include VAT; invalid/deregistered → error;
+  // unchecked → warning). Error status from the HMRC call itself degrades
+  // to 'unchecked' so a transient failure doesn't block save.
   const compute = useMemo(() => computeSelfBilledInvoice({
     lineItems: buildLineItems({ isCis, category, amount, labour: labourAmount, materials: materialsAmount, taxRate }),
-    supplierVatStatus: "unchecked",
+    supplierVatStatus: vatCheck.status === "error" ? "unchecked" : (vatCheck.status || "unchecked"),
     supplierCisRate: isCis ? (supplier?.cis?.rate || null) : null,
     supplierCisLabourOnly: !!supplier?.cis?.labour_only,
     supplyDate, issueDate, applyReverseCharge: reverseCharge, ourVatRegistered: isVat,
-  }), [isCis, category, amount, labourAmount, materialsAmount, taxRate, supplier, supplyDate, issueDate, reverseCharge, isVat]);
+  }), [isCis, category, amount, labourAmount, materialsAmount, taxRate, supplier, supplyDate, issueDate, reverseCharge, isVat, vatCheck.status]);
 
   const daysToExpiry = agreement?.end_date ? Math.ceil((new Date(agreement.end_date) - new Date()) / 86400000) : null;
   const agreementExpiringSoon = daysToExpiry !== null && daysToExpiry >= 0 && daysToExpiry <= 30;
@@ -149,7 +177,8 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
         is_self_billed: true, self_bill_invoice_number: sbNumber,
         self_billing_agreement_id: agreement.id,
         supplier_vat_at_posting: supplier.vat_number || null,
-        supplier_vat_verified_at: null, supplier_vat_status_at_posting: "unchecked",
+        supplier_vat_verified_at: vatCheck.verifiedAt || null,
+        supplier_vat_status_at_posting: vatCheck.status || "unchecked",
       };
       const { error: saveErr } = await saveBill(userId, bill);
       if (saveErr) throw new Error(`Failed to save bill: ${saveErr.message || saveErr}`);
@@ -171,7 +200,7 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
             cisDeduction: compute.cisDeduction, amountPayable: compute.amountPayable,
             cis: isCis ? { labour: Number(labourAmount) || 0, materials: Number(materialsAmount) || 0, deduction: compute.cisDeduction, rateLabel: supplier.cis?.rate } : null,
           },
-          supplier: { ...supplier, vat_status: "unchecked" },
+          supplier: { ...supplier, vat_status: vatCheck.status || "unchecked" },
           ourBusinessProfile: orgSettings, agreement,
         });
         const hashHex = await sha256Hex(bytes);
@@ -239,6 +268,26 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
           label="Supplier (with active SBA)"
           emptyHint="No suppliers have an active self-billing agreement."
         />
+
+        {supplier && (() => {
+          const base = "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full -mt-2 mb-4 border";
+          const days = vatCheck.verifiedAt ? Math.max(0, Math.floor((Date.now() - new Date(vatCheck.verifiedAt).getTime()) / 86400000)) : null;
+          const chips = {
+            running:  { cls: "bg-[var(--warning-50)] border-[var(--warning-100)] text-[var(--warning-700)]", dot: "bg-[var(--warning-600)] animate-pulse", label: "Verification stale — re-checking" },
+            valid:    { cls: "bg-[var(--success-50)] border-[var(--success-100)] text-[var(--success-700)]", dot: "bg-[var(--success-600)]", label: `VAT verified${days != null ? ` ${days} day${days === 1 ? "" : "s"} ago` : ""}` },
+            bad:      { cls: "bg-[var(--danger-50)] border-[var(--danger-100)] text-[var(--danger-700)]",     dot: "bg-[var(--danger-600)]",   label: `VAT ${vatCheck.status} — save blocked` },
+          };
+          const chip = vatCheck.running ? chips.running
+            : vatCheck.status === "valid" ? chips.valid
+            : (vatCheck.status === "invalid" || vatCheck.status === "deregistered") ? chips.bad
+            : null;
+          if (!chip) return null;
+          return (
+            <div className={`${base} ${chip.cls}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${chip.dot}`} />{chip.label}
+            </div>
+          );
+        })()}
 
         <FormCard title="Invoice details">
           <BillDatesRow

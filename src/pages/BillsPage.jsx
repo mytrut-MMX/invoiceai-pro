@@ -262,11 +262,13 @@ export default function BillsPage({ initialShowForm = false }) {
       if (initialShowForm) { navigate(ROUTES.BILLS, { replace: true }); return; }
       setShowForm(false); setEditingBill(null);
     };
-    // Route to the self-bill panel when either (a) the user explicitly picked
-    // Self-Billed mode for a new bill, or (b) they opened an existing bill row
-    // that was originally issued as a self-bill (read-only for now — Phase 4.2
-    // will add an editable self-bill detail view).
-    const useSelfBill = (!editingBill && billMode === BILL_MODES.SELFBILL) || editingBill?.is_self_billed;
+    // SelfBillFormPanel is creation-only — it allocates a new SB number via
+    // next_selfbill_number on save, which would overwrite audit history if
+    // used to edit an existing self-bill. Existing self-bills fall through
+    // to BillFormPanel (standard view; it renders an immutability banner
+    // and strips the SB-audit fields from its save payload). Phase 4.2 will
+    // add a dedicated editable self-bill detail view.
+    const useSelfBill = !editingBill && billMode === BILL_MODES.SELFBILL;
     return useSelfBill
       ? <SelfBillFormPanel existing={editingBill} onClose={closeForm} onSave={onSave} />
       : <BillFormPanel existing={editingBill} onClose={closeForm} onSave={onSave} />;

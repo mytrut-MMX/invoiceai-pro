@@ -17,6 +17,7 @@ import {
   loadCatalogItems as daLoadCatalogItems,
   syncEntitiesToNormalised,
 } from "./lib/dataAccess";
+import { useHasAnyActiveIssuedSba } from "./lib/selfBilling/sbaGate";
 
 // ─── localStorage helpers ──────────────────────────────────────────────────
 const LS = {
@@ -320,9 +321,18 @@ export default function App() {
     emailEnabled, emailProvider, emailFrom,
   ]);
 
+  // ─── Self-billing gate ─────────────────────────────────────────────────────
+  // Boolean cache of "does the user have ≥1 active 'issued' SBA". Replaces the
+  // legacy per-supplier `self_billing.enabled` flag (dropped in migration 048).
+  // Create/terminate flows should call `refreshHasAnyActiveIssuedSba` to keep
+  // the nav + widget gates in sync with the DB.
+  const { value: hasAnyActiveIssuedSba, refresh: refreshHasAnyActiveIssuedSba } =
+    useHasAnyActiveIssuedSba(user?.id);
+
   // ─── Context value ─────────────────────────────────────────────────────────
   const ctx = {
     user, setUser,
+    hasAnyActiveIssuedSba, refreshHasAnyActiveIssuedSba,
     authChecked,
     authInitializing,
     onboardingDone, setOnboardingDone: setOnboardingDoneState,

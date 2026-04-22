@@ -136,12 +136,12 @@ const CREATE_ITEMS = [
   },
 ];
 
-// Cheap, suppliers-array-derived SBA gate (spec's approved fallback over
-// querying self_billing_agreements). Misses edge cases where the supplier
-// flag is out of sync with the agreements table — acceptable for nav gating.
+// SBA gate for nav surfaces (CREATE dropdown, sidebar sub-link, palette).
+// Source of truth lives in ctx.hasAnyActiveIssuedSba, populated by
+// useHasAnyActiveIssuedSba in App.jsx. The legacy suppliers[*].self_billing
+// flag was dropped in migration 048.
 export function hasActiveIssuedSbaFromCtx(ctx) {
-  const suppliers = ctx?.suppliers || [];
-  return suppliers.some((s) => s?.self_billing?.enabled);
+  return !!ctx?.hasAnyActiveIssuedSba;
 }
 
 export const SIDEBAR_FULL = 220;

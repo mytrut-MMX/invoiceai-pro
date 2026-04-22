@@ -236,6 +236,10 @@ function rowToSupplier(row) {
     utr: row.utr,
     vat_number: row.vat_number,
     is_vat_registered: row.is_vat_registered || false,
+    // VAT verification cache (migration 047)
+    vat_verified_at:         row.vat_verified_at ?? null,
+    vat_verification_status: row.vat_verification_status ?? null,
+    vat_verification_name:   row.vat_verification_name ?? null,
     cis: {
       is_subcontractor: row.is_cis_subcontractor || false,
       verification_number: row.cis_verification_number,
@@ -244,12 +248,9 @@ function rowToSupplier(row) {
       trader_type: row.cis_trader_type,
       labour_only: row.cis_labour_only || false,
     },
-    self_billing: {
-      enabled: row.self_billing_enabled || false,
-      agreement_start: row.self_billing_agreement_start,
-      agreement_end: row.self_billing_agreement_end,
-      invoice_series: row.self_billing_invoice_series,
-    },
+    // Self-billing metadata now lives in the self_billing_agreements table
+    // (migration 048 dropped the legacy per-supplier flag columns). Callers
+    // that need "has an active SBA" use useHasAnyActiveIssuedSba / sbaGate.
     default_reverse_charge: row.default_reverse_charge || false,
     payment_terms: row.payment_terms,
     currency: row.currency,
@@ -499,10 +500,8 @@ function supplierToRow(userId, sup) {
     cis_rate: sup.cis?.rate || null,
     cis_trader_type: sup.cis?.trader_type || null,
     cis_labour_only: sup.cis?.labour_only || false,
-    self_billing_enabled: sup.self_billing?.enabled || false,
-    self_billing_agreement_start: sup.self_billing?.agreement_start || null,
-    self_billing_agreement_end: sup.self_billing?.agreement_end || null,
-    self_billing_invoice_series: sup.self_billing?.invoice_series || null,
+    // self_billing_* columns dropped in migration 048 — source of truth is
+    // the self_billing_agreements table.
     default_reverse_charge: sup.default_reverse_charge || false,
     payment_terms: sup.payment_terms || null,
     currency: sup.currency || "GBP",
@@ -696,8 +695,11 @@ export async function saveInvoice(userId, invoice) {
   const row = invoiceToRow(userId, invoice);
 
   // Double-invoicing guard (defence-in-depth; UI enforces first). For a NEW
-  // direct invoice to a customer with an active received-direction SBA, throw
-  // DUPLICATE_WITH_SBA so the caller can redirect to importReceivedSelfBill.
+  // direct invoice to a customer with an active received-direction SBA,
+  // return { error: SelfBillingError } so callers observe it uniformly via
+  // the existing { data, error } contract — earlier revision threw, but
+  // call sites use .then(({ error }) => ...) without .catch() and the throw
+  // became an unhandled rejection + UI state drift after an optimistic add.
   // Bypasses: (a) invoices flagged received_as_self_bill (imported), and
   // (b) edits of existing rows (check via pre-existence of the id).
   if (!invoice.received_as_self_bill && row.customer_id) {
@@ -706,10 +708,12 @@ export async function saveInvoice(userId, invoice) {
     if (!existingRow) {
       const activeSba = await getActiveSbaForCustomer({ userId, customerId: row.customer_id });
       if (activeSba) {
-        throw new SelfBillingError("DUPLICATE_WITH_SBA", {
-          customerName: activeSba.customer?.name || invoice.customer?.name || "customer",
-          sbaId: activeSba.id, billId: row.id,
-        });
+        return {
+          error: new SelfBillingError("DUPLICATE_WITH_SBA", {
+            customerName: activeSba.customer?.name || invoice.customer?.name || "this customer",
+            sbaId: String(activeSba.id).slice(0, 8),
+          }),
+        };
       }
     }
   }
