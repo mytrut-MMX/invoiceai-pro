@@ -164,6 +164,13 @@ function rowToBill(row) {
     reverse_charge_applied: !!row.reverse_charge_applied,
     reverse_charge_vat_amount: row.reverse_charge_vat_amount ?? 0,
     bill_type: row.bill_type || 'standard',
+    // Self-billing (migration 043)
+    is_self_billed:                   !!row.is_self_billed,
+    self_bill_invoice_number:         row.self_bill_invoice_number ?? null,
+    self_billing_agreement_id:        row.self_billing_agreement_id ?? null,
+    supplier_vat_at_posting:          row.supplier_vat_at_posting ?? null,
+    supplier_vat_verified_at:         row.supplier_vat_verified_at ?? null,
+    supplier_vat_status_at_posting:   row.supplier_vat_status_at_posting ?? null,
   };
 }
 
@@ -411,6 +418,13 @@ function billToRow(userId, bil) {
     reverse_charge_vat_amount:   bil.reverse_charge_vat_amount ?? 0,
     // Dispatch type (migration 026)
     bill_type:                   bil.bill_type || 'standard',
+    // Self-billing (migration 043)
+    is_self_billed:                 bil.is_self_billed ?? false,
+    self_bill_invoice_number:       bil.self_bill_invoice_number ?? null,
+    self_billing_agreement_id:      bil.self_billing_agreement_id ?? null,
+    supplier_vat_at_posting:        bil.supplier_vat_at_posting ?? null,
+    supplier_vat_verified_at:       bil.supplier_vat_verified_at ?? null,
+    supplier_vat_status_at_posting: bil.supplier_vat_status_at_posting ?? null,
   };
 }
 
