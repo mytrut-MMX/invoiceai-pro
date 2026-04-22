@@ -1,17 +1,35 @@
-function parseRequestBody(body) {
-  if (!body) return null;
-  if (typeof body === 'string') {
-    try {
-      return JSON.parse(body);
-    } catch {
-      return null;
-    }
-  }
-  return body;
-}
+// POST /api/send-document — dispatcher.
+//
+// Consolidates the former /api/send-document and /api/send-selfbill
+// endpoints under a single Vercel function (Hobby 12-function limit).
+// Action is taken from the request body (defaulting to 'invoice' so all
+// existing clients keep working without a body change):
+//
+//   action: 'invoice'  → handleSendInvoice  (client-built email + attachment)
+//   action: 'selfbill' → handleSendSelfbill (server fetches PDF from bucket)
+//
+// Rate limit is per-action (preserving the pre-consolidation budgets):
+//   invoice  → 5  req/min/IP, prefix 'send-document'
+//   selfbill → 20 req/min/IP, prefix 'send-selfbill'
+//
+// This file owns: method check, body parse, action resolve, rate-limit
+// headers, auth verification, env check. It never touches business logic —
+// that lives in api/_lib/send-*-handler.js.
 
-  function isValidEmail(value) {
-  return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+import { checkRateLimit } from './_lib/rate-limit.js';
+import { parseBody, verifyAuth } from './_lib/send-shared.js';
+import { handleSendInvoice } from './_lib/send-invoice-handler.js';
+import { handleSendSelfbill } from './_lib/send-selfbill-handler.js';
+
+const ACTION_LIMITS = {
+  invoice:  { limit: 5,  prefix: 'send-document' },
+  selfbill: { limit: 20, prefix: 'send-selfbill' },
+};
+
+function getIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.headers['x-real-ip']
+    || 'unknown';
 }
 
 export default async function handler(req, res) {
@@ -20,74 +38,48 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    if (!process.env.RESEND_API_KEY) {
-      return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
+    const payload = parseBody(req.body);
+    if (!payload) return res.status(400).json({ error: 'Invalid JSON request body' });
+
+    // Default to 'invoice' so pre-consolidation callers (which never sent an
+    // action) keep routing to handleSendInvoice unchanged.
+    const action = payload.action || 'invoice';
+    const cfg = ACTION_LIMITS[action];
+    if (!cfg) {
+      return res.status(400).json({ error: `Unknown action "${action}". Use 'invoice' or 'selfbill'.` });
     }
 
-    const payload = parseRequestBody(req.body);
-    if (!payload) {
-      return res.status(400).json({ error: 'Invalid JSON request body' });
+    // Per-action rate limit. Preserves the original per-endpoint budgets so
+    // clients don't see a regression after the merge.
+    const rl = checkRateLimit(`${cfg.prefix}:${getIp(req)}`, cfg.limit);
+    res.setHeader('X-RateLimit-Limit', String(cfg.limit));
+    res.setHeader('X-RateLimit-Remaining', String(rl.remaining));
+    res.setHeader('X-RateLimit-Reset', String(Math.ceil(rl.resetMs / 1000)));
+    if (!rl.allowed) {
+      return res.status(429).json({
+        error: 'Too many requests. Please try again later.',
+        retryAfter: Math.ceil(rl.resetMs / 1000),
+      });
     }
 
-  // documentType is forwarded for bookkeeping only; subject/html/attachment are
-  // client-built. 'cis-statement' reuses the invoice/quote payload contract.
-  const { to, cc, subject, htmlBody, documentType, documentNumber, replyTo, fromName, attachmentBase64, attachmentFilename } = payload;
+    const auth = await verifyAuth(req);
+    if (auth.error) return res.status(auth.status).json({ error: auth.error });
 
-    if (!to || !subject || !htmlBody) {
-      return res.status(400).json({ error: 'Missing required fields: to, subject, htmlBody' });
-    }
+    const resendKey = process.env.RESEND_API_KEY;
+    if (!resendKey) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
 
-    if (!isValidEmail(to)) {
-      return res.status(400).json({ error: 'Invalid recipient email address' });
-    }
-
-    const senderName = (fromName && fromName.trim()) ? fromName.trim() : "InvoiceSaga";
-    const resendPayload = {
-      from: `${senderName} <noreply@invoicesaga.com>`,
-      to: [to],
-      subject,
-      html: htmlBody,
+    const ctx = {
+      userId: auth.userId,
+      payload,
+      supabaseUrl: auth.supabaseUrl,
+      serviceKey:  auth.serviceKey,
+      resendKey,
     };
 
-    if (cc && isValidEmail(cc)) {
-      resendPayload.cc = [cc];
-    }
-
-    if (replyTo && isValidEmail(replyTo)) {
-      resendPayload.reply_to = replyTo;
-    }
-
-    if (attachmentBase64 && attachmentFilename) {
-      resendPayload.attachments = [{
-        filename: attachmentFilename,
-        content: attachmentBase64,
-      }];
-    }
-
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(resendPayload),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      const apiError = result?.error?.message || result?.message || 'Failed to send email via Resend';
-      return res.status(response.status).json({ error: apiError });
-    }
-
-    return res.status(200).json({
-      ok: true,
-      emailId: result?.id,
-      documentType,
-      documentNumber,
-    });
-  } catch (error) {
-    console.error('[send-document] Error:', error.message);
+    if (action === 'selfbill') return await handleSendSelfbill(req, res, ctx);
+    return await handleSendInvoice(req, res, ctx);
+  } catch (err) {
+    console.error('[send-document] Error:', err?.message || err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
