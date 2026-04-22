@@ -110,6 +110,18 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
       reverse_charge_vat_amount: calc.reverseChargeVatAmount,
       bill_type: calc.billType,
     };
+    // Existing self-bills: preserve the immutable audit fields (SB number,
+    // agreement id, supplier VAT snapshot). BillFormPanel doesn't expose
+    // them as inputs, but re-emitting the bill with undefined here would
+    // let rowToBill default them to null and clobber history.
+    if (b.is_self_billed) {
+      bill.is_self_billed = true;
+      bill.self_bill_invoice_number    = b.self_bill_invoice_number;
+      bill.self_billing_agreement_id   = b.self_billing_agreement_id;
+      bill.supplier_vat_at_posting     = b.supplier_vat_at_posting;
+      bill.supplier_vat_verified_at    = b.supplier_vat_verified_at;
+      bill.supplier_vat_status_at_posting = b.supplier_vat_status_at_posting;
+    }
     const oldStatus = initialStatusRef.current;
     const newStatus = bill.status;
     const POSTABLE = ["Approved", "Overdue", "Paid", "Partially Paid"];
@@ -200,6 +212,12 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
 
         {activeTab === "details" && (
           <>
+            {b.is_self_billed && (
+              <div className="mb-4 px-4 py-3 bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-[var(--radius-lg)] text-sm text-[var(--warning-700)]">
+                This is a self-billed invoice ({b.self_bill_invoice_number || "SB-?"}
+                {b.bill_date ? ` issued ${b.bill_date}` : ""}). Edit fields with caution — the self-bill number and agreement reference are immutable.
+              </div>
+            )}
             <SupplierSection
               suppliers={suppliers}
               supplier={supplier}
