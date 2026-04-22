@@ -11,6 +11,8 @@ import { useCISSettings } from "../../hooks/useCISSettings";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
 import { calculateLatePaymentClaim } from "../../utils/latePayment";
 import { useToast } from "../ui/Toast";
+import { supabase } from "../../lib/supabase";
+import { SB_INVOICES_BUCKET } from "../../constants/selfBilling";
 
 function MetaCard({ label, value }) {
   return (
@@ -24,7 +26,7 @@ function MetaCard({ label, value }) {
 }
 
 export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose }) {
-  const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig, setInvoices } = useContext(AppCtx);
+  const { user, orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig, setInvoices } = useContext(AppCtx);
   const { cisEnabled, cisDefaultRate } = useCISSettings();
   const { toast } = useToast();
   const isVat = orgSettings?.vatReg === "Yes";
@@ -36,11 +38,37 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
 
+  const isReceivedSb = !!invoice.received_as_self_bill;
+  const [agreementVersion, setAgreementVersion] = useState(null);
+  const [receivedPdfUrl,   setReceivedPdfUrl]   = useState(null);
+  const [receivedPdfMissing, setReceivedPdfMissing] = useState(false);
+
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Received self-bills: fetch agreement version + signed URL for the original customer PDF.
+  useEffect(() => {
+    let cancelled = false;
+    if (!isReceivedSb || !user?.id || !invoice.received_sb_agreement_id) return;
+    (async () => {
+      const [{ data: sba }, { data: log }] = await Promise.all([
+        supabase.from("self_billing_agreements").select("version").eq("id", invoice.received_sb_agreement_id).maybeSingle(),
+        supabase.from("self_billing_emission_log").select("pdf_storage_path")
+          .eq("user_id", user.id).eq("agreement_id", invoice.received_sb_agreement_id)
+          .eq("self_bill_number", invoice.received_sb_customer_ref).eq("emission_type", "received")
+          .limit(1).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      if (sba?.version != null) setAgreementVersion(sba.version);
+      if (!log?.pdf_storage_path) { setReceivedPdfMissing(true); return; }
+      const { data: url } = await supabase.storage.from(SB_INVOICES_BUCKET).createSignedUrl(log.pdf_storage_path, 3600);
+      if (!cancelled) setReceivedPdfUrl(url?.signedUrl || null);
+    })();
+    return () => { cancelled = true; };
+  }, [isReceivedSb, user?.id, invoice.received_sb_agreement_id, invoice.received_sb_customer_ref]);
 
   const latePayment = useMemo(
     () => calculateLatePaymentClaim(invoice),
@@ -133,19 +161,23 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
               <StatusBadge status={invoice.status || "Draft"} />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Btn
-                onClick={() => { setSendDocumentType("invoice"); setShowSendModal(true); }}
-                variant="dark"
-                icon={<Icons.Send />}
-              >
-                {isMobile ? "" : "Send"}
-              </Btn>
-              {invoice.status === "Paid" && (
-                <Btn variant="outline" icon={<Icons.Send />} onClick={() => { setSendDocumentType("payment_confirmation"); setShowSendModal(true); }}>
-                  Send receipt
+              {/* Send / Send receipt are hidden for received self-bills — the customer already issued it. */}
+              {!isReceivedSb && (
+                <Btn onClick={() => { setSendDocumentType("invoice"); setShowSendModal(true); }} variant="dark" icon={<Icons.Send />}>
+                  {isMobile ? "" : "Send"}
                 </Btn>
               )}
-              <Btn variant="outline" icon={<Icons.Receipt />} onClick={() => setShowPrintModal(true)}>Print / PDF</Btn>
+              {!isReceivedSb && invoice.status === "Paid" && (
+                <Btn variant="outline" icon={<Icons.Send />} onClick={() => { setSendDocumentType("payment_confirmation"); setShowSendModal(true); }}>Send receipt</Btn>
+              )}
+              {isReceivedSb ? (
+                <Btn variant="outline" icon={<Icons.Receipt />} disabled={!receivedPdfUrl}
+                  onClick={() => { if (receivedPdfUrl) window.open(receivedPdfUrl, "_blank", "noopener"); }}>
+                  {receivedPdfUrl ? "Download original PDF" : receivedPdfMissing ? "Received PDF not available" : "Loading PDF…"}
+                </Btn>
+              ) : (
+                <Btn variant="outline" icon={<Icons.Receipt />} onClick={() => setShowPrintModal(true)}>Print / PDF</Btn>
+              )}
               <Btn variant="primary" icon={<Icons.Edit />} onClick={onEdit}>Edit</Btn>
               <Btn
                 variant="ghost"
@@ -163,11 +195,19 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
             </div>
           </div>
 
+          {/* Received-self-bill banner (HMRC VAT Notice 700/62 §8 — customer issued this on our behalf). */}
+          {isReceivedSb && (
+            <div className="bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-[var(--radius-lg)] px-[13px] py-[8px] mb-[13px] text-sm text-[var(--warning-700)]">
+              This invoice was issued by <span className="font-semibold">{invoice.customer?.name || "the customer"}</span> under Self-Billing Agreement <span className="font-mono text-[13px]">{String(invoice.received_sb_agreement_id || "").slice(0, 8)}</span>{agreementVersion != null && ` v${agreementVersion}`}.
+            </div>
+          )}
+
           {/* Meta strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-[13px] mb-[21px]">
             <MetaCard label="Customer"   value={invoice.customer?.name || "—"} />
             <MetaCard label="Issue Date" value={fmtDate(invoice.issue_date)} />
-            <MetaCard label="Due Date"   value={fmtDate(invoice.due_date)} />
+            <MetaCard label={isReceivedSb ? "Customer's SB Ref" : "Due Date"}
+                      value={isReceivedSb ? (invoice.received_sb_customer_ref || "—") : fmtDate(invoice.due_date)} />
             <MetaCard label="Amount"     value={fmt(currSym, invoice.total || 0)} />
           </div>
 

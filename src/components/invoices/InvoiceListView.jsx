@@ -85,6 +85,9 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
 
   const search       = searchParams.get("q") || "";
   const filterStatus = searchParams.get("status") || "All";
+  // Source filter is client-side only (no URL persistence). Kept separate from
+  // status pills because it partitions on issued-vs-received, not workflow state.
+  const [source, setSource] = useState("all");
 
   const setSearch = (v) => setSearchParams(p => {
     const n = new URLSearchParams(p); v ? n.set("q", v) : n.delete("q"); return n;
@@ -101,8 +104,12 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
       inv.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
       inv.customer?.name?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "All" || filterStatus.split(",").includes(inv.status);
-    return matchSearch && matchStatus;
-  }), [invoices, search, filterStatus]);
+    const matchSource =
+      source === "all" ? true
+      : source === "received" ? !!inv.received_as_self_bill
+      : !inv.received_as_self_bill; // "issued"
+    return matchSearch && matchStatus && matchSource;
+  }), [invoices, search, filterStatus, source]);
 
   const metrics = useMemo(() => {
     const overdueInvs = invoices.filter(i => i.status === "Overdue");
@@ -121,10 +128,16 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
     return counts;
   }, [invoices]);
 
-  const hasFilters = !!search || filterStatus !== "All";
+  const hasFilters = !!search || filterStatus !== "All" || source !== "all";
   const { page, setPage, totalPages, paginatedItems, totalItems, pageSize } = usePagination(filtered, 25);
 
-  const clearFilters = () => { setSearch(""); setFilterStatus("All"); };
+  const clearFilters = () => { setSearch(""); setFilterStatus("All"); setSource("all"); };
+
+  const SOURCE_OPTS = [
+    { value: "all",      label: "All" },
+    { value: "issued",   label: "Issued by me" },
+    { value: "received", label: "Self-bill (received)" },
+  ];
 
   const summaryCards = [
     { label: "Unpaid",      value: fmt(currSym, metrics.unpaid),      tone: "info" },
@@ -288,6 +301,29 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
               })}
             </div>
 
+            {/* Source segmented control (issued vs customer-issued self-bill). */}
+            <div className="inline-flex rounded-[var(--radius-md)] border border-[var(--border-subtle)] overflow-hidden">
+              {SOURCE_OPTS.map((opt, i) => {
+                const active = source === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSource(opt.value)}
+                    className={[
+                      "h-7 px-2.5 text-xs transition-colors duration-150 cursor-pointer border-none",
+                      i > 0 ? "border-l border-l-[var(--border-subtle)]" : "",
+                      active
+                        ? "bg-[var(--text-primary)] text-white font-semibold"
+                        : "bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]",
+                    ].join(" ")}
+                    title={opt.value === "received" ? "Invoices imported via received self-bill" : undefined}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {hasFilters && (
               <button
                 onClick={clearFilters}
@@ -340,8 +376,16 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
                     >
                       {/* Invoice # */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-[var(--brand-600)]">
-                          {inv.invoice_number}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-medium text-[var(--brand-600)]">{inv.invoice_number}</span>
+                          {inv.received_as_self_bill && (
+                            <span
+                              className="inline-flex items-center px-1.5 py-0.5 rounded bg-[var(--warning-50)] border border-[var(--warning-100)] text-[var(--warning-700)] text-[10px] font-semibold"
+                              title="Customer-issued self-bill — imported from their PDF"
+                            >
+                              Self-Bill (received)
+                            </span>
+                          )}
                         </div>
                         {inv.po_number && (
                           <div className="text-xs text-[var(--text-tertiary)] mt-0.5">PO: {inv.po_number}</div>
