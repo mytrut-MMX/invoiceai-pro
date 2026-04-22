@@ -32,13 +32,15 @@ function directionBadge(direction) {
 }
 
 export default function SbaRenewalsWidget() {
-  const { user, suppliers = [], customers = [] } = useContext(AppCtx);
+  const { user, hasAnyActiveIssuedSba, customers = [] } = useContext(AppCtx);
   const navigate = useNavigate();
 
-  // Gate: hide widget entirely when the user has no self-billing activity.
-  // Defence-in-depth — widgetRegistry carries a `visible(ctx)` predicate too,
-  // but HomePage doesn't currently consume it so we check here.
-  const hasSbActivity = suppliers.some((s) => s?.self_billing?.enabled)
+  // Gate: hide widget when the user has no self-billing activity.
+  // Pre-migration-048 we read suppliers[*].self_billing.enabled; now the
+  // "issued" side comes from AppContext's fetched boolean, and the
+  // "received" side still derives from customers[*].self_billed_by_customer
+  // (that column wasn't touched by migration 048).
+  const hasSbActivity = !!hasAnyActiveIssuedSba
     || customers.some((c) => c?.self_billed_by_customer);
 
   const [rows, setRows] = useState(null); // null = loading, [] = empty
