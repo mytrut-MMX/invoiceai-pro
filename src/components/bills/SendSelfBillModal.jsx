@@ -1,8 +1,8 @@
 // SendSelfBillModal — emails a self-billed invoice PDF to the supplier via
-// POST /api/send-selfbill. The API refuses to send if no PDF exists on file,
-// so this modal looks up the most recent emission_log row for the bill up
-// front and either (a) shows the signed URL preview or (b) disables Send
-// with a "Generate PDF first" hint.
+// POST /api/send-document with { action: 'selfbill', ... }. The API refuses
+// to send if no PDF exists on file, so this modal looks up the most recent
+// emission_log row for the bill up front and either (a) shows the signed
+// URL preview or (b) disables Send with a "Generate PDF first" hint.
 
 import { useState, useEffect, useMemo } from "react";
 import { Btn, Field, Input, Textarea } from "../atoms";
@@ -72,10 +72,11 @@ export default function SendSelfBillModal({ bill, supplier, onClose, onSent }) {
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error("Session expired — sign in again.");
 
-      const res = await fetch("/api/send-selfbill", {
+      const res = await fetch("/api/send-document", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
+          action: "selfbill",
           billId: bill.id,
           recipientEmail: recipient.trim(),
           ccEmails,
