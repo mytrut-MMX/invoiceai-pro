@@ -1,4 +1,6 @@
 import { supabase } from "./supabase";
+import { SelfBillingError } from "./selfBilling/errors";
+import { getActiveSbaForCustomer } from "./selfBilling/sbaService";
 
 // =============================================================================
 // Helpers
@@ -692,6 +694,25 @@ export async function saveInvoice(userId, invoice) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
   const row = invoiceToRow(userId, invoice);
+
+  // Double-invoicing guard (defence-in-depth; UI enforces first). For a NEW
+  // direct invoice to a customer with an active received-direction SBA, throw
+  // DUPLICATE_WITH_SBA so the caller can redirect to importReceivedSelfBill.
+  // Bypasses: (a) invoices flagged received_as_self_bill (imported), and
+  // (b) edits of existing rows (check via pre-existence of the id).
+  if (!invoice.received_as_self_bill && row.customer_id) {
+    const { data: existingRow } = await supabase
+      .from("invoices").select("id").eq("id", row.id).maybeSingle();
+    if (!existingRow) {
+      const activeSba = await getActiveSbaForCustomer({ userId, customerId: row.customer_id });
+      if (activeSba) {
+        throw new SelfBillingError("DUPLICATE_WITH_SBA", {
+          customerName: activeSba.customer?.name || invoice.customer?.name || "customer",
+          sbaId: activeSba.id, billId: row.id,
+        });
+      }
+    }
+  }
 
   // Upsert the invoice header
   const { data: saved, error } = await supabase

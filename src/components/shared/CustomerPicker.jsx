@@ -54,7 +54,16 @@ export function CustomerPicker({ customers = [], value, onChange, onClear }) {
               {value.name?.[0]?.toUpperCase() || "?"}
             </div>
             <div className="flex-1 min-w-0 px-2">
-              <div className="text-sm font-semibold text-[var(--text-primary)] truncate">{value.name}</div>
+              <div className="text-sm font-semibold text-[var(--text-primary)] truncate flex items-center gap-1.5">
+                {value.name}
+                {value.self_billed_by_customer && (
+                  <span
+                    className="inline-block w-2 h-2 rounded-full bg-[var(--warning-600)] flex-shrink-0"
+                    aria-label="Self-billing arrangement active"
+                    title="Self-billing arrangement active — cannot invoice directly"
+                  />
+                )}
+              </div>
               {value.email && (
                 <div className="text-xs text-[var(--text-tertiary)] truncate">{value.email}</div>
               )}
@@ -104,7 +113,16 @@ export function CustomerPicker({ customers = [], value, onChange, onClear }) {
                 {c.name?.[0]?.toUpperCase() || "?"}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-[var(--text-primary)] truncate">{c.name}</div>
+                <div className="text-sm font-medium text-[var(--text-primary)] truncate flex items-center gap-1.5">
+                  {c.name}
+                  {c.self_billed_by_customer && (
+                    <span
+                      className="inline-block w-2 h-2 rounded-full bg-[var(--warning-600)] flex-shrink-0"
+                      aria-label="Self-billing arrangement active"
+                      title="Self-billing arrangement active — cannot invoice directly"
+                    />
+                  )}
+                </div>
                 {c.email && <div className="text-xs text-[var(--text-tertiary)] truncate">{c.email}</div>}
               </div>
             </button>

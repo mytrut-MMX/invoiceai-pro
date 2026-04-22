@@ -37,7 +37,7 @@ function suggestTaxPoint(issueDate, supplyDate) {
   return days <= 14 ? issueDate : supplyDate;
 }
 
-export default function ReceivedSelfBillModal({ onClose, onSaved }) {
+export default function ReceivedSelfBillModal({ onClose, onSaved, initialCustomerId = null }) {
   const { user, customers = [], orgSettings } = useContext(AppCtx);
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const fileInputRef = useRef(null);
@@ -47,7 +47,7 @@ export default function ReceivedSelfBillModal({ onClose, onSaved }) {
     [customers],
   );
 
-  const [customerId, setCustomerId] = useState("");
+  const [customerId, setCustomerId] = useState(initialCustomerId || "");
   const [customerSbRef, setCustomerSbRef] = useState("");
   const [issueDate, setIssueDate] = useState(todayStr());
   const [supplyDate, setSupplyDate] = useState(todayStr());
