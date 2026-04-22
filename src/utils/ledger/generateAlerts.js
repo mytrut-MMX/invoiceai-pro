@@ -1,6 +1,7 @@
 // generateAlerts — pure function, no Supabase needed.
 // Runs entirely on localStorage data passed in from context.
 import { normalizeCurrencyCode } from "../../constants";
+import { computeSbaAlerts } from "../selfBilling/sbaAlerts";
 
 const todayMidnight = () => {
   const d = new Date();
@@ -19,7 +20,7 @@ const daysBetween = (a, b) => Math.round((b - a) / 86400000);
 // SEC-014: Use cryptographically secure random IDs
 const uid = (prefix = '') => `${prefix}_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 
-export function generateAlerts(invoices = [], payments = [], expenses = [], orgSettings = {}, bills = []) {
+export function generateAlerts(invoices = [], payments = [], expenses = [], orgSettings = {}, bills = [], activeSbas = []) {
   const alerts = [];
   const today = todayMidnight();
   const currencyCode = normalizeCurrencyCode(orgSettings?.currency, "GBP");
@@ -235,6 +236,23 @@ export function generateAlerts(invoices = [], payments = [], expenses = [], orgS
       description: "Review and schedule payments.",
       actionPage: "bills",
       dismissable: true,
+    });
+  }
+
+  // ─── SBA RENEWAL ALERTS ────────────────────────────────────────────────────
+  // computeSbaAlerts returns { id, severity, title, message, actionLabel,
+  // actionHref, ... }. Map to the existing alert shape (description +
+  // actionPage) so the global stream is homogeneous.
+  for (const sb of computeSbaAlerts({ activeSbas })) {
+    alerts.push({
+      id: sb.id,
+      severity: sb.severity,
+      category: "sba_renewal",
+      title: sb.title,
+      description: sb.message,
+      actionPage: sb.direction === "received" ? "customers" : "suppliers",
+      actionHref: sb.actionHref,
+      dismissable: sb.severity !== "critical",
     });
   }
 
