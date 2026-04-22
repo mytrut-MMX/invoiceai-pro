@@ -5,6 +5,7 @@ import { Btn } from "../atoms";
 import { todayStr, addDays } from "../../utils/helpers";
 import { computeBillCis } from "../../utils/cis/computeBillCis";
 import { postBillEntry } from "../../utils/ledger/postBillEntry";
+import { postSelfBilledEntry } from "../../utils/ledger/postSelfBilledEntry";
 import { reverseEntry, findEntryBySource } from "../../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import BillPaymentsTab from "./BillPaymentsTab";
@@ -136,11 +137,22 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
           if (!wasPostable && !isPostable) return;
           const { accounts, userId } = await fetchUserAccounts();
           if (!userId) return;
+          // Self-billed edits opened here (BillFormPanel routes post-split)
+          // were originally posted under source_type='self_bill'. Matching on
+          // 'bill' would miss that row and leave a ghost entry while posting
+          // a duplicate on the next save.
+          const sourceType = bill.is_self_billed ? "self_bill" : "bill";
           if (wasPostable) {
-            const oldEntry = await findEntryBySource("bill", bill.id);
+            const oldEntry = await findEntryBySource(sourceType, bill.id);
             if (oldEntry) await reverseEntry(oldEntry.id, userId);
           }
-          if (isPostable) await postBillEntry(bill, supplier, accounts, userId);
+          if (isPostable) {
+            if (bill.is_self_billed) {
+              await postSelfBilledEntry(bill, supplier, accounts, userId);
+            } else {
+              await postBillEntry(bill, supplier, accounts, userId);
+            }
+          }
         } catch (err) {
           console.error("[Ledger] bill post failed:", err);
         }

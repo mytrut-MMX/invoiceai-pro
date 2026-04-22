@@ -706,7 +706,16 @@ export async function saveInvoice(userId, invoice) {
     const { data: existingRow } = await supabase
       .from("invoices").select("id").eq("id", row.id).maybeSingle();
     if (!existingRow) {
-      const activeSba = await getActiveSbaForCustomer({ userId, customerId: row.customer_id });
+      // getActiveSbaForCustomer throws on Supabase errors; rethrow would surface
+      // as an unhandled rejection since callers only inspect { data, error }.
+      // Translate into the same shape as the guard result (SBA_NOT_ACTIVE
+      // indicates the lookup itself could not confirm an active agreement).
+      let activeSba;
+      try {
+        activeSba = await getActiveSbaForCustomer({ userId, customerId: row.customer_id });
+      } catch (err) {
+        return { error: new SelfBillingError("SBA_NOT_ACTIVE", { reason: err?.message || String(err) }) };
+      }
       if (activeSba) {
         return {
           error: new SelfBillingError("DUPLICATE_WITH_SBA", {

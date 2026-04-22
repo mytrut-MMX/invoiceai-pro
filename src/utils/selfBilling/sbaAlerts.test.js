@@ -41,10 +41,19 @@ describe("computeSbaAlerts", () => {
     expect(a.title).toMatch(/expires in 1 day$/);
   });
 
-  it("0 days out → critical 'Expired'", () => {
+  it("0 days out → critical 'Expires today' (agreement still active per gte)", () => {
     const [a] = computeSbaAlerts({ activeSbas: [sba({ end_date: addDays(0) })], today: TODAY });
     expect(a.severity).toBe("critical");
+    expect(a.title).toMatch(/^Expires today — /);
+    expect(a.daysToExpiry).toBe(0);
+    expect(a.actionLabel).toBe("Renew agreement");
+  });
+
+  it("-1 days → critical 'Expired'", () => {
+    const [a] = computeSbaAlerts({ activeSbas: [sba({ end_date: addDays(-1) })], today: TODAY });
+    expect(a.severity).toBe("critical");
     expect(a.title).toMatch(/^Expired — /);
+    expect(a.daysToExpiry).toBe(-1);
   });
 
   it("past end_date → critical 'Expired'", () => {

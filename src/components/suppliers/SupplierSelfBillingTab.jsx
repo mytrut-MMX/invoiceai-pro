@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 import { Btn } from "../atoms";
 import EmptyState from "../ui/EmptyState";
 import { Skeleton } from "../ui/Skeleton";
 import { useToast } from "../ui/Toast";
+import { AppCtx } from "../../context/AppContext";
 import { supabase } from "../../lib/supabase";
 import {
   getActiveSbaForSupplier,
@@ -170,6 +171,12 @@ function HistoryList({ rows, onViewPdf }) {
 
 export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, onAgreementChange }) {
   const { toast } = useToast();
+  const appCtx = useContext(AppCtx);
+  // AppCtx owns the has-any-active-issued-SBA flag used to gate TopBar,
+  // Sidebar, CommandPalette and the dashboard renewals widget. Every
+  // mutation below has to re-seed it — the hook only re-fetches on userId
+  // change, so without this call the UI would keep the stale value.
+  const refreshSbaGate = () => appCtx?.refreshHasAnyActiveIssuedSba?.();
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(null);
   const [history, setHistory] = useState([]);
@@ -208,6 +215,7 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
       });
       setActive(updated);
       onAgreementChange?.(updated);
+      refreshSbaGate();
       const link = `${window.location.origin}/sba/sign/${updated.signed_by_them_token}`;
       try { await navigator.clipboard.writeText(link); } catch { /* clipboard may be denied */ }
       toast({ title: "Signed & link copied", description: "Share the link with the supplier.", variant: "success" });
@@ -233,6 +241,7 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
       setActive(updated);
       onAgreementChange?.(updated);
       refresh();
+      refreshSbaGate();
       toast({ title: "Agreement terminated", variant: "success" });
     } catch (err) {
       setActive(prev); // rollback
@@ -281,7 +290,7 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
         orgSettings={orgSettings}
         existingSbaForRenewal={renewing ? active : null}
         onClose={() => setModalOpen(false)}
-        onCreated={() => { setModalOpen(false); refresh(); }}
+        onCreated={() => { setModalOpen(false); refresh(); refreshSbaGate(); }}
       />
     </div>
   );

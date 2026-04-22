@@ -10,7 +10,9 @@
 //   15 ≤ days ≤ 30  → info
 //   8  ≤ days ≤ 14  → warning
 //   1  ≤ days ≤ 7   → critical (renew now)
-//   days ≤ 0        → critical "Expired — stop issuing self-bills"
+//   days === 0      → critical "Expires today" (agreement still valid —
+//                     listActiveSbas keeps end_date == today active)
+//   days < 0        → critical "Expired — stop issuing self-bills"
 
 function counterpartyName(sba) {
   return sba?.supplier?.name || sba?.customer?.name || "counterparty";
@@ -57,11 +59,18 @@ export function computeSbaAlerts({ activeSbas = [], today } = {}) {
 
     let severity, title, message, actionLabel;
 
-    if (days <= 0) {
+    if (days < 0) {
       severity = "critical";
       title = `Expired — stop issuing self-bills to ${name}`;
       message = `The agreement with ${name} ended on ${sba.end_date}. HMRC requires a fresh agreement before any further self-bills can be issued.`;
       actionLabel = "Review agreement";
+    } else if (days === 0) {
+      // listActiveSbas keeps end_date == today active (gte), so the agreement
+      // is still valid for supplies today — nudge to renew rather than stop.
+      severity = "critical";
+      title = `Expires today — renew now to continue self-billing with ${name}`;
+      message = `The agreement with ${name} ends on ${sba.end_date}. Renew today to avoid a gap — self-bills dated after this will be blocked.`;
+      actionLabel = "Renew agreement";
     } else if (days <= 7) {
       severity = "critical";
       title = `Self-billing agreement with ${name} expires in ${days} day${days === 1 ? "" : "s"}`;

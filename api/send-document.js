@@ -17,7 +17,7 @@
 // that lives in api/_lib/send-*-handler.js.
 
 import { checkRateLimit } from './_lib/rate-limit.js';
-import { parseBody, verifyAuth } from './_lib/send-shared.js';
+import { parseBody } from './_lib/send-shared.js';
 import { handleSendInvoice } from './_lib/send-invoice-handler.js';
 import { handleSendSelfbill } from './_lib/send-selfbill-handler.js';
 
@@ -62,19 +62,15 @@ export default async function handler(req, res) {
       });
     }
 
-    const auth = await verifyAuth(req);
-    if (auth.error) return res.status(auth.status).json({ error: auth.error });
-
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
 
-    const ctx = {
-      userId: auth.userId,
-      payload,
-      supabaseUrl: auth.supabaseUrl,
-      serviceKey:  auth.serviceKey,
-      resendKey,
-    };
+    // Auth is per-action: invoice path matches the pre-consolidation
+    // /api/send-document which never required a Bearer token (and callers
+    // like SendDocumentModal + sendCISStatement never send one). Self-bill
+    // path enforces auth inside handleSendSelfbill — it reads bills + storage
+    // scoped to user_id and must not be callable unauthenticated.
+    const ctx = { payload, resendKey };
 
     if (action === 'selfbill') return await handleSendSelfbill(req, res, ctx);
     return await handleSendInvoice(req, res, ctx);

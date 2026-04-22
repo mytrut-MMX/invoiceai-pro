@@ -7,12 +7,18 @@
 // ctx: { userId, payload, supabaseUrl, serviceKey, resendKey } — dispatcher
 // has authenticated and populated env.
 
-import { isValidEmail, stripDangerousHtml, sanitizeServerSideName, sendResendEmail, sb } from './send-shared.js';
+import { isValidEmail, stripDangerousHtml, sanitizeServerSideName, sendResendEmail, sb, verifyAuth } from './send-shared.js';
 
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 export async function handleSendSelfbill(req, res, ctx) {
-  const { userId, payload, supabaseUrl, serviceKey, resendKey } = ctx;
+  // Self-bill requires auth (reads user-scoped bills + storage). Dispatcher
+  // no longer authenticates up-front because the invoice path never required
+  // it — enforce here so only this action gates on a Bearer token.
+  const auth = await verifyAuth(req);
+  if (auth.error) return res.status(auth.status).json({ error: auth.error });
+  const { payload, resendKey } = ctx;
+  const { userId, supabaseUrl, serviceKey } = auth;
   const { billId, recipientEmail, ccEmails = [], subject: subjectIn, message } = payload || {};
 
   if (!billId || !recipientEmail) {

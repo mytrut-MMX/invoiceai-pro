@@ -159,6 +159,15 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
 
       const rcApplies = isVat && reverseCharge && compute.vatIncluded;
       const lineItems = buildLineItems({ isCis, category, amount, labour: labourAmount, materials: materialsAmount, taxRate });
+      // bills.supplier_vat_status_at_posting is CHECK-constrained to
+      // valid|invalid|unchecked|deregistered. The VAT verifier can emit
+      // 'error' during HMRC outages, which would violate the constraint.
+      // Fall back to 'unchecked' in that case (and clear verifiedAt so we
+      // don't assert a timestamp against an unverified status).
+      const normalizedVatStatus =
+        ["valid", "invalid", "unchecked", "deregistered"].includes(vatCheck.status)
+          ? vatCheck.status
+          : "unchecked";
       const bill = {
         id: billId, supplier_id: supplier.id, supplier_name: supplier.name,
         supplier_email: supplierEmail.trim() || supplier.email || null,
@@ -177,8 +186,8 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
         is_self_billed: true, self_bill_invoice_number: sbNumber,
         self_billing_agreement_id: agreement.id,
         supplier_vat_at_posting: supplier.vat_number || null,
-        supplier_vat_verified_at: vatCheck.verifiedAt || null,
-        supplier_vat_status_at_posting: vatCheck.status || "unchecked",
+        supplier_vat_verified_at: normalizedVatStatus === "unchecked" ? null : (vatCheck.verifiedAt || null),
+        supplier_vat_status_at_posting: normalizedVatStatus,
       };
       const { error: saveErr } = await saveBill(userId, bill);
       if (saveErr) throw new Error(`Failed to save bill: ${saveErr.message || saveErr}`);
