@@ -8,6 +8,7 @@ import { postBillEntry } from "../../utils/ledger/postBillEntry";
 import { reverseEntry, findEntryBySource } from "../../utils/ledger/ledgerService";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import BillPaymentsTab from "./BillPaymentsTab";
+import SelfBillHistoryTab from "./SelfBillHistoryTab";
 import { saveBill } from "../../lib/dataAccess";
 import { Icons } from "../icons";
 import {
@@ -186,7 +187,13 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
 
         {isEdit && (
           <div className="flex border-b border-[var(--border-subtle)] mb-4">
-            {[{ id: "details", label: "Details" }, { id: "payments", label: "Payments" }].map((t) => {
+            {[
+              { id: "details",  label: "Details" },
+              { id: "payments", label: "Payments" },
+              // History tab only surfaces on self-billed bills — everything else
+              // doesn't have a self_billing_emission_log trail.
+              ...(b.is_self_billed ? [{ id: "history", label: "History" }] : []),
+            ].map((t) => {
               const active = activeTab === t.id;
               return (
                 <button
@@ -208,6 +215,10 @@ export default function BillFormPanel({ existing, onClose, onSave }) {
 
         {activeTab === "payments" && isEdit && (
           <BillPaymentsTab bill={b} onPaymentReversed={handlePaymentReversed} />
+        )}
+
+        {activeTab === "history" && isEdit && b.is_self_billed && (
+          <SelfBillHistoryTab bill={b} />
         )}
 
         {activeTab === "details" && (
