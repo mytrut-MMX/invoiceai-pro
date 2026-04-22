@@ -93,7 +93,18 @@ export default function SendSelfBillModal({ bill, supplier, onClose, onSent }) {
         setSending(false);
         return;
       }
-      toast({ title: `Sent to ${recipient}`, variant: "success" });
+      // HTTP 207 Multi-Status: email sent but the server's audit log insert
+      // failed. Warn loudly — the Resend ID is the only surviving reference
+      // until support can backfill the emission_log row.
+      if (body?.warning === "email_sent_but_audit_log_failed") {
+        toast({
+          title: `Sent to ${recipient} — audit log warning`,
+          description: `Email sent but audit log failed — contact support with Resend ID ${body.resendId || "n/a"}.`,
+          variant: "warning",
+        });
+      } else {
+        toast({ title: `Sent to ${recipient}`, variant: "success" });
+      }
       onSent?.(body.emissionLogId);
       onClose();
     } catch (err) {

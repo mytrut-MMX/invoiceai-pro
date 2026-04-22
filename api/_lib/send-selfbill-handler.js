@@ -98,8 +98,24 @@ export async function handleSendSelfbill(req, res, ctx) {
       snapshot: source.snapshot,
     }],
   });
-  const emissionLogId = logInsert.data?.[0]?.id || null;
 
+  // Audit log is non-rollbackable (the email has already left Resend). If
+  // the insert fails we still report success for the email but flag the
+  // missing audit row via HTTP 207 Multi-Status + a `warning` field. The
+  // client surfaces an amber toast so the user can open a support ticket
+  // with the Resend ID before it drops out of the Resend retention window.
+  if (!logInsert.ok) {
+    console.error('[send-selfbill] audit log insert failed',
+      logInsert.status, JSON.stringify(logInsert.data));
+    return res.status(207).json({
+      success: true,
+      emissionLogId: null,
+      resendId: resendJson?.id || null,
+      warning: 'email_sent_but_audit_log_failed',
+    });
+  }
+
+  const emissionLogId = logInsert.data?.[0]?.id || null;
   return res.status(200).json({
     success: true,
     emissionLogId,

@@ -21,14 +21,26 @@ export default function InvoicesPage({ initialShowForm = false }) {
   const [panel, setPanel] = useState(initialShowForm ? { mode: "new" } : null);
 
   const onSave = inv => {
+    // Snapshot for rollback — the SBA-guard in saveInvoice can reject with
+    // { error: SelfBillingError } after the optimistic add, leaving the UI
+    // out of sync with what's persisted. On failure we restore + toast.
+    let snapshot;
     setInvoices(p => {
+      snapshot = p;
       const i = p.findIndex(x => x.id === inv.id);
       if (i >= 0) { const u = [...p]; u[i] = inv; return u; }
       return [inv, ...p];
     });
     if (user?.id) {
       saveInvoice(user.id, inv).then(({ error }) => {
-        if (error) console.error('[Invoices] saveInvoice failed:', error);
+        if (!error) return;
+        console.error('[Invoices] saveInvoice failed:', error);
+        setInvoices(snapshot);
+        toast({
+          title: error.title || 'Could not save invoice',
+          description: error.message || String(error),
+          variant: 'danger',
+        });
       });
     }
   };
