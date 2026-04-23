@@ -104,6 +104,10 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
       setVatCheck({ status: "unchecked", verifiedAt: null, name: null, running: false });
       return;
     }
+    if (supplier?.is_vat_registered !== true) {
+      setVatCheck({ status: "not_applicable", verifiedAt: null, name: null, running: false });
+      return;
+    }
     const stale = shouldAutoVerify(supplier);
     setVatCheck({
       status: supplier.vat_verification_status || "unchecked",
@@ -120,6 +124,8 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
   }, [supplier?.id, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isCis = !!supplier?.cis?.is_subcontractor;
+  const supplierIsVat = supplier?.is_vat_registered === true;
+  const showVatFields = isVat && supplierIsVat;
 
   // Feed the verified HMRC status into compute so the engine applies the
   // right VAT rules (valid → include VAT; invalid/deregistered → error;
@@ -127,6 +133,7 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
   // to 'unchecked' so a transient failure doesn't block save.
   const compute = useMemo(() => computeSelfBilledInvoice({
     lineItems: buildLineItems({ isCis, category, amount, labour: labourAmount, materials: materialsAmount, taxRate }),
+    supplierIsVatRegistered: supplier?.is_vat_registered === true,
     supplierVatStatus: vatCheck.status === "error" ? "unchecked" : (vatCheck.status || "unchecked"),
     supplierCisRate: isCis ? (supplier?.cis?.rate || null) : null,
     supplierCisLabourOnly: !!supplier?.cis?.labour_only,
@@ -145,6 +152,11 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
     setSupplier(s);
     if (s?.email && !supplierEmail) setSupplierEmail(s.email);
     if (s?.cis?.is_subcontractor && category !== "Subcontractor") setCategory("Subcontractor");
+    if (s?.is_vat_registered !== true) {
+      setTaxRate(0);
+    } else if (isVat) {
+      setTaxRate(20);
+    }
   };
 
   const handleSave = async () => {
@@ -282,11 +294,13 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
           const base = "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full -mt-2 mb-4 border";
           const days = vatCheck.verifiedAt ? Math.max(0, Math.floor((Date.now() - new Date(vatCheck.verifiedAt).getTime()) / 86400000)) : null;
           const chips = {
-            running:  { cls: "bg-[var(--warning-50)] border-[var(--warning-100)] text-[var(--warning-700)]", dot: "bg-[var(--warning-600)] animate-pulse", label: "Verification stale — re-checking" },
-            valid:    { cls: "bg-[var(--success-50)] border-[var(--success-100)] text-[var(--success-700)]", dot: "bg-[var(--success-600)]", label: `VAT verified${days != null ? ` ${days} day${days === 1 ? "" : "s"} ago` : ""}` },
-            bad:      { cls: "bg-[var(--danger-50)] border-[var(--danger-100)] text-[var(--danger-700)]",     dot: "bg-[var(--danger-600)]",   label: `VAT ${vatCheck.status} — save blocked` },
+            running:         { cls: "bg-[var(--warning-50)] border-[var(--warning-100)] text-[var(--warning-700)]", dot: "bg-[var(--warning-600)] animate-pulse", label: "Verification stale — re-checking" },
+            valid:           { cls: "bg-[var(--success-50)] border-[var(--success-100)] text-[var(--success-700)]", dot: "bg-[var(--success-600)]", label: `VAT verified${days != null ? ` ${days} day${days === 1 ? "" : "s"} ago` : ""}` },
+            bad:             { cls: "bg-[var(--danger-50)] border-[var(--danger-100)] text-[var(--danger-700)]",     dot: "bg-[var(--danger-600)]",   label: `VAT ${vatCheck.status} — save blocked` },
+            not_applicable:  { cls: "bg-[var(--neutral-50)] border-[var(--border-subtle)] text-[var(--text-secondary)]", dot: "bg-[var(--text-tertiary)]", label: "Supplier not VAT registered — invoice will exclude VAT" },
           };
           const chip = vatCheck.running ? chips.running
+            : vatCheck.status === "not_applicable" ? chips.not_applicable
             : vatCheck.status === "valid" ? chips.valid
             : (vatCheck.status === "invalid" || vatCheck.status === "deregistered") ? chips.bad
             : null;
@@ -312,8 +326,8 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
             labourAmount={labourAmount} onLabourAmountChange={setLabourAmount}
             materialsAmount={materialsAmount} onMaterialsAmountChange={setMaterialsAmount}
           />
-          {isVat && <ReverseChargeToggle value={reverseCharge} onChange={setReverseCharge} />}
-          {isVat && (
+          {showVatFields && <ReverseChargeToggle value={reverseCharge} onChange={setReverseCharge} />}
+          {showVatFields && (
             <VatAmountRow
               taxRate={taxRate} onTaxRateChange={setTaxRate}
               taxAmount={compute.taxAmount} onTaxAmountChange={() => {}} readOnlyTax

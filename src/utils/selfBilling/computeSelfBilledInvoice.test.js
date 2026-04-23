@@ -201,6 +201,57 @@ describe('computeSelfBilledInvoice', () => {
     expect(r.warnings.some((w) => w.code === 'SUPPLIER_VAT_STALE')).toBe(true);
   });
 
+  describe('non-VAT supplier', () => {
+    it('non-VAT supplier produces zero VAT, no errors, no warnings', () => {
+      const r = computeSelfBilledInvoice({
+        ...baseInput(),
+        supplierIsVatRegistered: false,
+        supplierVatStatus: 'unchecked',
+        ourVatRegistered: true,
+        lineItems: [{ description: 'labour', quantity: 1, rate: 1000, taxType: 'zero-rated', taxRate: 0, cisApplicable: false }],
+      });
+      expect(r.vatIncluded).toBe(false);
+      expect(r.taxAmount).toBe(0);
+      expect(r.errors).toEqual([]);
+      expect(r.warnings).toEqual([]);
+    });
+
+    it('non-VAT supplier ignores supplierVatStatus entirely', () => {
+      const r = computeSelfBilledInvoice({
+        ...baseInput(),
+        supplierIsVatRegistered: false,
+        supplierVatStatus: 'invalid',
+      });
+      expect(r.errors.some((e) => e.code === 'SUPPLIER_VAT_INVALID')).toBe(false);
+    });
+
+    it('non-VAT supplier with CIS deduction works correctly', () => {
+      const r = computeSelfBilledInvoice({
+        ...baseInput(),
+        supplierIsVatRegistered: false,
+        supplierCisRate: 'standard_20',
+        supplierCisLabourOnly: true,
+        lineItems: [
+          { description: 'labour',    quantity: 1, rate: 1000, taxType: 'zero-rated', taxRate: 0, cisApplicable: true },
+          { description: 'materials', quantity: 1, rate: 500,  taxType: 'zero-rated', taxRate: 0, cisApplicable: false },
+        ],
+      });
+      expect(r.cisDeduction).toBe(200);
+      expect(r.amountPayable).toBe(1300);
+      expect(r.vatIncluded).toBe(false);
+      expect(r.taxAmount).toBe(0);
+    });
+
+    it('non-VAT supplier — buyer VAT status is irrelevant', () => {
+      const r = computeSelfBilledInvoice({
+        ...baseInput(),
+        supplierIsVatRegistered: false,
+        ourVatRegistered: false,
+      });
+      expect(r.errors.some((e) => e.code === 'SBA_VAT_MISMATCH')).toBe(false);
+    });
+  });
+
   it('all numeric outputs are rounded to 2 decimals', () => {
     const r = computeSelfBilledInvoice({
       ...baseInput(),

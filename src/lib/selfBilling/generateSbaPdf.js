@@ -5,8 +5,9 @@
 
 import jsPDF from 'jspdf';
 import {
-  HMRC_SBA_TERMS_TEMPLATE, SB_DIRECTION,
+  HMRC_SBA_TERMS_TEMPLATE, HMRC_SBA_NON_VAT_CLAUSE, SBA_CLAUSE_KEYS, SB_DIRECTION,
   SELF_BILL_MARKER_TITLE, SELF_BILL_VAT_STATEMENT,
+  SELF_BILL_VAT_STATEMENT_NON_VAT_SUPPLIER,
 } from '../../constants/selfBilling.js';
 
 // Phrases that must stay atomic in the rendered text stream: HMRC marker
@@ -168,8 +169,20 @@ function drawClause(s, cl) {
 }
 
 function drawClauses(s) {
-  const { agreement } = s;
-  const base = HMRC_SBA_TERMS_TEMPLATE.map((c, i) => ({
+  const { agreement, counterpartyIsVatRegistered } = s;
+  const baseClauses = HMRC_SBA_TERMS_TEMPLATE.map((clause) => {
+    if (clause.id === SBA_CLAUSE_KEYS.VAT_STATUS_NOTIFICATION && counterpartyIsVatRegistered === false) {
+      return HMRC_SBA_NON_VAT_CLAUSE;
+    }
+    if (clause.id === SBA_CLAUSE_KEYS.MANDATORY_MARKERS && counterpartyIsVatRegistered === false) {
+      return {
+        ...clause,
+        body: clause.body.split(SELF_BILL_VAT_STATEMENT).join(SELF_BILL_VAT_STATEMENT_NON_VAT_SUPPLIER),
+      };
+    }
+    return clause;
+  });
+  const base = baseClauses.map((c, i) => ({
     num: i + 1,
     title: c.title,
     body: substitutePlaceholders(c.body, agreement),
@@ -285,14 +298,16 @@ export function generateSbaPdf({
   counterpartyName,
   counterpartyAddress,
   counterpartyVat,
+  counterpartyIsVatRegistered = true,
   generatedAt = new Date(),
   compress = true,
 }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress });
   const parties = resolveParties({
-    agreement, ourBusinessProfile, counterpartyName, counterpartyAddress, counterpartyVat,
+    agreement, ourBusinessProfile, counterpartyName, counterpartyAddress,
+    counterpartyVat: counterpartyIsVatRegistered === false ? null : counterpartyVat,
   });
-  const state = { doc, page: 1, y: 0, generatedAt, agreement };
+  const state = { doc, page: 1, y: 0, generatedAt, agreement, counterpartyIsVatRegistered };
 
   drawTitleBand(state);
   drawMetaGrid(state);

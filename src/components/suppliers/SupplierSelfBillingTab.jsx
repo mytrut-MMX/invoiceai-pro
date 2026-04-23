@@ -65,17 +65,6 @@ function toastError(toast, err, fallback) {
   });
 }
 
-function GatedPanel() {
-  return (
-    <div className="border border-dashed border-[var(--border-subtle)] rounded-[var(--radius-md)] p-[21px] text-sm text-[var(--text-secondary)]">
-      <div className="font-semibold text-[var(--text-primary)] mb-1">Self-billing unavailable</div>
-      Self-billing requires both parties to be VAT-registered. Enable VAT registration on your
-      business first (Settings → Tax), and ensure the supplier is marked VAT-registered in the
-      &ldquo;Tax &amp; Registration&rdquo; tab.
-    </div>
-  );
-}
-
 function CurrentCard({ sba, supplier, onSign, onTerminate, onRenew, onCopyLink, onViewPdf, onCreate }) {
   if (!sba) {
     return (
@@ -183,10 +172,8 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
   const [modalOpen, setModalOpen] = useState(false);
   const [renewing, setRenewing] = useState(false);
 
-  const gated = !(supplier?.is_vat_registered === true && orgSettings?.vatReg === "Yes");
-
   const refresh = useCallback(async () => {
-    if (!userId || !supplier?.id || gated) { setLoading(false); return; }
+    if (!userId || !supplier?.id) { setLoading(false); return; }
     setLoading(true);
     try {
       const [act, all] = await Promise.all([
@@ -202,7 +189,7 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
     } finally {
       setLoading(false);
     }
-  }, [userId, supplier?.id, gated, toast]);
+  }, [userId, supplier?.id, toast]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -249,10 +236,16 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
     }
   }
 
-  if (gated) return <GatedPanel />;
-
   return (
     <div className="max-w-[1020px] mx-auto">
+      {supplier?.is_vat_registered !== true && (
+        <div className="border border-[var(--border-default)] rounded-[var(--radius-md)] px-[21px] py-3 mb-[21px] bg-[var(--info-50)] text-sm text-[var(--info-600)]">
+          <div className="font-semibold mb-1">Non-VAT supplier</div>
+          Self-billed invoices to this supplier will not include VAT. You cannot claim
+          input tax on these invoices. The supplier must notify you if they register
+          for VAT in the future.
+        </div>
+      )}
       <div
         className="grid gap-[21px] mt-[34px]"
         style={{ gridTemplateColumns: "1.618fr 1fr" }}
