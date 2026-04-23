@@ -161,6 +161,20 @@ export async function terminateSba({ userId, sbaId, reason }) {
   return data;
 }
 
+export async function updateDraftTerms({ userId, sbaId, termsSnapshot }) {
+  const cur = await _fetchSbaOwned(userId, sbaId);
+  if (cur.status !== SBA_STATUS.DRAFT) {
+    _throw('SBA_NOT_ACTIVE', { status: cur.status });
+  }
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({ terms_snapshot: termsSnapshot })
+    .eq('user_id', userId).eq('id', sbaId)
+    .select().single();
+  if (error) _throw('SBA_NOT_ACTIVE', { reason: error.message });
+  return data;
+}
+
 export async function supersedeAndRenew({
   userId, sbaId, newStartDate, newEndDate, newTermsSnapshot,
 }) {
