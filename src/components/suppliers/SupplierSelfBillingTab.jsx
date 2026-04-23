@@ -257,6 +257,21 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
     );
   }
 
+  const buyerNotVat = orgSettings?.vatReg !== "Yes";
+  const supplierIsVat = supplier?.is_vat_registered === true;
+
+  if (buyerNotVat && supplierIsVat) {
+    return (
+      <div className="max-w-[1020px] mx-auto">
+        <div className="border border-dashed border-[var(--border-subtle)] rounded-[var(--radius-md)] p-[21px] mt-[34px] text-sm text-[var(--text-secondary)]">
+          <div className="font-semibold text-[var(--text-primary)] mb-1">Self-billing unavailable</div>
+          Your business must be VAT-registered to self-bill a VAT-registered supplier.
+          Enable VAT registration in Settings → Tax first.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1020px] mx-auto">
       {supplier?.is_vat_registered !== true && (
