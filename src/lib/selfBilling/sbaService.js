@@ -8,7 +8,7 @@ import {
 
 const TABLE = 'self_billing_agreements';
 const SELECT_WITH_PARTIES =
-  '*, supplier:suppliers(id,name), customer:customers(id,name)';
+  '*, supplier:suppliers!self_billing_agreements_supplier_id_fkey(id,name), customer:customers!self_billing_agreements_customer_id_fkey(id,name)';
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
 function _throw(code, ctx) {
