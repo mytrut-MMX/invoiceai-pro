@@ -236,6 +236,16 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
     }
   }
 
+  if (!supplier?.id) {
+    return (
+      <div className="max-w-[1020px] mx-auto">
+        <div className="border border-dashed border-[var(--border-subtle)] rounded-[var(--radius-md)] p-[21px] mt-[34px] text-sm text-[var(--text-secondary)]">
+          Save the supplier first to manage self-billing agreements.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1020px] mx-auto">
       {supplier?.is_vat_registered !== true && (
