@@ -14,6 +14,7 @@ import {
 import { getSbError } from "../../lib/selfBilling/errors";
 import { SBA_BUCKET, SBA_STATUS } from "../../constants/selfBilling";
 import CreateSbaModal from "./CreateSbaModal";
+import SignSbaModal from "./SignSbaModal";
 
 const STATUS_STYLE = {
   draft:               { cls: "bg-gray-100 text-gray-700",       label: "Draft" },
@@ -65,7 +66,7 @@ function toastError(toast, err, fallback) {
   });
 }
 
-function CurrentCard({ sba, supplier, onSign, onTerminate, onRenew, onCopyLink, onViewPdf, onCreate }) {
+function CurrentCard({ sba, supplier, onSign, onTerminate, onRenew, onCopyLink, onViewPdf, onCreate, onEditClauses }) {
   if (!sba) {
     return (
       <EmptyState
@@ -99,6 +100,7 @@ function CurrentCard({ sba, supplier, onSign, onTerminate, onRenew, onCopyLink, 
         {isDraft && (
           <>
             <Btn variant="primary" onClick={onSign}>Sign &amp; send to supplier</Btn>
+            <Btn variant="outline" onClick={onEditClauses}>Edit clauses</Btn>
             <Btn variant="outline" onClick={onTerminate}>Delete draft</Btn>
           </>
         )}
@@ -171,6 +173,9 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
   const [history, setHistory] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [renewing, setRenewing] = useState(false);
+  const [editingClauses, setEditingClauses] = useState(false);
+  const [signModalOpen, setSignModalOpen] = useState(false);
+  const [signingInProgress, setSigningInProgress] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!userId || !supplier?.id) { setLoading(false); return; }
@@ -193,12 +198,13 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  async function handleSign() {
+  async function handleSign({ name, role }) {
+    setSigningInProgress(true);
     try {
       const updated = await signBySender({
         userId, sbaId: active.id,
-        signedByName: orgSettings?.orgName || "Authorised signatory",
-        signedByRole: "Authorised signatory",
+        signedByName: name,
+        signedByRole: role || "Authorised signatory",
       });
       setActive(updated);
       onAgreementChange?.(updated);
@@ -206,7 +212,12 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
       const link = `${window.location.origin}/sba/sign/${updated.signed_by_them_token}`;
       try { await navigator.clipboard.writeText(link); } catch { /* clipboard may be denied */ }
       toast({ title: "Signed & link copied", description: "Share the link with the supplier.", variant: "success" });
-    } catch (err) { toastError(toast, err, "Could not sign agreement"); }
+      setSignModalOpen(false);
+    } catch (err) {
+      toastError(toast, err, "Could not sign agreement");
+    } finally {
+      setSigningInProgress(false);
+    }
   }
 
   async function handleCopyLink() {
@@ -236,6 +247,31 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
     }
   }
 
+  if (!supplier?.id) {
+    return (
+      <div className="max-w-[1020px] mx-auto">
+        <div className="border border-dashed border-[var(--border-subtle)] rounded-[var(--radius-md)] p-[21px] mt-[34px] text-sm text-[var(--text-secondary)]">
+          Save the supplier first to manage self-billing agreements.
+        </div>
+      </div>
+    );
+  }
+
+  const buyerNotVat = orgSettings?.vatReg !== "Yes";
+  const supplierIsVat = supplier?.is_vat_registered === true;
+
+  if (buyerNotVat && supplierIsVat) {
+    return (
+      <div className="max-w-[1020px] mx-auto">
+        <div className="border border-dashed border-[var(--border-subtle)] rounded-[var(--radius-md)] p-[21px] mt-[34px] text-sm text-[var(--text-secondary)]">
+          <div className="font-semibold text-[var(--text-primary)] mb-1">Self-billing unavailable</div>
+          Your business must be VAT-registered to self-bill a VAT-registered supplier.
+          Enable VAT registration in Settings → Tax first.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1020px] mx-auto">
       {supplier?.is_vat_registered !== true && (
@@ -259,11 +295,12 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
               sba={active}
               supplier={supplier}
               onCreate={() => { setRenewing(false); setModalOpen(true); }}
-              onSign={handleSign}
+              onSign={() => setSignModalOpen(true)}
               onCopyLink={handleCopyLink}
               onTerminate={handleTerminate}
               onRenew={() => { setRenewing(true); setModalOpen(true); }}
               onViewPdf={() => openPdfInNewTab(toast, active?.agreement_pdf_path)}
+              onEditClauses={() => setEditingClauses(true)}
             />
           )}
         </div>
@@ -276,14 +313,24 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
         </div>
       </div>
 
+      <SignSbaModal
+        open={signModalOpen}
+        onClose={() => setSignModalOpen(false)}
+        onSign={handleSign}
+        signing={signingInProgress}
+        defaultName={orgSettings?.orgName || ""}
+        defaultRole="Authorised signatory"
+      />
+
       <CreateSbaModal
-        open={modalOpen}
+        open={modalOpen || editingClauses}
         supplier={supplier}
         userId={userId}
         orgSettings={orgSettings}
         existingSbaForRenewal={renewing ? active : null}
-        onClose={() => setModalOpen(false)}
-        onCreated={() => { setModalOpen(false); refresh(); refreshSbaGate(); }}
+        editingDraft={editingClauses ? active : null}
+        onClose={() => { setModalOpen(false); setEditingClauses(false); }}
+        onCreated={() => { setModalOpen(false); setEditingClauses(false); refresh(); refreshSbaGate(); }}
       />
     </div>
   );

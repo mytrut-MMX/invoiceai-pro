@@ -221,7 +221,15 @@ export default function SelfBillFormPanel({ existing, onClose, onSave }) {
             cisDeduction: compute.cisDeduction, amountPayable: compute.amountPayable,
             cis: isCis ? { labour: Number(labourAmount) || 0, materials: Number(materialsAmount) || 0, deduction: compute.cisDeduction, rateLabel: supplier.cis?.rate } : null,
           },
-          supplier: { ...supplier, vat_status: vatCheck.status || "unchecked" },
+          supplier: {
+            ...supplier,
+            vat_status: supplier?.is_vat_registered === true
+              ? (vatCheck.status || "unchecked")
+              : "unchecked",
+            vat_number: supplier?.is_vat_registered === true
+              ? supplier.vat_number
+              : null,
+          },
           ourBusinessProfile: orgSettings, agreement,
         });
         const hashHex = await sha256Hex(bytes);
