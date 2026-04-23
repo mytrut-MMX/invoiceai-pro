@@ -107,6 +107,7 @@ export default function CreateSbaModal({
         counterpartyName: supplier.name || supplier.legal_name || "",
         counterpartyAddress: formatAddress(supplier.billingAddress),
         counterpartyVat: supplier.vat_number || null,
+        counterpartyIsVatRegistered: supplier?.is_vat_registered === true,
       });
 
       const path = `${userId}/${agreement.id}/${agreement.version}_${Date.now()}.pdf`;

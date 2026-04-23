@@ -108,4 +108,21 @@ describe('generateSbaPdf', () => {
     const b = gen();
     expect(Math.abs(a.length - b.length)).toBeLessThanOrEqual(16);
   });
+
+  it('non-VAT supplier agreement uses registration notification clause', () => {
+    const bytes = gen({ counterpartyIsVatRegistered: false, counterpartyVat: null });
+    expect(bytes).toBeInstanceOf(Uint8Array);
+    expect(bytes.length).toBeGreaterThan(0);
+    const t = decode(bytes);
+    expect(t).toMatch(/3\. VAT Registration Notification/);
+    expect(t).not.toMatch(/VAT Status Notifications/);
+  });
+
+  it("non-VAT supplier agreement shows 'Not VAT registered' in parties", () => {
+    const bytes = gen({ counterpartyIsVatRegistered: false, counterpartyVat: null });
+    expect(bytes).toBeInstanceOf(Uint8Array);
+    expect(bytes.length).toBeGreaterThan(0);
+    const t = decode(bytes);
+    expect(t).toContain('Not VAT registered');
+  });
 });
