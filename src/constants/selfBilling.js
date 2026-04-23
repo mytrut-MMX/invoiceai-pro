@@ -58,6 +58,7 @@ export const SBA_CLAUSE_KEYS = Object.freeze({
   SELF_BILLER_ISSUES: 'self_biller_issues',
   SELF_BILLEE_ACCEPTS: 'self_billee_accepts',
   VAT_STATUS_NOTIFICATION: 'vat_status_notification',
+  VAT_REGISTRATION_NOTIFICATION: 'vat_registration_notification',
   DURATION: 'duration',
   MANDATORY_MARKERS: 'mandatory_markers',
 });
@@ -89,6 +90,14 @@ export const HMRC_SBA_TERMS_TEMPLATE = Object.freeze([
     body: `The Self-Biller will include on every self-billed invoice the statement: '${SELF_BILL_VAT_STATEMENT}', and will clearly mark each invoice as a '${SELF_BILL_MARKER_TITLE}'.`,
   }),
 ]);
+
+// Swapped in place of VAT_STATUS_NOTIFICATION when the supplier is not
+// VAT-registered. Selection logic lives in generateSbaPdf (see Prompt 2).
+export const HMRC_SBA_NON_VAT_CLAUSE = Object.freeze({
+  id: SBA_CLAUSE_KEYS.VAT_REGISTRATION_NOTIFICATION,
+  title: 'VAT Registration Notification (Non-VAT Supplier)',
+  body: 'The Self-Billee will notify the Self-Biller immediately if they become VAT-registered. Upon VAT registration, a new self-billing agreement must be drawn up to include the supplier\'s VAT registration number.',
+});
 
 // ─── VAT verification cache ───────────────────────────────────────────────────
 // VIES / HMRC VAT-status checks older than this are considered stale and must

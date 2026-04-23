@@ -54,43 +54,48 @@ export function computeSelfBilledInvoice(input) {
 
   // Resolve VAT inclusion from SUPPLIER status (never the buyer's).
   let vatIncluded = false;
-  const vatStatus = input.supplierVatStatus;
-  if (vatStatus === 'valid') {
-    if (input.ourVatRegistered === true) {
-      vatIncluded = true;
-    } else {
+  if (input.supplierIsVatRegistered === false) {
+    // Non-VAT supplier: HMRC-compliant, skip VAT checks entirely.
+    vatIncluded = false;
+  } else {
+    const vatStatus = input.supplierVatStatus;
+    if (vatStatus === 'valid') {
+      if (input.ourVatRegistered === true) {
+        vatIncluded = true;
+      } else {
+        errors.push({
+          code: 'SBA_VAT_MISMATCH',
+          message: 'Both parties must be VAT-registered for a self-bill to include VAT.',
+          field: 'ourVatRegistered',
+        });
+      }
+    } else if (vatStatus === 'invalid') {
       errors.push({
-        code: 'SBA_VAT_MISMATCH',
-        message: 'Both parties must be VAT-registered for a self-bill to include VAT.',
-        field: 'ourVatRegistered',
+        code: 'SUPPLIER_VAT_INVALID',
+        message: 'Supplier VAT number failed HMRC verification.',
+        field: 'supplierVatStatus',
+      });
+    } else if (vatStatus === 'deregistered') {
+      errors.push({
+        code: 'SUPPLIER_VAT_DEREGISTERED',
+        message: 'Supplier has deregistered from VAT.',
+        field: 'supplierVatStatus',
+      });
+    } else if (vatStatus === 'unchecked') {
+      warnings.push({
+        code: 'SUPPLIER_VAT_UNCHECKED',
+        message: 'Supplier VAT status has not been verified.',
+        field: 'supplierVatStatus',
       });
     }
-  } else if (vatStatus === 'invalid') {
-    errors.push({
-      code: 'SUPPLIER_VAT_INVALID',
-      message: 'Supplier VAT number failed HMRC verification.',
-      field: 'supplierVatStatus',
-    });
-  } else if (vatStatus === 'deregistered') {
-    errors.push({
-      code: 'SUPPLIER_VAT_DEREGISTERED',
-      message: 'Supplier has deregistered from VAT.',
-      field: 'supplierVatStatus',
-    });
-  } else if (vatStatus === 'unchecked') {
-    warnings.push({
-      code: 'SUPPLIER_VAT_UNCHECKED',
-      message: 'Supplier VAT status has not been verified.',
-      field: 'supplierVatStatus',
-    });
-  }
 
-  if (input.supplierVatStale === true) {
-    warnings.push({
-      code: 'SUPPLIER_VAT_STALE',
-      message: 'Supplier VAT verification is out of date.',
-      field: 'supplierVatStatus',
-    });
+    if (input.supplierVatStale === true) {
+      warnings.push({
+        code: 'SUPPLIER_VAT_STALE',
+        message: 'Supplier VAT verification is out of date.',
+        field: 'supplierVatStatus',
+      });
+    }
   }
 
   // Tax point resolution — 14-day rule around supply date.
