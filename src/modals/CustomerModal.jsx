@@ -8,11 +8,6 @@ import { AppCtx } from "../context/AppContext";
 const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
 const PAYMENT_TERMS = PAYMENT_TERMS_OPTS.filter((term) => term !== "Custom");
-const CIS_RATES = [
-  { label: "20% — Standard", value: 20 },
-  { label: "30% — Higher (unverified)", value: 30 },
-  { label: "0% — Gross payment", value: 0 },
-];
 
 const textInputCls =
   "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
@@ -51,8 +46,6 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [remarks, setRemarks] = useState(existing?.notes || "");
   const [cisRegistered, setCisRegistered] = useState(existing?.cis?.registered ?? false);
   const [cisUtr, setCisUtr] = useState(existing?.cis?.utr || "");
-  const [cisRate, setCisRate] = useState(existing?.cis?.rate || CIS_RATES[0].label);
-  const [cisVerification, setCisVerification] = useState(existing?.cis?.verification || "Net");
   const [cisBusinessType, setCisBusinessType] = useState(existing?.cis?.businessType || "Subcontractor");
   const [selfBilledByCustomer, setSelfBilledByCustomer] = useState(existing?.self_billed_by_customer ?? false);
   const [sbSectionOpen, setSbSectionOpen] = useState(false);
@@ -85,9 +78,6 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
       cis: {
         registered: cisRegistered,
         utr: cisUtr,
-        rate: cisRate,
-        rateValue: CIS_RATES.find((r) => r.label === cisRate)?.value ?? 0,
-        verification: cisVerification,
         businessType: cisBusinessType,
       },
       billingAddress: {
@@ -289,12 +279,6 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                     </Field>
                     <Field label="CIS UTR">
                       <Input value={cisUtr} onChange={setCisUtr} placeholder="1234567890" />
-                    </Field>
-                    <Field label="CIS Rate">
-                      <Select value={cisRate} onChange={setCisRate} options={CIS_RATES.map(r => r.label)} />
-                    </Field>
-                    <Field label="Verification">
-                      <Select value={cisVerification} onChange={setCisVerification} options={["Net", "Gross", "Unverified"]} />
                     </Field>
                     <Field label="Business Type">
                       <Select value={cisBusinessType} onChange={setCisBusinessType} options={["Subcontractor", "Contractor", "Both"]} />
