@@ -7,7 +7,7 @@ import { Btn, StatusBadge } from "../components/atoms";
 import { upsert, formatPhoneNumber, fmt } from "../utils/helpers";
 import { CUR_SYM } from "../constants";
 import CustomerForm from "../modals/CustomerModal";
-import { deleteCustomer as deleteCustomerFromDb } from "../lib/dataAccess";
+import { saveCustomer, deleteCustomer as deleteCustomerFromDb } from "../lib/dataAccess";
 import { useToast } from "../components/ui/Toast";
 import EmptyState from "../components/ui/EmptyState";
 import { ListSkeleton } from "../components/ui/Skeleton";
@@ -78,8 +78,15 @@ export default function CustomersPage({ initialShowForm = false }) {
     toast({ title: "Customer deleted", variant: "success" });
   };
 
-  const onSave = c => {
-    setCustomers(p => upsert(p, c));
+  const onSave = async (c) => {
+    if (!user?.id) return alert("You must be logged in to save.");
+    const { data, error } = await saveCustomer(user.id, c);
+    if (error) {
+      console.error("[CustomersPage] saveCustomer failed:", error);
+      toast({ title: "Save failed", description: error?.message || String(error), variant: "danger" });
+      return;
+    }
+    setCustomers(p => upsert(p, data));
     toast({ title: "Customer saved", variant: "success" });
     if (initialShowForm) { navigate(ROUTES.CUSTOMERS, { replace: true }); return; }
     setShowForm(false);

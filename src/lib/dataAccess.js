@@ -904,7 +904,7 @@ export async function saveCustomer(userId, customer) {
   const allCustomers = await loadCustomers(userId);
   await patchJsonbColumn(userId, "customers", allCustomers);
 
-  return { data, error: null };
+  return { data: rowToCustomer(data), error: null };
 }
 
 export async function saveSupplier(userId, supplier) {
