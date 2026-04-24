@@ -223,7 +223,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
         ? <div style={{ fontSize: "7pt", color: "#888", textAlign: "center", lineHeight: 1.6 }}>{activeSchemaTemplate.customText?.footerNote || footerText}</div>
         : <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: "7pt", color: "#CCC" }}>{org.orgName || ""}{org.vatNum ? ` · VAT ${org.vatNum}` : ""}{org.crn ? ` · CRN ${org.crn}` : ""}</span>
-            <span style={{ fontSize: "7pt", color: "#CCC" }}>Page 1 of 1</span>
+            <span style={{ fontSize: "7pt", color: "#CCC" }}>{org.email || org.website || ""}</span>
           </div>
       }
     </div>
