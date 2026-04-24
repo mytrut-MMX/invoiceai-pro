@@ -76,6 +76,10 @@ export function stampFooters(doc, org, footerText) {
   }
 }
 
+export function blendWithWhite(rgb, opacity) {
+  return rgb.map((c) => Math.round(255 - (255 - c) * opacity));
+}
+
 export function createDoc() {
   return new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 }
