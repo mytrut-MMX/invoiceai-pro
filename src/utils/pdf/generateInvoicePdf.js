@@ -262,7 +262,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
       .flat();
     const descH = wrappedDesc.length * 4.5 + 2;
     const rowH = Math.max(descH, 8);
-    if (checkBreak(rowH)) drawTableHeader();
+    if (checkBreak(rowH + headH)) drawTableHeader();
 
     if (idx % 2 === 0) {
       setRgb(doc, STRIPE, "fill");
@@ -300,8 +300,6 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
   });
 
   /* ── TOTALS ── */
-  checkBreak(60);
-  y += 4;
   const totalsW = 72;
   const totalsX = CR - totalsW;
 
@@ -312,6 +310,8 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
     ...(hasVat ? (taxBreakdown || []).map((tb) => [`VAT ${tb.rate}%`, fmtMoney(sym, tb.amount)]) : []),
     ...(Number(cisDeduction) > 0 ? [[isQuote ? "CIS Deduction (Est.)" : "CIS Deduction", `\u2212 ${fmtMoney(sym, cisDeduction)}`]] : []),
   ];
+  checkBreak(4 + rows.length * 5 + 1 + 9 + 6);
+  y += 4;
   rows.forEach(([l, v]) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
