@@ -385,10 +385,8 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                   if (nextTerms === "Custom") setDueDate(addDays(issueDate, Number(c.customPaymentDays) || 30));
                   else if (map[nextTerms] !== undefined) setDueDate(addDays(issueDate, map[nextTerms]));
                 }
-                const cisRole = c?.cis?.businessType || "";
                 const isCISApplicable = cisEnabled
-                  && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered)
-                  && (cisRole === "Contractor" || cisRole === "Both");
+                  && !!(c?.cis?.registered || c?.taxDetails?.cisRegistered);
                 if (isCISApplicable) {
                   setItems(prev => prev.map(it => ({ ...it, cisApplicable: true })));
                 }
@@ -414,7 +412,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
             {cisEnabled && customer?.cis?.registered && (
               <div className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-full text-[11px] font-semibold text-[var(--warning-700)]">
                 <Icons.Alert />
-                CIS {customer.cis.businessType || "Registered"} · {customer.cis.rate || `${cisDefaultRate}%`}
+                CIS Registered · {customer.cis.rate || `${cisDefaultRate}%`}
               </div>
             )}
             {!isEdit && acceptedQuotes.length > 0 && (
@@ -436,29 +434,13 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
             )}
           </Section>
 
-          {cisEnabled && customer && (() => {
-            const reg = !!(customer?.cis?.registered || customer?.taxDetails?.cisRegistered);
-            const role = customer?.cis?.businessType || "";
-            if (!reg) {
-              return (
-                <div className="mb-4">
-                  <InfoBox color="var(--warning-600)">
-                    CIS cannot be applied — customer is not CIS registered.
-                  </InfoBox>
-                </div>
-              );
-            }
-            if (role === "Subcontractor") {
-              return (
-                <div className="mb-4">
-                  <InfoBox color="var(--warning-600)">
-                    CIS deductions do not apply — {customer.name} is a Subcontractor. CIS deductions are made on bills, not invoices.
-                  </InfoBox>
-                </div>
-              );
-            }
-            return null;
-          })()}
+          {cisEnabled && customer && !customer?.cis?.registered && !customer?.taxDetails?.cisRegistered && (
+            <div className="mb-4">
+              <InfoBox color="var(--warning-600)">
+                CIS cannot be applied — customer is not CIS registered.
+              </InfoBox>
+            </div>
+          )}
 
           {/* Invoice details */}
           <Section>
@@ -559,7 +541,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
               catalogItems={catalogItems}
               isVat={isVat}
               onAddNewItem={() => setShowItemModal(true)}
-              isCISInvoice={cisEnabled && !!(customer?.cis?.registered || customer?.taxDetails?.cisRegistered) && (customer?.cis?.businessType === "Contractor" || customer?.cis?.businessType === "Both")}
+              isCISInvoice={cisEnabled && !!(customer?.cis?.registered || customer?.taxDetails?.cisRegistered)}
             />
           </Section>
 
