@@ -24,10 +24,11 @@ export function calcTotals(items, discType, discVal, shipping, isVat, customer, 
     : [];
   const vatTotal = taxBreakdown.reduce((s, t) => s + t.amount, 0);
   const gross = afterDisc + ship + vatTotal;
-  const customerCIS = customer?.cis || {
-    registered: !!customer?.taxDetails?.cisRegistered,
-    rateValue: parseCisRate(customer?.taxDetails?.cisRate, cisDefaultRate),
-    rate: customer?.taxDetails?.cisRate,
+  const customerCIS = {
+    registered: customer?.cis?.registered ?? !!customer?.taxDetails?.cisRegistered,
+    rateValue: customer?.cis?.rateValue
+      ?? parseCisRate(customer?.cis?.rate ?? customer?.taxDetails?.cisRate, cisDefaultRate),
+    rate: customer?.cis?.rate ?? customer?.taxDetails?.cisRate,
   };
   const hasCISItems = cisEnabled && customerCIS?.registered && items.some(i => i?.cis?.enabled || i?.cisApplicable);
   const cisDed = hasCISItems
