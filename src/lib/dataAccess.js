@@ -470,6 +470,7 @@ function customerToRow(userId, cust) {
     billing_address: addr
       ? {
           street: addr.street1 || addr.street || "",
+          street2: addr.street2 || "",
           city: addr.city || "",
           postcode: addr.zip || addr.postcode || "",
           county: addr.state || addr.county || "",
@@ -492,6 +493,7 @@ function customerToRow(userId, cust) {
     shipping_address: cust.shippingAddress
       ? {
           street: cust.shippingAddress.street1 || cust.shippingAddress.street || "",
+          street2: cust.shippingAddress.street2 || "",
           city: cust.shippingAddress.city || "",
           postcode: cust.shippingAddress.zip || cust.shippingAddress.postcode || "",
           county: cust.shippingAddress.state || cust.shippingAddress.county || "",
