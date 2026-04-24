@@ -46,7 +46,6 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [remarks, setRemarks] = useState(existing?.notes || "");
   const [cisRegistered, setCisRegistered] = useState(existing?.cis?.registered ?? false);
   const [cisUtr, setCisUtr] = useState(existing?.cis?.utr || "");
-  const [cisBusinessType, setCisBusinessType] = useState(existing?.cis?.businessType || "Subcontractor");
   const [selfBilledByCustomer, setSelfBilledByCustomer] = useState(existing?.self_billed_by_customer ?? false);
   const [sbSectionOpen, setSbSectionOpen] = useState(false);
   const { orgSettings } = useContext(AppCtx) || {};
@@ -78,7 +77,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
       cis: {
         registered: cisRegistered,
         utr: cisUtr,
-        businessType: cisBusinessType,
+        businessType: "Contractor",
       },
       billingAddress: {
         street1: billStreet1, street2: billStreet2,
@@ -279,9 +278,6 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
                     </Field>
                     <Field label="CIS UTR">
                       <Input value={cisUtr} onChange={setCisUtr} placeholder="1234567890" />
-                    </Field>
-                    <Field label="Business Type">
-                      <Select value={cisBusinessType} onChange={setCisBusinessType} options={["Subcontractor", "Contractor", "Both"]} />
                     </Field>
                   </div>
                 )}
