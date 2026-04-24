@@ -9,6 +9,7 @@
  * attachment always uses this classic layout.
  */
 
+// TODO: Rule 1 — file is 396 lines (cap 350). Extract drawHeaderBand + drawMetaRows helpers.
 import jsPDF from "jspdf";
 
 const PAGE_W = 210;
@@ -42,6 +43,37 @@ const MUTED = [136, 136, 136];
 const FAINT = [170, 170, 170];
 const LINE = [235, 235, 235];
 const STRIPE = [248, 248, 248];
+
+const PAGE_H = 297;
+const FOOT_Y = PAGE_H - 14;
+const SAFE_BOTTOM = FOOT_Y - 8;
+const CONT_TOP = 20;
+
+// TODO(tech-debt): extract drawTableHeader(y) so subsequent pages repeat the
+// items table header after a checkBreak page-add. Current behavior: header
+// renders only on page 1; items on pages 2+ have no column labels.
+function stampFooters(doc, org, footerText) {
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    setRgb(doc, LINE, "draw");
+    doc.setLineWidth(0.2);
+    doc.line(ML, FOOT_Y - 4, CR, FOOT_Y - 4);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    setRgb(doc, FAINT);
+    if (footerText) {
+      const lines = doc.splitTextToSize(footerText, CONTENT_W);
+      let fy = FOOT_Y;
+      lines.forEach((ln) => { doc.text(ln, PAGE_W / 2, fy, { align: "center" }); fy += 3.2; });
+    } else {
+      const left = [org.orgName, org.vatNum ? `VAT ${org.vatNum}` : null, org.crn ? `CRN ${org.crn}` : null]
+        .filter(Boolean).join(" · ");
+      doc.text(left, ML, FOOT_Y);
+      doc.text(`Page ${p} of ${totalPages}`, CR, FOOT_Y, { align: "right" });
+    }
+  }
+}
 
 function fmtMoney(sym, v) {
   return `${sym || "\u00A3"}${Number(v || 0).toLocaleString("en-GB", {
@@ -77,6 +109,14 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
   const org = orgSettings || {};
   const accent = hexToRgb(accentColor || "#1e6be0");
 
+  let y;
+  function checkBreak(needed) {
+    if (y + needed > SAFE_BOTTOM) {
+      doc.addPage();
+      y = CONT_TOP;
+    }
+  }
+
   /* ── HEADER BAND ── */
   const bandH = 32;
   setRgb(doc, accent, "fill");
@@ -94,7 +134,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
     org.street, [org.city, org.country].filter(Boolean).join(", "),
     org.email, org.vatNum ? `VAT ${org.vatNum}` : null,
   ].filter(Boolean);
-  let y = 19;
+  y = 19;
   orgLines.forEach((ln) => { doc.text(ln, ML, y); y += 3.5; });
 
   doc.setFont("helvetica", "bold");
@@ -220,6 +260,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
       .flat();
     const descH = wrappedDesc.length * 4.5 + 2;
     const rowH = Math.max(descH, 8);
+    checkBreak(rowH);
 
     if (idx % 2 === 0) {
       setRgb(doc, STRIPE, "fill");
@@ -257,6 +298,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
   });
 
   /* ── TOTALS ── */
+  checkBreak(60);
   y += 4;
   const totalsW = 72;
   const totalsX = CR - totalsW;
@@ -295,6 +337,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
 
   /* ── NOTES / TERMS ── */
   if (notes || terms) {
+    checkBreak(30);
     setRgb(doc, LINE, "draw");
     doc.setLineWidth(0.2);
     doc.line(ML, y, CR, y);
@@ -329,27 +372,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
     y += maxH + 4;
   }
 
-  /* ── FOOTER ── */
-  const pageH = 297;
-  const footY = pageH - 14;
-  setRgb(doc, LINE, "draw");
-  doc.setLineWidth(0.2);
-  doc.line(ML, footY - 4, CR, footY - 4);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  setRgb(doc, FAINT);
-  if (footerText) {
-    const lines = doc.splitTextToSize(footerText, CONTENT_W);
-    let fy = footY;
-    lines.forEach((ln) => { doc.text(ln, PAGE_W / 2, fy, { align: "center" }); fy += 3.2; });
-  } else {
-    const left = [org.orgName, org.vatNum ? `VAT ${org.vatNum}` : null, org.crn ? `CRN ${org.crn}` : null]
-      .filter(Boolean).join(" \u00B7 ");
-    doc.text(left, ML, footY);
-    if (org.email) doc.text(org.email, CR, footY, { align: "right" });
-  }
-
+  stampFooters(doc, org, footerText);
   return doc;
 }
 

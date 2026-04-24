@@ -414,7 +414,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
             {cisEnabled && customer?.cis?.registered && (
               <div className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 bg-[var(--warning-50)] border border-[var(--warning-100)] rounded-full text-[11px] font-semibold text-[var(--warning-700)]">
                 <Icons.Alert />
-                CIS {customer.cis.businessType || "Registered"} · {customer.cis.rate || "20%"}
+                CIS {customer.cis.businessType || "Registered"} · {customer.cis.rate || `${cisDefaultRate}%`}
               </div>
             )}
             {!isEdit && acceptedQuotes.length > 0 && (
@@ -648,7 +648,7 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
                     <span className="text-[var(--danger-600)]">
                       CIS Deduction
                       <span className="text-[11px] text-[var(--text-tertiary)] ml-1.5">
-                        ({totals.customerCIS?.rate || "20% — Standard"})
+                        ({totals.customerCIS?.rate || `${cisDefaultRate}% — Standard`})
                       </span>
                     </span>
                     <span className="text-[var(--danger-600)] font-semibold tabular-nums">
