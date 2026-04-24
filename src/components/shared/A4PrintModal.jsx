@@ -1,10 +1,10 @@
 import { useState, useContext } from "react";
-import DOMPurify from "dompurify";
 import { PDF_TEMPLATES } from "../../constants";
 import { AppCtx } from "../../context/AppContext";
 import { Icons } from "../icons";
 import { A4InvoiceDoc } from "./A4InvoiceDoc";
 import { getDefaultTemplate, getTemplateById } from "../../utils/InvoiceTemplateSchema";
+import { generateInvoicePdfBlob } from "../../utils/pdf/generateInvoicePdf";
 
 export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTemplate, _overrideAccent, invoiceTemplate }) {
   const { orgSettings, pdfTemplate, companyLogo, companyLogoSize, footerText, invoiceTemplateConfig } = useContext(AppCtx);
@@ -21,28 +21,24 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
     setAccentColor(PDF_TEMPLATES.find(t => t.id === id)?.defaultAccent || "#1A1A1A");
   };
 
-  const handlePrint = () => {
-    const el = document.getElementById("a4-invoice-doc");
-    if (!el) return;
-    // SEC-007: Sanitize HTML before writing to print window to prevent stored XSS
-    const safeHTML = DOMPurify.sanitize(el.outerHTML, {
-      ALLOWED_TAGS: ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                     'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'br', 'hr',
-                     'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li', 'a', 'pre', 'code',
-                     'svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon'],
-      ALLOWED_ATTR: ['style', 'class', 'id', 'width', 'height', 'src', 'alt',
-                     'colspan', 'rowspan', 'viewBox', 'xmlns', 'd', 'fill', 'stroke',
-                     'stroke-width', 'transform', 'cx', 'cy', 'r', 'x', 'y',
-                     'x1', 'y1', 'x2', 'y2', 'points'],
-      ALLOW_DATA_ATTR: false,
+  const handleDownload = async () => {
+    const result = await generateInvoicePdfBlob({
+      data,
+      currSymbol,
+      isVat,
+      orgSettings,
+      accentColor,
+      footerText: footerText || "",
     });
-    const safeTitle = (data.docNumber || "").replace(/[<>"'&]/g, "");
-    const w = window.open("", "_blank", "width=900,height=700");
-    w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${safeTitle}</title>
-      <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{background:#fff;font-family:'Lato','DM Sans','Helvetica Neue',sans-serif}@page{size:A4;margin:0}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}</style>
-    </head><body>${safeHTML}</body></html>`);
-    w.document.close();
-    setTimeout(() => { w.focus(); w.print(); }, 400);
+    if (!result.success) return;
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = result.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -76,13 +72,13 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
               style={{ padding: "8px 13px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Close
             </button>
-            <button onClick={handlePrint}
+            <button onClick={handleDownload}
               style={{ padding: "8px 13px", borderRadius: 8, border: "none", background: "#E86C4A", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-              <Icons.Receipt /> Print / Save PDF
+              <Icons.Receipt /> Download PDF
             </button>
           </div>
         </div>
-        <div style={{ width: "100%", maxWidth: 820, background: "#fff", boxShadow: "0 8px 40px rgba(0,0,0,0.35)", overflow: "hidden" }}>
+        <div style={{ width: "100%", maxWidth: 820, background: "#fff", boxShadow: "0 8px 40px rgba(0,0,0,0.35)", overflow: "visible" }}>
           <A4InvoiceDoc data={data} currSymbol={currSymbol} isVat={isVat}
             orgSettings={{ ...orgSettings, logo: companyLogo, logoSize: previewLogoSize }}
             accentColor={accentColor} template={activeTemplate} footerText={footerText || ""} templateConfig={{ ...(invoiceTemplateConfig || {}), logoSize: previewLogoSize }} invoiceTemplate={selectedInvoiceTemplate} />
