@@ -90,6 +90,16 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
   // direct invoices created before the SBA was signed remain editable.
   const [sbaBlock, setSbaBlock] = useState(null);
   const [showImportSb, setShowImportSb] = useState(false);
+  const [rehydrated, setRehydrated] = useState(false);
+
+  useEffect(() => {
+    if (rehydrated || !customer?.id || !customers?.length) return;
+    const fresh = customers.find(c => c.id === customer.id);
+    if (!fresh) return;
+    setCustomer(prev => ({ ...prev, ...fresh, name: prev.name || fresh.name }));
+    setRehydrated(true);
+  }, [customers]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     let cancelled = false;
     if (isEdit || !customer?.id || !user?.id) { setSbaBlock(null); return; }
