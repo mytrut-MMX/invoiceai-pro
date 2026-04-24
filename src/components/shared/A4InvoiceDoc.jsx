@@ -218,7 +218,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   ) : null;
 
   const FooterBar = () => (
-    <div style={{ position: "absolute", bottom: "10mm", left: "18mm", right: "18mm", borderTop: "1px solid #EBEBEB", paddingTop: "2.5mm" }}>
+    <div style={{ marginTop: "auto", marginLeft: "18mm", marginRight: "18mm", borderTop: "1px solid #EBEBEB", paddingTop: "2.5mm", paddingBottom: "10mm" }}>
       {(activeSchemaTemplate.customText?.footerNote || footerText)
         ? <div style={{ fontSize: "7pt", color: "#888", textAlign: "center", lineHeight: 1.6 }}>{activeSchemaTemplate.customText?.footerNote || footerText}</div>
         : <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -229,7 +229,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
     </div>
   );
 
-  const base = { width: "210mm", minHeight: "297mm", background: "#fff", fontFamily, boxSizing: "border-box", fontSize: "10pt", color: "#1A1A1A", position: "relative" };
+  const base = { width: "210mm", minHeight: "297mm", background: "#fff", fontFamily, boxSizing: "border-box", fontSize: "10pt", color: "#1A1A1A", position: "relative", display: "flex", flexDirection: "column" };
 
   const FromBlock = ({ dark = false }) => (
     <div>
@@ -277,21 +277,24 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
   );
 
   if (template === "minimal") return (
-    <div id={docId} style={{ ...base, padding: "14mm 18mm 16mm" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8mm" }}>
-        <OrgBlock />
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.14em" }}>{docLabel}</div>
-          <div style={{ fontSize: "18pt", fontWeight: 900, color: accent, marginTop: 1 }}>{docNumber || "INV-0001"}</div>
+    <div id={docId} style={{ ...base }}>
+      <div style={{ padding: "14mm 18mm 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8mm" }}>
+          <OrgBlock />
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "10pt", fontWeight: 700, color: "#AAA", textTransform: "uppercase", letterSpacing: "0.14em" }}>{docLabel}</div>
+            <div style={{ fontSize: "18pt", fontWeight: 900, color: accent, marginTop: 1 }}>{docNumber || "INV-0001"}</div>
+          </div>
         </div>
+        <div style={{ height: 2, background: `linear-gradient(90deg,${accent},${accent}44)`, marginBottom: "7mm", borderRadius: 1 }} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", marginBottom: "7mm", paddingTop: "1mm" }}>
+          {activeSchemaTemplate.sections?.toBlock ? <BillToBlock /> : <div />}
+          <InvoiceMetaBlock />
+        </div>
+        <ItemsTable headerBg={`${accent}15`} headerColor={accent} stripeBg="#FAFAFA" />
+        <TotalsSection /><NotesSection /><BankDetailsBlock />
       </div>
-      <div style={{ height: 2, background: `linear-gradient(90deg,${accent},${accent}44)`, marginBottom: "7mm", borderRadius: 1 }} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8mm", marginBottom: "7mm", paddingTop: "1mm" }}>
-        {activeSchemaTemplate.sections?.toBlock ? <BillToBlock /> : <div />}
-        <InvoiceMetaBlock />
-      </div>
-      <ItemsTable headerBg={`${accent}15`} headerColor={accent} stripeBg="#FAFAFA" />
-      <TotalsSection /><NotesSection /><BankDetailsBlock /><FooterBar />
+      <FooterBar />
     </div>
   );
 
