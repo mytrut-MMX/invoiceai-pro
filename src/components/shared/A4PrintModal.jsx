@@ -29,6 +29,7 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
       orgSettings,
       accentColor,
       footerText: footerText || "",
+      template: activeTemplate,
     });
     if (!result.success) return;
     const url = URL.createObjectURL(result.blob);
