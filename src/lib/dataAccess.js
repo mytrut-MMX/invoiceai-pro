@@ -208,6 +208,24 @@ function rowToCustomer(row) {
     self_billed_by_customer: row.self_billed_by_customer ?? false,
     self_billing_agreement_id: row.self_billing_agreement_id ?? null,
     created_at: row.created_at,
+    firstName: row.first_name || "",
+    lastName: row.last_name || "",
+    salutation: row.salutation || "",
+    website: row.website || "",
+    currency: row.currency || "GBP",
+    paymentTerms: row.payment_terms || "Due on Receipt",
+    shippingAddress: row.shipping_address
+      ? {
+          street1: row.shipping_address.street || "",
+          street2: row.shipping_address.street2 || "",
+          city: row.shipping_address.city || "",
+          state: row.shipping_address.county || "",
+          zip: row.shipping_address.postcode || "",
+          country: row.shipping_address.country || "",
+        }
+      : null,
+    contactPersons: Array.isArray(row.contact_persons) ? row.contact_persons : [],
+    customFields: Array.isArray(row.custom_fields) ? row.custom_fields : [],
   };
 }
 
@@ -465,6 +483,27 @@ function customerToRow(userId, cust) {
     self_billed_by_customer: cust.self_billed_by_customer ?? false,
     // SBA id is managed by the Phase 3 self-billing flow; never overwritten from here.
     self_billing_agreement_id: cust.self_billing_agreement_id ?? null,
+    first_name: cust.firstName || null,
+    last_name: cust.lastName || null,
+    salutation: cust.salutation || null,
+    website: cust.website || null,
+    currency: cust.currency || 'GBP',
+    payment_terms: cust.paymentTerms || null,
+    shipping_address: cust.shippingAddress
+      ? {
+          street: cust.shippingAddress.street1 || cust.shippingAddress.street || "",
+          city: cust.shippingAddress.city || "",
+          postcode: cust.shippingAddress.zip || cust.shippingAddress.postcode || "",
+          county: cust.shippingAddress.state || cust.shippingAddress.county || "",
+          country: cust.shippingAddress.country || "",
+        }
+      : null,
+    contact_persons: Array.isArray(cust.contactPersons) && cust.contactPersons.length > 0
+      ? cust.contactPersons
+      : null,
+    custom_fields: Array.isArray(cust.customFields) && cust.customFields.length > 0
+      ? cust.customFields
+      : null,
   };
 }
 
