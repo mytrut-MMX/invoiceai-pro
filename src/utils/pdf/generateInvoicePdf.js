@@ -9,7 +9,7 @@
  * attachment always uses this classic layout.
  */
 
-// TODO: Rule 1 — file is 396 lines (cap 350). Extract drawHeaderBand + drawMetaRows helpers.
+// TODO: Rule 1 — file is 399 lines (cap 350). Extract drawHeaderBand + drawMetaRows helpers.
 import jsPDF from "jspdf";
 
 const PAGE_W = 210;
@@ -49,9 +49,6 @@ const FOOT_Y = PAGE_H - 14;
 const SAFE_BOTTOM = FOOT_Y - 8;
 const CONT_TOP = 20;
 
-// TODO(tech-debt): extract drawTableHeader(y) so subsequent pages repeat the
-// items table header after a checkBreak page-add. Current behavior: header
-// renders only on page 1; items on pages 2+ have no column labels.
 function stampFooters(doc, org, footerText) {
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
@@ -114,7 +111,9 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
     if (y + needed > SAFE_BOTTOM) {
       doc.addPage();
       y = CONT_TOP;
+      return true;
     }
+    return false;
   }
 
   /* ── HEADER BAND ── */
@@ -237,16 +236,19 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
   const pad = 3;
 
   const headH = 8;
-  setRgb(doc, accent, "fill");
-  doc.rect(ML, y, CONTENT_W, headH, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(255, 255, 255);
-  cols.forEach((c, i) => {
-    const tx = c.a === "right" ? xs[i] + widths[i] - pad : xs[i] + pad;
-    doc.text(c.label.toUpperCase(), tx, y + ascent(8) + 2.5, c.a === "right" ? { align: "right" } : undefined);
-  });
-  y += headH;
+  function drawTableHeader() {
+    setRgb(doc, accent, "fill");
+    doc.rect(ML, y, CONTENT_W, headH, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    cols.forEach((c, i) => {
+      const tx = c.a === "right" ? xs[i] + widths[i] - pad : xs[i] + pad;
+      doc.text(c.label.toUpperCase(), tx, y + ascent(8) + 2.5, c.a === "right" ? { align: "right" } : undefined);
+    });
+    y += headH;
+  }
+  drawTableHeader();
 
   const visibleItems = items.filter((it) => (it.name || it.description) || Number(it.amount) > 0);
   visibleItems.forEach((it, idx) => {
@@ -260,7 +262,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
       .flat();
     const descH = wrappedDesc.length * 4.5 + 2;
     const rowH = Math.max(descH, 8);
-    checkBreak(rowH);
+    if (checkBreak(rowH)) drawTableHeader();
 
     if (idx % 2 === 0) {
       setRgb(doc, STRIPE, "fill");
