@@ -262,7 +262,7 @@ function buildDoc({ data, currSymbol, isVat, orgSettings, accentColor, footerTex
       .flat();
     const descH = wrappedDesc.length * 4.5 + 2;
     const rowH = Math.max(descH, 8);
-    if (checkBreak(rowH + headH)) drawTableHeader();
+    if (checkBreak(rowH)) drawTableHeader();
 
     if (idx % 2 === 0) {
       setRgb(doc, STRIPE, "fill");
