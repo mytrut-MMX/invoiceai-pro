@@ -39,6 +39,11 @@ export const ROUTES = {
   // ─── Dashboard ───────────────────────────────────────────────────────────────
   DASHBOARD: '/dashboard',
 
+  // ─── Contacts (unified Customers + Suppliers) ────────────────────────────────
+  CONTACTS:                '/contacts',
+  CONTACTS_NEW_CUSTOMER:   '/contacts/new-customer',
+  CONTACTS_NEW_SUPPLIER:   '/contacts/new-supplier',
+
   // ─── Customers ───────────────────────────────────────────────────────────────
   CUSTOMERS:     '/customers',
   CUSTOMERS_NEW: '/customers/new',

@@ -60,7 +60,7 @@ const NAV_GROUPS = [
       { id: "invoices",  label: "Invoices",  icon: Icons.Invoices,  route: ROUTES.INVOICES,  match: "/invoices",  addRoute: ROUTES.INVOICES_NEW },
       { id: "payments",  label: "Payments",  icon: Icons.Payments,  route: ROUTES.PAYMENTS,  match: "/payments",  addRoute: ROUTES.PAYMENTS_NEW },
       { id: "quotes",    label: "Quotes",    icon: Icons.Quotes,    route: ROUTES.QUOTES,    match: "/quotes",    addRoute: ROUTES.QUOTES_NEW },
-      { id: "customers", label: "Customers", icon: Icons.Customers, route: ROUTES.CUSTOMERS, match: "/customers", addRoute: ROUTES.CUSTOMERS_NEW },
+      { id: "contacts",  label: "Contacts",  icon: Icons.Customers, route: ROUTES.CONTACTS,  match: "/contacts" },
       { id: "items",     label: "Products",  icon: Icons.Items,     route: ROUTES.ITEMS,     match: "/items",     addRoute: ROUTES.ITEMS_NEW },
     ],
   },
@@ -69,7 +69,6 @@ const NAV_GROUPS = [
     label: "Purchases",
     items: [
       { id: "bills",     label: "Bills",     icon: Icons.Receipt,   route: ROUTES.BILLS,     match: "/bills",     addRoute: ROUTES.BILLS_NEW },
-      { id: "suppliers", label: "Suppliers", icon: Icons.Customers, route: ROUTES.SUPPLIERS, match: "/suppliers", addRoute: ROUTES.SUPPLIERS_NEW },
       { id: "expenses",  label: "Expenses",  icon: Icons.Expenses,  route: ROUTES.EXPENSES,  match: "/expenses",  addRoute: ROUTES.EXPENSES_NEW },
     ],
   },

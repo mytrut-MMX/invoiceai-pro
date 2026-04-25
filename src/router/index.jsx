@@ -53,14 +53,13 @@ const SbaSignPage        = lazy(() => import("../pages/SbaSignPage"));
 
 // App pages
 const HomePage           = lazy(() => import("../pages/HomePage"));
-const CustomersPage      = lazy(() => import("../pages/CustomersPage"));
+const ContactsPage       = lazy(() => import("../pages/ContactsPage"));
 const ItemsPage          = lazy(() => import("../pages/ItemsPage"));
 const InvoicesPage       = lazy(() => import("../pages/InvoicesPage"));
 const QuotesPage         = lazy(() => import("../pages/QuotesPage"));
 const PaymentsPage       = lazy(() => import("../pages/PaymentsPage"));
 const ExpensesPage       = lazy(() => import("../pages/ExpensesPage"));
 const BillsPage          = lazy(() => import("../pages/BillsPage"));
-const SuppliersPage      = lazy(() => import("../pages/SuppliersPage"));
 const SettingsPage       = lazy(() => import("../pages/SettingsPage"));
 const InvoiceTemplatesPage = lazy(() => import("../pages/InvoiceTemplatesPage"));
 const VATReturnPage      = lazy(() => import("../pages/VATReturnPage"));
@@ -141,9 +140,14 @@ const router = createBrowserRouter([
           // Dashboard
           { path: ROUTES.DASHBOARD, element: <HomePage /> },
 
-          // Customers
-          { path: ROUTES.CUSTOMERS,     element: <CustomersPage key="list" /> },
-          { path: ROUTES.CUSTOMERS_NEW, element: <CustomersPage key="new" initialShowForm /> },
+          // Contacts (unified Customers + Suppliers)
+          { path: ROUTES.CONTACTS,              element: <ContactsPage key="list" /> },
+          { path: ROUTES.CONTACTS_NEW_CUSTOMER, element: <ContactsPage key="new-customer" initialFormType="customer" /> },
+          { path: ROUTES.CONTACTS_NEW_SUPPLIER, element: <ContactsPage key="new-supplier" initialFormType="supplier" /> },
+
+          // Customers — redirect to unified Contacts page
+          { path: ROUTES.CUSTOMERS,     element: <Navigate to="/contacts?type=customers" replace /> },
+          { path: ROUTES.CUSTOMERS_NEW, element: <Navigate to={ROUTES.CONTACTS_NEW_CUSTOMER} replace /> },
 
           // Items
           { path: ROUTES.ITEMS,     element: <ItemsPage key="list" /> },
@@ -165,9 +169,9 @@ const router = createBrowserRouter([
           { path: ROUTES.EXPENSES,     element: <ExpensesPage key="list" /> },
           { path: ROUTES.EXPENSES_NEW, element: <ExpensesPage key="new"  initialShowForm /> },
 
-          // Suppliers
-          { path: ROUTES.SUPPLIERS,     element: <SuppliersPage key="list" /> },
-          { path: ROUTES.SUPPLIERS_NEW, element: <SuppliersPage key="new"  initialShowForm /> },
+          // Suppliers — redirect to unified Contacts page
+          { path: ROUTES.SUPPLIERS,     element: <Navigate to="/contacts?type=suppliers" replace /> },
+          { path: ROUTES.SUPPLIERS_NEW, element: <Navigate to={ROUTES.CONTACTS_NEW_SUPPLIER} replace /> },
 
           // Bills
           { path: ROUTES.BILLS,     element: <BillsPage key="list" /> },
