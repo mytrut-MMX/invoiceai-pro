@@ -582,32 +582,34 @@ export async function loadInvoices(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (!error && data && data.length > 0) {
-    // Batch-fetch customer objects for all invoices that have a customer_id
-    const customerIds = [
-      ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
-    ];
-    let customerMap = {};
-    if (customerIds.length > 0) {
-      const { data: custs } = await supabase
-        .from("customers")
-        .select("*")
-        .in("id", customerIds);
-      if (custs) {
-        customerMap = Object.fromEntries(
-          custs.map((c) => [c.id, rowToCustomer(c)])
-        );
-      }
-    }
-
-    return data.map((row) => {
-      row._customer = customerMap[row.customer_id] || null;
-      return rowToInvoice(row);
-    });
+  if (error) {
+    // Normalised query failed — fall back to JSONB
+    return loadJsonbColumn(userId, "invoices");
   }
 
-  // Fallback: JSONB from business_profiles
-  return loadJsonbColumn(userId, "invoices");
+  if (!data || data.length === 0) return [];
+
+  // Batch-fetch customer objects for all invoices that have a customer_id
+  const customerIds = [
+    ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
+  ];
+  let customerMap = {};
+  if (customerIds.length > 0) {
+    const { data: custs } = await supabase
+      .from("customers")
+      .select("*")
+      .in("id", customerIds);
+    if (custs) {
+      customerMap = Object.fromEntries(
+        custs.map((c) => [c.id, rowToCustomer(c)])
+      );
+    }
+  }
+
+  return data.map((row) => {
+    row._customer = customerMap[row.customer_id] || null;
+    return rowToInvoice(row);
+  });
 }
 
 export async function loadPayments(userId) {
@@ -619,11 +621,13 @@ export async function loadPayments(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (!error && data && data.length > 0) {
-    return data.map(rowToPayment);
+  if (error) {
+    return loadJsonbColumn(userId, "payments");
   }
 
-  return loadJsonbColumn(userId, "payments");
+  if (!data || data.length === 0) return [];
+
+  return data.map(rowToPayment);
 }
 
 export async function loadExpenses(userId) {
@@ -635,31 +639,33 @@ export async function loadExpenses(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (!error && data && data.length > 0) {
-    // Resolve customer objects for billable expenses
-    const customerIds = [
-      ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
-    ];
-    let customerMap = {};
-    if (customerIds.length > 0) {
-      const { data: custs } = await supabase
-        .from("customers")
-        .select("*")
-        .in("id", customerIds);
-      if (custs) {
-        customerMap = Object.fromEntries(
-          custs.map((c) => [c.id, { id: c.id, name: c.name }])
-        );
-      }
-    }
-
-    return data.map((row) => {
-      row._customer = customerMap[row.customer_id] || null;
-      return rowToExpense(row);
-    });
+  if (error) {
+    return loadJsonbColumn(userId, "expenses");
   }
 
-  return loadJsonbColumn(userId, "expenses");
+  if (!data || data.length === 0) return [];
+
+  // Resolve customer objects for billable expenses
+  const customerIds = [
+    ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
+  ];
+  let customerMap = {};
+  if (customerIds.length > 0) {
+    const { data: custs } = await supabase
+      .from("customers")
+      .select("*")
+      .in("id", customerIds);
+    if (custs) {
+      customerMap = Object.fromEntries(
+        custs.map((c) => [c.id, { id: c.id, name: c.name }])
+      );
+    }
+  }
+
+  return data.map((row) => {
+    row._customer = customerMap[row.customer_id] || null;
+    return rowToExpense(row);
+  });
 }
 
 export async function loadBills(userId) {
@@ -671,11 +677,13 @@ export async function loadBills(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (!error && data && data.length > 0) {
-    return data.map(rowToBill);
+  if (error) {
+    return loadJsonbColumn(userId, "bills");
   }
 
-  return loadJsonbColumn(userId, "bills");
+  if (!data || data.length === 0) return [];
+
+  return data.map(rowToBill);
 }
 
 export async function loadCustomers(userId) {
@@ -687,11 +695,13 @@ export async function loadCustomers(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (!error && data && data.length > 0) {
-    return data.map(rowToCustomer);
+  if (error) {
+    return loadJsonbColumn(userId, "customers");
   }
 
-  return loadJsonbColumn(userId, "customers");
+  if (!data || data.length === 0) return [];
+
+  return data.map(rowToCustomer);
 }
 
 export async function loadSuppliers(userId) {
@@ -719,11 +729,13 @@ export async function loadCatalogItems(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (!error && data && data.length > 0) {
-    return data.map(rowToCatalogItem);
+  if (error) {
+    return loadJsonbColumn(userId, "catalog_items");
   }
 
-  return loadJsonbColumn(userId, "catalog_items");
+  if (!data || data.length === 0) return [];
+
+  return data.map(rowToCatalogItem);
 }
 
 // =============================================================================
@@ -1031,13 +1043,17 @@ export async function syncEntitiesToNormalised(userId, {
 export async function deleteInvoice(userId, invoiceId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("invoices")
     .delete()
     .eq("id", invoiceId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
   if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Invoice not found or already deleted" } };
+  }
 
   const allInvoices = await loadInvoices(userId);
   await patchJsonbColumn(userId, "invoices", allInvoices);
@@ -1048,13 +1064,17 @@ export async function deleteInvoice(userId, invoiceId) {
 export async function deletePayment(userId, paymentId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("payments")
     .delete()
     .eq("id", paymentId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
   if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Payment not found or already deleted" } };
+  }
 
   const allPayments = await loadPayments(userId);
   await patchJsonbColumn(userId, "payments", allPayments);
@@ -1065,13 +1085,17 @@ export async function deletePayment(userId, paymentId) {
 export async function deleteExpense(userId, expenseId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("expenses")
     .delete()
     .eq("id", expenseId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
   if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Expense not found or already deleted" } };
+  }
 
   const allExpenses = await loadExpenses(userId);
   await patchJsonbColumn(userId, "expenses", allExpenses);
@@ -1082,13 +1106,17 @@ export async function deleteExpense(userId, expenseId) {
 export async function deleteBill(userId, billId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("bills")
     .delete()
     .eq("id", billId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
   if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Bill not found or already deleted" } };
+  }
 
   const allBills = await loadBills(userId);
   await patchJsonbColumn(userId, "bills", allBills);
@@ -1099,13 +1127,17 @@ export async function deleteBill(userId, billId) {
 export async function deleteCustomer(userId, customerId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("customers")
     .delete()
     .eq("id", customerId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
   if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Customer not found or already deleted" } };
+  }
 
   const allCustomers = await loadCustomers(userId);
   await patchJsonbColumn(userId, "customers", allCustomers);
@@ -1116,25 +1148,35 @@ export async function deleteCustomer(userId, customerId) {
 export async function deleteSupplier(userId, supplierId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("suppliers")
     .delete()
     .eq("id", supplierId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
-  return { error: error || null };
+  if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Supplier not found or already deleted" } };
+  }
+
+  return { error: null };
 }
 
 export async function deleteCatalogItem(userId, itemId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("catalog_items")
     .delete()
     .eq("id", itemId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
   if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Catalog item not found or already deleted" } };
+  }
 
   const allItems = await loadCatalogItems(userId);
   await patchJsonbColumn(userId, "catalog_items", allItems);
@@ -1178,13 +1220,19 @@ export async function saveEmployee(userId, employee) {
 export async function deleteEmployee(userId, employeeId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("employees")
     .delete()
     .eq("id", employeeId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id");
 
-  return { error: error || null };
+  if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Employee not found or already deleted" } };
+  }
+
+  return { error: null };
 }
 
 // =============================================================================
@@ -1212,12 +1260,18 @@ export async function loadPayrollRuns(userId) {
 export async function deletePayrollRun(userId, runId) {
   if (!supabase || !userId) return { error: "Supabase not configured" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("payroll_runs")
     .delete()
     .eq("id", runId)
     .eq("user_id", userId)
-    .eq("status", "draft");
+    .eq("status", "draft")
+    .select("id");
 
-  return { error: error || null };
+  if (error) return { error };
+  if (!data || data.length === 0) {
+    return { error: { message: "Payroll run not found or already deleted" } };
+  }
+
+  return { error: null };
 }
