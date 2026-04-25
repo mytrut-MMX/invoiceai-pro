@@ -808,6 +808,10 @@ export async function saveInvoice(userId, invoice) {
     await supabase.from("invoice_tax_breakdown").insert(breakdown);
   }
 
+  // Backward compat: update JSONB array in business_profiles
+  const allInvoices = await loadInvoices(userId);
+  await patchJsonbColumn(userId, "invoices", allInvoices);
+
   return { data: saved, error: null };
 }
 
@@ -823,6 +827,9 @@ export async function savePayment(userId, payment) {
 
   if (error) return { error };
 
+  const allPayments = await loadPayments(userId);
+  await patchJsonbColumn(userId, "payments", allPayments);
+
   return { data, error: null };
 }
 
@@ -837,6 +844,9 @@ export async function saveExpense(userId, expense) {
     .single();
 
   if (error) return { error };
+
+  const allExpenses = await loadExpenses(userId);
+  await patchJsonbColumn(userId, "expenses", allExpenses);
 
   return { data, error: null };
 }
@@ -873,6 +883,9 @@ export async function saveBill(userId, bill) {
     await supabase.from("bill_line_items").insert(items);
   }
 
+  const allBills = await loadBills(userId);
+  await patchJsonbColumn(userId, "bills", allBills);
+
   return { data: saved, error: null };
 }
 
@@ -887,6 +900,9 @@ export async function saveCustomer(userId, customer) {
     .single();
 
   if (error) return { error };
+
+  const allCustomers = await loadCustomers(userId);
+  await patchJsonbColumn(userId, "customers", allCustomers);
 
   return { data: rowToCustomer(data), error: null };
 }
@@ -916,6 +932,9 @@ export async function saveCatalogItem(userId, item) {
     .single();
 
   if (error) return { error };
+
+  const allItems = await loadCatalogItems(userId);
+  await patchJsonbColumn(userId, "catalog_items", allItems);
 
   return { data, error: null };
 }
