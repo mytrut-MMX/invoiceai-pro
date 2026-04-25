@@ -582,34 +582,32 @@ export async function loadInvoices(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    // Normalised query failed — fall back to JSONB
-    return loadJsonbColumn(userId, "invoices");
-  }
-
-  if (!data || data.length === 0) return [];
-
-  // Batch-fetch customer objects for all invoices that have a customer_id
-  const customerIds = [
-    ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
-  ];
-  let customerMap = {};
-  if (customerIds.length > 0) {
-    const { data: custs } = await supabase
-      .from("customers")
-      .select("*")
-      .in("id", customerIds);
-    if (custs) {
-      customerMap = Object.fromEntries(
-        custs.map((c) => [c.id, rowToCustomer(c)])
-      );
+  if (!error && data && data.length > 0) {
+    // Batch-fetch customer objects for all invoices that have a customer_id
+    const customerIds = [
+      ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
+    ];
+    let customerMap = {};
+    if (customerIds.length > 0) {
+      const { data: custs } = await supabase
+        .from("customers")
+        .select("*")
+        .in("id", customerIds);
+      if (custs) {
+        customerMap = Object.fromEntries(
+          custs.map((c) => [c.id, rowToCustomer(c)])
+        );
+      }
     }
+
+    return data.map((row) => {
+      row._customer = customerMap[row.customer_id] || null;
+      return rowToInvoice(row);
+    });
   }
 
-  return data.map((row) => {
-    row._customer = customerMap[row.customer_id] || null;
-    return rowToInvoice(row);
-  });
+  // Fallback: JSONB from business_profiles
+  return loadJsonbColumn(userId, "invoices");
 }
 
 export async function loadPayments(userId) {
@@ -621,13 +619,11 @@ export async function loadPayments(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return loadJsonbColumn(userId, "payments");
+  if (!error && data && data.length > 0) {
+    return data.map(rowToPayment);
   }
 
-  if (!data || data.length === 0) return [];
-
-  return data.map(rowToPayment);
+  return loadJsonbColumn(userId, "payments");
 }
 
 export async function loadExpenses(userId) {
@@ -639,33 +635,31 @@ export async function loadExpenses(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return loadJsonbColumn(userId, "expenses");
-  }
-
-  if (!data || data.length === 0) return [];
-
-  // Resolve customer objects for billable expenses
-  const customerIds = [
-    ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
-  ];
-  let customerMap = {};
-  if (customerIds.length > 0) {
-    const { data: custs } = await supabase
-      .from("customers")
-      .select("*")
-      .in("id", customerIds);
-    if (custs) {
-      customerMap = Object.fromEntries(
-        custs.map((c) => [c.id, { id: c.id, name: c.name }])
-      );
+  if (!error && data && data.length > 0) {
+    // Resolve customer objects for billable expenses
+    const customerIds = [
+      ...new Set(data.map((r) => r.customer_id).filter(Boolean)),
+    ];
+    let customerMap = {};
+    if (customerIds.length > 0) {
+      const { data: custs } = await supabase
+        .from("customers")
+        .select("*")
+        .in("id", customerIds);
+      if (custs) {
+        customerMap = Object.fromEntries(
+          custs.map((c) => [c.id, { id: c.id, name: c.name }])
+        );
+      }
     }
+
+    return data.map((row) => {
+      row._customer = customerMap[row.customer_id] || null;
+      return rowToExpense(row);
+    });
   }
 
-  return data.map((row) => {
-    row._customer = customerMap[row.customer_id] || null;
-    return rowToExpense(row);
-  });
+  return loadJsonbColumn(userId, "expenses");
 }
 
 export async function loadBills(userId) {
@@ -677,13 +671,11 @@ export async function loadBills(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return loadJsonbColumn(userId, "bills");
+  if (!error && data && data.length > 0) {
+    return data.map(rowToBill);
   }
 
-  if (!data || data.length === 0) return [];
-
-  return data.map(rowToBill);
+  return loadJsonbColumn(userId, "bills");
 }
 
 export async function loadCustomers(userId) {
@@ -695,13 +687,11 @@ export async function loadCustomers(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return loadJsonbColumn(userId, "customers");
+  if (!error && data && data.length > 0) {
+    return data.map(rowToCustomer);
   }
 
-  if (!data || data.length === 0) return [];
-
-  return data.map(rowToCustomer);
+  return loadJsonbColumn(userId, "customers");
 }
 
 export async function loadSuppliers(userId) {
@@ -729,13 +719,11 @@ export async function loadCatalogItems(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return loadJsonbColumn(userId, "catalog_items");
+  if (!error && data && data.length > 0) {
+    return data.map(rowToCatalogItem);
   }
 
-  if (!data || data.length === 0) return [];
-
-  return data.map(rowToCatalogItem);
+  return loadJsonbColumn(userId, "catalog_items");
 }
 
 // =============================================================================
@@ -1055,8 +1043,8 @@ export async function deleteInvoice(userId, invoiceId) {
     return { error: { message: "Invoice not found or already deleted" } };
   }
 
-  const allInvoices = await loadInvoices(userId);
-  await patchJsonbColumn(userId, "invoices", allInvoices);
+  const jsonb = await loadJsonbColumn(userId, "invoices");
+  await patchJsonbColumn(userId, "invoices", jsonb.filter(x => x.id !== invoiceId));
 
   return { error: null };
 }
@@ -1076,8 +1064,8 @@ export async function deletePayment(userId, paymentId) {
     return { error: { message: "Payment not found or already deleted" } };
   }
 
-  const allPayments = await loadPayments(userId);
-  await patchJsonbColumn(userId, "payments", allPayments);
+  const jsonb = await loadJsonbColumn(userId, "payments");
+  await patchJsonbColumn(userId, "payments", jsonb.filter(x => x.id !== paymentId));
 
   return { error: null };
 }
@@ -1097,8 +1085,8 @@ export async function deleteExpense(userId, expenseId) {
     return { error: { message: "Expense not found or already deleted" } };
   }
 
-  const allExpenses = await loadExpenses(userId);
-  await patchJsonbColumn(userId, "expenses", allExpenses);
+  const jsonb = await loadJsonbColumn(userId, "expenses");
+  await patchJsonbColumn(userId, "expenses", jsonb.filter(x => x.id !== expenseId));
 
   return { error: null };
 }
@@ -1118,8 +1106,8 @@ export async function deleteBill(userId, billId) {
     return { error: { message: "Bill not found or already deleted" } };
   }
 
-  const allBills = await loadBills(userId);
-  await patchJsonbColumn(userId, "bills", allBills);
+  const jsonb = await loadJsonbColumn(userId, "bills");
+  await patchJsonbColumn(userId, "bills", jsonb.filter(x => x.id !== billId));
 
   return { error: null };
 }
@@ -1139,8 +1127,8 @@ export async function deleteCustomer(userId, customerId) {
     return { error: { message: "Customer not found or already deleted" } };
   }
 
-  const allCustomers = await loadCustomers(userId);
-  await patchJsonbColumn(userId, "customers", allCustomers);
+  const jsonb = await loadJsonbColumn(userId, "customers");
+  await patchJsonbColumn(userId, "customers", jsonb.filter(x => x.id !== customerId));
 
   return { error: null };
 }
@@ -1178,8 +1166,8 @@ export async function deleteCatalogItem(userId, itemId) {
     return { error: { message: "Catalog item not found or already deleted" } };
   }
 
-  const allItems = await loadCatalogItems(userId);
-  await patchJsonbColumn(userId, "catalog_items", allItems);
+  const jsonb = await loadJsonbColumn(userId, "catalog_items");
+  await patchJsonbColumn(userId, "catalog_items", jsonb.filter(x => x.id !== itemId));
 
   return { error: null };
 }
