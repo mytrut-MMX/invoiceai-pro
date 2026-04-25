@@ -18,7 +18,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [activeTab, setActiveTab] = useState("Other Details");
   const [saved, setSaved] = useState(false);
   const { cisEnabled } = useCISSettings();
-  const overlayRef = useModalA11y(true, onClose);
+  useModalA11y(true, onClose); // ESC only, no ref attached
 
   const [custType, setCustType] = useState(existing?.type || "Business");
   const [salutation, setSalutation] = useState(existing?.salutation || "");
@@ -107,7 +107,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   };
 
   return (
-    <div ref={overlayRef} className="bg-[var(--surface-page)] min-h-screen">
+    <div className="bg-[var(--surface-page)] min-h-screen">
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-3 flex items-center justify-between">
         <button
