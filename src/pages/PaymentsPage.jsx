@@ -111,8 +111,8 @@ function PaymentModal({ existing, onClose, onSave }) {
   const p = existing||{};
 
   const [customer, setCustomer] = useState(p.customer_name||"");
-  const initialInvoiceInput = p.invoice_number
-    || (p.invoice_id && invoices.find(i=>i.id===p.invoice_id)?.invoice_number)
+  const initialInvoiceInput = (p.invoice_id && invoices.find(i=>i.id===p.invoice_id)?.invoice_number)
+    || p.invoice_number
     || "";
   const [invoiceInput, setInvoiceInput] = useState(initialInvoiceInput);
   const [amount, setAmount] = useState(p.amount??"");
