@@ -49,7 +49,7 @@ function TypeBadge({ type }) {
 }
 
 export default function ContactsPage({ initialFormType = null }) {
-  const { customers, setCustomers, suppliers, setSuppliers, invoices, payments, bills, orgSettings, user, businessDataHydrated } = useContext(AppCtx);
+  const { customers, setCustomers, suppliers, setSuppliers, invoices, quotes, payments, bills, orgSettings, user, businessDataHydrated } = useContext(AppCtx);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
@@ -72,9 +72,11 @@ export default function ContactsPage({ initialFormType = null }) {
   }, [splitOpen]);
 
   const handleDeleteCustomer = async (c) => {
-    const linked = (invoices || []).filter(i => i.customer?.id === c.id).length;
+    const invCount = (invoices || []).filter(i => i.customer?.id === c.id).length;
+    const qCount   = (quotes   || []).filter(q => q.customer?.id === c.id).length;
+    const linked   = invCount + qCount;
     const msg = linked > 0
-      ? `"${c.name}" is linked to ${linked} invoice(s). Deleting will not remove those records, but the customer will no longer appear in lookups.\n\nDelete anyway?`
+      ? `"${c.name}" is linked to ${linked} invoice/quote(s). Deleting will not remove those records, but the customer will no longer appear in lookups.\n\nDelete anyway?`
       : `Delete "${c.name}"? This cannot be undone.`;
     if (!window.confirm(msg)) return;
     if (!user?.id) return alert("You must be logged in to delete.");
