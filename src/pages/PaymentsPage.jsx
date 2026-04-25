@@ -105,13 +105,16 @@ function PaymentDetailView({ payment, onClose, onEdit, onDelete }) {
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 function PaymentModal({ existing, onClose, onSave }) {
-  const { invoices, customers, customPayMethods, setInvoices, payments } = useContext(AppCtx);
+  const { invoices, customers, customPayMethods, setInvoices, payments, orgSettings } = useContext(AppCtx);
   const allMethods = [...PAYMENT_METHODS, ...(customPayMethods||[])];
   const isEdit = !!existing;
   const p = existing||{};
 
   const [customer, setCustomer] = useState(p.customer_name||"");
-  const [invoiceId, setInvoiceId] = useState(p.invoice_id||"");
+  const initialInvoiceInput = p.invoice_number
+    || (p.invoice_id && invoices.find(i=>i.id===p.invoice_id)?.invoice_number)
+    || "";
+  const [invoiceInput, setInvoiceInput] = useState(initialInvoiceInput);
   const [amount, setAmount] = useState(p.amount??"");
   const [date, setDate] = useState(p.date||todayStr());
   const [method, setMethod] = useState(p.method||"Bank Transfer");
@@ -120,7 +123,7 @@ function PaymentModal({ existing, onClose, onSave }) {
   const [status, setStatus] = useState(p.status||"Reconciled");
   const [paymentNumber, setPaymentNumber] = useState(p.payment_number || nextNum("PAY", payments));
 
-  const linkedInvoice = invoices.find(i=>i.id===invoiceId||i.invoice_number===invoiceId);
+  const linkedInvoice = invoices.find(i=>i.id===invoiceInput||i.invoice_number===invoiceInput);
   const custSuggestions = customers.filter(c=>!customer||c.name.toLowerCase().includes(customer.toLowerCase()));
 
   const handleSave = () => {
@@ -128,8 +131,8 @@ function PaymentModal({ existing, onClose, onSave }) {
       id: p.id || crypto.randomUUID(),
       payment_number: paymentNumber,
       customer_name: customer,
-      invoice_id: invoiceId,
-      invoice_number: linkedInvoice?.invoice_number || invoiceId,
+      invoice_id: linkedInvoice?.id || null,
+      invoice_number: linkedInvoice?.invoice_number || invoiceInput,
       quote_number: linkedInvoice?.converted_from_quote || "",
       amount: Number(amount),
       date, method, reference, notes, status
@@ -199,7 +202,7 @@ function PaymentModal({ existing, onClose, onSave }) {
 
           <Field label="Invoice / Reference">
             <div style={{ position:"relative" }}>
-              <input value={invoiceId} onChange={e=>setInvoiceId(e.target.value)} list="inv-list" placeholder="Select invoice or enter ref…"
+              <input value={invoiceInput} onChange={e=>setInvoiceInput(e.target.value)} list="inv-list" placeholder="Select invoice or enter ref…"
                 style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${linkedInvoice?"#1A1A1A":"#E0E0E0"}`, borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box" }} />
               <datalist id="inv-list">{invoices.map(i=><option key={i.id} value={i.invoice_number}>{i.invoice_number} — {i.customer?.name} — {fmt("£",i.total)}</option>)}</datalist>
             </div>
