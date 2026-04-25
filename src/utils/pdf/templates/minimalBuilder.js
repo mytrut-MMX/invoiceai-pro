@@ -51,6 +51,6 @@ export function buildMinimal(doc, brk, { data, currSymbol, isVat, orgSettings, a
 
   const tint = blendWithWhite(accent, 0.08);
   drawItems(doc, brk, { items, isVat, sym, colors: { headerBg: tint, headerText: accent, stripeBg: [250, 250, 250] } });
-  drawTotals(doc, brk, { data, accent, sym });
+  drawTotals(doc, brk, { data, accent, sym, isVat });
   drawNotes(doc, brk, { notes, terms });
 }

@@ -129,10 +129,10 @@ export function drawItems(doc, brk, { items, isVat, sym, colors }) {
   });
 }
 
-export function drawTotals(doc, brk, { data, accent, sym }) {
+export function drawTotals(doc, brk, { data, accent, sym, isVat }) {
   const { subtotal, discountAmount, shipping, taxBreakdown = [], cisDeduction, total, docType } = data;
   const isQuote = docType === "quote";
-  const hasVat = (taxBreakdown || []).length > 0;
+  const hasVat = !!isVat && (taxBreakdown || []).length > 0;
   const totalsW = 72;
   const totalsX = CR - totalsW;
 

@@ -52,6 +52,6 @@ export function buildClassic(doc, brk, { data, currSymbol, isVat, orgSettings, a
   brk.y += 5;
 
   drawItems(doc, brk, { items, isVat, sym, colors: { headerBg: accent, headerText: [255, 255, 255], stripeBg: [248, 248, 248] } });
-  drawTotals(doc, brk, { data, accent, sym });
+  drawTotals(doc, brk, { data, accent, sym, isVat });
   drawNotes(doc, brk, { notes, terms });
 }

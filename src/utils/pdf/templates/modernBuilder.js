@@ -60,6 +60,6 @@ export function buildModern(doc, brk, { data, currSymbol, isVat, orgSettings, ac
   brk.y = headerH + 8;
   const tint = blendWithWhite(accent, 0.09);
   drawItems(doc, brk, { items, isVat, sym, colors: { headerBg: tint, headerText: accent, stripeBg: [240, 247, 255] } });
-  drawTotals(doc, brk, { data, accent, sym });
+  drawTotals(doc, brk, { data, accent, sym, isVat });
   drawNotes(doc, brk, { notes, terms });
 }
