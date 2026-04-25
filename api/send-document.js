@@ -9,8 +9,8 @@
 //   action: 'selfbill' → handleSendSelfbill (server fetches PDF from bucket)
 //
 // Rate limit is per-action (preserving the pre-consolidation budgets):
-//   invoice  → 5  req/min/IP, prefix 'send-document'
-//   selfbill → 20 req/min/IP, prefix 'send-selfbill'
+//   invoice  → 60  req/hour, prefix 'send-document' (IP-keyed; no auth)
+//   selfbill → 240 req/hour, prefix 'send-selfbill' (user-keyed when JWT present)
 //
 // This file owns: method check, body parse, action resolve, rate-limit
 // headers, auth verification, env check. It never touches business logic —
@@ -22,14 +22,24 @@ import { handleSendInvoice } from './_lib/send-invoice-handler.js';
 import { handleSendSelfbill } from './_lib/send-selfbill-handler.js';
 
 const ACTION_LIMITS = {
-  invoice:  { limit: 5,  prefix: 'send-document' },
-  selfbill: { limit: 20, prefix: 'send-selfbill' },
+  invoice:  { limit: 60,  prefix: 'send-document' },
+  selfbill: { limit: 240, prefix: 'send-selfbill' },
 };
 
 function getIp(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
     || req.headers['x-real-ip']
     || 'unknown';
+}
+
+function extractUserId(req) {
+  const auth = req.headers['authorization'] || '';
+  if (!auth.startsWith('Bearer ')) return null;
+  try {
+    const payload = auth.split('.')[1];
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    return decoded.sub || null;
+  } catch { return null; }
 }
 
 export default async function handler(req, res) {
@@ -50,8 +60,11 @@ export default async function handler(req, res) {
     }
 
     // Per-action rate limit. Preserves the original per-endpoint budgets so
-    // clients don't see a regression after the merge.
-    const rl = checkRateLimit(`${cfg.prefix}:${getIp(req)}`, cfg.limit);
+    // clients don't see a regression after the merge. Prefer user ID from
+    // the JWT (selfbill) and fall back to IP (invoice path is unauth'd).
+    const userId = extractUserId(req);
+    const rlKey = userId ? `${cfg.prefix}:user:${userId}` : `${cfg.prefix}:ip:${getIp(req)}`;
+    const rl = checkRateLimit(rlKey, cfg.limit);
     res.setHeader('X-RateLimit-Limit', String(cfg.limit));
     res.setHeader('X-RateLimit-Remaining', String(rl.remaining));
     res.setHeader('X-RateLimit-Reset', String(Math.ceil(rl.resetMs / 1000)));

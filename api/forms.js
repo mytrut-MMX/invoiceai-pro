@@ -155,4 +155,4 @@ async function handler(req, res) {
   return handleContact(req, res, supabaseUrl, serviceRoleKey);
 }
 
-export default withRateLimit(handler, { limit: 10, prefix: 'forms' });
+export default withRateLimit(handler, { limit: 60, prefix: 'forms' });

@@ -94,4 +94,4 @@ async function handler(req, res) {
   }
 }
 
-export default withRateLimit(handler, { limit: 20, prefix: 'claude' });
+export default withRateLimit(handler, { limit: 300, prefix: 'claude' });

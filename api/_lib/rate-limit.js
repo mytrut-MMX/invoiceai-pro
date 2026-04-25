@@ -4,35 +4,36 @@
 // not distributed. For production scale, replace with Upstash Redis.
 
 const rateMap = new Map();
-const WINDOW_MS = 60 * 1000; // 1 minute window
-const CLEANUP_INTERVAL = 5 * 60 * 1000; // cleanup every 5 min
+const DEFAULT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const CLEANUP_INTERVAL = 10 * 60 * 1000; // cleanup every 10 min
 
 // Periodic cleanup of expired entries
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateMap) {
-    if (now - entry.start > WINDOW_MS * 2) rateMap.delete(key);
+    if (now - entry.start > DEFAULT_WINDOW_MS * 2) rateMap.delete(key);
   }
 }, CLEANUP_INTERVAL);
 
 /**
- * @param {string} key — usually IP + endpoint
+ * @param {string} key — user ID, IP, or composite
  * @param {number} limit — max requests per window
+ * @param {number} [windowMs] — window in ms (default 1 hour)
  * @returns {{ allowed: boolean, remaining: number, resetMs: number }}
  */
-export function checkRateLimit(key, limit) {
+export function checkRateLimit(key, limit, windowMs = DEFAULT_WINDOW_MS) {
   const now = Date.now();
   let entry = rateMap.get(key);
 
-  if (!entry || now - entry.start > WINDOW_MS) {
+  if (!entry || now - entry.start > windowMs) {
     entry = { count: 1, start: now };
     rateMap.set(key, entry);
-    return { allowed: true, remaining: limit - 1, resetMs: WINDOW_MS };
+    return { allowed: true, remaining: limit - 1, resetMs: windowMs };
   }
 
   entry.count++;
   const remaining = Math.max(0, limit - entry.count);
-  const resetMs = WINDOW_MS - (now - entry.start);
+  const resetMs = windowMs - (now - entry.start);
 
   return { allowed: entry.count <= limit, remaining, resetMs };
 }

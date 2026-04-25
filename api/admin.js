@@ -237,4 +237,4 @@ async function handler(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-export default withRateLimit(handler, { limit: 30, prefix: 'admin' });
+export default withRateLimit(handler, { limit: 360, prefix: 'admin' });

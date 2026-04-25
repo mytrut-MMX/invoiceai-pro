@@ -652,4 +652,4 @@ async function handler(req, res) {
   return handleOrchestrator(req, res);
 }
 
-export default withRateLimit(handler, { limit: 10, prefix: 'agents' });
+export default withRateLimit(handler, { limit: 120, prefix: 'agents' });

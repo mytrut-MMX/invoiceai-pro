@@ -421,4 +421,4 @@ async function handler(req, res) {
   return res.status(400).json({ error: 'Unknown action. Use callback, refresh, obligations, submit, or return.' });
 }
 
-export default withRateLimit(handler, { limit: 10, prefix: 'hmrc' });
+export default withRateLimit(handler, { limit: 120, prefix: 'hmrc' });
