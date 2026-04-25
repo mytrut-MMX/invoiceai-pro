@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { CUR_SYM, PAYMENT_TERMS_OPTS } from "../constants";
 import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
 import { formatPhoneNumber, stripPhoneForStorage } from "../utils/helpers";
@@ -52,7 +52,11 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [vatNumber, setVatNumber] = useState(existing?.vat_number || "");
   const [sbSectionOpen, setSbSectionOpen] = useState(false);
   const { orgSettings } = useContext(AppCtx) || {};
-  const sbGatePassed = Boolean(vatNumber) && orgSettings?.vatReg === "Yes";
+  const sbGatePassed = Boolean(vatNumber?.trim()) && orgSettings?.vatReg === "Yes";
+
+  useEffect(() => {
+    if (!sbGatePassed) setSelfBilledByCustomer(false);
+  }, [sbGatePassed]);
 
   const copyBillingToShipping = () => {
     setShipStreet1(billStreet1);
@@ -72,7 +76,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
       firstName, lastName, company, email,
       phone: stripPhoneForStorage(phone),
       website, currency, paymentTerms, remarks,
-      vat_number: vatNumber || null,
+      vat_number: vatNumber?.trim() || null,
       contactPersons: (contactPersons || []).map(cp => ({
         ...cp,
         phone: stripPhoneForStorage(cp.phone),

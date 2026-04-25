@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Field, Btn } from "../atoms";
 import { useToast } from "../ui/Toast";
 
@@ -11,12 +11,14 @@ export default function ShareLinkModal({ open, onClose, docType, docNumber, defa
   const [expiresOn, setExpiresOn] = useState(defaultExpiry || "");
   const [shareUrl, setShareUrl] = useState("");
 
+  const prevOpen = useRef(false);
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpen.current) {
       setMode("public");
       setExpiresOn(defaultExpiry || "");
       setShareUrl("");
     }
+    prevOpen.current = open;
   }, [open, defaultExpiry]);
 
   if (!open) return null;
