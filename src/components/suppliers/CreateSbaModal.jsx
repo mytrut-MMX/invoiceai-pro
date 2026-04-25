@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Field, Input, Textarea, Btn } from "../atoms";
 import { useToast } from "../ui/Toast";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import { supabase } from "../../lib/supabase";
 import {
   createDraftSba,
@@ -89,6 +90,8 @@ export default function CreateSbaModal({
     setSaving(false);
   }, [open, defaultStart, defaultEnd, defaultPrefix, defaultClauses]);
 
+  const overlayRef = useModalA11y(open, onClose);
+
   if (!open) return null;
 
   const maxEnd = addMonths(startDate, SBA_MAX_DURATION_MONTHS);
@@ -176,6 +179,7 @@ export default function CreateSbaModal({
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
       role="dialog"
       aria-modal="true"

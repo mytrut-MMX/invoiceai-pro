@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Icons } from "../icons";
 import { useToast } from "../ui/Toast";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import {
   listPaymentTerms,
   createPaymentTerm,
@@ -35,6 +36,8 @@ export function PaymentTermsConfigModal({ open, onClose, onSaved }) {
       setEditingCell(null);
     });
   }, [open]);
+
+  const overlayRef = useModalA11y(open, onClose);
 
   if (!open) return null;
 
@@ -122,7 +125,7 @@ export function PaymentTermsConfigModal({ open, onClose, onSaved }) {
   const visibleRows = rows.filter((r) => !r._deleted);
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4">
+    <div ref={overlayRef} className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4">
       <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] shadow-[var(--shadow-popover)] w-full max-w-[640px] max-h-[80vh] flex flex-col overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
           <h3 className="m-0 text-base font-semibold text-[var(--text-primary)]">

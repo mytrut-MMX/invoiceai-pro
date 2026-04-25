@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Field, Textarea, Btn } from "../atoms";
+import { useModalA11y } from "../../hooks/useModalA11y";
 
 export default function ConfirmWithReasonModal({
   open,
@@ -16,6 +17,8 @@ export default function ConfirmWithReasonModal({
   useEffect(() => {
     if (open) { setReason(""); setSubmitting(false); }
   }, [open]);
+
+  const overlayRef = useModalA11y(open, onClose);
 
   if (!open) return null;
 
@@ -35,6 +38,7 @@ export default function ConfirmWithReasonModal({
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
       role="dialog"
       aria-modal="true"
