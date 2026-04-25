@@ -4,6 +4,7 @@ import { Field, Input, Select, Textarea, Btn } from "../components/atoms";
 import { formatPhoneNumber, stripPhoneForStorage } from "../utils/helpers";
 import { useCISSettings } from "../hooks/useCISSettings";
 import { AppCtx } from "../context/AppContext";
+import CustomFieldsEditor from "../components/shared/CustomFieldsEditor";
 
 const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
@@ -47,6 +48,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [cisRegistered, setCisRegistered] = useState(existing?.cis?.registered ?? false);
   const [cisUtr, setCisUtr] = useState(existing?.cis?.utr || "");
   const [selfBilledByCustomer, setSelfBilledByCustomer] = useState(existing?.self_billed_by_customer ?? false);
+  const [customFields, setCustomFields] = useState(existing?.customFields || []);
   const [sbSectionOpen, setSbSectionOpen] = useState(false);
   const { orgSettings } = useContext(AppCtx) || {};
   const sbGatePassed = Boolean(existing?.vat_number) && orgSettings?.vatReg === "Yes";
@@ -90,6 +92,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
       self_billed_by_customer: selfBilledByCustomer,
       // Agreement id is created in the Phase 3 SBA flow, never from this modal.
       self_billing_agreement_id: existing?.self_billing_agreement_id ?? null,
+      customFields,
     };
     setSaved(true);
     setTimeout(() => onSave(customer), 600);
@@ -413,9 +416,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
             )}
 
             {activeTab === "Custom Fields" && (
-              <div className="text-[var(--text-tertiary)] text-sm text-center py-8">
-                No custom fields configured for Customers.
-              </div>
+              <CustomFieldsEditor fields={customFields} onChange={setCustomFields} />
             )}
 
             {activeTab === "Remarks" && (
