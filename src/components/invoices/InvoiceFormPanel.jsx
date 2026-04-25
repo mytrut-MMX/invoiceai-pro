@@ -1,12 +1,13 @@
 import { Icons } from "../icons";
 import { Field, Input, Select, Btn, SlideToggle, InfoBox } from "../atoms";
 import { LineItemsTable, SaveSplitBtn, PaidConfirmModal, A4PrintModal, CustomerPicker, PaymentTermsSelect } from "../shared";
-import { addDays } from "../../utils/helpers";
+import { addDays, todayStr } from "../../utils/helpers";
 import ItemModal from "../../modals/ItemModal";
 import { taxPointExplanation } from "../../utils/taxPoint";
 import ReceivedSelfBillModal from "./ReceivedSelfBillModal";
 import { useInvoiceForm } from "./useInvoiceForm";
 import InvoiceTotalsPanel from "./InvoiceTotalsPanel";
+import ShareLinkModal from "../shared/ShareLinkModal";
 
 const STATUSES = ["Draft", "Sent", "Overdue", "Paid", "Void", "Partial"];
 
@@ -41,12 +42,13 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
     shipping, showShipping, notes, terms, status, template,
     invNumber, invNumError, poNumber, recurringEnabled, recurFreq,
     recurringNextDate, showPrintModal, showPaidModal, showItemModal,
-    showImportSb, saving, sbaBlock, selectedQuoteId,
+    showImportSb, showShareModal, saving, sbaBlock, selectedQuoteId,
     setCustomer, setCustSearch, setCustOpen, setIssueDate, setSupplyDate,
     setDueDate, setItems, setDiscType, setDiscVal, setShipping,
     setNotes, setTerms, setStatus, setInvNumber, setInvNumError,
     setPoNumber, setRecurringEnabled, setRecurFreq, setRecurringNextDate,
     setShowPrintModal, setShowPaidModal, setShowItemModal, setShowImportSb,
+    setShowShareModal,
     setPayTerms, setSbaBlock, setSelectedQuoteId,
     _dueDateOverridden,
     isEdit, isVat, currSym, totals, taxPointResult, docData,
@@ -309,6 +311,13 @@ export default function InvoiceFormPanel({ existing, onClose, onSave, onConvertF
           onSaved={(inv) => { setShowImportSb(false); onSave?.(inv); }}
         />
       )}
+      <ShareLinkModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        docType="invoice"
+        docNumber={invNumber}
+        defaultExpiry={dueDate || addDays(todayStr(), 30)}
+      />
     </>
   );
 }

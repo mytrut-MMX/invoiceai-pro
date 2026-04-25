@@ -45,6 +45,7 @@ export function useInvoiceForm({ existing, onClose, onSave, onConvertFromQuote }
   const [templateId] = useState(inv.templateId || null);
   const [showPaidModal, setShowPaidModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recurringEnabled, setRecurringEnabled] = useState(inv.recurring || false);
   const [recurFreq, setRecurFreq] = useState(inv.recurring_frequency || "Monthly");
@@ -234,26 +235,7 @@ export function useInvoiceForm({ existing, onClose, onSave, onConvertFromQuote }
     onClose();
   };
 
-  const handleShare = () => {
-    const visibility = window.prompt("Share visibility: Public or Private and secure?", "Public");
-    if (!visibility) return;
-    const expiresOn = window.prompt("Link expiration date (YYYY-MM-DD)", dueDate || addDays(todayStr(), 30));
-    if (!expiresOn) return;
-    const mode = visibility.toLowerCase().includes("private") ? "private" : "public";
-    // AUTH-005: Use full UUID (122 bits entropy) instead of truncated 8-char segment (32 bits)
-    const token = crypto.randomUUID();
-    const basePath = mode === "public" ? "public" : "secure";
-    // AUTH-006: Client-side expiry check — not tamper-proof.
-    // TODO: Move share link validation to a server-side API endpoint
-    // that verifies token + expiry from database before returning document.
-    const shareUrl = `${window.location.origin}/${basePath}/invoice/${invNumber}?token=${token}&expires=${expiresOn}`;
-    window.prompt(
-      mode === "private"
-        ? "Private link created. Customer will use one-time passcode. Copy link:"
-        : "Public link created. Anyone with the link can access before expiry. Copy link:",
-      shareUrl
-    );
-  };
+  const handleShare = () => setShowShareModal(true);
 
   const handleNewItemSaved = (item) => {
     setCatalogItems(p => [...p, item]);
@@ -280,13 +262,14 @@ export function useInvoiceForm({ existing, onClose, onSave, onConvertFromQuote }
     shipping, showShipping, notes, terms, status, template,
     invNumber, invNumError, poNumber, recurringEnabled, recurFreq,
     recurringNextDate, showPrintModal, showPaidModal, showItemModal,
-    showImportSb, saving, sbaBlock, selectedQuoteId,
+    showImportSb, showShareModal, saving, sbaBlock, selectedQuoteId,
     // Setters
     setCustomer, setCustSearch, setCustOpen, setIssueDate, setSupplyDate,
     setDueDate, setItems, setDiscType, setDiscVal, setShipping,
     setNotes, setTerms, setStatus, setTemplate, setInvNumber, setInvNumError,
     setPoNumber, setRecurringEnabled, setRecurFreq, setRecurringNextDate,
     setShowPrintModal, setShowPaidModal, setShowItemModal, setShowImportSb,
+    setShowShareModal,
     setPayTerms, setSbaBlock, setSelectedQuoteId,
     // Refs
     _dueDateOverridden,
