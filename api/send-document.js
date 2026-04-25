@@ -9,8 +9,9 @@
 //   action: 'selfbill' → handleSendSelfbill (server fetches PDF from bucket)
 //
 // Rate limit is per-action (preserving the pre-consolidation budgets):
-//   invoice  → 60  req/hour, prefix 'send-document' (IP-keyed; no auth)
-//   selfbill → 240 req/hour, prefix 'send-selfbill' (user-keyed when JWT present)
+//   invoice  → 60  req/hour, prefix 'send-document'
+//   selfbill → 240 req/hour, prefix 'send-selfbill'
+// Both keyed by IP — unverified JWTs must not influence rate-limit keys.
 //
 // This file owns: method check, body parse, action resolve, rate-limit
 // headers, auth verification, env check. It never touches business logic —
@@ -32,16 +33,6 @@ function getIp(req) {
     || 'unknown';
 }
 
-function extractUserId(req) {
-  const auth = req.headers['authorization'] || '';
-  if (!auth.startsWith('Bearer ')) return null;
-  try {
-    const payload = auth.split('.')[1];
-    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    return decoded.sub || null;
-  } catch { return null; }
-}
-
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
@@ -60,10 +51,9 @@ export default async function handler(req, res) {
     }
 
     // Per-action rate limit. Preserves the original per-endpoint budgets so
-    // clients don't see a regression after the merge. Prefer user ID from
-    // the JWT (selfbill) and fall back to IP (invoice path is unauth'd).
-    const userId = extractUserId(req);
-    const rlKey = userId ? `${cfg.prefix}:user:${userId}` : `${cfg.prefix}:ip:${getIp(req)}`;
+    // clients don't see a regression after the merge. Keyed by IP — an
+    // unverified JWT cannot be trusted to scope rate limits.
+    const rlKey = `${cfg.prefix}:ip:${getIp(req)}`;
     const rl = checkRateLimit(rlKey, cfg.limit);
     res.setHeader('X-RateLimit-Limit', String(cfg.limit));
     res.setHeader('X-RateLimit-Remaining', String(rl.remaining));
