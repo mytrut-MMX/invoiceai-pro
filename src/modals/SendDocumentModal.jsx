@@ -5,6 +5,7 @@ import { Btn, Field, Input, Textarea } from "../components/atoms";
 import { Icons } from "../components/icons";
 import { buildInvoiceEmail, buildPaymentConfirmationEmail, buildQuoteEmail } from "../utils/emailTemplates";
 import { generateInvoicePdfBlob } from "../utils/pdf/generateInvoicePdf";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -106,6 +107,7 @@ export default function SendDocumentModal({
   const [error, setError] = useState(null);
   const [sent, setSent] = useState(false);
   const { toast } = useToast();
+  const overlayRef = useModalA11y(true, onClose);
 
   const toError = to && !EMAIL_RE.test(to.trim()) ? "Please enter a valid email address." : null;
   const subjectError = subject && subject.trim().length < 3 ? "Subject must be at least 3 characters." : null;
@@ -187,7 +189,7 @@ export default function SendDocumentModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[1500] grid place-items-center p-4">
+    <div ref={overlayRef} className="fixed inset-0 bg-black/50 z-[1500] grid place-items-center p-4">
       <div className="w-full max-w-[560px] bg-white rounded-2xl shadow-[var(--shadow-popover)] overflow-hidden">
         {/* Header */}
         <div className="border-b border-[var(--border-subtle)] px-6 py-4 flex items-center justify-between">

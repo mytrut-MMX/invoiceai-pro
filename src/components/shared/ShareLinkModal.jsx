@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Field, Btn } from "../atoms";
 import { useToast } from "../ui/Toast";
+import { useModalA11y } from "../../hooks/useModalA11y";
 
 const dateInputCls =
   "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
@@ -20,6 +21,8 @@ export default function ShareLinkModal({ open, onClose, docType, docNumber, defa
     }
     prevOpen.current = open;
   }, [open, defaultExpiry]);
+
+  const overlayRef = useModalA11y(open, onClose);
 
   if (!open) return null;
 
@@ -65,6 +68,7 @@ export default function ShareLinkModal({ open, onClose, docType, docNumber, defa
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
       role="dialog"
       aria-modal="true"

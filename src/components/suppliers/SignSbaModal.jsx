@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Field, Input, Btn } from "../atoms";
+import { useModalA11y } from "../../hooks/useModalA11y";
 
 export default function SignSbaModal({
   open,
@@ -16,6 +17,8 @@ export default function SignSbaModal({
     if (open) { setName(defaultName); setRole(defaultRole); }
   }, [open, defaultName, defaultRole]);
 
+  const overlayRef = useModalA11y(open, onClose);
+
   if (!open) return null;
 
   const trimmedName = name.trim();
@@ -24,6 +27,7 @@ export default function SignSbaModal({
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
       role="dialog"
       aria-modal="true"

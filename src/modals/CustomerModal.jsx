@@ -5,6 +5,7 @@ import { formatPhoneNumber, stripPhoneForStorage } from "../utils/helpers";
 import { useCISSettings } from "../hooks/useCISSettings";
 import { AppCtx } from "../context/AppContext";
 import CustomFieldsEditor from "../components/shared/CustomFieldsEditor";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 const TABS = ["Other Details", "Address", "Contact Persons", "Custom Fields", "Remarks"];
 const CURRENCIES = Object.keys(CUR_SYM);
@@ -17,6 +18,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [activeTab, setActiveTab] = useState("Other Details");
   const [saved, setSaved] = useState(false);
   const { cisEnabled } = useCISSettings();
+  const overlayRef = useModalA11y(true, onClose);
 
   const [custType, setCustType] = useState(existing?.type || "Business");
   const [salutation, setSalutation] = useState(existing?.salutation || "");
@@ -105,7 +107,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   };
 
   return (
-    <div className="bg-[var(--surface-page)] min-h-screen">
+    <div ref={overlayRef} className="bg-[var(--surface-page)] min-h-screen">
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-3 flex items-center justify-between">
         <button

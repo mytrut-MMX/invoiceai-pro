@@ -14,7 +14,7 @@ function fmtDate(v) {
 
 const SummaryRow = ({ label, value, bold }) => (
   <div className="flex justify-between gap-4 py-1.5 border-b border-gray-100 last:border-0">
-    <span className="text-sm text-gray-500">{label}</span>
+    <span className="text-sm text-gray-600">{label}</span>
     <span className={`text-sm text-gray-900 ${bold ? "font-semibold" : ""}`}>{value || "—"}</span>
   </div>
 );
@@ -31,7 +31,7 @@ function SuccessPanel({ signedAt }) {
     <div className="max-w-[720px] mx-auto bg-white border border-emerald-200 rounded-xl p-10 text-center">
       <div aria-hidden="true" className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl">✓</div>
       <h1 className="text-xl font-semibold text-gray-900 mb-1">Agreement signed successfully</h1>
-      <div className="text-sm text-gray-500 mb-4">{fmtDate(signedAt)}</div>
+      <div className="text-sm text-gray-600 mb-4">{fmtDate(signedAt)}</div>
       <p className="text-sm text-gray-600">You can close this tab. A copy has been recorded for both parties.</p>
     </div>
   );
@@ -106,7 +106,7 @@ export default function SbaSignPage() {
   }
 
   if (state.kind === "loading") {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-[34px]"><div className="text-sm text-gray-500">Loading agreement…</div></div>;
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-[34px]"><div className="text-sm text-gray-600">Loading agreement…</div></div>;
   }
   if (ERROR_COPY[state.kind]) return <Shell><ErrorPanel {...ERROR_COPY[state.kind]} /></Shell>;
   if (state.kind === "signed") return <Shell><SuccessPanel signedAt={state.signedAt} /></Shell>;
@@ -122,7 +122,7 @@ function Shell({ children }) {
           <h1 className="text-xl font-semibold text-gray-900">
             Self-Billing Agreement — Counterparty Signature
           </h1>
-          <p className="text-sm text-gray-500 mt-1">HMRC VAT Notice 700/62</p>
+          <p className="text-sm text-gray-600 mt-1">HMRC VAT Notice 700/62</p>
         </div>
         {children}
       </div>
@@ -149,7 +149,7 @@ function Ready({ data, name, setName, agreed, setAgreed, signing, submitError, o
           <SummaryRow label="Period" value={`${fmtDate(agreement.start_date)} → ${fmtDate(agreement.end_date)}`} />
           <SummaryRow label="Self-Biller" value={parties.selfBiller?.name} />
           <SummaryRow label="Self-Billee (you)" value={parties.selfBillee?.name} />
-          <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+          <p className="text-xs text-gray-600 mt-3 leading-relaxed">
             You are the Self-Billee — you agree that the Self-Biller will issue invoices on your
             behalf for supplies covered by this agreement.
           </p>

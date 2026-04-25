@@ -5,6 +5,7 @@ import { todayStr, fmt } from "../../utils/helpers";
 import { fetchUserAccounts } from "../../utils/ledger/fetchUserAccounts";
 import { postBillPaymentEntry } from "../../utils/ledger/postBillPaymentEntry";
 import { Icons } from "../icons";
+import { useModalA11y } from "../../hooks/useModalA11y";
 
 const PAYMENT_METHODS = ["BACS", "Faster Payments", "CHAPS", "Cheque", "Cash", "Other"];
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -70,6 +71,8 @@ export default function RecordBillPaymentModal({ open, bill, onClose, onPaymentR
     }
   }, [bankAccounts, bankAccountId]);
 
+  const overlayRef = useModalA11y(open && !!bill, onClose);
+
   if (!open || !bill) return null;
 
   const noBankAccounts = !accountsLoading && bankAccounts.length === 0;
@@ -108,6 +111,7 @@ export default function RecordBillPaymentModal({ open, bill, onClose, onPaymentR
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4"
       onClick={onClose}
     >

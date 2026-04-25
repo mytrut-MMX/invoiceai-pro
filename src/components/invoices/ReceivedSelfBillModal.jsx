@@ -14,6 +14,7 @@ import { CUR_SYM } from "../../constants";
 import { todayStr } from "../../utils/helpers";
 import { importReceivedSelfBill } from "../../utils/selfBilling/importReceivedSelfBill";
 import { getSbError } from "../../lib/selfBilling/errors";
+import { useModalA11y } from "../../hooks/useModalA11y";
 
 const dateInputCls =
   "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
@@ -39,6 +40,7 @@ function suggestTaxPoint(issueDate, supplyDate) {
 
 export default function ReceivedSelfBillModal({ onClose, onSaved, initialCustomerId = null }) {
   const { user, customers = [], orgSettings } = useContext(AppCtx);
+  const overlayRef = useModalA11y(true, onClose);
   const currSym = CUR_SYM[orgSettings?.currency || "GBP"] || "£";
   const fileInputRef = useRef(null);
 
@@ -146,7 +148,7 @@ export default function ReceivedSelfBillModal({ onClose, onSaved, initialCustome
 
   if (eligibleCustomers.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4" onMouseDown={onClose}>
+      <div ref={overlayRef} className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4" onMouseDown={onClose}>
         <div className="bg-[var(--surface-card)] rounded-[var(--radius-xl)] shadow-[var(--shadow-popover)] w-full max-w-[520px] p-6 border border-[var(--border-subtle)]" onMouseDown={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold m-0">Import received self-bill</h2>
@@ -162,7 +164,7 @@ export default function ReceivedSelfBillModal({ onClose, onSaved, initialCustome
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4" onMouseDown={onClose}>
+    <div ref={overlayRef} className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4" onMouseDown={onClose}>
       <div
         className="bg-[var(--surface-card)] rounded-[var(--radius-xl)] shadow-[var(--shadow-popover)] w-full max-w-[720px] max-h-[90vh] overflow-y-auto border border-[var(--border-subtle)]"
         onMouseDown={(e) => e.stopPropagation()}

@@ -3,6 +3,7 @@ import { Icons } from "../components/icons";
 import { useToast } from "../components/ui/Toast";
 import { Field, Input, Select, Toggle, SlideToggle, Btn } from "../components/atoms";
 import { validateImageDataUrl } from "../utils/security";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 const PRESET_THEMES = [
   { label: "Default",  type: "solid",    color: "#111110", color2: "#333330", accent: "#D97706" },
@@ -18,6 +19,7 @@ const PRESET_THEMES = [
 
 export default function UserEditModal({ user, onClose, onSave, userAvatar, setUserAvatar, appTheme, setAppTheme, sidebarPinned, setSidebarPinned, onLogout }) {
   const { toast } = useToast();
+  const overlayRef = useModalA11y(true, onClose);
   const [name, setName] = useState(user.name || "");
   const [role, setRole] = useState(user.role || "Admin");
   const [email, setEmail] = useState(user.email || "");
@@ -55,7 +57,7 @@ export default function UserEditModal({ user, onClose, onSave, userAvatar, setUs
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4">
+    <div ref={overlayRef} className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-[520px] max-h-[92vh] shadow-[var(--shadow-popover)] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="border-b border-[var(--border-subtle)] px-6 py-4 flex items-center justify-between">

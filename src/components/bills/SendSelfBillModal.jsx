@@ -11,11 +11,13 @@ import { supabase } from "../../lib/supabase";
 import { SB_INVOICES_BUCKET } from "../../constants/selfBilling";
 import { getSbError } from "../../lib/selfBilling/errors";
 import { useToast } from "../ui/Toast";
+import { useModalA11y } from "../../hooks/useModalA11y";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SendSelfBillModal({ bill, supplier, onClose, onSent }) {
   const { toast } = useToast();
+  const overlayRef = useModalA11y(true, onClose);
 
   const [recipient, setRecipient] = useState(supplier?.email || "");
   const [ccInput, setCcInput] = useState("");
@@ -114,7 +116,7 @@ export default function SendSelfBillModal({ bill, supplier, onClose, onSent }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4" onMouseDown={onClose}>
+    <div ref={overlayRef} className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4" onMouseDown={onClose}>
       <div
         className="bg-[var(--surface-card)] rounded-[var(--radius-xl)] shadow-[var(--shadow-popover)] w-full max-w-[720px] max-h-[90vh] overflow-y-auto border border-[var(--border-subtle)]"
         onMouseDown={(e) => e.stopPropagation()}
