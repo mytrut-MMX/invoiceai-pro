@@ -31,7 +31,6 @@
     }
   ],
   "routes": [
-    { "src": "/agent",            "dest": "/agent.html" },
     { "src": "/demo",             "dest": "/demo.html" },
     { "src": "/demo-construction","dest": "/demo-construction.html" },
     { "src": "/api/admin-login",  "dest": "/api/admin.js" },
@@ -39,7 +38,6 @@
     { "src": "/api/contact-submit",       "dest": "/api/forms.js" },
     { "src": "/api/feedback-submit",      "dest": "/api/forms.js" },
     { "src": "/api/hmrc-auth(.*)",        "dest": "/api/hmrc.js$1" },
-    { "src": "/api/hmrc-vat(.*)",         "dest": "/api/hmrc.js$1" },
     { "src": "/api/orchestrator",         "dest": "/api/agents.js" },
     { "src": "/api/product-workflow-lead","dest": "/api/agents.js" },
     { "src": "/api/frontend-architecture-lead","dest": "/api/agents.js" },
