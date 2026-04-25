@@ -15,6 +15,7 @@ import { getSbError } from "../../lib/selfBilling/errors";
 import { SBA_BUCKET, SBA_STATUS } from "../../constants/selfBilling";
 import CreateSbaModal from "./CreateSbaModal";
 import SignSbaModal from "./SignSbaModal";
+import ConfirmWithReasonModal from "../shared/ConfirmWithReasonModal";
 
 const STATUS_STYLE = {
   draft:               { cls: "bg-gray-100 text-gray-700",       label: "Draft" },
@@ -176,6 +177,7 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
   const [editingClauses, setEditingClauses] = useState(false);
   const [signModalOpen, setSignModalOpen] = useState(false);
   const [signingInProgress, setSigningInProgress] = useState(false);
+  const [showTerminate, setShowTerminate] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!userId || !supplier?.id) { setLoading(false); return; }
@@ -229,9 +231,7 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
     } catch (err) { toast({ title: "Could not copy", description: err?.message, variant: "error" }); }
   }
 
-  async function handleTerminate() {
-    const reason = window.prompt("Reason for termination (min 10 chars)?");
-    if (!reason || reason.trim().length < 10) return;
+  async function performTerminate(reason) {
     const prev = active;
     setActive({ ...active, status: "terminated" }); // optimistic
     try {
@@ -297,7 +297,7 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
               onCreate={() => { setRenewing(false); setModalOpen(true); }}
               onSign={() => setSignModalOpen(true)}
               onCopyLink={handleCopyLink}
-              onTerminate={handleTerminate}
+              onTerminate={() => setShowTerminate(true)}
               onRenew={() => { setRenewing(true); setModalOpen(true); }}
               onViewPdf={() => openPdfInNewTab(toast, active?.agreement_pdf_path)}
               onEditClauses={() => setEditingClauses(true)}
@@ -331,6 +331,15 @@ export default function SupplierSelfBillingTab({ supplier, userId, orgSettings, 
         editingDraft={editingClauses ? active : null}
         onClose={() => { setModalOpen(false); setEditingClauses(false); }}
         onCreated={() => { setModalOpen(false); setEditingClauses(false); refresh(); refreshSbaGate(); }}
+      />
+
+      <ConfirmWithReasonModal
+        open={showTerminate}
+        onClose={() => setShowTerminate(false)}
+        onConfirm={performTerminate}
+        title="Terminate Agreement"
+        description="Provide a reason for termination (min 10 characters)."
+        confirmLabel="Terminate"
       />
     </div>
   );

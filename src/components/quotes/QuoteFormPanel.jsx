@@ -9,6 +9,7 @@ import { fmt, fmtDate, todayStr, addDays, nextNum, newLine } from "../../utils/h
 import { calcTotals } from "../../utils/calcTotals";
 import ItemModal from "../../modals/ItemModal";
 import { useCISSettings } from "../../hooks/useCISSettings";
+import ShareLinkModal from "../shared/ShareLinkModal";
 
 const dateInputCls =
   "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
@@ -58,6 +59,7 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
   const [saving, setSaving] = useState(false);
   const [poNumber, setPoNumber] = useState(q.po_number || "");
   const [quoteNumber, setQuoteNumber] = useState(q.quote_number || nextNum("QUO", quotes));
+  const [showShare, setShowShare] = useState(false);
   const isLockedAcceptedQuote = isEdit && q.status === "Invoiced";
 
   const totals = useMemo(
@@ -84,22 +86,7 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
     docType: "quote",
   };
 
-  const handleShare = () => {
-    const visibility = window.prompt("Share visibility: Public or Private and secure?", "Public");
-    if (!visibility) return;
-    const expiresOn = window.prompt("Link expiration date (YYYY-MM-DD)", expiryDate || addDays(todayStr(), 30));
-    if (!expiresOn) return;
-    const mode = visibility.toLowerCase().includes("private") ? "private" : "public";
-    const token = crypto.randomUUID();
-    const basePath = mode === "public" ? "public" : "secure";
-    const shareUrl = `${window.location.origin}/${basePath}/quote/${quoteNumber}?token=${token}&expires=${expiresOn}`;
-    window.prompt(
-      mode === "private"
-        ? "Private link created. Customer will use one-time passcode. Copy link:"
-        : "Public link created. Anyone with the link can access before expiry. Copy link:",
-      shareUrl
-    );
-  };
+  const handleShare = () => setShowShare(true);
 
   const buildQuote = (newStatus) => ({
     id: q.id || crypto.randomUUID(),
@@ -159,6 +146,13 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
     >
       {showPrintModal && <A4PrintModal data={docData} currSymbol={currSym} isVat={isVat} onClose={() => setShowPrintModal(false)} />}
       {showItemModal && <ItemModal existing={null} onClose={() => setShowItemModal(false)} onSave={handleNewItemSaved} settings={{ cis: { enabled: cisEnabled } }} />}
+      <ShareLinkModal
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        docType="quote"
+        docNumber={quoteNumber}
+        defaultExpiry={expiryDate || addDays(todayStr(), 30)}
+      />
 
       <div
         className={asPage
