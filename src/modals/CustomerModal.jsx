@@ -49,9 +49,10 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
   const [cisUtr, setCisUtr] = useState(existing?.cis?.utr || "");
   const [selfBilledByCustomer, setSelfBilledByCustomer] = useState(existing?.self_billed_by_customer ?? false);
   const [customFields, setCustomFields] = useState(existing?.customFields || []);
+  const [vatNumber, setVatNumber] = useState(existing?.vat_number || "");
   const [sbSectionOpen, setSbSectionOpen] = useState(false);
   const { orgSettings } = useContext(AppCtx) || {};
-  const sbGatePassed = Boolean(existing?.vat_number) && orgSettings?.vatReg === "Yes";
+  const sbGatePassed = Boolean(vatNumber) && orgSettings?.vatReg === "Yes";
 
   const copyBillingToShipping = () => {
     setShipStreet1(billStreet1);
@@ -71,6 +72,7 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
       firstName, lastName, company, email,
       phone: stripPhoneForStorage(phone),
       website, currency, paymentTerms, remarks,
+      vat_number: vatNumber || null,
       contactPersons: (contactPersons || []).map(cp => ({
         ...cp,
         phone: stripPhoneForStorage(cp.phone),
@@ -179,6 +181,12 @@ export default function CustomerForm({ existing, onClose, onSave, settings, cust
               />
             </Field>
             <Field label="Website"><Input value={website} onChange={setWebsite} placeholder="https://" /></Field>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <Field label="VAT Number">
+              <Input value={vatNumber} onChange={setVatNumber} placeholder="GB 123 4567 89" />
+            </Field>
           </div>
         </div>
 
