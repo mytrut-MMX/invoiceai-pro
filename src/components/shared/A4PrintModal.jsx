@@ -12,7 +12,7 @@ export function A4PrintModal({ data, currSymbol, isVat, onClose, _overrideTempla
   const startTpl = _overrideTemplate || pdfTemplate || "classic";
   const resolvedPrintStyle = selectedInvoiceTemplate?.layout?.colorScheme || startTpl;
   const tplDef = PDF_TEMPLATES.find(t => t.id === resolvedPrintStyle) || PDF_TEMPLATES[0];
-  const [accentColor, setAccentColor] = useState(_overrideAccent || tplDef.defaultAccent);
+  const [accentColor, setAccentColor] = useState(_overrideAccent || orgSettings?.branding?.accentColor || tplDef.defaultAccent);
   const [activeTemplate, setActiveTemplate] = useState(resolvedPrintStyle);
   const [previewLogoSize, setPreviewLogoSize] = useState(Number(selectedInvoiceTemplate?.layout?.logoSize === "large" ? 80 : selectedInvoiceTemplate?.layout?.logoSize === "small" ? 36 : (invoiceTemplateConfig?.logoSize || companyLogoSize || 52)));
 

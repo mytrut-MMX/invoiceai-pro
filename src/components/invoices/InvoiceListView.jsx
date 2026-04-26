@@ -201,7 +201,7 @@ export default function InvoiceListView({ onNewInvoice, onViewInvoice, onEditInv
             currSymbol={currSym}
             isVat={isVat}
             pdfTemplate={activeTemplate}
-            accentColor={tplDef?.defaultAccent}
+            accentColor={orgSettings?.branding?.accentColor || tplDef?.defaultAccent}
             footerText={footerText || ""}
             invoiceTemplate={getDefaultTemplate()}
             orgSettings={{ ...orgSettings, logo: companyLogo, logoSize: Number(invoiceTemplateConfig?.logoSize || companyLogoSize || 52) }}

@@ -94,7 +94,7 @@ export default function QuoteViewPanel({ quote, onEdit, onDelete, onConvert, onC
           currSymbol={currSym}
           isVat={isVat}
           pdfTemplate={activeTemplate}
-          accentColor={tplDef?.defaultAccent}
+          accentColor={orgSettings?.branding?.accentColor || tplDef?.defaultAccent}
           footerText={footerText || ""}
           invoiceTemplate={getDefaultTemplate()}
         />

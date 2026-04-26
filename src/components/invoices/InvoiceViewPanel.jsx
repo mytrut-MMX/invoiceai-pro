@@ -140,7 +140,7 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
           currSymbol={currSym}
           isVat={isVat}
           pdfTemplate={activeTemplate}
-          accentColor={tplDef?.defaultAccent}
+          accentColor={orgSettings?.branding?.accentColor || tplDef?.defaultAccent}
           footerText={footerText || ""}
           invoiceTemplate={activeInvoiceTemplate}
         />
@@ -275,7 +275,7 @@ export default function InvoiceViewPanel({ invoice, onEdit, onDelete, onClose })
                     logo: companyLogo,
                     logoSize: Number(invoiceTemplateConfig?.logoSize || companyLogoSize || 52),
                   }}
-                  accentColor={tplDef?.defaultAccent || "#1A1A1A"}
+                  accentColor={orgSettings?.branding?.accentColor || tplDef?.defaultAccent || "#1A1A1A"}
                   template={activeTemplate}
                   footerText={footerText || ""}
                   templateConfig={invoiceTemplateConfig || {}}

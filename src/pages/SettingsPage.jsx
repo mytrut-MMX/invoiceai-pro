@@ -18,6 +18,7 @@ import SettingsReminders from "./settings/SettingsReminders";
 import SettingsInvoiceDefaults from "./settings/SettingsInvoiceDefaults";
 import SettingsEmailNotifications from "./settings/SettingsEmailNotifications";
 import SettingsOpeningBalances from "./settings/SettingsOpeningBalances";
+import SettingsBranding from "./settings/SettingsBranding";
 
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, onClose }) {
@@ -73,6 +74,7 @@ const NAV_GROUPS = [
       { id: "bank",                label: "Banking" },
       { id: "security",            label: "Security" },
       { id: "appearance",          label: "Appearance" },
+      { id: "branding",            label: "Branding" },
       { id: "email-notifications", label: "Email Notifications" },
     ],
   },
@@ -126,7 +128,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "email-notifications" || tab === "opening-balances") {
+    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "email-notifications" || tab === "opening-balances" || tab === "branding") {
       setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -184,6 +186,7 @@ export default function SettingsPage() {
             {activeTab === "security"   && <SettingsSecurity />}
             {activeTab === "templates"  && <SettingsTemplates    onPreview={setPreviewTpl} />}
             {activeTab === "appearance" && <SettingsAppearance />}
+            {activeTab === "branding"   && <SettingsBranding     orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "email-notifications" && <SettingsEmailNotifications orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "payments"       && <SettingsPayments />}
             {activeTab === "payment-terms"  && <SettingsPaymentTerms />}
