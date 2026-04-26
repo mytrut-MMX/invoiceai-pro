@@ -77,6 +77,17 @@ export default function SecretaryPage() {
     return () => { cancelled = true; };
   }, [orgSettings, invoices, bills, expenses]);
 
+  // Cross-tab dismissal sync.
+  useEffect(() => {
+    function handleStorage(e) {
+      if (e.key === `secretary-dismissed-${user?.id || "anon"}`) {
+        setDismissed(loadDismissals(user?.id));
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [user?.id]);
+
   const visible = useMemo(() => {
     let xs = tasks.filter(t => !dismissed.includes(t.id));
 

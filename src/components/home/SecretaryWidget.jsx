@@ -54,7 +54,7 @@ function isExternal(route) {
 export default function SecretaryWidget({ orgSettings, invoices = [], bills = [], expenses = [], user }) {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
-  const dismissed = loadDismissals(user?.id);
+  const [dismissed, setDismissed] = useState(() => loadDismissals(user?.id));
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +65,18 @@ export default function SecretaryWidget({ orgSettings, invoices = [], bills = []
     ).then(result => { if (!cancelled) setTasks(result); });
     return () => { cancelled = true; };
   }, [orgSettings, invoices, bills, expenses]);
+
+  // Cross-tab dismissal sync. The `storage` event fires only in OTHER tabs,
+  // which is what we want — same-tab dismissals re-render via state already.
+  useEffect(() => {
+    function handleStorage(e) {
+      if (e.key === `secretary-dismissed-${user?.id || "anon"}`) {
+        setDismissed(loadDismissals(user?.id));
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [user?.id]);
 
   // Filter: drop dismissed, drop operational (NeedsAttention's domain), top 3 highest-severity
   const top3 = useMemo(() => {

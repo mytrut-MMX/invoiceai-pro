@@ -105,10 +105,10 @@ const SETTINGS_ITEM = {
 };
 
 const MOB_NAV = [
-  { id: "home",     label: "Home",     icon: Icons.Home,     route: ROUTES.DASHBOARD,       match: ROUTES.DASHBOARD },
-  { id: "invoices", label: "Invoices", icon: Icons.Invoices, route: ROUTES.INVOICES,        match: "/invoices" },
-  { id: "bills",    label: "Bills",    icon: Icons.Receipt,  route: ROUTES.BILLS,           match: "/bills" },
-  { id: "more",     label: "More",     icon: Icons.Settings, route: ROUTES.SETTINGS_GENERAL, match: "/settings" },
+  { id: "home",      label: "Home",      icon: Icons.Home,     route: ROUTES.DASHBOARD,        match: ROUTES.DASHBOARD },
+  { id: "invoices",  label: "Invoices",  icon: Icons.Invoices, route: ROUTES.INVOICES,         match: "/invoices" },
+  { id: "secretary", label: "Secretary", icon: Icons.Building, route: ROUTES.SECRETARY,        match: "/secretary" },
+  { id: "more",      label: "More",      icon: Icons.Settings, route: ROUTES.SETTINGS_GENERAL, match: "/settings" },
 ];
 
 // Self-bill entry is gated on having ≥1 active issued SBA; the shortcut hint
