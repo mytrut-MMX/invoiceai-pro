@@ -14,6 +14,21 @@ import { validateUkCrn, formatPhoneNumber, stripPhoneForStorage } from "../../ut
 import Section from "../../components/settings/Section";
 import { useToast } from "../../components/ui/Toast";
 
+const FINANCIAL_YEAR_MONTHS = [
+  { value: "1",  label: "January" },
+  { value: "2",  label: "February" },
+  { value: "3",  label: "March" },
+  { value: "4",  label: "April (UK tax year)" },
+  { value: "5",  label: "May" },
+  { value: "6",  label: "June" },
+  { value: "7",  label: "July" },
+  { value: "8",  label: "August" },
+  { value: "9",  label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
+
 const textInputCls =
   "w-full h-9 px-3 border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm text-[var(--text-primary)] bg-[var(--surface-card)] outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150 box-border";
 
@@ -33,6 +48,7 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
   const [currency, setCurrency] = useState(normalizeCurrencyCode(org.currency || "GBP"));
   const [timezone, setTimezone] = useState(org.timezone || "(UTC+00:00) London");
   const [industry, setIndustry] = useState(org.industry || "");
+  const [fyStart,  setFyStart]  = useState(String(org.financialYearStart || 4));
   const [crn,      setCrn]      = useState(org.crn || "");
   const [saved,    setSaved]    = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -50,6 +66,7 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
     setCurrency(normalizeCurrencyCode(org.currency || "GBP"));
     setTimezone(org.timezone || "(UTC+00:00) London");
     setIndustry(org.industry || "");
+    setFyStart(String(org.financialYearStart || 4));
     setCrn(org.crn || "");
   }, [orgSettings]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -68,6 +85,7 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
         orgName, email, phone: stripPhoneForStorage(phone), website,
         street, city, postcode, country,
         currency: normalizeCurrencyCode(currency), timezone, industry, crn,
+        financialYearStart: Number(fyStart),
       });
       setSaved(true);
       toast({ title: "Organisation settings saved", variant: "success" });
@@ -122,6 +140,9 @@ export default function SettingsOrganization({ orgSettings, onSave }) {
           </Field>
           <Field label="Timezone">
             <Select value={timezone} onChange={setTimezone} options={TIMEZONES} />
+          </Field>
+          <Field label="Financial Year Start" hint="Month your accounting year begins">
+            <Select value={fyStart} onChange={setFyStart} options={FINANCIAL_YEAR_MONTHS} />
           </Field>
           <Field label="Industry">
             <Select value={industry} onChange={setIndustry} options={["", ...INDUSTRIES]} />

@@ -14,6 +14,7 @@ import SettingsPayroll from "./settings/SettingsPayroll";
 import SettingsHMRC from "./settings/SettingsHMRC";
 import SettingsSecurity from "./settings/SettingsSecurity";
 import SettingsPaymentTerms from "./settings/SettingsPaymentTerms";
+import SettingsReminders from "./settings/SettingsReminders";
 
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, onClose }) {
@@ -76,6 +77,7 @@ const NAV_GROUPS = [
     items: [
       { id: "payments",       label: "Payment methods" },
       { id: "payment-terms",  label: "Payment Terms" },
+      { id: "reminders",      label: "Reminders" },
       { id: "templates",      label: "Templates" },
     ],
   },
@@ -118,7 +120,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "hmrc" || tab === "payment-terms") {
+    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders") {
       setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -178,6 +180,7 @@ export default function SettingsPage() {
             {activeTab === "appearance" && <SettingsAppearance />}
             {activeTab === "payments"       && <SettingsPayments />}
             {activeTab === "payment-terms"  && <SettingsPaymentTerms />}
+            {activeTab === "reminders"      && <SettingsReminders   orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "ledger"     && <SettingsLedger />}
             {activeTab === "payroll"    && <SettingsPayroll      orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "hmrc"       && <SettingsHMRC         orgSettings={orgSettings} onSave={handleSavePartial} />}
