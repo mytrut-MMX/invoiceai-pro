@@ -56,7 +56,7 @@ function Switch({ checked, onChange, disabled }) {
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={[
-        "relative w-11 h-6 rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+        "relative w-11 h-6 p-0 rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
         disabled ? "opacity-50 cursor-not-allowed" : "",
         checked ? "bg-[var(--success-600)]" : "bg-[var(--border-default)]",
       ].join(" ")}

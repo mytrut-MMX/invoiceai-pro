@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import { PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { A4PrintModal } from "../components/shared";
-import { loadBusinessData } from "../lib/businessData";
+import { loadBusinessData, saveBusinessData } from "../lib/businessData";
 import SettingsOrganization from "./settings/SettingsOrganization";
 import SettingsBanking from "./settings/SettingsBanking";
 import SettingsTax from "./settings/SettingsTax";
@@ -133,9 +133,13 @@ export default function SettingsPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSavePartial = (partial) => {
+  const handleSavePartial = async (partial) => {
     const merged = { ...(orgSettings || {}), ...partial };
     setOrgSettings(merged);
+    if (user?.id) {
+      const { error } = await saveBusinessData(user.id, { org_settings: merged });
+      if (error) console.error("Failed to save org settings:", error);
+    }
   };
 
   return (
@@ -218,7 +222,7 @@ export default function SettingsPage() {
                           setAiConsent(next);
                         }}
                         className={[
-                          "relative w-11 h-6 rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
+                          "relative w-11 h-6 p-0 rounded-full border-none cursor-pointer flex-shrink-0 transition-colors duration-200",
                           aiConsent ? "bg-[var(--success-600)]" : "bg-[var(--border-default)]",
                         ].join(" ")}
                       >
