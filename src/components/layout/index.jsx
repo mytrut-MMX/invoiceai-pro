@@ -54,6 +54,12 @@ const NAV_GROUPS = [
     ],
   },
   {
+    id: "secretary",
+    items: [
+      { id: "secretary", label: "Secretary", icon: Icons.Building, route: ROUTES.SECRETARY, match: ROUTES.SECRETARY },
+    ],
+  },
+  {
     id: "sales",
     label: "Sales",
     items: [

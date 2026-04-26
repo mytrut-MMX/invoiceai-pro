@@ -141,7 +141,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "quote-defaults" || tab === "email-notifications" || tab === "opening-balances" || tab === "branding" || tab === "expense-categories") {
+    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "quote-defaults" || tab === "email-notifications" || tab === "opening-balances" || tab === "branding" || tab === "expense-categories" || tab === "org" || tab === "tax" || tab === "bank") {
       setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

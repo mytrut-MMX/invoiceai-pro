@@ -144,7 +144,7 @@ function saDeadlines(orgSettings, today, calendar) {
         severity: severityFor(filingDays),
         category: "sa",
         action_label: "Prepare return",
-        action_route: "/itsa",
+        action_route: "/self-assessment",
         source_url: "https://www.gov.uk/self-assessment-tax-returns/deadlines",
       });
     }
@@ -163,7 +163,7 @@ function saDeadlines(orgSettings, today, calendar) {
         severity: severityFor(balancingDays),
         category: "sa",
         action_label: "View SA liability",
-        action_route: "/itsa",
+        action_route: "/self-assessment",
         source_url: "https://www.gov.uk/self-assessment-tax-returns/deadlines",
       });
     }
@@ -183,7 +183,7 @@ function saDeadlines(orgSettings, today, calendar) {
         severity: severityFor(poa2Days),
         category: "sa",
         action_label: "View SA liability",
-        action_route: "/itsa",
+        action_route: "/self-assessment",
         source_url: "https://www.gov.uk/self-assessment-tax-returns/deadlines",
       });
     }
@@ -261,7 +261,7 @@ function ctAndCompaniesHouseDeadlines(orgSettings, today, calendar) {
         severity: severityFor(chDays),
         category: "ch",
         action_label: "View on Companies House",
-        action_route: orgSettings?.crn ? `https://find-and-update.company-information.service.gov.uk/company/${orgSettings.crn}` : "/settings?tab=org",
+        action_route: orgSettings?.crn ? `https://find-and-update.company-information.service.gov.uk/company/${orgSettings.crn}` : "/settings",
         source_url: "https://www.gov.uk/annual-accounts/accounts-deadlines",
       });
     }
@@ -356,7 +356,7 @@ function cisDeadlines(orgSettings, today, calendar) {
         severity: severityFor(days),
         category: "cis",
         action_label: "Open CIS Statements",
-        action_route: "/cis-statements",
+        action_route: "/cis/statements",
         source_url: "https://www.gov.uk/what-you-must-do-as-a-cis-contractor",
       });
     }

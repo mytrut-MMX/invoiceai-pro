@@ -53,6 +53,7 @@ const SbaSignPage        = lazy(() => import("../pages/SbaSignPage"));
 
 // App pages
 const HomePage           = lazy(() => import("../pages/HomePage"));
+const SecretaryPage      = lazy(() => import("../pages/SecretaryPage"));
 const ContactsPage       = lazy(() => import("../pages/ContactsPage"));
 const ItemsPage          = lazy(() => import("../pages/ItemsPage"));
 const InvoicesPage       = lazy(() => import("../pages/InvoicesPage"));
@@ -139,6 +140,9 @@ const router = createBrowserRouter([
 
           // Dashboard
           { path: ROUTES.DASHBOARD, element: <HomePage /> },
+
+          // Company Secretary
+          { path: ROUTES.SECRETARY, element: <SecretaryPage /> },
 
           // Contacts (unified Customers + Suppliers)
           { path: ROUTES.CONTACTS,              element: <ContactsPage key="list" /> },

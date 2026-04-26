@@ -39,6 +39,9 @@ export const ROUTES = {
   // ─── Dashboard ───────────────────────────────────────────────────────────────
   DASHBOARD: '/dashboard',
 
+  // ─── Company Secretary ───────────────────────────────────────────────────────
+  SECRETARY: '/secretary',
+
   // ─── Contacts (unified Customers + Suppliers) ────────────────────────────────
   CONTACTS:                '/contacts',
   CONTACTS_NEW_CUSTOMER:   '/contacts/new-customer',
