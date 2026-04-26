@@ -41,6 +41,7 @@ function normalizeTemplates(rawTemplates) {
       pdfTemplate: "classic",
       accentColor: "#E86C4A",
       logoPosition: "left",
+      showLogo: true,
       showNotesField: true,
     };
     saveTemplate(seeded);
@@ -54,6 +55,7 @@ function normalizeTemplates(rawTemplates) {
     pdfTemplate: tpl.pdfTemplate || tpl.layout?.colorScheme || "classic",
     accentColor: tpl.accentColor || tpl.layout?.accentColor || "#E86C4A",
     logoPosition: tpl.logoPosition || tpl.layout?.logoPosition || "left",
+    showLogo: tpl.showLogo ?? tpl.layout?.showLogo ?? true,
     showNotesField: tpl.showNotesField ?? tpl.sections?.notes ?? true,
   }));
 }
@@ -63,6 +65,7 @@ function InvoiceTemplateEditorModal({ template, onClose, onSave }) {
   const [pdfTemplate, setPdfTemplate] = useState(template?.pdfTemplate || "classic");
   const [accentColor, setAccentColor] = useState(template?.accentColor || "#E86C4A");
   const [logoPosition, setLogoPosition] = useState(template?.logoPosition || "left");
+  const [showLogo, setShowLogo] = useState(template?.showLogo ?? true);
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[3000] grid place-items-center p-4">
@@ -95,6 +98,19 @@ function InvoiceTemplateEditorModal({ template, onClose, onSave }) {
           <Field label="Logo Position">
             <Select value={logoPosition} onChange={setLogoPosition} options={["left", "center", "right"]} />
           </Field>
+          <Field label="Show Logo">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showLogo}
+                onChange={e => setShowLogo(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-[var(--text-secondary)]">
+                Display company logo on this template
+              </span>
+            </label>
+          </Field>
         </div>
 
         <div className="flex justify-end gap-2.5 px-6 py-4 border-t border-[var(--border-subtle)]">
@@ -107,6 +123,7 @@ function InvoiceTemplateEditorModal({ template, onClose, onSave }) {
               pdfTemplate,
               accentColor,
               logoPosition,
+              showLogo,
             })}
           >
             Save template
@@ -163,6 +180,7 @@ function InvoiceTemplatePreview({ template, sampleData }) {
       accentColor={template?.accentColor || "#E86C4A"}
       templateConfig={{
         logoPosition: template?.logoPosition || "left",
+        showLogo: template?.showLogo ?? true,
         showNotesField: template?.showNotesField ?? true,
       }}
       footerText=""
@@ -219,6 +237,7 @@ export default function InvoiceTemplatesPage() {
                     pdfTemplate: "classic",
                     accentColor: "#E86C4A",
                     logoPosition: "left",
+                    showLogo: true,
                   });
                   setShowEditor(true);
                 }}

@@ -102,7 +102,7 @@ export function A4InvoiceDoc({ data, currSymbol, isVat, orgSettings, accentColor
 
   const OrgBlock = ({ dark = false }) => (
     <div>
-      {org.logo && <img src={org.logo} alt="logo" style={{ maxHeight: (templateConfig?.logoSize || org.logoSize || 52), maxWidth: 200, objectFit: "contain", display: "block", marginBottom: 5, marginLeft: (templateConfig?.logoPosition || "left") === "right" ? "auto" : 0, marginRight: (templateConfig?.logoPosition || "left") === "center" ? "auto" : 0 }} />}
+      {org.logo && (templateConfig?.showLogo !== false) && <img src={org.logo} alt="logo" style={{ maxHeight: (templateConfig?.logoSize || org.logoSize || 52), maxWidth: 200, objectFit: "contain", display: "block", marginBottom: 5, marginLeft: (templateConfig?.logoPosition || "left") === "right" ? "auto" : 0, marginRight: (templateConfig?.logoPosition || "left") === "center" ? "auto" : 0 }} />}
       {(activeSchemaTemplate.sections?.fromBlock ? fromEntries : [["companyName"]]).map(([fieldKey]) => (
         <div key={fieldKey} style={{ fontSize: fieldKey === "companyName" ? "15pt" : "7.5pt", fontWeight: fieldKey === "companyName" ? 900 : 500, color: dark ? "#fff" : (fieldKey === "companyName" ? accent : "#666"), letterSpacing: fieldKey === "companyName" ? "-0.01em" : "normal", marginTop: fieldKey === "companyName" ? 0 : 4 }}>
           {fieldKey === "companyName" ? (fromData[fieldKey] || "Your Company") : <><strong>{FIELD_LABELS[fieldKey] || fieldKey}:</strong> {fromData[fieldKey] || "—"}</>}

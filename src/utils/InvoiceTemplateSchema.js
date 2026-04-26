@@ -1,4 +1,4 @@
-export const TEMPLATE_STORAGE_VERSION = 1;
+export const TEMPLATE_STORAGE_VERSION = 2;
 export const STORAGE_KEY = "ai_invoice_templates";
 
 export const DEFAULT_TEMPLATE = {
@@ -12,6 +12,7 @@ export const DEFAULT_TEMPLATE = {
     fontFamily: "inter", // "inter" | "mono" | "serif"
     logoPosition: "left", // "left" | "center" | "right" | "none"
     logoSize: "medium", // "small" | "medium" | "large"
+    showLogo: true, // per-template logo visibility (default true)
   },
 
   // Secțiuni vizibile (toggle on/off)
@@ -107,6 +108,21 @@ function cloneTemplate(template) {
   return JSON.parse(JSON.stringify(template));
 }
 
+function migrateTemplate(t, fromVersion) {
+  if (!t || typeof t !== "object") return t;
+  // v1 → v2: add showLogo: true to layout
+  if (fromVersion < 2) {
+    return {
+      ...t,
+      layout: {
+        ...(t.layout || {}),
+        showLogo: t.layout?.showLogo ?? true,
+      },
+    };
+  }
+  return t;
+}
+
 function isStorageAvailable() {
   return typeof window !== "undefined" && typeof localStorage !== "undefined";
 }
@@ -124,15 +140,21 @@ function readStoragePayload() {
   try {
     const parsed = JSON.parse(raw);
 
-    // backward compatibility: array-only format
+    // backward compatibility: array-only format (treated as v1)
     if (Array.isArray(parsed)) {
-      return { version: TEMPLATE_STORAGE_VERSION, templates: parsed };
+      const templates = parsed.map((t) => migrateTemplate(t, 1));
+      return { version: TEMPLATE_STORAGE_VERSION, templates, migrated: true };
     }
 
     if (parsed && Array.isArray(parsed.templates)) {
+      const fromVersion = Number.isFinite(parsed.version) ? parsed.version : 1;
+      const templates = fromVersion < TEMPLATE_STORAGE_VERSION
+        ? parsed.templates.map((t) => migrateTemplate(t, fromVersion))
+        : parsed.templates;
       return {
-        version: Number.isFinite(parsed.version) ? parsed.version : TEMPLATE_STORAGE_VERSION,
-        templates: parsed.templates,
+        version: TEMPLATE_STORAGE_VERSION,
+        templates,
+        migrated: fromVersion < TEMPLATE_STORAGE_VERSION,
       };
     }
   } catch {
@@ -159,7 +181,8 @@ function generateTemplateId() {
 }
 
 export function getTemplates() {
-  const { templates } = readStoragePayload();
+  const { templates, migrated } = readStoragePayload();
+  if (migrated) writeStoragePayload(templates);
   return templates;
 }
 
