@@ -1,3 +1,5 @@
+import { getCompanyLogoUrl, isLogoEnabled } from "./branding/logoHelper";
+
 function formatCurrency(amount, currency = 'GBP') {
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
@@ -37,8 +39,18 @@ function renderSummaryRows(rows) {
     </tr>`).join('');
 }
 
-function buildEmailLayout({ companyName, greetingName, bodyLines, ctaLabel, ctaUrl, summaryTitle, summaryRows, note, footerText, personalMessage }) {
+function resolveEmailLogoTag(company) {
+  if (!company || !isLogoEnabled(company)) return null;
+  const url = getCompanyLogoUrl(company);
+  if (!url) return null;
+  // Skip oversized base64 (>30KB) — bloats email and some clients strip it
+  if (url.startsWith("data:") && url.length > 30 * 1024) return null;
+  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(company.orgName || company.companyName || company.name || "Logo")}" style="max-height:40px;max-width:160px;width:auto;height:auto;display:block;border:0;outline:none;" />`;
+}
+
+function buildEmailLayout({ companyName, company, greetingName, bodyLines, ctaLabel, ctaUrl, summaryTitle, summaryRows, note, footerText, personalMessage }) {
   const trimmedPersonalMessage = String(personalMessage ?? '').trim();
+  const logoTag = resolveEmailLogoTag(company);
   const personalMessageBlock = trimmedPersonalMessage ? `
                   <tr>
                     <td style="padding:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#333333;white-space:pre-line;">${escapeHtml(trimmedPersonalMessage)}</td>
@@ -76,7 +88,7 @@ function buildEmailLayout({ companyName, greetingName, bodyLines, ctaLabel, ctaU
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
                     <td valign="middle">
-                      <span style="display:inline-block;background:#111110;color:#D97706;border-radius:8px;padding:8px 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;">IS</span>
+                      ${logoTag || `<span style="display:inline-block;background:#111110;color:#D97706;border-radius:8px;padding:8px 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;">IS</span>`}
                     </td>
                     <td align="right" valign="middle" style="font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;color:#111110;">${escapeHtml(companyName)}</td>
                   </tr>
@@ -126,6 +138,7 @@ export function buildInvoiceEmail({ invoice = {}, company = {}, customer = {}, t
 
   return buildEmailLayout({
     companyName: company.name || company.companyName || 'Your Company',
+    company,
     greetingName: customer.contactName || customer.companyName || 'there',
     bodyLines: [
       `Please find attached your invoice ${invoice.invoiceNumber || '—'} for ${total}.`,
@@ -153,6 +166,7 @@ export function buildQuoteEmail({ quote = {}, company = {}, customer = {}, perso
 
   return buildEmailLayout({
     companyName: company.name || company.companyName || 'Your Company',
+    company,
     greetingName: customer.contactName || customer.companyName || 'there',
     bodyLines: [
       `Please find your quote ${quote.quoteNumber || '—'} for ${total} attached.`,
@@ -197,6 +211,7 @@ export function buildCISStatementEmail({
 
   return buildEmailLayout({
     companyName: contractor.name || 'Your Contractor',
+    company: contractor,
     greetingName: subcontractor.name || 'there',
     bodyLines: [
       `Please find attached your Payment and Deduction Statement for tax month ${periodLabel}, as required by HMRC under the Construction Industry Scheme (CIS340).`,
@@ -233,6 +248,7 @@ export function buildPaymentConfirmationEmail({ invoice = {}, payment = {}, comp
 
   return buildEmailLayout({
     companyName: company.name || company.companyName || 'Your Company',
+    company,
     greetingName: customer.contactName || customer.companyName || 'there',
     bodyLines,
     summaryTitle: 'Payment Summary',
