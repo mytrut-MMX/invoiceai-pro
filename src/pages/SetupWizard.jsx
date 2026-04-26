@@ -63,7 +63,15 @@ export default function SetupWizard({ onComplete }) {
     reader.readAsDataURL(file);
   };
 
-  const finish = () => { if (validate()) onComplete({ ...data, logo: logoPreview || data.logo }); };
+  const finish = () => {
+    if (!validate()) return;
+    const logo = logoPreview || data.logo;
+    // Write to canonical location instead of legacy `logo` field
+    onComplete({
+      ...data,
+      branding: { ...(data.branding || {}), logoUrl: logo, showLogo: true },
+    });
+  };
 
   const I = ({ k, label, placeholder, type = "text", required, options }) => {
     const hasError = !!errors[k];

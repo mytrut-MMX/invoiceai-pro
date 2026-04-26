@@ -18,6 +18,7 @@ import {
   syncEntitiesToNormalised,
 } from "./lib/dataAccess";
 import { useHasAnyActiveIssuedSba } from "./lib/selfBilling/sbaGate";
+import { migrateLegacyLogo, getCompanyLogoUrl, getCompanyLogoSize } from "./utils/branding/logoHelper";
 
 // ─── localStorage helpers ──────────────────────────────────────────────────
 const LS = {
@@ -176,13 +177,23 @@ export default function App() {
       if (cancelled) return;
 
       // 2. Settings (non-entity) — still read from business_profiles
-      setOrgSettingsState(merged?.org_settings ?? null);
+      // Logo: fold any legacy `logo` / `company_logo` / localStorage source into
+      // the canonical `org_settings.branding.logoUrl` exactly once. Subsequent
+      // loads see branding.logoUrl populated and skip the save.
+      const logoMigration = migrateLegacyLogo(merged?.org_settings ?? null);
+      const finalOrgSettings = logoMigration.orgSettings;
+      if (logoMigration.migrated) {
+        saveBusinessData(user.id, { org_settings: finalOrgSettings }).catch((err) => {
+          console.warn("[Data] Failed to persist logo migration.", err);
+        });
+      }
+      setOrgSettingsState(finalOrgSettings);
       setOnboardingDoneState(Boolean(merged?.onboarding_done) || Boolean(merged?.org_settings));
       setQuotes(Array.isArray(merged?.quotes) ? merged.quotes : []);
       setCustomPayMethods(Array.isArray(merged?.custom_pay_methods) ? merged.custom_pay_methods : []);
       setPdfTemplate(merged?.pdf_template || "classic");
-      setCompanyLogo(merged?.company_logo ?? null);
-      setCompanyLogoSize(Number(merged?.company_logo_size || 52));
+      setCompanyLogo(getCompanyLogoUrl(finalOrgSettings) || merged?.company_logo || null);
+      setCompanyLogoSize(getCompanyLogoSize(finalOrgSettings, merged?.company_logo_size));
       setInvoicePrefix(merged?.invoice_prefix || "INV-");
       setQuotePrefix(merged?.quote_prefix || "QUO-");
       setInvoiceStartNum(Number(merged?.invoice_start_num || 1));
