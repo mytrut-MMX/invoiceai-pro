@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../router/routes";
-import { PDF_TEMPLATES } from "../constants";
 import { A4InvoiceDoc } from "../components/shared";
-import { Btn, Field, Input, Select } from "../components/atoms";
+import { Btn } from "../components/atoms";
 import { Icons } from "../components/icons";
+import InvoiceTemplateEditorModal from "../components/templates/InvoiceTemplateEditorModal";
 import { DEFAULT_TEMPLATE, deleteTemplate, duplicateTemplate, getTemplates, saveTemplate } from "../utils/InvoiceTemplateSchema";
 
 const DEFAULT_TEMPLATE_KEY = "ai_invoice_default_template_id";
@@ -60,80 +60,6 @@ function normalizeTemplates(rawTemplates) {
   }));
 }
 
-function InvoiceTemplateEditorModal({ template, onClose, onSave }) {
-  const [name, setName] = useState(template?.name || "");
-  const [pdfTemplate, setPdfTemplate] = useState(template?.pdfTemplate || "classic");
-  const [accentColor, setAccentColor] = useState(template?.accentColor || "#E86C4A");
-  const [logoPosition, setLogoPosition] = useState(template?.logoPosition || "left");
-  const [showLogo, setShowLogo] = useState(template?.showLogo ?? true);
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-[3000] grid place-items-center p-4">
-      <div className="w-full max-w-[560px] bg-white rounded-2xl shadow-[var(--shadow-popover)] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
-          <h3 className="m-0 text-lg font-semibold text-[var(--text-primary)]">Edit template</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] flex transition-colors duration-150"
-          >
-            <Icons.X />
-          </button>
-        </div>
-
-        <div className="px-6 py-5 space-y-3">
-          <Field label="Template Name">
-            <Input value={name} onChange={setName} placeholder="Template name" />
-          </Field>
-          <Field label="Template Style">
-            <Select
-              value={pdfTemplate}
-              onChange={setPdfTemplate}
-              options={PDF_TEMPLATES.map((tpl) => tpl.id)}
-            />
-          </Field>
-          <Field label="Accent Color">
-            <Input value={accentColor} onChange={setAccentColor} />
-          </Field>
-          <Field label="Logo Position">
-            <Select value={logoPosition} onChange={setLogoPosition} options={["left", "center", "right"]} />
-          </Field>
-          <Field label="Show Logo">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showLogo}
-                onChange={e => setShowLogo(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <span className="text-sm text-[var(--text-secondary)]">
-                Display company logo on this template
-              </span>
-            </label>
-          </Field>
-        </div>
-
-        <div className="flex justify-end gap-2.5 px-6 py-4 border-t border-[var(--border-subtle)]">
-          <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
-          <Btn
-            variant="primary"
-            onClick={() => onSave({
-              ...template,
-              name: name.trim() || "Untitled Template",
-              pdfTemplate,
-              accentColor,
-              logoPosition,
-              showLogo,
-            })}
-          >
-            Save template
-          </Btn>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function InvoiceTemplatePreview({ template, sampleData }) {
   const mappedData = {
     docNumber: sampleData.invoiceNumber,
@@ -180,9 +106,11 @@ function InvoiceTemplatePreview({ template, sampleData }) {
       accentColor={template?.accentColor || "#E86C4A"}
       templateConfig={{
         logoPosition: template?.logoPosition || "left",
+        logoSize: template?.layout?.logoSize || "medium",
         showLogo: template?.showLogo ?? true,
         showNotesField: template?.showNotesField ?? true,
       }}
+      invoiceTemplate={template}
       footerText=""
     />
   );
