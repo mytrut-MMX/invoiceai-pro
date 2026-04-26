@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useMemo } from "react";
 import { PDF_TEMPLATES } from "../constants";
 import { AppCtx } from "../context/AppContext";
 import { A4PrintModal } from "../components/shared";
@@ -125,9 +125,18 @@ export default function SettingsPage() {
 
   const [previewTpl, setPreviewTpl] = useState(null);
   const [activeTab, setActiveTab] = useState("org");
+  const [navSearch, setNavSearch] = useState("");
   const [aiConsent, setAiConsent] = useState(() =>
     localStorage.getItem("invoicesaga_ai_consent") === "true"
   );
+
+  const filteredGroups = useMemo(() => {
+    const q = navSearch.toLowerCase().trim();
+    if (!q) return NAV_GROUPS;
+    return NAV_GROUPS
+      .map(g => ({ ...g, items: g.items.filter(i => i.label.toLowerCase().includes(q)) }))
+      .filter(g => g.items.length > 0);
+  }, [navSearch]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -159,7 +168,16 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
           {/* Left nav */}
           <nav className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-2 h-fit lg:sticky lg:top-[68px]">
-            {NAV_GROUPS.map((group, gi) => (
+            <div className="px-2 pb-2">
+              <input
+                type="text"
+                value={navSearch}
+                onChange={e => setNavSearch(e.target.value)}
+                placeholder="Search settings…"
+                className="w-full h-8 px-3 text-sm bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-[var(--radius-md)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:border-[var(--brand-600)] focus:shadow-[var(--focus-ring)] transition-colors duration-150"
+              />
+            </div>
+            {filteredGroups.map((group, gi) => (
               <div key={group.label}>
                 {gi > 0 && <div className="border-t border-[var(--border-subtle)] my-2" />}
                 <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
