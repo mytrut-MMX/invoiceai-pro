@@ -45,14 +45,14 @@ export default function QuoteFormPanel({ existing, onClose, onSave, onConvertToI
   const [custSearch, setCustSearch] = useState(q.customer?.name || "");
   const [custOpen, setCustOpen] = useState(false);
   const [issueDate, setIssueDate] = useState(q.issue_date || todayStr());
-  const [expiryDate, setExpiryDate] = useState(q.expiry_date || addDays(todayStr(), 30));
+  const [expiryDate, setExpiryDate] = useState(q.expiry_date || addDays(todayStr(), orgSettings?.quoteDefaults?.validityDays || 30));
   const [items, setItems] = useState((q.line_items && q.line_items.length > 0) ? q.line_items : [newLine(0)]);
   const [discType, setDiscType] = useState(q.discount_type || "percent");
   const [discVal, setDiscVal] = useState(q.discount_value || "");
   const [shipping, setShipping] = useState(q.shipping || "");
   const showShipping = orgSettings?.deliversItems !== false;
-  const [notes, setNotes] = useState(q.notes || "");
-  const [terms, setTerms] = useState(q.terms || DEFAULT_QUOTE_TERMS);
+  const [notes, setNotes] = useState(q.notes || orgSettings?.quoteDefaults?.notes || "");
+  const [terms, setTerms] = useState(q.terms || orgSettings?.quoteDefaults?.terms || DEFAULT_QUOTE_TERMS);
   const [status, setStatus] = useState(q.status || "Draft");
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);

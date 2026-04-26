@@ -16,6 +16,7 @@ import SettingsSecurity from "./settings/SettingsSecurity";
 import SettingsPaymentTerms from "./settings/SettingsPaymentTerms";
 import SettingsReminders from "./settings/SettingsReminders";
 import SettingsInvoiceDefaults from "./settings/SettingsInvoiceDefaults";
+import SettingsQuoteDefaults from "./settings/SettingsQuoteDefaults";
 import SettingsEmailNotifications from "./settings/SettingsEmailNotifications";
 import SettingsOpeningBalances from "./settings/SettingsOpeningBalances";
 import SettingsBranding from "./settings/SettingsBranding";
@@ -85,6 +86,7 @@ const NAV_GROUPS = [
       { id: "payment-terms",    label: "Payment Terms" },
       { id: "invoice-defaults", label: "Invoice Defaults" },
       { id: "reminders",        label: "Reminders" },
+      { id: "quote-defaults",   label: "Quote Defaults" },
       { id: "templates",        label: "Templates" },
     ],
   },
@@ -128,7 +130,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "email-notifications" || tab === "opening-balances" || tab === "branding") {
+    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "quote-defaults" || tab === "email-notifications" || tab === "opening-balances" || tab === "branding") {
       setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -195,6 +197,7 @@ export default function SettingsPage() {
             {activeTab === "payments"       && <SettingsPayments />}
             {activeTab === "payment-terms"  && <SettingsPaymentTerms />}
             {activeTab === "invoice-defaults" && <SettingsInvoiceDefaults orgSettings={orgSettings} onSave={handleSavePartial} />}
+            {activeTab === "quote-defaults"   && <SettingsQuoteDefaults   orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "reminders"      && <SettingsReminders   orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "ledger"     && <SettingsLedger />}
             {activeTab === "opening-balances" && <SettingsOpeningBalances orgSettings={orgSettings} onSave={handleSavePartial} />}
