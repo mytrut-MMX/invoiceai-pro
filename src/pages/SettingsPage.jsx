@@ -16,6 +16,7 @@ import SettingsSecurity from "./settings/SettingsSecurity";
 import SettingsPaymentTerms from "./settings/SettingsPaymentTerms";
 import SettingsReminders from "./settings/SettingsReminders";
 import SettingsInvoiceDefaults from "./settings/SettingsInvoiceDefaults";
+import SettingsEmailNotifications from "./settings/SettingsEmailNotifications";
 
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, onClose }) {
@@ -67,10 +68,11 @@ const NAV_GROUPS = [
   {
     label: "Account",
     items: [
-      { id: "org",        label: "Organisation" },
-      { id: "bank",       label: "Banking" },
-      { id: "security",   label: "Security" },
-      { id: "appearance", label: "Appearance" },
+      { id: "org",                 label: "Organisation" },
+      { id: "bank",                label: "Banking" },
+      { id: "security",            label: "Security" },
+      { id: "appearance",          label: "Appearance" },
+      { id: "email-notifications", label: "Email Notifications" },
     ],
   },
   {
@@ -122,7 +124,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults") {
+    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "email-notifications") {
       setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -180,6 +182,7 @@ export default function SettingsPage() {
             {activeTab === "security"   && <SettingsSecurity />}
             {activeTab === "templates"  && <SettingsTemplates    onPreview={setPreviewTpl} />}
             {activeTab === "appearance" && <SettingsAppearance />}
+            {activeTab === "email-notifications" && <SettingsEmailNotifications orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "payments"       && <SettingsPayments />}
             {activeTab === "payment-terms"  && <SettingsPaymentTerms />}
             {activeTab === "invoice-defaults" && <SettingsInvoiceDefaults orgSettings={orgSettings} onSave={handleSavePartial} />}
