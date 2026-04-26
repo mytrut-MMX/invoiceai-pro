@@ -17,6 +17,7 @@ import SettingsPaymentTerms from "./settings/SettingsPaymentTerms";
 import SettingsReminders from "./settings/SettingsReminders";
 import SettingsInvoiceDefaults from "./settings/SettingsInvoiceDefaults";
 import SettingsEmailNotifications from "./settings/SettingsEmailNotifications";
+import SettingsOpeningBalances from "./settings/SettingsOpeningBalances";
 
 // ─── PDF Template Preview modal ───────────────────────────────────────────────
 function TemplatePreviewModal({ templateId, onClose }) {
@@ -96,8 +97,9 @@ const NAV_GROUPS = [
   {
     label: "Advanced",
     items: [
-      { id: "ledger",     label: "General ledger" },
-      { id: "privacy",    label: "Privacy" },
+      { id: "ledger",           label: "General ledger" },
+      { id: "opening-balances", label: "Opening Balances" },
+      { id: "privacy",          label: "Privacy" },
     ],
   },
 ];
@@ -124,7 +126,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "email-notifications") {
+    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "email-notifications" || tab === "opening-balances") {
       setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -188,6 +190,7 @@ export default function SettingsPage() {
             {activeTab === "invoice-defaults" && <SettingsInvoiceDefaults orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "reminders"      && <SettingsReminders   orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "ledger"     && <SettingsLedger />}
+            {activeTab === "opening-balances" && <SettingsOpeningBalances orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "payroll"    && <SettingsPayroll      orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "hmrc"       && <SettingsHMRC         orgSettings={orgSettings} onSave={handleSavePartial} />}
 
