@@ -9,6 +9,8 @@
  */
 
 import jsPDF from "jspdf";
+import { resolveLogoDataUrl, drawLogo } from "../pdf/pdfShared";
+import { getCompanyLogoUrl, isLogoEnabled } from "../branding/logoHelper";
 
 /* ─── layout constants ───────────────────────────────────────────────────── */
 
@@ -255,7 +257,7 @@ function drawPinnedFooter(doc, contractorName, { skipDisclaimer = false } = {}) 
 
 /* ─── main builder ───────────────────────────────────────────────────────── */
 
-function buildDoc({ contractor = {}, subcontractor = {}, period = {}, amounts = {}, invoices }) {
+function buildDoc({ contractor = {}, subcontractor = {}, period = {}, amounts = {}, invoices }, logoDataUrl = "") {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
   const grossN = Number(amounts.gross_amount || 0);
@@ -278,6 +280,11 @@ function buildDoc({ contractor = {}, subcontractor = {}, period = {}, amounts = 
         cis: cisN,
         paid: netPaid,
       }];
+
+  /* ── LOGO (top-right, above title block) ── */
+  if (logoDataUrl) {
+    drawLogo(doc, logoDataUrl, { x: CR - 36, y: MT, size: "small", maxWidth: 36 });
+  }
 
   let y = MT;
 
@@ -409,10 +416,14 @@ function buildDoc({ contractor = {}, subcontractor = {}, period = {}, amounts = 
  * Download a CIS PDS as a native-text PDF.
  * @returns {Promise<{ success: boolean, filename?: string, error?: string }>}
  */
-export async function generateCISStatementPdf({ contractor, subcontractor, period, amounts, invoices }) {
+export async function generateCISStatementPdf({ contractor, subcontractor, period, amounts, invoices }, orgSettings = null) {
   try {
+    let logoDataUrl = "";
+    if (orgSettings && isLogoEnabled(orgSettings)) {
+      logoDataUrl = await resolveLogoDataUrl(getCompanyLogoUrl(orgSettings));
+    }
     const filename = filenameFor({ subcontractor, period });
-    const doc = buildDoc({ contractor, subcontractor, period, amounts, invoices });
+    const doc = buildDoc({ contractor, subcontractor, period, amounts, invoices }, logoDataUrl);
     doc.save(filename);
     return { success: true, filename };
   } catch (err) {
@@ -424,10 +435,14 @@ export async function generateCISStatementPdf({ contractor, subcontractor, perio
  * Produce a CIS PDS PDF as a Blob (for ZIP / email attachment).
  * @returns {Promise<{ success: boolean, filename?: string, blob?: Blob, error?: string }>}
  */
-export async function generateCISStatementBlob({ contractor, subcontractor, period, amounts, invoices }) {
+export async function generateCISStatementBlob({ contractor, subcontractor, period, amounts, invoices }, orgSettings = null) {
   try {
+    let logoDataUrl = "";
+    if (orgSettings && isLogoEnabled(orgSettings)) {
+      logoDataUrl = await resolveLogoDataUrl(getCompanyLogoUrl(orgSettings));
+    }
     const filename = filenameFor({ subcontractor, period });
-    const doc = buildDoc({ contractor, subcontractor, period, amounts, invoices });
+    const doc = buildDoc({ contractor, subcontractor, period, amounts, invoices }, logoDataUrl);
     const blob = doc.output("blob");
     return { success: true, filename, blob };
   } catch (err) {

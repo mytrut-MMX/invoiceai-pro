@@ -8,6 +8,8 @@
  */
 
 import jsPDF from "jspdf";
+import { resolveLogoDataUrl, drawLogo } from "../pdf/pdfShared";
+import { getCompanyLogoUrl, isLogoEnabled } from "../branding/logoHelper";
 
 /* ─── layout ─────────────────────────────────────────────────────────────── */
 
@@ -81,7 +83,7 @@ function drawFilledRect(doc, x, y, w, h, fill, border) {
 
 /* ─── main builder ───────────────────────────────────────────────────────── */
 
-function buildDoc(payslip, employee, payrollRun, employer, showEmployerCopy) {
+function buildDoc(payslip, employee, payrollRun, employer, showEmployerCopy, logoDataUrl = "") {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
   const s = payslip || {};
@@ -105,6 +107,11 @@ function buildDoc(payslip, employee, payrollRun, employer, showEmployerCopy) {
 
   let y = MT;
 
+  /* ── LOGO (top-right of header, above PAYSLIP title) ── */
+  if (logoDataUrl) {
+    drawLogo(doc, logoDataUrl, { x: CR - 36, y: MT, size: "small", maxWidth: 36 });
+  }
+
   /* ── HEADER (employer block + PAYSLIP title) ── */
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -112,7 +119,7 @@ function buildDoc(payslip, employee, payrollRun, employer, showEmployerCopy) {
   y += ascent(13);
   doc.text(employer?.name || "Employer", ML, y);
 
-  const titleRightY = MT + ascent(19);
+  const titleRightY = logoDataUrl ? MT + 14 + ascent(19) : MT + ascent(19);
   doc.setFontSize(19);
   doc.text("PAYSLIP", CR, titleRightY, { align: "right" });
 
@@ -406,12 +413,16 @@ function colWidths(cols) { return cols.map((c) => c.w * CONTENT_W); }
  *
  * @returns {Promise<{ success: boolean, filename?: string, error?: string }>}
  */
-export async function generatePayslipPdf(payslip, employee, payrollRun, employer = {}, showEmployerCopy = false) {
+export async function generatePayslipPdf(payslip, employee, payrollRun, employer = {}, showEmployerCopy = false, orgSettings = null) {
   try {
+    let logoDataUrl = "";
+    if (orgSettings && isLogoEnabled(orgSettings)) {
+      logoDataUrl = await resolveLogoDataUrl(getCompanyLogoUrl(orgSettings));
+    }
     const lastName = sanitize(employee?.last_name || "Employee");
     const periodEnd = sanitize(payrollRun?.period_end || "");
     const filename = `Payslip_${lastName}_${periodEnd}.pdf`;
-    const doc = buildDoc(payslip, employee, payrollRun, employer, showEmployerCopy);
+    const doc = buildDoc(payslip, employee, payrollRun, employer, showEmployerCopy, logoDataUrl);
     doc.save(filename);
     return { success: true, filename };
   } catch (err) {

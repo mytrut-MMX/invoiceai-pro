@@ -63,7 +63,7 @@ function buildAmounts(row) {
   };
 }
 
-export async function sendCISStatement({ contractor, row, period, settings = {} }) {
+export async function sendCISStatement({ contractor, row, period, settings = {}, orgSettings = null }) {
   if (!supabase) {
     return { success: false, error: "Supabase not configured", stage: "storage" };
   }
@@ -93,7 +93,7 @@ export async function sendCISStatement({ contractor, row, period, settings = {} 
       subcontractor,
       period,
       amounts,
-    });
+    }, orgSettings);
     if (!pdfRes?.success || !pdfRes.blob) {
       return { success: false, error: pdfRes?.error || "PDF generation failed", stage: "pdf" };
     }

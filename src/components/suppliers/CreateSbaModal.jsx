@@ -137,9 +137,10 @@ export default function CreateSbaModal({
             });
       }
 
-      const bytes = generateSbaPdf({
+      const bytes = await generateSbaPdf({
         agreement,
         ourBusinessProfile: orgProfile(orgSettings),
+        orgSettings,
         counterpartyName: supplier.name || supplier.legal_name || "",
         counterpartyAddress: formatAddress(supplier.billingAddress),
         counterpartyVat: supplier.vat_number || null,

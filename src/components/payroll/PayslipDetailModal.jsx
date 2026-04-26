@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { AppCtx } from "../../context/AppContext";
 import { CUR_SYM } from "../../constants";
 import { Btn } from "../atoms";
 import { fmtDate, fmt } from "../../utils/helpers";
@@ -7,6 +8,7 @@ import { generatePayslipPdf } from "../../utils/payroll/generatePayslipPdf";
 // ─── PAYSLIP DETAIL MODAL ────────────────────────────────────────────────────
 
 export default function PayslipDetailModal({ payslip, employee, run, employer, currSym = "£", onClose }) {
+  const { orgSettings } = useContext(AppCtx);
   const s = payslip || {};
   const emp = employee || {};
   const name = `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || "Employee";
@@ -16,7 +18,7 @@ export default function PayslipDetailModal({ payslip, employee, run, employer, c
   const handleDownloadPdf = async () => {
     setPdfBusy(true);
     setPdfMsg("");
-    const result = await generatePayslipPdf(s, emp, run, employer || {});
+    const result = await generatePayslipPdf(s, emp, run, employer || {}, false, orgSettings);
     setPdfBusy(false);
     if (result.success) setPdfMsg("Downloaded " + result.filename);
     else setPdfMsg("Error: " + (result.error || "Failed"));

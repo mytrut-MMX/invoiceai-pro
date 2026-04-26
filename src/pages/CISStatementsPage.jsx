@@ -66,7 +66,7 @@ function formatSentAt(ts) {
 }
 
 export default function CISStatementsPage() {
-  const { user } = useContext(AppCtx);
+  const { user, orgSettings } = useContext(AppCtx);
   const cis = useCISSettings();
 
   const taxMonthOptions = useMemo(() => getTaxMonthOptions(12), []);
@@ -209,7 +209,7 @@ export default function CISStatementsPage() {
   const handleDownloadRow = async (row) => {
     setDownloadingRowId(row.supplier.id);
     try {
-      const res = await generateCISStatementPdf(buildPayload(row));
+      const res = await generateCISStatementPdf(buildPayload(row), orgSettings);
       if (!res.success) {
         setError(res.error || "PDF generation failed");
         return;
@@ -240,6 +240,7 @@ export default function CISStatementsPage() {
           fromName: contractor.name || undefined,
           personalMessage: msg || "",
         },
+        orgSettings,
       });
       if (res?.success) {
         setSentMap(prev => ({ ...prev, [id]: { email: row.supplier.email, at: Date.now() } }));

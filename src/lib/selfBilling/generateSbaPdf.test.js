@@ -47,44 +47,44 @@ function gen({ agreement = baseAgreement(), ourBusinessProfile = OUR, ...rest } 
 const decode = (bytes) => new TextDecoder('latin1').decode(bytes);
 
 describe('generateSbaPdf', () => {
-  it('returns a Uint8Array starting with %PDF', () => {
-    const bytes = gen();
+  it('returns a Uint8Array starting with %PDF', async () => {
+    const bytes = await gen();
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.length).toBeGreaterThan(0);
     expect(decode(bytes.slice(0, 4))).toBe('%PDF');
   });
 
-  it('direction=issued places our name before the counterparty name', () => {
-    const t = decode(gen());
+  it('direction=issued places our name before the counterparty name', async () => {
+    const t = decode(await gen());
     const ours = t.indexOf('Our Trading Ltd');
     const theirs = t.indexOf('Acme Supplies Ltd');
     expect(ours).toBeGreaterThanOrEqual(0);
     expect(theirs).toBeGreaterThan(ours);
   });
 
-  it('direction=received swaps roles — counterparty becomes Self-Biller', () => {
+  it('direction=received swaps roles — counterparty becomes Self-Biller', async () => {
     const agreement = baseAgreement({ direction: 'received' });
-    const t = decode(gen({ agreement }));
+    const t = decode(await gen({ agreement }));
     const ours = t.indexOf('Our Trading Ltd');
     const theirs = t.indexOf('Acme Supplies Ltd');
     expect(theirs).toBeGreaterThanOrEqual(0);
     expect(ours).toBeGreaterThan(theirs);
   });
 
-  it('renders "Not VAT registered" when our VAT is null', () => {
-    const t = decode(gen({ ourBusinessProfile: { ...OUR, vatNumber: null } }));
+  it('renders "Not VAT registered" when our VAT is null', async () => {
+    const t = decode(await gen({ ourBusinessProfile: { ...OUR, vatNumber: null } }));
     expect(t).toContain('Not VAT registered');
   });
 
-  it('contains HMRC mandatory marker phrases', () => {
-    const t = decode(gen());
+  it('contains HMRC mandatory marker phrases', async () => {
+    const t = decode(await gen());
     expect(t).toContain('SELF-BILLING INVOICE');
     expect(t).toContain('output tax due to HMRC');
     expect(t).toContain('will not issue sales invoices');
   });
 
-  it('renders all 5 base clauses with numbered titles', () => {
-    const t = decode(gen());
+  it('renders all 5 base clauses with numbered titles', async () => {
+    const t = decode(await gen());
     expect(t).toMatch(/1\. Issuance of Invoices/);
     expect(t).toMatch(/2\. Acceptance/);
     expect(t).toMatch(/3\. VAT Status Notifications/);
@@ -92,25 +92,25 @@ describe('generateSbaPdf', () => {
     expect(t).toMatch(/5\. Invoice Markers/);
   });
 
-  it('appends custom_clauses from terms_snapshot as clause 6+', () => {
+  it('appends custom_clauses from terms_snapshot as clause 6+', async () => {
     const agreement = baseAgreement({
       terms_snapshot: {
         custom_clauses: [{ title: 'Dispute Resolution', body: 'Any dispute shall be resolved in London.' }],
       },
     });
-    const t = decode(gen({ agreement }));
+    const t = decode(await gen({ agreement }));
     expect(t).toMatch(/6\. Dispute Resolution/);
     expect(t).toContain('Any dispute shall be resolved in London.');
   });
 
-  it('is deterministic for the same generatedAt (±16 byte metadata jitter)', () => {
-    const a = gen();
-    const b = gen();
+  it('is deterministic for the same generatedAt (±16 byte metadata jitter)', async () => {
+    const a = await gen();
+    const b = await gen();
     expect(Math.abs(a.length - b.length)).toBeLessThanOrEqual(16);
   });
 
-  it('non-VAT supplier agreement uses registration notification clause', () => {
-    const bytes = gen({ counterpartyIsVatRegistered: false, counterpartyVat: null });
+  it('non-VAT supplier agreement uses registration notification clause', async () => {
+    const bytes = await gen({ counterpartyIsVatRegistered: false, counterpartyVat: null });
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.length).toBeGreaterThan(0);
     const t = decode(bytes);
@@ -118,8 +118,8 @@ describe('generateSbaPdf', () => {
     expect(t).not.toMatch(/VAT Status Notifications/);
   });
 
-  it("non-VAT supplier agreement shows 'Not VAT registered' in parties", () => {
-    const bytes = gen({ counterpartyIsVatRegistered: false, counterpartyVat: null });
+  it("non-VAT supplier agreement shows 'Not VAT registered' in parties", async () => {
+    const bytes = await gen({ counterpartyIsVatRegistered: false, counterpartyVat: null });
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.length).toBeGreaterThan(0);
     const t = decode(bytes);

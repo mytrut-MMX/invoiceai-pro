@@ -4,6 +4,8 @@
 // happens once in resolveParties(); downstream renders biller first.
 
 import jsPDF from 'jspdf';
+import { resolveLogoDataUrl, drawLogo } from '../../utils/pdf/pdfShared';
+import { getCompanyLogoUrl, isLogoEnabled } from '../../utils/branding/logoHelper';
 import {
   HMRC_SBA_TERMS_TEMPLATE, HMRC_SBA_NON_VAT_CLAUSE, SBA_CLAUSE_KEYS, SB_DIRECTION,
   SELF_BILL_MARKER_TITLE, SELF_BILL_VAT_STATEMENT,
@@ -78,9 +80,14 @@ function addPage(s) { s.doc.addPage(); s.page += 1; s.y = MT; }
 function ensureSpace(s, needed) { if (s.y + needed > PAGE_H - MB) addPage(s); }
 
 function drawTitleBand(s) {
-  const { doc } = s;
+  const { doc, logoDataUrl } = s;
   setFill(doc, BRAND);
   doc.rect(0, 0, PAGE_W, 5, 'F');
+
+  if (logoDataUrl) {
+    drawLogo(doc, logoDataUrl, { x: ML, y: 8, size: 'small', maxWidth: 36 });
+  }
+
   setText(doc, INK);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(T_TITLE);
@@ -292,9 +299,10 @@ function drawFooters(doc, generatedAt, agreement) {
   }
 }
 
-export function generateSbaPdf({
+export async function generateSbaPdf({
   agreement,
   ourBusinessProfile,
+  orgSettings = null,
   counterpartyName,
   counterpartyAddress,
   counterpartyVat,
@@ -307,7 +315,12 @@ export function generateSbaPdf({
     agreement, ourBusinessProfile, counterpartyName, counterpartyAddress,
     counterpartyVat: counterpartyIsVatRegistered === false ? null : counterpartyVat,
   });
-  const state = { doc, page: 1, y: 0, generatedAt, agreement, counterpartyIsVatRegistered };
+
+  let logoDataUrl = "";
+  if (orgSettings && isLogoEnabled(orgSettings)) {
+    logoDataUrl = await resolveLogoDataUrl(getCompanyLogoUrl(orgSettings));
+  }
+  const state = { doc, page: 1, y: 0, generatedAt, agreement, counterpartyIsVatRegistered, logoDataUrl };
 
   drawTitleBand(state);
   drawMetaGrid(state);

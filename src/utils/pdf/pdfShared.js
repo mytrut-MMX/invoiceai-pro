@@ -1,5 +1,30 @@
 import jsPDF from "jspdf";
 
+/**
+ * GOLDEN RULE: Every new PDF document type added to InvoiceSaga MUST render the
+ * company logo when one is configured.
+ *
+ * Pattern:
+ *   1. Import:
+ *        import { resolveLogoDataUrl, drawLogo } from "../pdf/pdfShared";
+ *        import { getCompanyLogoUrl, isLogoEnabled } from "../branding/logoHelper";
+ *   2. In your async public generator function, pre-resolve:
+ *        let logoDataUrl = "";
+ *        if (orgSettings && isLogoEnabled(orgSettings)) {
+ *          logoDataUrl = await resolveLogoDataUrl(getCompanyLogoUrl(orgSettings));
+ *        }
+ *   3. Pass logoDataUrl to your buildDoc helper.
+ *   4. In the header section of buildDoc, call:
+ *        if (logoDataUrl) drawLogo(doc, logoDataUrl, { x, y, size, maxWidth });
+ *
+ * Existing PDF types using this pattern: invoice/quote (4 templates), payslip,
+ * CIS statement, self-billing agreement.
+ *
+ * The logo source resolves through getCompanyLogoUrl which honours both the
+ * global branding.showLogo flag and falls back to legacy fields. Bypassing this
+ * helper silently breaks backward-compat with users on legacy field names.
+ */
+
 export const PAGE_W = 210;
 export const ML = 18;
 export const MR = 18;
