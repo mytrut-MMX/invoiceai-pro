@@ -100,3 +100,69 @@ export function createBreaker() {
     set y(val) { state.y = val; },
   };
 }
+
+/**
+ * Resolves a logo URL (http/https or data:) into a data URL string for jsPDF.
+ * Returns "" on failure.
+ */
+export async function resolveLogoDataUrl(logoUrl) {
+  if (!logoUrl) return "";
+  if (logoUrl.startsWith("data:")) return logoUrl;
+  try {
+    const res = await fetch(logoUrl);
+    if (!res.ok) return "";
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Detects image format from a data URL. Defaults to PNG.
+ */
+export function detectImageFormat(dataUrl) {
+  if (!dataUrl) return "PNG";
+  const m = /^data:image\/([a-zA-Z0-9+]+)/.exec(dataUrl);
+  if (!m) return "PNG";
+  const fmt = m[1].toUpperCase();
+  if (fmt === "JPG" || fmt === "JPEG") return "JPEG";
+  if (fmt === "PNG") return "PNG";
+  if (fmt === "WEBP") return "WEBP";
+  // jsPDF doesn't support SVG raster — caller should rasterize first
+  if (fmt === "SVG+XML") return "PNG";
+  return "PNG";
+}
+
+/**
+ * Resolves logoSize string ("small"|"medium"|"large") OR number to mm height.
+ * Defaults to medium (16mm).
+ */
+export function resolveLogoSizeMm(size) {
+  if (typeof size === "number") return Math.max(6, Math.min(40, size / 3));
+  if (size === "small") return 10;
+  if (size === "large") return 22;
+  return 16;
+}
+
+/**
+ * Draws a logo on the current page given a resolved data URL.
+ * Returns { width, height } actually used in mm, or null if not drawn.
+ */
+export function drawLogo(doc, dataUrl, { x, y, size = "medium", maxWidth = 60 }) {
+  if (!dataUrl) return null;
+  const heightMm = resolveLogoSizeMm(size);
+  const widthMm = Math.min(maxWidth, heightMm * 3); // 3:1 max aspect cap
+  try {
+    const fmt = detectImageFormat(dataUrl);
+    doc.addImage(dataUrl, fmt, x, y, widthMm, heightMm, undefined, "FAST");
+    return { width: widthMm, height: heightMm };
+  } catch {
+    return null;
+  }
+}

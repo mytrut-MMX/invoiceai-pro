@@ -2,10 +2,11 @@ import {
   ML, CR, CONTENT_W, PAGE_W,
   FAINT,
   hexToRgb, setRgb,
+  drawLogo,
 } from "../pdfShared";
 import { drawBillTo, drawMeta, drawItems, drawTotals, drawNotes } from "../pdfSections";
 
-export function buildClassic(doc, brk, { data, currSymbol, isVat, orgSettings, accentColor }) {
+export function buildClassic(doc, brk, { data, currSymbol, isVat, orgSettings, accentColor, logoDataUrl }) {
   const { docNumber, customer, issueDate, dueDate, paymentTerms, items,
           notes, terms, docType } = data || {};
   const isQuote = docType === "quote";
@@ -17,6 +18,14 @@ export function buildClassic(doc, brk, { data, currSymbol, isVat, orgSettings, a
   const bandH = 32;
   setRgb(doc, accent, "fill");
   doc.rect(0, 0, PAGE_W, bandH, "F");
+
+  // Logo: top-right white pad inside the band
+  if (logoDataUrl) {
+    setRgb(doc, [255, 255, 255], "fill");
+    doc.rect(CR - 42, 4, 38, bandH - 8, "F");
+    drawLogo(doc, logoDataUrl, { x: CR - 40, y: 6, size: "medium", maxWidth: 36 });
+  }
+
   doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(255, 255, 255);
   doc.text(org.orgName || "Your Company", ML, 14);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
@@ -27,10 +36,11 @@ export function buildClassic(doc, brk, { data, currSymbol, isVat, orgSettings, a
   brk.y = 19;
   orgLines.forEach((ln) => { doc.text(ln, ML, brk.y); brk.y += 3.5; });
 
+  const titleX = logoDataUrl ? CR - 46 : CR;
   doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(255, 255, 255);
-  doc.text(docLabel.toUpperCase(), CR, 16, { align: "right" });
+  doc.text(docLabel.toUpperCase(), titleX, 16, { align: "right" });
   doc.setFontSize(11);
-  doc.text(docNumber || "INV-0001", CR, 22, { align: "right" });
+  doc.text(docNumber || "INV-0001", titleX, 22, { align: "right" });
 
   brk.y = bandH + 10;
   const colW = (CONTENT_W - 8) / 2;

@@ -1,10 +1,11 @@
 import {
   ML, CR, PAGE_W,
   hexToRgb, setRgb, blendWithWhite,
+  drawLogo,
 } from "../pdfShared";
 import { drawMeta, drawItems, drawTotals, drawNotes } from "../pdfSections";
 
-export function buildModern(doc, brk, { data, currSymbol, isVat, orgSettings, accentColor }) {
+export function buildModern(doc, brk, { data, currSymbol, isVat, orgSettings, accentColor, logoDataUrl }) {
   const { docNumber, customer, issueDate, dueDate, paymentTerms, items,
           notes, terms, docType } = data || {};
   const isQuote = docType === "quote";
@@ -19,14 +20,19 @@ export function buildModern(doc, brk, { data, currSymbol, isVat, orgSettings, ac
   setRgb(doc, accent, "fill");
   doc.rect(0, 0, leftW, headerH, "F");
 
+  let orgY = 14;
+  if (logoDataUrl) {
+    drawLogo(doc, logoDataUrl, { x: 14, y: 8, size: "small", maxWidth: 40 });
+    orgY = 22;
+  }
   doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(255, 255, 255);
-  doc.text(org.orgName || "Your Company", 14, 14);
+  doc.text(org.orgName || "Your Company", 14, orgY);
   doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
   const orgLines = [
     org.street, [org.city, org.country].filter(Boolean).join(", "),
     org.email, org.vatNum ? `VAT ${org.vatNum}` : null,
   ].filter(Boolean);
-  let oy = 20;
+  let oy = orgY + 6;
   orgLines.forEach((ln) => { doc.text(ln, 14, oy); oy += 3.2; });
   if (org.crn) { doc.setFontSize(7); doc.setTextColor(200, 200, 200); doc.text(`Company No: ${org.crn}`, 14, oy); oy += 3.2; }
 

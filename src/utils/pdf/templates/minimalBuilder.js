@@ -2,10 +2,11 @@ import {
   ML, CR, CONTENT_W,
   FAINT,
   hexToRgb, setRgb, blendWithWhite,
+  drawLogo,
 } from "../pdfShared";
 import { drawBillTo, drawMeta, drawItems, drawTotals, drawNotes } from "../pdfSections";
 
-export function buildMinimal(doc, brk, { data, currSymbol, isVat, orgSettings, accentColor }) {
+export function buildMinimal(doc, brk, { data, currSymbol, isVat, orgSettings, accentColor, logoDataUrl }) {
   const { docNumber, customer, issueDate, dueDate, paymentTerms, items,
           notes, terms, docType } = data || {};
   const isQuote = docType === "quote";
@@ -15,6 +16,10 @@ export function buildMinimal(doc, brk, { data, currSymbol, isVat, orgSettings, a
   const accent = hexToRgb(accentColor || "#1A1A1A");
 
   brk.y = 14;
+  if (logoDataUrl) {
+    drawLogo(doc, logoDataUrl, { x: ML, y: 10, size: "medium", maxWidth: 50 });
+    brk.y = 32;
+  }
   doc.setFont("helvetica", "bold"); doc.setFontSize(15); setRgb(doc, accent);
   doc.text(org.orgName || "Your Company", ML, brk.y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); setRgb(doc, [102, 102, 102]);
