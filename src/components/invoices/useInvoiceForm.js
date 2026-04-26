@@ -26,7 +26,7 @@ export function useInvoiceForm({ existing, onClose, onSave, onConvertFromQuote }
   const [custOpen, setCustOpen] = useState(false);
   const [issueDate, setIssueDate] = useState(inv.issue_date || todayStr());
   const [supplyDate, setSupplyDate] = useState(inv.supply_date || inv.issue_date || todayStr());
-  const [payTerms, setPayTerms] = useState(inv.payment_terms || customer?.paymentTerms || "Net 30");
+  const [payTerms, setPayTerms] = useState(inv.payment_terms || customer?.paymentTerms || orgSettings?.invoiceDefaults?.paymentTerms || "Net 30");
   const [customDays, setCustomDays] = useState(inv.custom_payment_days || "");
   const [dueDate, setDueDate] = useState(inv.due_date || addDays(todayStr(), 30));
   const [paymentTerm, setPaymentTerm] = useState(null);
@@ -37,10 +37,10 @@ export function useInvoiceForm({ existing, onClose, onSave, onConvertFromQuote }
   const [discVal, setDiscVal] = useState(inv.discount_value || "");
   const [shipping, setShipping] = useState(inv.shipping || "");
   const showShipping = orgSettings?.deliversItems !== false;
-  const [notes, setNotes] = useState(inv.notes || "");
-  const [terms, setTerms] = useState(inv.terms || DEFAULT_INV_TERMS);
+  const [notes, setNotes] = useState(inv.notes || orgSettings?.invoiceDefaults?.notes || "");
+  const [terms, setTerms] = useState(inv.terms || orgSettings?.invoiceDefaults?.terms || DEFAULT_INV_TERMS);
   const [status, setStatus] = useState(inv.status || "Draft");
-  const [template, setTemplate] = useState(inv.template || "classic");
+  const [template, setTemplate] = useState(inv.template || orgSettings?.invoiceDefaults?.template || "classic");
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [templateId] = useState(inv.templateId || null);
   const [showPaidModal, setShowPaidModal] = useState(false);
