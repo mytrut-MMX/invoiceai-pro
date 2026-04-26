@@ -8,8 +8,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- RLS: users can only manage their own folder (userId prefix)
 -- The upload path in SettingsBranding.jsx is: ${userId}/${timestamp}.${ext}
-
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- (RLS is already enabled on storage.objects by Supabase, so we don't ALTER it.)
 
 -- SELECT: anyone can read (public bucket, logos appear on invoices/emails)
 DROP POLICY IF EXISTS "logos_select" ON storage.objects;
