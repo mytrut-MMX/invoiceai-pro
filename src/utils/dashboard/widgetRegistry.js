@@ -15,6 +15,7 @@ export const DASHBOARD_WIDGETS = [
     visible: (ctx) => !!ctx?.hasAnyActiveIssuedSba
                    || (ctx?.customers || []).some((c) => c?.self_billed_by_customer),
   },
+  { id: 'secretary',        label: 'Company Secretary',     component: 'SecretaryWidget',   default: true,  order: 6 },
 ];
 
 export function getDefaultLayout() {
