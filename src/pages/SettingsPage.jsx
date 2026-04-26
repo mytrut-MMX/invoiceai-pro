@@ -17,6 +17,7 @@ import SettingsPaymentTerms from "./settings/SettingsPaymentTerms";
 import SettingsReminders from "./settings/SettingsReminders";
 import SettingsInvoiceDefaults from "./settings/SettingsInvoiceDefaults";
 import SettingsQuoteDefaults from "./settings/SettingsQuoteDefaults";
+import SettingsExpenseCategories from "./settings/SettingsExpenseCategories";
 import SettingsEmailNotifications from "./settings/SettingsEmailNotifications";
 import SettingsOpeningBalances from "./settings/SettingsOpeningBalances";
 import SettingsBranding from "./settings/SettingsBranding";
@@ -96,6 +97,7 @@ const NAV_GROUPS = [
       { id: "tax",        label: "Tax & VAT" },
       { id: "hmrc",       label: "HMRC / MTD" },
       { id: "payroll",    label: "Payroll" },
+      { id: "expense-categories", label: "Expense Categories" },
     ],
   },
   {
@@ -130,7 +132,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "quote-defaults" || tab === "email-notifications" || tab === "opening-balances" || tab === "branding") {
+    if (tab === "hmrc" || tab === "payment-terms" || tab === "reminders" || tab === "invoice-defaults" || tab === "quote-defaults" || tab === "email-notifications" || tab === "opening-balances" || tab === "branding" || tab === "expense-categories") {
       setActiveTab(tab);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -203,6 +205,7 @@ export default function SettingsPage() {
             {activeTab === "opening-balances" && <SettingsOpeningBalances orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "payroll"    && <SettingsPayroll      orgSettings={orgSettings} onSave={handleSavePartial} />}
             {activeTab === "hmrc"       && <SettingsHMRC         orgSettings={orgSettings} onSave={handleSavePartial} />}
+            {activeTab === "expense-categories" && <SettingsExpenseCategories orgSettings={orgSettings} onSave={handleSavePartial} />}
 
             {activeTab === "privacy" && (
               <div>

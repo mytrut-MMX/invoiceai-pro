@@ -280,7 +280,9 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
               </Field>
               <Field label={<span style={{ display: "inline-flex", alignItems: "center" }}>Category<CategoryHintIcon category={category} /></span>}>
                 <Select value={category} onChange={setCategory}
-                  options={EXPENSE_CATEGORIES.map(c => ({ value: c.name, label: `${c.code} · ${c.name}` }))} placeholder="Select…" />
+                  options={(orgSettings?.expenseCategories || EXPENSE_CATEGORIES)
+                    .filter(c => c.enabled !== false)
+                    .map(c => ({ value: c.name, label: `${c.code} · ${c.name}` }))} placeholder="Select…" />
               </Field>
             </>)}
             {cisEnabled && isSubcontractorCategory && (
@@ -289,7 +291,7 @@ export default function ExpenseForm({ existing, onClose, onSave }) {
               </div>
             )}
             {category && (() => {
-              const catEntry = EXPENSE_CATEGORIES.find(c => c.name === category);
+              const catEntry = (orgSettings?.expenseCategories || EXPENSE_CATEGORIES).find(c => c.name === category);
               const saCode = catEntry ? SA_CATEGORY_MAP[catEntry.code] : null;
               const saLabel = saCode ? SA_CATEGORY_LABELS[saCode] : null;
               return saLabel ? (
